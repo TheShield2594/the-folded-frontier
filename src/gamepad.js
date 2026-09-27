@@ -3,7 +3,7 @@ import {
   $,closeSettings,craft,cyclePartner,dashPress,fireHook,initAudio,invOpen,jumpPress,mapOpen,mouse,npcs,
   pad,padRebinding,partnerAbility,pause,placeTip,player,renderBinds,saveSettings,SET,setInv,setInvDirty,
   setPadRebinding,SFX,slotClick,state,T,tileAt,toggleMap,upx,
-  skipIntro,
+  skipIntro,dlgNext,
 } from './game.js';
 
 // ================= gamepad =================
@@ -20,6 +20,7 @@ export function handlePad(){const gps=navigator.getGamepads?navigator.getGamepad
   if(Object.values(h).some(Boolean)||Math.hypot(rx,ry)>.3){if(!pad.active)initAudio();pad.active=true;}
   if(Math.hypot(rx,ry)>.3){pad.aimX=rx;pad.aimY=-ry;pad.aimT=1.2;}
   if(state==='intro'){if(ef('jump')||ef('start')||ef('interact'))skipIntro();return;}
+  if(state==='talk'){if(ef('start'))dlgNext(true);else if(ef('jump')||ef('interact')||ef('use'))dlgNext();return;}
   if(state==='title'){if(!$('newWorld').hidden){if(ef('jump')||ef('start'))$('createBtn').click();else if(ef('interact'))$('newWorld').hidden=true;return;}if(!$('settings').hidden||!$('ach').hidden||!$('howto').hidden){if(ef('interact')||ef('start')){closeSettings();$('ach').hidden=true;$('howto').hidden=true;}return;}if(ef('jump')||ef('start'))($('contBtn').hidden?$('newBtn'):$('contBtn')).click();return;}
   if(state==='paused'){if(ef('start')||ef('interact')){if(!$('settings').hidden)closeSettings();else if(!$('ach').hidden)$('ach').hidden=true;else pause(false);}return;}
   if(state!=='play')return;

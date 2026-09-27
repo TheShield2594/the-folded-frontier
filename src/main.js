@@ -14,7 +14,7 @@ import {
   updateHUD,updateNPC,updateNums,updateOverlays,updatePartner,updateParts,updatePickups,updatePlayer,
   updatePop,updateProjs,updateSky,updateTrail,updateWeather,visited,W,weather,wind,worldClock,worldTime,
   guideEv,updateGuide,cropGrowChance,isFest,newDay,seasonAmbient,updateTown,loadFailed,
-  evDawn,evDusk,fcount,updateEvents,
+  evDawn,evDusk,fcount,updateEvents,updateDlg,
 } from './game.js';
 
 // ================= boot =================
@@ -45,7 +45,7 @@ function frame(now){requestAnimationFrame(frame);let dt=(now-lastT)/1000;lastT=n
   else if(state==='title'){$('evbar').hidden=true;camT.x+=dt*2.2;if(camT.x>W-30)camT.x=30;player.x=camT.x;player.y=surf[clamp(Math.floor(camT.x),0,W-1)]+1;player.mesh.visible=false;if(pt.mesh)pt.mesh.visible=false;$('partnerHud').hidden=true;setWorldTime((worldTime+dt*.25)%24);}
   if(AC){setMusic(pickMusic());music(dt,isNight());}updateAmbience(dt);mouse.lp=false;mouse.rp=false;
   if(lightDirty){computeLightStrip(lx0-17,lx1+17);setLightDirty(false);setLx0(1e9);setLx1(-1);}
-  updatePop(dt);if(state==='play')updateHouses(dt);
+  updatePop(dt);if(state==='play')updateHouses(dt);updateDlg(dt);
   let n=0;for(const k of dirty){buildChunk(k%CW,Math.floor(k/CW));dirty.delete(k);if(++n>=8)break;}
   updateParts(dt);updateCamera(dt);updateDynLights();updateSky();updateOverlays();updateNums(dt);
   clouds.forEach(c=>{c.position.x+=dt*c.userData.s*(1+Math.abs(wind)*5)*(wind<0?-1:1);if(c.position.x<-20)c.position.x=W+20;if(c.position.x>W+20)c.position.x=-20;});

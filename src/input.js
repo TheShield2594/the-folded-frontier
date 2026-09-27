@@ -5,7 +5,7 @@ import {
   fireHook,held,hook,initAudio,invOpen,ITEMS,keys,mapOpen,pad,padRebinding,partnerAbility,pause,player,
   pv,quickHeal,rebinding,renderBinds,renderer,saveSettings,scene,SET,setCamDist,setCursor,setInv,
   setInvDirty,setPadRebinding,setRebinding,SFX,stat,stompNice,toggleMap,upx,
-  skipIntro,
+  skipIntro,dlgNext,
 } from './game.js';
 
 // ================= input =================
@@ -16,6 +16,7 @@ addEventListener('keydown',e=>{const k=e.key.toLowerCase();
   if(rebinding){e.preventDefault();if(k!=='escape'){const other=Object.keys(SET.bind).find(a=>SET.bind[a]===k);if(other&&other!==rebinding)SET.bind[other]=SET.bind[rebinding];SET.bind[rebinding]=k;saveSettings();}setRebinding(null);renderBinds();return;}
   if([' ','tab','arrowup','arrowdown'].includes(k))e.preventDefault();if(e.repeat)return;keys[k]=true;initAudio();
   if(state==='intro'){skipIntro();return;}
+  if(state==='talk'){if(k==='escape')dlgNext(true);else if(actKey('jump',k)||k==='enter'||actKey('inv',k))dlgNext();return;}
   if(k==='escape'&&!$('settings').hidden){closeSettings();return;}
   if(k==='escape'&&!$('ach').hidden){$('ach').hidden=true;return;}
   if(k==='escape'&&!$('howto').hidden){$('howto').hidden=true;return;}
@@ -57,7 +58,7 @@ addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouse.l=mouse.r=false;});
 addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;pad.active=false;if(cursor){const c=$('cursorItem');c.style.left=upx(e.clientX);c.style.top=upx(e.clientY);}if(!$('tip').hidden)placeTip(e.clientX+16,e.clientY+14);});
 export function placeTip(x,y){const tp=$('tip'),r=tp.getBoundingClientRect();tp.style.left=upx(Math.max(4,Math.min(x,innerWidth-r.width-8)));tp.style.top=upx(Math.max(4,Math.min(y,innerHeight-r.height-8)));}
-renderer.domElement.addEventListener('mousedown',e=>{initAudio();if(state!=='play')return;if(e.button===0){if(cursor){dropItem(cursor.id,cursor.n,player.x+player.face*.8,player.y+1.2,player.face*6,4,1);setCursor(null);setInvDirty(true);return;}mouse.l=true;mouse.lp=true;}if(e.button===2){mouse.r=true;mouse.rp=true;}});
+renderer.domElement.addEventListener('mousedown',e=>{initAudio();if(state==='talk'){if(e.button!==1)dlgNext();return;}if(state!=='play')return;if(e.button===0){if(cursor){dropItem(cursor.id,cursor.n,player.x+player.face*.8,player.y+1.2,player.face*6,4,1);setCursor(null);setInvDirty(true);return;}mouse.l=true;mouse.lp=true;}if(e.button===2){mouse.r=true;mouse.rp=true;}});
 addEventListener('mouseup',e=>{if(e.button===0)mouse.l=false;if(e.button===2)mouse.r=false;});
 addEventListener('contextmenu',e=>e.preventDefault());
 addEventListener('wheel',e=>{if(state!=='play')return;if(invOpen&&e.target.closest&&e.target.closest('#panel'))return;player.sel=(player.sel+(e.deltaY>0?1:-1)+10)%10;setInvDirty(true);},{passive:true});

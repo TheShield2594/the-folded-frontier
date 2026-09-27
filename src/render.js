@@ -106,6 +106,8 @@ export function makeSheet(n,fw,fh,draw,b=4){const out=mk(n*fw,fh),o=out.getConte
   o.save();o.beginPath();o.rect(f*fw,0,fw,fh);o.clip();for(let i=0;i<16;i++){const a=i/16*Math.PI*2;o.drawImage(sil,f*fw+Math.cos(a)*b,Math.sin(a)*b);}o.drawImage(tmp,f*fw,0);o.restore();}return out;}
 function leg(t,x,y,a,col,boot){t.save();t.translate(x,y);t.rotate(a);rr(t,-6.5,-4,13,28,6);fi(t,col);if(boot){rr(t,-7,17,17,11,5);fi(t,boot);}t.restore();}
 function arm(t,x,y,a,col,skin){t.save();t.translate(x,y);t.rotate(a);rr(t,-5.5,-3,11,22,5.5);fi(t,col);circ(t,0,22,5.5);fi(t,skin);t.restore();}
+// faceX: the expression drawHuman gives the face ('happy','surprised','sad','angry'); only set while facePic draws a portrait
+let faceX=null;
 function drawHuman(t,o){t.save();t.translate(0,o.bob||0);if(o.lean){t.translate(48,138);t.rotate(o.lean);t.translate(-48,-138);}const hip=110;
   leg(t,43,hip,o.legB,sh(o.greaves||o.pants,.8),sh(o.boots,.8));
   arm(t,42,82,o.armB,sh(o.mail||o.tunic,.78),sh(o.skin,.85));
@@ -118,9 +120,13 @@ function drawHuman(t,o){t.save();t.translate(0,o.bob||0);if(o.lean){t.translate(
   circ(t,50,50,22);fi(t,o.skin);
   if(o.helm){t.beginPath();t.moveTo(26,54);t.quadraticCurveTo(24,24,50,24);t.quadraticCurveTo(76,24,74,50);t.lineTo(66,48);t.lineTo(66,40);t.lineTo(34,40);t.lineTo(34,56);t.closePath();fi(t,o.helm);t.fillStyle='rgba(255,255,255,.35)';t.fillRect(38,29,14,4);}
   else if(o.hair){t.beginPath();t.moveTo(29,60);t.quadraticCurveTo(22,26,50,26);t.quadraticCurveTo(76,26,73,46);t.lineTo(66,39);t.lineTo(61,45);t.lineTo(55,37);t.lineTo(47,42);t.lineTo(41,36);t.lineTo(37,52);t.closePath();fi(t,o.hair);}
-  const ey=o.eyeY||50;for(const ex of[58,48]){t.beginPath();t.ellipse(ex,ey,3,o.blink?1:5,0,0,6.28);t.fillStyle=o.eyeCol||INK;t.fill();if(!o.blink){circ(t,ex+1,ey-2,1.3);t.fillStyle='#fff';t.fill();}}
-  if(!o.noBlush){circ(t,63,58,4);t.fillStyle='rgba(230,110,110,.45)';t.fill();}
-  t.beginPath();t.arc(58,59,3.5,.2,2.6);ink(t,2);
+  const ey=o.eyeY||50,X=faceX;for(const ex of[58,48]){if(X==='happy'){t.beginPath();t.arc(ex,ey+2,3.8,3.5,5.9);ink(t,2.6,o.eyeCol||INK);continue;}
+    const r=X==='surprised'?1.3:1;t.beginPath();t.ellipse(ex,ey,3*r,o.blink?1:5*r,0,0,6.28);t.fillStyle=o.eyeCol||INK;t.fill();if(!o.blink){circ(t,ex+1,ey-2,1.3*r);t.fillStyle='#fff';t.fill();}}
+  // brows only when a portrait asks for an expression (see facePic)
+  if(X&&X!=='happy'){const b=X==='sad'?[-7,-10]:X==='angry'?[-10,-6]:[-12,-12];for(const[x0,x1]of[[44,51],[62,55]]){t.beginPath();t.moveTo(x0,ey+b[0]);t.lineTo(x1,ey+b[1]);ink(t,2.4);}}
+  if(!o.noBlush){circ(t,63,58,X==='happy'?5:4);t.fillStyle='rgba(230,110,110,.45)';t.fill();}
+  t.beginPath();if(X==='happy'){t.moveTo(53.5,58);t.quadraticCurveTo(58,67,62.5,58);t.closePath();fi(t,'#9a3b3b',1.8);}else if(X==='surprised'){t.ellipse(58,61,2.6,3.6,0,0,6.28);fi(t,'#6a2a2a',1.6);}
+  else if(X==='sad'){t.arc(58,64,3.5,3.5,5.9);ink(t,2);}else if(X==='angry'){t.moveTo(54,61.5);t.lineTo(58,60);t.lineTo(62,61.5);ink(t,2);}else{t.arc(58,59,3.5,.2,2.6);ink(t,2);}
   if(o.scarf){rr(t,32,67,35,9,4);fi(t,o.scarf);t.beginPath();t.moveTo(36,70);t.quadraticCurveTo(24,72+(o.wave||0),16,82+(o.wave||0));t.lineTo(22,84+(o.wave||0));t.quadraticCurveTo(28,78,38,76);t.closePath();fi(t,o.scarf,2);}
   if(o.extra)o.extra(t);
   if(!o.noArm)arm(t,55,82,o.armA,o.mail||o.tunic,o.skin);
@@ -135,10 +141,15 @@ export const SWPOSE=[{legA:.25,legB:-.25,armB:.25},{legA:-.35,legB:.5,armB:.9,le
 for(const o of SWPOSE)o.noArm=1;POSES.push(...SWPOSE);export const ARMF=POSES.length;
 // the front shoulder of frame f in world units from the bottom of the player mesh, so the arm mesh lines up with the body
 export function shoulderAt(f){const o=POSES[f]||{},l=o.lean||0,x=7*Math.cos(l)+56*Math.sin(l),y=7*Math.sin(l)-56*Math.cos(l)+138+(o.bob||0);return[x/60,(144-y)/60];}
-export function playerSheet(){const eq={};const a=player.armor;if(a[0])eq.helm=ITEMS[a[0].id].color;if(a[1])eq.mail=ITEMS[a[1].id].color;if(a[2])eq.greaves=ITEMS[a[2].id].color;
+export function playerSheet(){return makeSheet(ARMF+1,96,144,playerDraw());}
+function playerDraw(){const eq={};const a=player.armor;if(a[0])eq.helm=ITEMS[a[0].id].color;if(a[1])eq.mail=ITEMS[a[1].id].color;if(a[2])eq.greaves=ITEMS[a[2].id].color;
   const look={skin:'#f1cfa6',tunic:'#2f7f86'};Object.assign(look,eq);
-  return makeSheet(ARMF+1,96,144,(t,f)=>{if(f===ARMF){arm(t,48,72,0,look.mail||look.tunic,look.skin);return;}drawHuman(t,Object.assign({skin:'#f1cfa6',hair:'#5a3526',tunic:'#2f7f86',pants:'#3b3552',boots:'#6b4430',scarf:'#d4483b',
-    back:tt=>{tt.beginPath();tt.moveTo(38,74);tt.lineTo(58,104);ink(tt,3.5,'#6b4430');rr(tt,24,92,16,16,4);fi(tt,'#b9874f',2);}},eq,POSES[f]));});}
+  return (t,f)=>{if(f===ARMF){arm(t,48,72,0,look.mail||look.tunic,look.skin);return;}drawHuman(t,Object.assign({skin:'#f1cfa6',hair:'#5a3526',tunic:'#2f7f86',pants:'#3b3552',boots:'#6b4430',scarf:'#d4483b',
+    back:tt=>{tt.beginPath();tt.moveTo(38,74);tt.lineTo(58,104);ink(tt,3.5,'#6b4430');rr(tt,24,92,16,16,4);fi(tt,'#b9874f',2);}},eq,POSES[f]));};}
+// Townsfolk sheets keep their draw function so facePic() can redraw frame 0 with an expression.
+const NPCDRAW={};function npcSheet(k,draw){NPCDRAW[k]=draw;return makeSheet(2,96,144,draw);}
+// facePic(k, expr): one standing frame of an NPC type (or 'player') drawn with the given expression, for dialogue portraits
+export function facePic(k,expr){const draw=k==='player'?playerDraw():NPCDRAW[k];if(!draw)return null;faceX=expr||null;try{return makeSheet(1,96,144,t=>draw(t,0));}finally{faceX=null;}}
 export const SHEETS={};
 function slimeDraw(col,crown){return(t,f,w,h)=>{const cx=w/2,by=h-7,sq=f?1:0;const sw=w*.78*(1+sq*.16),sh_=h*.66*(1-sq*.22);
   t.beginPath();t.moveTo(cx-sw/2,by);t.bezierCurveTo(cx-sw/2-4,by-sh_*1.25,cx+sw/2+4,by-sh_*1.25,cx+sw/2,by);t.closePath();fi(t,col,crown?5:3);
@@ -154,31 +165,31 @@ export function buildSheets(){
     extra:tt=>{tt.fillStyle='#2a2130';tt.fillRect(40,95,6,10);tt.fillRect(52,85,4,8);}}));
   SHEETS.knight=makeSheet(2,96,144,(t,f)=>drawHuman(t,{skin:'#c7a57a',helm:'#b48a5a',mail:'#b48a5a',greaves:'#9a7448',boots:'#6b4a2f',pants:'#6b4a2f',tunic:'#b48a5a',legA:f?.35:-.3,legB:f?-.35:.3,armA:-.4,armB:.2,eyeCol:'#f1c04f',noBlush:1,eyeY:47,
     front:tt=>{rr(tt,58,70,24,34,8);fi(tt,'#8e6a40');circ(tt,70,87,5);fi(tt,'#f1c04f',2);}}));
-  SHEETS.guide=makeSheet(2,96,144,(t,f)=>drawHuman(t,{skin:'#e8b88f',hair:'#7a4b2a',tunic:'#4f7fa6',pants:'#3b3552',boots:'#5a3a22',scarf:'#f1c04f',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.3:-.9,armB:.1,bob:f?-1:0,wave:f?3:0,
+  SHEETS.guide=npcSheet('guide',(t,f)=>drawHuman(t,{skin:'#e8b88f',hair:'#7a4b2a',tunic:'#4f7fa6',pants:'#3b3552',boots:'#5a3a22',scarf:'#f1c04f',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.3:-.9,armB:.1,bob:f?-1:0,wave:f?3:0,
     front:tt=>{tt.save();tt.translate(66,88);tt.rotate(-.3);rr(tt,-9,-12,18,22,2);fi(tt,'#f4f0e6',2);tt.strokeStyle='#d4483b';tt.lineWidth=1.5;tt.beginPath();tt.moveTo(-5,-4);tt.lineTo(0,2);tt.lineTo(5,-6);tt.stroke();tt.restore();}}));
-  SHEETS.painter=makeSheet(2,96,144,(t,f)=>drawHuman(t,{skin:'#c98a60',hair:'#2a2130',tunic:'#f4f0e6',pants:'#3f6fa8',boots:'#3a2c22',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.3:-1.2,armB:.1,bob:f?-1:0,
+  SHEETS.painter=npcSheet('painter',(t,f)=>drawHuman(t,{skin:'#c98a60',hair:'#2a2130',tunic:'#f4f0e6',pants:'#3f6fa8',boots:'#3a2c22',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.3:-1.2,armB:.1,bob:f?-1:0,
     extra:tt=>{tt.beginPath();tt.ellipse(52,28,22,8,-.15,0,6.28);fi(tt,'#d4483b');circ(tt,52,20,3);fi(tt,'#d4483b',2);for(const[x,y,c]of[[42,84,'#d4483b'],[52,96,'#3f6fa8'],[46,104,'#f1c04f']]){circ(tt,x,y,3);tt.fillStyle=c;tt.fill();}},
     front:tt=>{tt.beginPath();tt.ellipse(72,78,12,9,-.4,0,6.28);fi(tt,'#c98f4f',2);for(const[x,y,c]of[[68,74,'#d4483b'],[75,74,'#3f6fa8'],[76,81,'#f1c04f']]){circ(tt,x,y,2.4);tt.fillStyle=c;tt.fill();}}}));
-  SHEETS.nurse=makeSheet(2,96,144,(t,f)=>drawHuman(t,{skin:'#f3d2b0',hair:'#a8483f',tunic:'#f4f0e6',pants:'#e8e2d6',boots:'#e8636a',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.3:.1,armB:.1,bob:f?-1:0,
+  SHEETS.nurse=npcSheet('nurse',(t,f)=>drawHuman(t,{skin:'#f3d2b0',hair:'#a8483f',tunic:'#f4f0e6',pants:'#e8e2d6',boots:'#e8636a',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.3:.1,armB:.1,bob:f?-1:0,
     extra:tt=>{circ(tt,30,36,9);fi(tt,'#a8483f',2);rr(tt,38,22,26,8,3);fi(tt,'#fbf8f0',2);tt.beginPath();tt.moveTo(51,31);tt.bezierCurveTo(46,26,44,22,48,21);tt.bezierCurveTo(50,21,51,23,51,24);tt.bezierCurveTo(51,23,52,21,54,21);tt.bezierCurveTo(58,22,56,26,51,31);tt.fillStyle='#e0506b';tt.fill();tt.beginPath();tt.moveTo(49,94);tt.bezierCurveTo(42,88,42,82,46,82);tt.bezierCurveTo(48,82,49,84,49,85);tt.bezierCurveTo(49,84,50,82,52,82);tt.bezierCurveTo(56,82,56,88,49,94);tt.fillStyle='#e0506b';tt.fill();}}));
-  SHEETS.tinkerer=makeSheet(2,96,144,(t,f)=>drawHuman(t,{skin:'#e0a878',hair:'#e0823d',tunic:'#c96a2a',pants:'#6b4a2f',boots:'#3a2c22',belt:'#3a2c22',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.4:-.6,armB:.2,bob:f?-1:0,
+  SHEETS.tinkerer=npcSheet('tinkerer',(t,f)=>drawHuman(t,{skin:'#e0a878',hair:'#e0823d',tunic:'#c96a2a',pants:'#6b4a2f',boots:'#3a2c22',belt:'#3a2c22',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.4:-.6,armB:.2,bob:f?-1:0,
     extra:tt=>{rr(tt,30,36,42,8,3);fi(tt,'#5a3a22',2);for(const x of[46,62]){circ(tt,x,40,7);fi(tt,'#a9adb8',2.5);circ(tt,x,40,4);tt.fillStyle='#bfe6f0';tt.fill();}},
     front:tt=>{tt.save();tt.translate(66,92);tt.rotate(-.6);rr(tt,-2,-14,4,20,2);fi(tt,'#8a5a33',1.5);rr(tt,-6,-18,12,6,2);fi(tt,'#a9adb8',1.5);tt.restore();}}));
-  SHEETS.angler=makeSheet(2,96,144,(t,f)=>drawHuman(t,{skin:'#e8b88f',hair:'#6b4430',tunic:'#3f7a5f',pants:'#4a4058',boots:'#3a3040',belt:'#2a2130',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.5:-.9,armB:.1,bob:f?-1:0,
+  SHEETS.angler=npcSheet('angler',(t,f)=>drawHuman(t,{skin:'#e8b88f',hair:'#6b4430',tunic:'#3f7a5f',pants:'#4a4058',boots:'#3a3040',belt:'#2a2130',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.5:-.9,armB:.1,bob:f?-1:0,
     extra:tt=>{tt.beginPath();tt.ellipse(50,34,28,7,-.08,0,6.28);fi(tt,'#c9a574');tt.beginPath();tt.moveTo(30,34);tt.quadraticCurveTo(32,12,50,12);tt.quadraticCurveTo(68,12,70,32);tt.closePath();fi(tt,'#c9a574');tt.fillStyle='#d4483b';tt.fillRect(31,26,38,4);poly(tt,[62,24,70,14,68,26]);fi(tt,'#fbf8f0',1.5);},
     front:tt=>{tt.beginPath();tt.moveTo(60,104);tt.lineTo(90,24);ink(tt,4,INK);tt.beginPath();tt.moveTo(60,104);tt.lineTo(90,24);ink(tt,2,'#c98f4f');tt.beginPath();tt.moveTo(90,24);tt.quadraticCurveTo(94,60,86,80);ink(tt,1,'rgba(42,33,48,.6)');circ(tt,86,83,3);fi(tt,'#d4483b',1.5);}}));
-  SHEETS.merchant=makeSheet(2,96,144,(t,f)=>drawHuman(t,{skin:'#f0c9a0',hair:'#e8e2d6',tunic:'#7a4b2a',pants:'#4a3a2e',boots:'#3a2c22',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.3:.1,armB:.1,bob:f?-1:0,
+  SHEETS.merchant=npcSheet('merchant',(t,f)=>drawHuman(t,{skin:'#f0c9a0',hair:'#e8e2d6',tunic:'#7a4b2a',pants:'#4a3a2e',boots:'#3a2c22',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.3:.1,armB:.1,bob:f?-1:0,
     extra:tt=>{tt.beginPath();tt.moveTo(40,60);tt.quadraticCurveTo(52,86,68,62);tt.quadraticCurveTo(60,68,52,64);tt.closePath();fi(tt,'#f4f0e6',2);tt.beginPath();tt.moveTo(24,36);tt.lineTo(78,36);tt.lineTo(70,30);tt.quadraticCurveTo(52,8,32,30);tt.closePath();fi(tt,'#3f7a3b');tt.fillStyle='#f1c04f';tt.fillRect(33,30,36,4);}}));
-  SHEETS.farmer=makeSheet(2,96,144,(t,f)=>drawHuman(t,{skin:'#d9a070',hair:'#a86b3a',tunic:'#e8dcc0',pants:'#5a7fa8',boots:'#5a3a22',belt:'#5a7fa8',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.4:-.8,armB:.1,bob:f?-1:0,
+  SHEETS.farmer=npcSheet('farmer',(t,f)=>drawHuman(t,{skin:'#d9a070',hair:'#a86b3a',tunic:'#e8dcc0',pants:'#5a7fa8',boots:'#5a3a22',belt:'#5a7fa8',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.4:-.8,armB:.1,bob:f?-1:0,
     extra:tt=>{for(const x of[42,58]){rr(tt,x-3,72,6,24,2);fi(tt,'#5a7fa8',1.5);}tt.beginPath();tt.ellipse(50,31,32,7,0,0,6.28);fi(tt,'#e9c46a');tt.beginPath();tt.moveTo(32,31);tt.quadraticCurveTo(34,10,50,10);tt.quadraticCurveTo(66,10,68,30);tt.closePath();fi(tt,'#e9c46a');tt.fillStyle='#d4483b';tt.fillRect(33,24,34,4);},
     front:tt=>{tt.save();tt.translate(70,86);tt.rotate(.25);for(let k=-2;k<=2;k++){tt.beginPath();tt.moveTo(0,16);tt.lineTo(k*3,-10);ink(tt,1.6,'#b98f4a');tt.beginPath();tt.ellipse(k*3,-13,2.4,6,k*.1,0,6.28);fi(tt,'#e9c46a',1.2);}rr(tt,-6,2,12,4,2);fi(tt,'#d4483b',1.2);tt.restore();}}));
-  SHEETS.scout=makeSheet(2,96,144,(t,f)=>drawHuman(t,{skin:'#b97a50',hair:'#2a2130',tunic:'#8a6a3a',pants:'#4a5a3a',boots:'#3a2c22',scarf:'#3f7a5f',belt:'#3a2c22',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.3:-.7,armB:.1,bob:f?-1:0,wave:f?2:0,
+  SHEETS.scout=npcSheet('scout',(t,f)=>drawHuman(t,{skin:'#b97a50',hair:'#2a2130',tunic:'#8a6a3a',pants:'#4a5a3a',boots:'#3a2c22',scarf:'#3f7a5f',belt:'#3a2c22',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.3:-.7,armB:.1,bob:f?-1:0,wave:f?2:0,
     extra:tt=>{tt.beginPath();tt.moveTo(26,36);tt.quadraticCurveTo(28,14,50,14);tt.quadraticCurveTo(72,14,74,34);tt.lineTo(86,38);tt.lineTo(72,40);tt.closePath();fi(tt,'#c9a574');tt.fillStyle='#6b4430';tt.fillRect(28,30,45,4);},
     front:tt=>{tt.save();tt.translate(68,88);tt.rotate(-.5);rr(tt,-5,-14,10,28,4);fi(tt,'#f4f0e6',2);tt.beginPath();tt.moveTo(-5,-4);tt.lineTo(5,-4);tt.moveTo(-5,4);tt.lineTo(5,4);ink(tt,1.4,'#d4483b');tt.restore();}}));
-  SHEETS.curator=makeSheet(2,96,144,(t,f)=>drawHuman(t,{skin:'#f0c9a0',hair:'#c9c2b6',tunic:'#5a3a6a',pants:'#3a3040',boots:'#2a2130',belt:'#3a3040',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.2:-.5,armB:.1,bob:f?-1:0,
+  SHEETS.curator=npcSheet('curator',(t,f)=>drawHuman(t,{skin:'#f0c9a0',hair:'#c9c2b6',tunic:'#5a3a6a',pants:'#3a3040',boots:'#2a2130',belt:'#3a3040',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.2:-.5,armB:.1,bob:f?-1:0,
     extra:tt=>{poly(tt,[42,70,50,74,42,78]);fi(tt,'#d4483b',1.5);poly(tt,[58,70,50,74,58,78]);fi(tt,'#d4483b',1.5);circ(tt,58,50,7);ink(tt,2,'#c9a24a');tt.beginPath();tt.moveTo(64,53);tt.quadraticCurveTo(68,64,62,74);ink(tt,1,'#c9a24a');},
     front:tt=>{tt.save();tt.translate(70,84);tt.rotate(-.4);rr(tt,-2,2,4,16,2);fi(tt,'#6b4430',1.5);circ(tt,0,-6,8);fi(tt,'rgba(191,230,240,.7)',2.5);tt.restore();}}));
-  SHEETS.traveler=makeSheet(2,96,144,(t,f)=>drawHuman(t,{skin:'#e0b48a',hair:'#5a3a22',tunic:'#b0503a',pants:'#4a3a2e',boots:'#3a2c22',belt:'#f1c04f',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.3:-.6,armB:.1,bob:f?-1:0,
+  SHEETS.traveler=npcSheet('traveler',(t,f)=>drawHuman(t,{skin:'#e0b48a',hair:'#5a3a22',tunic:'#b0503a',pants:'#4a3a2e',boots:'#3a2c22',belt:'#f1c04f',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.3:-.6,armB:.1,bob:f?-1:0,
     back:tt=>{rr(tt,12,58,26,44,8);fi(tt,'#8a5a33');rr(tt,14,50,22,12,5);fi(tt,'#a86b3a',2);tt.beginPath();tt.moveTo(16,78);tt.lineTo(36,78);ink(tt,2,'#5a3a22');circ(tt,20,106,6);fi(tt,'#d4483b',2);rr(tt,6,40,6,26,2);fi(tt,'#e9dcc0',1.5);},
     extra:tt=>{tt.beginPath();tt.moveTo(24,52);tt.quadraticCurveTo(22,18,50,18);tt.quadraticCurveTo(78,18,76,44);tt.lineTo(70,36);tt.quadraticCurveTo(50,28,32,38);tt.closePath();fi(tt,'#7a3a2a');}}));
   SHEETS.eye=makeSheet(2,96,96,(t,f)=>{for(let k=0;k<3;k++){t.beginPath();t.moveTo(34,48+(k-1)*10);t.quadraticCurveTo(18,40+(k-1)*14+(f?6:-6),6,48+(k-1)*16);ink(t,5,'#4a2a5a');}circ(t,52,48,24);fi(t,'#f4f0e6',3);

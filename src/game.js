@@ -21,6 +21,7 @@ export * from './map.js';
 export * from './gamepad.js';
 export * from './hud.js';
 export * from './guide.js';
+export * from './dialogue.js';
 export * from './seasons.js';
 export * from './town.js';
 export * from './folk.js';
