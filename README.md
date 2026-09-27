@@ -8,7 +8,14 @@ A papercraft sandbox adventure: Paper Mario's storybook look with Terraria's dig
 
 > The GitHub Pages build is for testing only. Saves are kept in your browser, so clearing this site's data (cookies and site data in your browser settings) deletes your world. Use **Save code** in the pause menu to copy a backup of your world. A self-hosted version with server-side saves is planned (see [#7](https://github.com/TheShield2594/the-folded-frontier/issues/7)).
 
-To run locally, open `index.html` in a browser.
+To run locally you need [Node.js](https://nodejs.org/) 20.19+ or 22.12+:
+
+```sh
+npm install
+npm run dev       # starts a local server and prints its URL
+```
+
+`npm run build` makes a static build in `dist/` that you can put on GitHub Pages or any static web host (`npm run preview` serves it locally).
 
 ## Controls
 
