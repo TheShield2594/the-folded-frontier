@@ -39,7 +39,7 @@ function giftDay(){const folk=npcs.filter(n=>n.home);if(!folk.length){setTimeout
   const p=player,give=(id,n)=>{const l=addItem(id,n);if(l)dropItem(id,l,p.x,p.y+1);};let coins=0;
   for(const n of folk){coins+=20;const g=GIFTS[n.type];if(g)give(g[0],g[1]);}give('coin',coins);SFX.nice();
   setTimeout(()=>toast(`Gifts from ${folk.map(n=>NPCDEF[n.type].name).join(', ')}: ${coins} coins and more!`,'gold'),3000);}
-const GIFTS={merchant:['potion',2],guide:['torch',10],painter:['candle',2],nurse:['potregen',1],tinkerer:['rope',20],angler:['grilledfish',2]};
+const GIFTS={merchant:['potion',2],guide:['torch',10],painter:['candle',2],nurse:['potregen',1],tinkerer:['rope',20],angler:['grilledfish',2],farmer:['bread',3],scout:['potnight',1],curator:['candle',3]};
 // the first free floor cell above the ground at column x, or -1
 export function groundY(x){if(x<1||x>=W-1)return -1;for(let y=Math.min(H-3,surf[x]+14);y>Math.max(2,surf[x]-6);y--){const t=tiles[idx(x,y)];if(t===T.AIR||t===T.TUFT)continue;const i=idx(x,y+1);if(t===T.GRASS||t===T.DIRT||t===T.SNOW||t===T.SAND||t===T.STONE||t===T.PLANK||t===T.BRICK)return(tiles[i]===T.AIR||tiles[i]===T.TUFT)&&!walls[i]?y+1:-1;return -1;}return -1;}
 function setTileQuiet(x,y,t){tiles[idx(x,y)]=t;dirty.add(Math.floor(y/32)*CW+Math.floor(x/32));}

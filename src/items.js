@@ -225,6 +225,10 @@ item('grilledfish',{name:'Grilled Fish',cell:C.grilled,use:'buff',buff:'fed',dur
 item('potfish',{name:'Fishing Potion',cell:C.potFish,use:'buff',buff:'fishing',dur:300,max:30,value:12,desc:'+15 fishing power for 5 minutes.'});
 item('tackle',{name:'Tackle Box',cell:C.tackle,acc:'tackle',max:1,value:150,desc:'+10 fishing power, and a 30% chance to keep your bait on a catch.'});
 item('bobber',{name:'Bobber',cell:C.bobber});
+// museum: fossils turn up now and then when digging dirt, sand, stone and ash underground. The Curator displays them.
+const FOSSIL={fos_amm:['Paper Ammonite',C.fosAmm,30,'A spiral shell pressed flat between the pages of the earth.'],fos_tri:['Folded Trilobite',C.fosTri,30,'Folded along every segment, a long time ago.'],
+  fos_fern:['Pressed Fern',C.fosFern,20,'Someone left it in a book a few million years ago.'],fos_skull:['Inkosaur Skull',C.fosSkull,90,'Very rare. Only found deep underground.']};
+for(const k in FOSSIL){const[name,cell,value,d]=FOSSIL[k];item(k,{name,cell,fossil:1,value,desc:d+' The Curator would love to display it.'});}
 
 export const RECIPES=[
  ['bench',1,[['wood',10]],null],['torch',3,[['wood',1],['gel',1]],null],['platform',2,[['wood',1]],null],

@@ -283,5 +283,11 @@ C.fcrate=sticker(t=>{rr(t,8,14,48,42,4);fi(t,'#a86b3a');t.strokeStyle='#7b4a25';
   t.save();t.translate(32,35);t.scale(.4,.4);t.translate(-32,-32);poly(t,[15,32,4,17,9,32,4,47]);fi(t,'#8fcaf0',4);t.beginPath();t.ellipse(36,32,24,14,0,0,6.28);fi(t,'#8fcaf0',4);t.restore();});
 C.tackle=sticker(t=>{t.beginPath();t.moveTo(22,20);t.quadraticCurveTo(32,6,42,20);ink(t,4,'#6c6e79');rr(t,8,20,48,34,5);fi(t,'#3f7a5f');rr(t,8,20,48,10,4);fi(t,'#4f9a72',2);rr(t,28,26,8,8,2);fi(t,'#f1c04f',2);for(const[x,c]of[[16,'#d4483b'],[46,'#fbf8f0']]){circ(t,x,42,4);fi(t,c,1.5);}});
 C.potFish=potCell('#3fb0a8');
+// ---- museum: fossils on a flat stone slab
+const slab=(t,col)=>{poly(t,[10,14,40,6,58,20,56,48,30,58,8,46]);fi(t,col);};
+C.fosAmm=sticker(t=>{slab(t,'#d8ccb0');t.beginPath();for(let a=0;a<14;a+=.2){const r=3+a*1.35;a?t.lineTo(33+Math.cos(a)*r,32+Math.sin(a)*r):t.moveTo(33+r,32);}ink(t,3,'#7a6a52');for(let a=2;a<14;a+=1.1){const r=3+a*1.35;t.beginPath();t.moveTo(33+Math.cos(a)*r,32+Math.sin(a)*r);t.lineTo(33+Math.cos(a)*(r-4),32+Math.sin(a)*(r-4));ink(t,1.4,'#7a6a52');}});
+C.fosTri=sticker(t=>{slab(t,'#c9c2b6');t.beginPath();t.ellipse(32,35,13,18,0,0,6.28);fi(t,'#9a8e7a',2.5);t.beginPath();t.arc(32,22,13,Math.PI,0);t.closePath();fi(t,'#a89c86',2);for(let y=28;y<52;y+=4){t.beginPath();t.moveTo(21,y);t.lineTo(43,y);ink(t,1.4,'#6e6350');}t.beginPath();t.moveTo(28,24);t.lineTo(28,51);t.moveTo(36,24);t.lineTo(36,51);ink(t,1.4,'#6e6350');for(const x of[26,38]){circ(t,x,17,2);t.fillStyle='#6e6350';t.fill();}});
+C.fosFern=sticker(t=>{slab(t,'#d6cdb8');t.beginPath();t.moveTo(20,54);t.quadraticCurveTo(28,30,44,10);ink(t,2.5,'#5f6e42');for(let k=0;k<7;k++){const f=k/7,x=21+f*21,y=52-f*40;for(const s of[-1,1]){t.beginPath();t.ellipse(x+s*6,y+1,7-f*3.5,2.4,s*.5-.4,0,6.28);t.fillStyle='#7f8f58';t.fill();}}});
+C.fosSkull=sticker(t=>{slab(t,'#cfc3a8');poly(t,[10,32,22,18,44,15,57,24,54,35,38,37,34,46,18,44]);fi(t,'#f0e8d6',2.5);circ(t,41,24,4.5);t.fillStyle='#3a2c22';t.fill();circ(t,26,30,3);t.fillStyle='#8a7a62';t.fill();for(let x=19;x<34;x+=4){poly(t,[x,43,x+2,49,x+4,43]);fi(t,'#fbf8f0',1);}});
 C.hl=sticker(t=>{rr(t,2,2,60,60,8);t.setLineDash([8,5]);ink(t,3,'#fff');t.setLineDash([]);},0);
 if(cellN>(32-4)*16)console.warn('atlas overflow');
