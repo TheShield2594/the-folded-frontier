@@ -1,0 +1,85 @@
+The Folded Frontier: armour parts sheets, one per metal.
+
+How to run each one:
+- Model: Nano Banana Pro, wide aspect ratio (16:9) at 2K.
+- Attach player-parts-reference.png as the reference image.
+- For consistent scale and style across sets: once you have a good first set, attach it as a second reference for the others.
+- Save each result with the filename shown and upload to the branch claude/higgsfield-account-setup-qessqc in a renders/ folder.
+
+======================================================================
+COPPER  (save as renders/armor-cu.png)
+======================================================================
+Armour parts sheet for 2D cut-out (paper doll) animation, for the exact character in the reference image. Keep the same art style, the same face, hair and colours, the same thick dark plum-black ink outlines and white paper border, and draw every piece at the SAME SCALE as the matching piece in the reference. Everything in strict SIDE VIEW facing right.
+
+Lay out these four separate pieces in a single row with generous empty space between them, none touching or overlapping:
+(1) the same head in side profile facing right, wearing a simple rounded copper kettle cap with a small flat brim and a row of rivets; the helmet fits the head snugly, covers the top and back of the head and the hair, and leaves the eye, cheek, blush and smile fully visible; short neck stub below, like the reference head;
+(2) the torso only, wearing a copper ring-mail shirt over the teal tunic, held with brown leather straps, keeping the red scarf wrapped at the neck with its tail trailing behind to the left and the brown satchel strap and tan pouch; NO arms, NO legs, NO head; same neck stub on top as the reference torso;
+(3) one arm wearing a copper ring-mail sleeve with a brown leather bracer, peach hand, hanging straight down, rounded shoulder top;
+(4) one leg wearing a copper knee plate strapped over the dark purple trouser leg and a copper toe cap on the brown boot, straight, toe pointing right, rounded hip top.
+
+Metal colours: warm copper orange-brown (#c8743a) with darker folds (#8a4a24) and a light peach highlight. Simple soft shading and one highlight stroke on the upper left, no glossy 3D rendering. Each piece is its own paper cut-out with its own white border. Plain flat light grey background, no text, no labels, no shadow, no ground.
+
+======================================================================
+IRON  (save as renders/armor-fe.png)
+======================================================================
+Armour parts sheet for 2D cut-out (paper doll) animation, for the exact character in the reference image. Keep the same art style, the same face, hair and colours, the same thick dark plum-black ink outlines and white paper border, and draw every piece at the SAME SCALE as the matching piece in the reference. Everything in strict SIDE VIEW facing right.
+
+Lay out these four separate pieces in a single row with generous empty space between them, none touching or overlapping:
+(1) the same head in side profile facing right, wearing a sturdy iron nasal helm with a short nose guard and small cheek guards; the helmet fits the head snugly, covers the top and back of the head and the hair, and leaves the eye, cheek, blush and smile fully visible; short neck stub below, like the reference head;
+(2) the torso only, wearing an iron chainmail shirt over the teal tunic with a rounded iron shoulder plate, keeping the red scarf wrapped at the neck with its tail trailing behind to the left and the brown satchel strap and tan pouch; NO arms, NO legs, NO head; same neck stub on top as the reference torso;
+(3) one arm wearing an iron chainmail sleeve and a plain iron vambrace, peach hand, hanging straight down, rounded shoulder top;
+(4) one leg wearing an iron greave with a round knee cop over the dark purple trouser leg and an iron-capped brown boot, straight, toe pointing right, rounded hip top.
+
+Metal colours: cool mid grey iron (#8f98a3) with darker grey folds (#5c636d) and a pale highlight. Simple soft shading and one highlight stroke on the upper left, no glossy 3D rendering. Each piece is its own paper cut-out with its own white border. Plain flat light grey background, no text, no labels, no shadow, no ground.
+
+======================================================================
+GOLD  (save as renders/armor-au.png)
+======================================================================
+Armour parts sheet for 2D cut-out (paper doll) animation, for the exact character in the reference image. Keep the same art style, the same face, hair and colours, the same thick dark plum-black ink outlines and white paper border, and draw every piece at the SAME SCALE as the matching piece in the reference. Everything in strict SIDE VIEW facing right.
+
+Lay out these four separate pieces in a single row with generous empty space between them, none touching or overlapping:
+(1) the same head in side profile facing right, wearing an ornate gold helm with a raised crest and a small red plume on top; the helmet fits the head snugly, covers the top and back of the head and the hair, and leaves the eye, cheek, blush and smile fully visible; short neck stub below, like the reference head;
+(2) the torso only, wearing a gold scale-mail shirt over the teal tunic with engraved trim along the hem, keeping the red scarf wrapped at the neck with its tail trailing behind to the left and the brown satchel strap and tan pouch; NO arms, NO legs, NO head; same neck stub on top as the reference torso;
+(3) one arm wearing a gold scale sleeve and an engraved gold vambrace, peach hand, hanging straight down, rounded shoulder top;
+(4) one leg wearing an engraved gold greave with a knee cop over the dark purple trouser leg and a gold-capped brown boot, straight, toe pointing right, rounded hip top.
+
+Metal colours: rich gold (#f1c04f) with amber folds (#b8862a), red plume (#d4483b). Simple soft shading and one highlight stroke on the upper left, no glossy 3D rendering. Each piece is its own paper cut-out with its own white border. Plain flat light grey background, no text, no labels, no shadow, no ground.
+
+======================================================================
+FROSTSILVER  (save as renders/armor-fr.png)
+======================================================================
+Armour parts sheet for 2D cut-out (paper doll) animation, for the exact character in the reference image. Keep the same art style, the same face, hair and colours, the same thick dark plum-black ink outlines and white paper border, and draw every piece at the SAME SCALE as the matching piece in the reference. Everything in strict SIDE VIEW facing right.
+
+Lay out these four separate pieces in a single row with generous empty space between them, none touching or overlapping:
+(1) the same head in side profile facing right, wearing a pale frostsilver helm with a small crest of ice crystals and a white fur trim at the back; the helmet fits the head snugly, covers the top and back of the head and the hair, and leaves the eye, cheek, blush and smile fully visible; short neck stub below, like the reference head;
+(2) the torso only, wearing a frostsilver chainmail shirt over the teal tunic with icy blue trim and a pointed shoulder plate, keeping the red scarf wrapped at the neck with its tail trailing behind to the left and the brown satchel strap and tan pouch; NO arms, NO legs, NO head; same neck stub on top as the reference torso;
+(3) one arm wearing a frostsilver chainmail sleeve and a vambrace with a small ice-crystal spike, peach hand, hanging straight down, rounded shoulder top;
+(4) one leg wearing a frostsilver greave with icicle-shaped points at the knee over the dark purple trouser leg and a silver-capped boot, straight, toe pointing right, rounded hip top.
+
+Metal colours: pale silvery blue (#cfe3ee) with blue-grey folds (#86a7bd), icy blue trim (#6fc3e8), white fur. Simple soft shading and one highlight stroke on the upper left, no glossy 3D rendering. Each piece is its own paper cut-out with its own white border. Plain flat light grey background, no text, no labels, no shadow, no ground.
+
+======================================================================
+INKSTONE  (save as renders/armor-ik.png)
+======================================================================
+Armour parts sheet for 2D cut-out (paper doll) animation, for the exact character in the reference image. Keep the same art style, the same face, hair and colours, the same thick dark plum-black ink outlines and white paper border, and draw every piece at the SAME SCALE as the matching piece in the reference. Everything in strict SIDE VIEW facing right.
+
+Lay out these four separate pieces in a single row with generous empty space between them, none touching or overlapping:
+(1) the same head in side profile facing right, wearing a dark inkstone helm with ink-drip shapes running down its rim and a small purple gem on the brow; the helmet fits the head snugly, covers the top and back of the head and the hair, and leaves the eye, cheek, blush and smile fully visible; short neck stub below, like the reference head;
+(2) the torso only, wearing an inkstone plate shirt over the teal tunic, made of dark stone-like plates edged with dripping ink and glowing purple seams, keeping the red scarf wrapped at the neck with its tail trailing behind to the left and the brown satchel strap and tan pouch; NO arms, NO legs, NO head; same neck stub on top as the reference torso;
+(3) one arm wearing an inkstone plate sleeve with ink-drip edges and a thin glowing purple line, peach hand, hanging straight down, rounded shoulder top;
+(4) one leg wearing an inkstone greave with ink-drip edges over the dark purple trouser leg and a dark stone toe cap on the boot, straight, toe pointing right, rounded hip top.
+
+Metal colours: very dark violet-black stone (#3a2d4a) with lighter plum edges (#5a3f7a), glowing purple seams (#b58cf0). Simple soft shading and one highlight stroke on the upper left, no glossy 3D rendering. Each piece is its own paper cut-out with its own white border. Plain flat light grey background, no text, no labels, no shadow, no ground.
+
+======================================================================
+EMBERITE  (save as renders/armor-em.png)
+======================================================================
+Armour parts sheet for 2D cut-out (paper doll) animation, for the exact character in the reference image. Keep the same art style, the same face, hair and colours, the same thick dark plum-black ink outlines and white paper border, and draw every piece at the SAME SCALE as the matching piece in the reference. Everything in strict SIDE VIEW facing right.
+
+Lay out these four separate pieces in a single row with generous empty space between them, none touching or overlapping:
+(1) the same head in side profile facing right, wearing a charcoal emberite helm with a flame-shaped crest and glowing orange cracks; the helmet fits the head snugly, covers the top and back of the head and the hair, and leaves the eye, cheek, blush and smile fully visible; short neck stub below, like the reference head;
+(2) the torso only, wearing an emberite plate shirt over the teal tunic, dark charcoal metal with glowing ember-orange cracks and a flame-edged shoulder plate, keeping the red scarf wrapped at the neck with its tail trailing behind to the left and the brown satchel strap and tan pouch; NO arms, NO legs, NO head; same neck stub on top as the reference torso;
+(3) one arm wearing an emberite plate sleeve with glowing ember cracks and a flame-edged vambrace, peach hand, hanging straight down, rounded shoulder top;
+(4) one leg wearing an emberite greave with glowing ember cracks and a flame-edged knee cop over the dark purple trouser leg and a charcoal toe cap on the boot, straight, toe pointing right, rounded hip top.
+
+Metal colours: dark charcoal (#3b3034) with ember orange glow (#ff7a2d) and hot yellow cores (#ffd66b). Simple soft shading and one highlight stroke on the upper left, no glossy 3D rendering. Each piece is its own paper cut-out with its own white border. Plain flat light grey background, no text, no labels, no shadow, no ground.

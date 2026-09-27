@@ -107,7 +107,7 @@ The game is moving characters, creatures and objects from code-drawn art to pain
 
 Still code-drawn, to be painted:
 
-- **Armour sets:** iron, gold, frostsilver, inkstone, emberite (prompts in the session notes; until painted, these tint the plain parts).
+- **Armour sets:** iron, gold, frostsilver, inkstone, emberite (prompts in `tools/art/armor-prompts.txt`; until painted, these tint the plain parts).
 - **Enemies:** Green Slime, Blue Slime, Paper Zombie, Watcher Eye, Cave Bat, Cardboard Knight, Crumple, Toadstool Lobber, Dune Fin, Shell Scarab, Sun Kite, Flurry, Snow Roller, Snowlet, Frost Puff, Ink Blot, Ink Squid, Ink Wisp, Quillfish, Cinder Bat, Ash Imp, Firecracker Imp, Ash Spider, Ink Wraith.
 - **Bosses:** King Slime, Great Crane, Inkwell Leviathan (head, body segment, tail), Charred Folio, The Unfolded (ink shrine).
 - **NPCs:** Guide, Painter, Nurse, Tinkerer, Merchant.
