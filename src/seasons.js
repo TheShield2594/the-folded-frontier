@@ -1,7 +1,7 @@
 // Seasons: a spring/summer/fall/winter cycle counted in in-game days. Seasons change crop growth,
 // weather odds, tree canopies, sky tint and drifting particles, and each has a festival day.
 import {
-  addItem,biomeAt,blk,burst,C,camera,CHH,CW,dayF,dirty,dropItem,H,idx,inkMoon,isNight,npcs,NPCDEF,player,rand,
+  addItem,biomeAt,blk,emit,C,camera,CHH,CW,dayF,dirty,dropItem,H,idx,inkMoon,isNight,npcs,NPCDEF,player,rand,
   setWeather,setWind,SFX,sky,surf,surfAvg,T,tiles,toast,townSpots,W,walls,weather,worldTime,
 } from './game.js';
 
@@ -56,9 +56,9 @@ function setTileQuiet(x,y,t){tiles[idx(x,y)]=t;dirty.add(Math.floor(y/32)*CW+Mat
 export function seasonSky(skyU,cB,f,under){const s=season();skyU.uBot.value.lerp(cB.set(s.sky),.16*f*(1-under));if(s.k==='winter')skyU.uTop.value.lerp(cB.set('#b6d0e2'),.18*f*(1-under));}
 // drifting petals, leaves, fireflies or snow in surface view
 export function seasonAmbient(dt){const cx=camera.position.x,cy=camera.position.y;if(cy<surfAvg-18)return;const b=biomeAt(cx,cy-3);if(b==='under'||b==='snow')return;const s=season();
-  if(s.k==='spring'&&b!=='desert'&&Math.random()<dt*4)burst(cx+rand(-26,26),cy+10,s.parts,1,.4,{grav:.5,life:6,up:-.2,bright:1,s:.9});
-  else if(s.k==='fall'&&b!=='desert'&&Math.random()<dt*5)burst(cx+rand(-26,26),cy+10,s.parts,1,.5,{grav:.7,life:6,up:-.2,bright:0,s:1.1});
-  else if(s.k==='summer'&&b!=='desert'&&isNight()&&Math.random()<dt*3)burst(cx+rand(-24,24),cy+rand(-6,4),s.parts,1,.3,{grav:-.05,life:3,up:.1,bright:1,s:.5});
-  else if(s.k==='winter'&&Math.random()<dt*(weather==='snow'?30:6))burst(cx+rand(-26,26),cy+10,s.parts,1,.4,{grav:1.1,life:5,up:-.5,bright:1,s:.8});}
+  if(s.k==='spring'&&b!=='desert'&&Math.random()<dt*4)emit('petals',cx+rand(-26,26),cy+10,{cols:s.parts});
+  else if(s.k==='fall'&&b!=='desert'&&Math.random()<dt*5)emit('leaves',cx+rand(-26,26),cy+10,{cols:s.parts,grav:.7,life:6,up:-.2});
+  else if(s.k==='summer'&&b!=='desert'&&isNight()&&Math.random()<dt*3)emit('fireflies',cx+rand(-24,24),cy+rand(-6,4),{cols:s.parts});
+  else if(s.k==='winter'&&Math.random()<dt*(weather==='snow'?30:6))emit('snow',cx+rand(-26,26),cy+10,{cols:s.parts,grav:1.1});}
 // Imported bindings are read-only, so other modules assign these through setters.
 export function setWorldDay(v){return worldDay=v;}

@@ -12,6 +12,7 @@ import {
   donate,folk,folkClick,folkHTML,npcLine,lineNew,npcSpeaker,plain,say,sideJournal,visited,wev,
   moveName,museumHTML,palJournal,palQuestTxt,
   MOUNTS,PETORDER,PETS,toggleMount,togglePet,
+  C,cellIcon,loreHTML,
 } from './game.js';
 
 // ================= UI =================
@@ -77,6 +78,7 @@ function sideBody(k){
       if(!b)return `<div class="bst lock"><img src="${bestSketch(t)}" alt=""><div><b>???</b><span>${where}</span></div></div>`;
       const d=EN[t],known=d.drops.filter(([id])=>b.d[id]),unk=d.drops.length-known.length;
       return `<div class="bst"><img src="${bestSketch(t)}" alt=""><div><b>${name}</b><span>${where}</span><span>Defeated ${b.k}${b.e?` · ${b.e} elite`:''} · ${d.hp} HP</span>${d.weak||d.res?`<span>${[d.weak&&'Weak to '+ELEM[d.weak].name,d.res&&'Resists '+ELEM[d.res].name].filter(Boolean).join(' · ')}</span>`:''}<span class="bdrops">${known.map(([id])=>`<i title="${ITEMS[id].name}"><img src="${icon(id)}" alt="">${ITEMS[id].name}</i>`).join('')}${unk?`<i class="q">${known.length?'+ ':''}${unk} unknown drop${unk>1?'s':''}</i>`:''}${!d.drops.length?'<i class="q">Drops coins only</i>':''}</span></div></div>`;}).join('');}
+  if(k==='story')return loreHTML();
   if(k==='museum')return hasNPC('curator')?museumHTML():`<div class="sideTip"><b>No museum yet</b>The Curator ${NPCDEF.curator.need.replace(/^Arrives/,'arrives')}</div><p class="hint">Fossils, fish, ores and curiosities you find now can all be donated once the museum opens.</p>`;
   if(k==='town'){return NPCORDER.map(t=>{const n=npcs.find(n=>n.type===t&&n.home);const d=NPCDEF[t];return `<div class="npcRow ${n?'home':''}"><img src="${portrait(t)}" alt=""><div><b>${d.name}</b><span>${n?'<span class="ok">Has a home</span>':d.ok()?'Ready to move in. Stand in an empty house and press Check this room.':d.need}</span></div></div>`;}).join('')+`<p class="hint">A house needs walls behind it, a door, a light, a table and a chair, and must not contain your bed.</p><h3 style="margin-top:10px">${townLevel()} · upgrades</h3>`+TOWN.map(u=>`<div class="npcRow tup ${town.f[u.id]?'home':''}"><div><b>${town.f[u.id]?'✓ ':''}${u.n}</b><span>${town.f[u.id]?'<span class="ok">Built</span>':u.need}</span></div></div>`).join('')+`<p class="hint">The town green beside your cabin grows as townsfolk move in and quests are finished.</p>`;}
   return '';}
@@ -104,13 +106,13 @@ export function openSide(kind,key,list,title,line){side={kind,key,list,line,titl
 // Tabs over the backpack: Backpack tucks the crafting sheet away, Crafting brings it back, and the others open
 // their page on the left with a page turn. Chests, shops and townsfolk open their own page with no tab lit.
 // [tab, title, icon item or null for the partner's portrait]
-const TABS=[['inv','Backpack','chest'],['craft','Crafting','bench'],['party','Party',null],['bestiary','Bestiary','lens'],['museum','Museum','fos_amm'],['town','Town','lanternp']];
+const TABS=[['inv','Backpack','chest'],['craft','Crafting','bench'],['party','Party',null],['bestiary','Bestiary','lens'],['museum','Museum','fos_amm'],['town','Town','lanternp'],['story','Journal',C.murals[0]]];
 let craftOn=true;
 function turnPage(el){SFX.rustle(.25,.5);if(reduceMotion())return;el.classList.remove('turn');void el.offsetWidth;el.classList.add('turn');}
 function closeSide(){side=null;$('sideSheet').hidden=true;$('panel').classList.remove('withSide');}
 function curTab(){return side?(TABS.some(t=>t[0]===side.kind)?side.kind:''):craftOn?'craft':'inv';}
 function syncTabs(){const on=curTab();for(const b of $('tabs').children){const t=TABS.find(t=>t[0]===b.dataset.tab),a=t[0]===on;b.classList.toggle('on',a);b.setAttribute('aria-selected',a);
-  b.querySelector('img').src=t[2]?icon(t[2]):pPortrait(player.partner||'lumi');if(t[0]==='museum')b.classList.toggle('lock',!hasNPC('curator'));if(t[0]==='party')b.classList.toggle('lock',!player.partners.length);}}
+  b.querySelector('img').src=typeof t[2]==='number'?cellIcon(t[2]):t[2]?icon(t[2]):pPortrait(player.partner||'lumi');if(t[0]==='museum')b.classList.toggle('lock',!hasNPC('curator'));if(t[0]==='party')b.classList.toggle('lock',!player.partners.length);}}
 export function setTab(k){if(k==='inv'||k==='craft'){const was=craftOn;craftOn=k==='craft';$('craft').hidden=!craftOn;if(side)closeSide();if(craftOn&&!was)turnPage($('craft'));else SFX.pick();syncTabs();invDirty=true;return;}
   openSide(k,null,null,TABS.find(t=>t[0]===k)[1]);}
 // gamepad LB: the next tab along (a chest or shop page counts as sitting before the first one)

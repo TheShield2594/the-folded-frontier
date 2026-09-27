@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import {
   bossIntro,
   $,BADGES,BIO,blk,burst,clamp,H,heal,hurtPlayer,iconTex,inkMoon,isNight,isSolid,ITEMS,pad,rand,
-  renderQuests,scene,setInvDirty,SFX,shake,SHEETS,sky,spriteMat,spriteMesh,stat,T,tileAt,toast,U,
+  renderQuests,scene,setInvDirty,SFX,shake,SHEETS,sky,spriteMat,spriteMesh,stat,T,tileAt,toast,U,NDL,
   updateCoins,W,
 } from './game.js';
 
@@ -104,7 +104,7 @@ export function removeEnemy(e){if(e.mark)scene.remove(e.mark);if(e.star)scene.re
 export function dropItem(id,n,x,y,vx,vy,delay=0){const p={id,n,x,y,vx:vx??rand(-2,2),vy:vy??rand(3,6),w:.5,h:.5,t:delay,age:0};p.mesh=new THREE.Mesh(new THREE.PlaneGeometry(.62,.62),spriteMat(iconTex(id)));p.mesh.position.z=.22;scene.add(p.mesh);pickups.push(p);}
 
 export function lightAt(x,y){const tx=clamp(Math.floor(x),0,W-1),ty=clamp(Math.floor(y),0,H-1),i=ty*W+tx;const s=Math.pow(sky[i]/15,1.6),b=Math.pow(blk[i]/15,1.45);const sk=U.uSky.value;
-  const d=Math.hypot(x-U.uP.value.x,y-U.uP.value.y);let gl=U.uGlow.value*clamp(1-d/U.uP.value.z,0,1);for(let k=0;k<8;k++){const l=U.uDL.value[k];if(l.w)gl+=clamp(1-Math.hypot(x-l.x,y-l.y)/l.z,0,1)*.9;}
+  const d=Math.hypot(x-U.uP.value.x,y-U.uP.value.y);let gl=U.uGlow.value*clamp(1-d/U.uP.value.z,0,1);for(let k=0;k<NDL;k++){const l=U.uDL.value[k];if(l.w)gl+=clamp(1-Math.hypot(x-l.x,y-l.y)/l.z,0,1)*.9;}
   return[clamp(sk.x*s+b*1.15+gl,.16,1.2),clamp(sk.y*s+b*.92+gl*.88,.15,1.2),clamp(sk.z*s+b*.63+gl*.66,.17,1.2)];}
 export function setTint(mat,x,y){const L=lightAt(x,y);mat.uniforms.uTint.value.set(L[0],L[1],L[2]);}
 

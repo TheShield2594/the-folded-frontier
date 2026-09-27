@@ -1,9 +1,10 @@
 // three.js renderer, scene and camera, chunk meshes, procedural sprite sheets and particles.
 import * as THREE from 'three';
 import {
-  $,atlas,blk,buildDiorama,C,canopyCell,cellXY,circ,computeLight,CS,fi,grain,H,idx,INK,ink,isOpaque,ITEMS,LB,lightAt,meta,mk,
-  mulberry32,N,OPAQUE,pick,player,poly,rand,rr,seed,SET,sh,sky,stamp,surfAvg,T,tileAt,tiles,TP,W,
+  reduceMotion,$,atlas,blk,buildDiorama,C,canopyCell,cellXY,circ,computeLight,CS,fi,grain,H,idx,INK,ink,isOpaque,ITEMS,LB,lightAt,meta,mk,
+  LIGHT,mulberry32,N,OPAQUE,pick,player,poly,rand,rr,seed,SET,sh,sky,stamp,surfAvg,T,tileAt,tiles,TP,W,
   WALLCELL,walls,markFg,
+  buildMarks,
 } from './game.js';
 
 // ================= three setup =================
@@ -17,15 +18,38 @@ export const scene=new THREE.Scene();
 export const camera=new THREE.PerspectiveCamera(32,innerWidth/innerHeight,1,400);
 export let camDist=SET.zoom;
 export const atlasTex=new THREE.CanvasTexture(atlas);atlasTex.anisotropy=renderer.capabilities.getMaxAnisotropy();atlasTex.minFilter=THREE.LinearMipmapLinearFilter;
-export const U={map:{value:atlasTex},uSky:{value:new THREE.Vector3(1,1,1)},uP:{value:new THREE.Vector3(0,0,4)},uGlow:{value:.35},uDL:{value:Array.from({length:8},()=>new THREE.Vector4(0,0,1,0))},uDLC:{value:Array.from({length:8},()=>new THREE.Vector3())}};
+// Lighting: tiles carry propagated sky/block light per vertex (aL.xy, 0-15) and a face shade (aL.z; 2 marks lava,
+// 3-4 an emissive tile whose glow is aL.z-3). nmap is a normal map made from the atlas art (buildNormals), so ink
+// lines, folds and grain catch the sun or moon (uSun: direction xyz, strength w), the player's glow and up to NDL
+// dynamic lights (uDL: x, y, radius, strength; uDLC: color), filled each frame by updateDynLights().
+// uHdr is 1 while post-processing renders to a float target, letting lights and emissive tiles go past 1 for bloom.
+export const NDL=16;
+export const nmapC=mk(1024,2048);export const nmapTex=new THREE.CanvasTexture(nmapC);nmapTex.minFilter=THREE.LinearMipmapLinearFilter;
+export const U={map:{value:atlasTex},nmap:{value:nmapTex},uSky:{value:new THREE.Vector3(1,1,1)},uP:{value:new THREE.Vector3(0,0,4)},uGlow:{value:.35},uSun:{value:new THREE.Vector4(0,.6,.8,0)},uHdr:{value:0},
+  uDL:{value:Array.from({length:NDL},()=>new THREE.Vector4(0,0,1,0))},uDLC:{value:Array.from({length:NDL},()=>new THREE.Vector3())}};
+// height from the art (ink sinks, paper and highlights rise, transparent edges drop away), blurred once, then a Sobel-style
+// slope per pixel. Rebuilt when atlas cells are redrawn (applyCB).
+export function buildNormals(){const w=1024,h=2048,src=atlas.getContext('2d').getImageData(0,0,w,h).data,H0=new Float32Array(w*h),H1=new Float32Array(w*h);
+  for(let i=0,j=0;i<w*h;i++,j+=4)H0[i]=src[j+3]/255*(.3+.7*(src[j]*.3+src[j+1]*.55+src[j+2]*.15)/255);
+  for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x;H1[i]=(H0[i-w-1]+H0[i-w]+H0[i-w+1]+H0[i-1]+H0[i]*2+H0[i+1]+H0[i+w-1]+H0[i+w]+H0[i+w+1])*.1;}
+  const g=nmapC.getContext('2d'),out=g.createImageData(w,h),d=out.data,k=2.4;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x,dx=(H1[x<w-1?i+1:i]-H1[x?i-1:i])*k,dy=(H1[y<h-1?i+w:i]-H1[y?i-w:i])*k,l=1/Math.sqrt(dx*dx+dy*dy+1),j=i*4;
+    // canvas y runs down, world y up: the slope along y flips sign
+    d[j]=(-dx*l*.5+.5)*255;d[j+1]=(dy*l*.5+.5)*255;d[j+2]=(l*.5+.5)*255;d[j+3]=255;}
+  g.putImageData(out,0,0);nmapTex.needsUpdate=true;}
+buildNormals();
 export const worldMat=new THREE.ShaderMaterial({uniforms:U,side:THREE.DoubleSide,
   vertexShader:`attribute vec3 aL;varying vec2 vUv;varying vec3 vL;varying vec3 vW;void main(){vUv=uv;vL=aL;vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;gl_Position=projectionMatrix*viewMatrix*w;}`,
-  fragmentShader:`uniform sampler2D map;uniform vec3 uSky;uniform vec3 uP;uniform float uGlow;uniform vec4 uDL[8];uniform vec3 uDLC[8];varying vec2 vUv;varying vec3 vL;varying vec3 vW;
-  void main(){vec4 t=texture2D(map,vUv);if(t.a<.5)discard;float s=pow(vL.x/15.,1.6);float b=pow(vL.y/15.,1.45);
-  vec3 L=uSky*s+vec3(1.,.8,.55)*b*1.15;float d=distance(vW.xy,uP.xy);L+=vec3(1.,.88,.66)*uGlow*clamp(1.-d/uP.z,0.,1.);for(int i=0;i<8;i++){float dd=distance(vW.xy,uDL[i].xy);L+=uDLC[i]*uDL[i].w*clamp(1.-dd/uDL[i].z,0.,1.);}
-  L=clamp(L,vec3(.035,.03,.05),vec3(1.25));gl_FragColor=vec4(t.rgb*L*vL.z,1.);}`});
+  fragmentShader:`uniform sampler2D map;uniform sampler2D nmap;uniform vec3 uSky;uniform vec3 uP;uniform float uGlow;uniform vec4 uSun;uniform float uHdr;uniform vec4 uDL[${NDL}];uniform vec3 uDLC[${NDL}];varying vec2 vUv;varying vec3 vL;varying vec3 vW;
+  void main(){vec4 t=texture2D(map,vUv);if(t.a<.5)discard;vec3 n=normalize(texture2D(nmap,vUv).xyz*2.-1.);float em=vL.z>2.5?vL.z-3.:0.,shd=em>0.?1.:vL.z;
+  float s=pow(vL.x/15.,1.6)*(1.+.5*uSun.w*(max(dot(n,uSun.xyz),0.)-uSun.z));float b=pow(vL.y/15.,1.45)*(1.+.3*(n.z-1.));
+  vec3 L=uSky*s+vec3(1.,.8,.55)*b*1.15;vec2 dp=uP.xy-vW.xy;float d=length(dp);L+=vec3(1.,.88,.66)*uGlow*clamp(1.-d/uP.z,0.,1.)*(1.+.5*(max(dot(n,normalize(vec3(dp,1.4))),0.)-1.4/length(vec3(dp,1.4))));
+  for(int i=0;i<${NDL};i++){if(uDL[i].w<=0.)continue;vec2 q=uDL[i].xy-vW.xy;float dd=length(q);if(dd>=uDL[i].z)continue;L+=uDLC[i]*uDL[i].w*(1.-dd/uDL[i].z)*(1.+.6*(max(dot(n,normalize(vec3(q,1.2))),0.)-1.2/length(vec3(q,1.2))));}
+  L=clamp(L,vec3(.035,.03,.05),vec3(1.25));vec3 c=min(t.rgb*L*shd,vec3(1.));
+  if(em>0.){float f=smoothstep(.45,.85,max(t.r,t.g));c=max(c,t.rgb*.95*f)+t.rgb*f*em*(.35+uHdr*1.1);}
+  gl_FragColor=vec4(c,1.);}`});
 const liquidMat=new THREE.ShaderMaterial({uniforms:U,side:THREE.DoubleSide,transparent:true,depthWrite:false,vertexShader:worldMat.vertexShader,
-  fragmentShader:worldMat.fragmentShader.replace('if(t.a<.5)discard;','if(t.a<.1)discard;if(vL.z>1.5){gl_FragColor=vec4(t.rgb*1.1,.93);return;}').replace('gl_FragColor=vec4(t.rgb*L*vL.z,1.);','gl_FragColor=vec4(t.rgb*L*vL.z,.8);')});
+  fragmentShader:worldMat.fragmentShader.replace('if(t.a<.5)discard;','if(t.a<.1)discard;if(vL.z>1.5){gl_FragColor=vec4(t.rgb*(1.1+uHdr*.55),.93);return;}').replace('gl_FragColor=vec4(c,1.);','gl_FragColor=vec4(c,.8);')});
 export function spriteMat(tex,frames=1){return new THREE.ShaderMaterial({side:THREE.DoubleSide,uniforms:{map:{value:tex},uFrame:{value:0},uFrames:{value:frames},uTint:{value:new THREE.Vector3(1,1,1)},uFlash:{value:0},uOut:{value:new THREE.Vector4(0,0,0,0)},uPx:{value:new THREE.Vector2()},uCr:{value:new THREE.Vector3()}},
   vertexShader:`uniform float uFrame;uniform float uFrames;varying vec2 vUv;void main(){vUv=vec2((uv.x+uFrame)/uFrames,uv.y);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
   // uOut (rgb, on) draws a solid outline uPx texels wide around the sprite, kept inside the current frame (Settings > Outline enemies about to attack)
@@ -60,13 +84,15 @@ sunMesh.position.z=moonMesh.position.z=-100;sunMesh.renderOrder=moonMesh.renderO
 export const clouds=[];
 function makeCloud(){const c=mk(256,128),t=c.getContext('2d');const bl=[[70,80,34],[120,64,44],[175,78,36],[100,90,28],[150,92,28]];for(const[x,y,r]of bl){circ(t,x,y+4,r);t.fillStyle='rgba(42,33,48,.15)';t.fill();}for(const[x,y,r]of bl){circ(t,x,y,r);fi(t,'#fbf8f0',3.5);}t.fillStyle='#fbf8f0';t.fillRect(60,86,130,20);return canvasTex(c);}
 export let snowF=0;
-export function buildBackdrop(){buildDiorama();
+export function buildBackdrop(){buildDiorama();buildMarks();
   clouds.forEach(c=>scene.remove(c));clouds.length=0;const ct=makeCloud();for(let i=0;i<9;i++){const m=new THREE.Mesh(new THREE.PlaneGeometry(10,5),new THREE.MeshBasicMaterial({map:ct,transparent:true,alphaTest:.4}));m.position.set(rand(0,W),surfAvg+rand(16,30),-30-rand(0,10));m.userData.s=rand(.3,.9);m.renderOrder=-15;scene.add(m);clouds.push(m);}}
 
 // ================= chunk meshes =================
 export let CW=Math.ceil(W/CS),CHH=Math.ceil(H/CS);export let chunks=[],liqChunks=[];export const dirty=new Set();
 export function cellUV(c){const[x,y]=cellXY(c);return regionUV(x,y,64,64);}
 function regionUV(px,py,w,h){const e=.6/1024,f=.6/2048;return[px/1024+e,1-(py+h)/2048+f,(px+w)/1024-e,1-py/2048-f];}
+// emissive tiles (anything that gives light, apart from liquids) glow in the world shader: face shade 3 + glow
+const EMIS=(t,shd)=>LIGHT[t]&&!TP[t].liq?3+LIGHT[t]/16:shd;
 export function buildChunk(cx,cy){markFg(cx);const P=[],UV=[],L=[],I=[];let vc=0;const LP={P:[],UV:[],L:[],I:[],vc:0};
   const lquad=(v,uv,l,shd)=>{LP.P.push(...v);LP.UV.push(uv[0],uv[1],uv[2],uv[1],uv[2],uv[3],uv[0],uv[3]);for(let k=0;k<4;k++)LP.L.push(l[k][0],l[k][1],shd);const c=LP.vc;LP.I.push(c,c+1,c+2,c,c+2,c+3);LP.vc+=4;};
   const quad=(v,uv,l,shd)=>{P.push(...v);UV.push(uv[0],uv[1],uv[2],uv[1],uv[2],uv[3],uv[0],uv[3]);for(let k=0;k<4;k++)L.push(l[k][0],l[k][1],shd);I.push(vc,vc+1,vc+2,vc,vc+2,vc+3);vc+=4;};
@@ -75,7 +101,7 @@ export function buildChunk(cx,cy){markFg(cx);const P=[],UV=[],L=[],I=[];let vc=0
   const x0=cx*CS,y0=cy*CS,x1=Math.min(W,x0+CS),y1=Math.min(H,y0+CS);
   for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){const i=y*W+x,t=tiles[i];
     const c4=()=>[cl(x,y),cl(x+1,y),cl(x+1,y+1),cl(x,y+1)];
-    if(OPAQUE[t]){const d=TP[t];const uv=cellUV(t===T.PEEL&&meta[i]?C.peelB:d.cell);quad([x,y,.5,x+1,y,.5,x+1,y+1,.5,x,y+1,.5],uv,c4(),.93);
+    if(OPAQUE[t]){const d=TP[t];const uv=cellUV(t===T.PEEL&&meta[i]?C.peelB:d.cell);quad([x,y,.5,x+1,y,.5,x+1,y+1,.5,x,y+1,.5],uv,c4(),EMIS(t,.93));
       if(!isOpaque(x,y+1)&&y+1<H){const f=flat(x,y+1);quad([x,y+1,.5,x+1,y+1,.5,x+1,y+1,-.5,x,y+1,-.5],cellUV(d.top||d.cell),[f,f,f,f],1.02);}
       if(y>0&&!isOpaque(x,y-1)){const f=flat(x,y-1);quad([x,y,-.5,x+1,y,-.5,x+1,y,.5,x,y,.5],uv,[f,f,f,f],.45);}
       if(x>0&&!isOpaque(x-1,y)){const f=flat(x-1,y);quad([x,y,-.5,x,y,.5,x,y+1,.5,x,y+1,-.5],uv,[f,f,f,f],.7);}
@@ -84,10 +110,10 @@ export function buildChunk(cx,cy){markFg(cx);const P=[],UV=[],L=[],I=[];let vc=0
     const w=walls[i];if(w){quad([x,y,-.5,x+1,y,-.5,x+1,y+1,-.5,x,y+1,-.5],cellUV(WALLCELL[w]),c4(),.52);}
     if(t===T.AIR)continue;
     if(TP[t].liq){const top=tileAt(x,y+1)!==t;const lava=t===T.LAVA;lquad([x,y,.42,x+1,y,.42,x+1,y+1,.42,x,y+1,.42],cellUV(lava?(top?C.lavaT:C.lavaF):(top?C.inkT:C.inkF)),c4(),lava?2:1);continue;}
-    let cell=TP[t].cell,z=0;if(t===T.SKETCH)cell=meta[i]===2?C.sketchS:C.sketchB;if(t===T.SIGN)cell=meta[i]?C.sign1:C.sign0;if(t===T.CROP){const m=meta[i];cell=C.crops[Math.min(4,m>>2)][Math.min(2,m&3)];}if(t===T.RARE){const m=meta[i];cell=C.rare[Math.min(3,m>>2)][Math.min(2,m&3)];}
+    let cell=TP[t].cell,z=0;if(t===T.SKETCH)cell=meta[i]===2?C.sketchS:C.sketchB;if(t===T.SIGN)cell=meta[i]?C.sign1:C.sign0;if(t===T.MURAL){cell=C.murals[meta[i]&3];z=-.45;}if(t===T.CROP){const m=meta[i];cell=C.crops[Math.min(4,m>>2)][Math.min(2,m&3)];}if(t===T.RARE){const m=meta[i];cell=C.rare[Math.min(3,m>>2)][Math.min(2,m&3)];}
     if(t===T.DOOR){const m=meta[i];cell=(m&1)?((m&2)?C.doorOT:C.doorOB):((m&2)?C.doorT:C.doorB);}
     if(t===T.TRUNK)z=-.2;
-    const l4=c4();quad([x,y,z,x+1,y,z,x+1,y+1,z,x,y+1,z],cellUV(cell),l4,1);
+    const l4=c4();quad([x,y,z,x+1,y,z,x+1,y+1,z,x,y+1,z],cellUV(cell),l4,EMIS(t,1));
     if(t===T.TRUNK&&meta[i]){const r=canopyCell(meta[i]);const f=flat(x,y);quad([x-1.5,y+.2,-.25,x+2.5,y+.2,-.25,x+2.5,y+4.2,-.25,x-1.5,y+4.2,-.25],regionUV(r[0],r[1],256,256),[f,f,f,f],1);}
   }
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(UV,2));g.setAttribute('aL',new THREE.Float32BufferAttribute(L,3));g.setIndex(I);
@@ -296,6 +322,8 @@ export function spriteMesh(tex,frames,w,h,anchorBottom=true){const g=new THREE.P
 const iconCache={},iconTexCache={};
 function iconCanvas(id){const c=mk(64,64);const[x,y]=cellXY(ITEMS[id].cell);c.getContext('2d').drawImage(atlas,x,y,64,64,0,0,64,64);return c;}
 export function icon(id){return iconCache[id]||(iconCache[id]=iconCanvas(id).toDataURL());}
+// an icon straight from an atlas cell (tabs whose picture is not an item)
+export function cellIcon(c){const k='#'+c;if(iconCache[k])return iconCache[k];const cv=mk(64,64),[x,y]=cellXY(c);cv.getContext('2d').drawImage(atlas,x,y,64,64,0,0,64,64);return iconCache[k]=cv.toDataURL();}
 export function iconTex(id){return iconTexCache[id]||(iconTexCache[id]=canvasTex(iconCanvas(id)));}
 // drops cached icons after their atlas cells are redrawn (color-vision mode changes the ore art)
 export function clearIcons(ids){for(const id of ids){delete iconCache[id];if(iconTexCache[id]){iconTexCache[id].dispose();delete iconTexCache[id];}}}
@@ -305,14 +333,41 @@ export function drawWarnMark(){const cb=SET.cb&&SET.cb!=='off';if(markMat.map)ma
     else{rr(t,23,5,18,36,9);fi(t,'#d4483b',3);circ(t,32,52,7);fi(t,'#d4483b',3);}},3));markMat.needsUpdate=true;}
 
 // ================= particles =================
-const PMAX=600;const pMesh=new THREE.InstancedMesh(new THREE.PlaneGeometry(.17,.17),new THREE.MeshBasicMaterial({side:THREE.DoubleSide}),PMAX);pMesh.frustumCulled=false;
+// One shared particle system. Emitters are data (PFX): colors, count, speed, gravity, life, size, and how each
+// particle moves and looks (drag, sway for things that flutter, spin, glow). emit(kind, x, y, o) spawns from an
+// emitter, with o overriding any field; burst(x, y, cols, n, spd, o) is the same with the emitter written inline.
+// Glowing particles draw as soft round sparks and, with post-processing on, bright enough to bloom; the rest are
+// flat paper bits lit where they spawn. Reduced motion stops the sway and spin.
+export const PFX={
+  dust:{cols:['#e9dfc9','#c9a574'],n:6,spd:2.5,up:1},
+  hit:{cols:['#fffaf0','#ffe58a'],n:5,spd:7,grav:0,life:.25,up:0,glow:1},
+  sparks:{cols:['#fff3c0','#f1c04f','#fbf8f0'],n:7,spd:3,grav:0,life:.3,glow:1},
+  embers:{cols:['#ff8a3d','#ffd66b'],n:1,spd:.4,grav:-1.5,life:4,up:0,glow:1,s:.6,sway:.6},
+  ink:{cols:['#3a2a5a','#8a78b0'],n:8,spd:3,grav:6,life:.7},
+  snow:{cols:['#fbf8f0','#e6f1f7'],n:1,spd:.4,grav:1.2,life:5,up:-.5,bright:1,s:.8,drag:.8,sway:1.4},
+  leaves:{cols:['#6dbb4a','#c9a574','#fbf8f0'],n:1,spd:.5,grav:.5,life:5,up:0,s:1.1,drag:.7,sway:2.2,spin:1.6},
+  petals:{n:1,spd:.4,grav:.5,life:6,up:-.2,bright:1,s:.9,drag:.8,sway:1.8,spin:1.2},
+  fireflies:{n:1,spd:.3,grav:-.05,life:3,up:.1,bright:1,s:.5,glow:1,sway:1},
+};
+const PMAX=700;
+const pGeo=new THREE.PlaneGeometry(.17,.17);pGeo.setAttribute('aG',new THREE.InstancedBufferAttribute(new Float32Array(PMAX),1));
+const pMat=new THREE.ShaderMaterial({side:THREE.DoubleSide,transparent:true,depthWrite:false,uniforms:{uHdr:U.uHdr},
+  vertexShader:`attribute float aG;varying vec3 vC;varying vec2 vUv;varying float vG;void main(){vC=instanceColor;vUv=uv;vG=aG;gl_Position=projectionMatrix*modelViewMatrix*instanceMatrix*vec4(position,1.);}`,
+  fragmentShader:`uniform float uHdr;varying vec3 vC;varying vec2 vUv;varying float vG;void main(){if(vG<.5){gl_FragColor=vec4(vC,1.);return;}
+    float d=length(vUv-.5)*2.;if(d>1.)discard;float a=smoothstep(1.,.2,d);gl_FragColor=vec4(vC*(1.+(1.-d)*(.35+uHdr*1.4)),a);}`});
+const pMesh=new THREE.InstancedMesh(pGeo,pMat,PMAX);pMesh.frustumCulled=false;pMesh.renderOrder=1;
 export const dummy=new THREE.Object3D();const tmpC=new THREE.Color();export const parts=[];
 for(let i=0;i<PMAX;i++){dummy.scale.set(0,0,0);dummy.updateMatrix();pMesh.setMatrixAt(i,dummy.matrix);pMesh.setColorAt(i,tmpC.set(1,1,1));}scene.add(pMesh);
-export function burst(x,y,cols,n,spd=5,o={}){for(let k=0;k<n;k++){if(parts.length>=PMAX)parts.shift();const a=Math.random()*Math.PI*2,v=rand(.3,1)*spd;const L=o.bright?[1,1,1]:lightAt(x,y);
-  tmpC.set(pick(cols));parts.push({x:x+rand(-.3,.3),y:y+rand(-.3,.3),z:rand(.2,.7),vx:Math.cos(a)*v,vy:Math.sin(a)*v+(o.up||2),life:rand(.5,1.1)*(o.life||1),max:1,rx:rand(0,6),ry:rand(0,6),vr:rand(-12,12),r:tmpC.r*L[0],g:tmpC.g*L[1],b:tmpC.b*L[2],grav:o.grav??18,s:o.s||1});}}
-export function updateParts(dt){for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.life-=dt;if(p.life<=0){parts.splice(i,1);continue;}p.vy-=p.grav*dt;p.vx*=Math.pow(.3,dt);if(p.grav>0&&p.vy<-3)p.vy=-3+Math.sin(p.life*14)*.8;p.x+=p.vx*dt;p.y+=p.vy*dt;p.rx+=p.vr*dt;p.ry+=p.vr*.7*dt;}
-  for(let i=0;i<PMAX;i++){const p=parts[i];if(p){const s=Math.min(1,p.life*3)*p.s;dummy.position.set(p.x,p.y,p.z);dummy.rotation.set(p.rx,p.ry,p.rx*.5);dummy.scale.set(s,s,s);dummy.updateMatrix();pMesh.setMatrixAt(i,dummy.matrix);pMesh.setColorAt(i,tmpC.setRGB(p.r,p.g,p.b));}else{dummy.scale.set(0,0,0);dummy.updateMatrix();pMesh.setMatrixAt(i,dummy.matrix);}}
-  pMesh.instanceMatrix.needsUpdate=true;if(pMesh.instanceColor)pMesh.instanceColor.needsUpdate=true;}
+export function emit(k,x,y,o={}){const e=k?Object.assign({},PFX[k],o):o,cols=e.cols||['#fbf8f0'],n=e.n??1,spd=e.spd??5,glow=!!e.glow;
+  for(let q=0;q<n;q++){if(parts.length>=PMAX)parts.shift();const a=Math.random()*Math.PI*2,v=rand(.3,1)*spd;const L=e.bright||glow?[1,1,1]:lightAt(x,y);
+    tmpC.set(pick(cols));parts.push({x:x+rand(-.3,.3),y:y+rand(-.3,.3),z:rand(.2,.7),vx:Math.cos(a)*v,vy:Math.sin(a)*v+(e.up??2),life:rand(.5,1.1)*(e.life||1),rx:rand(0,6),ry:rand(0,6),vr:rand(-12,12)*(e.spin??1),
+      r:tmpC.r*L[0],g:tmpC.g*L[1],b:tmpC.b*L[2],grav:e.grav??18,s:(e.s||1)*(glow?1.35:1),drag:e.drag??.3,sway:e.sway||0,ph:rand(0,6.283),glow});}}
+export function burst(x,y,cols,n,spd=5,o={}){o=Object.assign({},o,{cols,n,spd});if(o.bright&&!o.glow&&o.life&&o.life<=.6)o.glow=1;emit(null,x,y,o);}
+export function updateParts(dt){const rm=reduceMotion(),gA=pGeo.attributes.aG;
+  for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.life-=dt;if(p.life<=0){parts.splice(i,1);continue;}p.vy-=p.grav*dt;p.vx*=Math.pow(p.drag,dt);if(p.grav>0&&p.vy<-3)p.vy=-3+Math.sin(p.life*14)*.8;
+    p.x+=p.vx*dt+(p.sway&&!rm?Math.sin(p.life*2.3+p.ph)*p.sway*dt:0);p.y+=p.vy*dt;if(!rm){p.rx+=p.vr*dt;p.ry+=p.vr*.7*dt;}}
+  for(let i=0;i<PMAX;i++){const p=parts[i];if(p){const s=Math.min(1,p.life*3)*p.s;dummy.position.set(p.x,p.y,p.z);if(p.glow)dummy.rotation.set(0,0,0);else dummy.rotation.set(p.rx,p.ry,p.rx*.5);dummy.scale.set(s,s,s);dummy.updateMatrix();pMesh.setMatrixAt(i,dummy.matrix);pMesh.setColorAt(i,tmpC.setRGB(p.r,p.g,p.b));gA.array[i]=p.glow?1:0;}else{dummy.scale.set(0,0,0);dummy.updateMatrix();pMesh.setMatrixAt(i,dummy.matrix);}}
+  pMesh.instanceMatrix.needsUpdate=true;if(pMesh.instanceColor)pMesh.instanceColor.needsUpdate=true;gA.needsUpdate=true;}
 // Imported bindings are read-only, so other modules assign these through setters.
 export function setCamDist(v){return camDist=v;}
 export function setSnowF(v){return snowF=v;}

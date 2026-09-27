@@ -5,6 +5,7 @@ Guide for working on The Folded Frontier: a papercraft 2D sandbox adventure (Pap
 ## Repo layout
 
 ```
+docs/STORY.md     the main story outline (the mystery, how The Unfolded and the Awakening fit, where each page is)
 index.html        HTML only: HUD, menus, title screen, pause, save-code dialog, settings
 src/style.css     all CSS
 src/main.js       entry point and boot (main frame loop)
@@ -39,14 +40,15 @@ Each file in `src/` is one or more of the old script's sections, in the same ord
 | `atlas.js` | atlas | 1024×2048 texture atlas drawn in code; `C` maps names to atlas cells (blocks, decor, item icons, badges, farming, secrets) |
 | `items.js` | tiles, items | Tile enum `T`, tile properties via `def(id, {...})` into `TP`, `SOLID`/`OPAQUE`/`LIGHT` lookup arrays; `ITEMS` via `item(id, {...})`, `BADGES`, `RECIPES` (`[id, count, [[ingredient, n]...], station]`) |
 | `world.js` | world state, lighting | `tiles`/`walls`/`meta` typed arrays, chests, `generate(seed)` world generation, secrets & structures; tile light propagation |
-| `render.js` | three setup, chunk meshes, sprites & sheets, particles | Renderer, scene, camera; 32×32 chunk meshes (`CS=32`) rebuilt when marked dirty; procedural sprite sheets for player, enemies, biomes, partners; particles |
+| `render.js` | three setup, chunk meshes, sprites & sheets, particles | Renderer, scene, camera; world shader lighting (`U`, atlas normal map `buildNormals()`, `NDL` dynamic lights); 32×32 chunk meshes (`CS=32`) rebuilt when marked dirty; procedural sprite sheets for player, enemies, biomes, partners; the shared particle system (`PFX` emitters, `emit()`, `burst()`) |
 | `diorama.js` | diorama, foreground cutouts, diorama lifecycle | Paper parallax layers behind the world (`LAYERS`: far silhouettes, hills, back foliage) with per-biome, per-season art (`ART`) drawn on repeating 2048×512 strips; foreground cutouts in front of the tiles (`fgArt`, `FGSET`), batched per 32-column band and faded near the player and cursor; `buildDiorama()` (from `buildBackdrop()`), `dioLight()` (from `updateSky()`), `updateDiorama()` every frame |
 | `audio.js` | audio | Web Audio setup, `tone()`, `SFX` (with random variants), music tracks (`MUS`, sequenced by `music()`, crossfaded by `setMusic()`), biome ambience (`updateAmbience`, `AMBW` layer weights) |
 | `entities.js` | entities, inventory helpers | `player`, enemy defs `EN`, enemies, pickups, projectiles, NPCs, boss, `QUESTS`; adding/removing items |
 | `ui.js` | UI, housing & merchant | Inventory, crafting, tooltips, toasts; room validation, `NPCDEF`, NPC move-in |
 | `input.js` | input | Keyboard and mouse |
 | `gameplay.js` | gameplay | Player physics, combat, mining/placing, enemy AI, spawning, bosses, events (largest module) |
-| `view.js` | crack/highlight overlays, time/sky, camera | Mining crack and tile highlight, day/night cycle and sky colors, camera follow and shake; `camFocus` short camera moves (look at a point, zoom) |
+| `view.js` | crack/highlight overlays, time/sky, camera | Mining crack and tile highlight, day/night cycle and sky colors (and the sun/moon light direction `U.uSun`), camera follow and shake; `camFocus` short camera moves (look at a point, zoom) |
+| `post.js` | post-processing | `renderFrame(dt)` (called instead of `renderer.render`): half-float scene target, bloom, vignette, per-biome/per-season color grading (`GRADE`, `SGRADE`); `postOK`, `postOn()` |
 | `boss.js` | boss presentation | Boss arrival (`bossIntro`: title card `#bossCard`, camera move, boss held in `e.act==='intro'`), phase-change crease/tear look (`bossLook`, the `uCr` sprite uniform) and camera pull-back, the torn arena at 25% (`arenaF`, `updateBossFx`), defeat camera; `bossHeld(e)` |
 | `partners.js` | partners | `PARTNERS` and partner behavior; move upgrades read `palUp(k)`; `partnerCheer(t)` celebration hop, idle fidgets after 5 s standing still |
 | `pets.js` | pets & mounts | Cosmetic pets (`PETS`, `togglePet`, follower in `petS`) and mounts (`MOUNTS`, `toggleMount`, `dismount`); their sprite drawings `drawPet`/`drawStag`, which the atlas also uses for their icons |
@@ -62,6 +64,7 @@ Each file in `src/` is one or more of the old script's sections, in the same ord
 | `events.js` | events | World events beyond the Ink Moon, state in `wev`: Paper Storm, Paper Army invasion, Traveling Merchant. `evDawn()`/`evDusk()` roll them, `updateEvents()` runs them and the `#evbar` banner, `evKill(e)` counts invaders |
 | `pals.js` | partner stories | Per-world `pals` state; personal quests (`PQUEST`, progress from `palEv('dawn'|'fossil'|'kill')`) that upgrade a partner's move (`moveName(k)` adds `+`); `BANTER` lines on biomes, bosses, seasons and events; `CHAT` pairs with townsfolk shown as bubbles (`updatePals`) |
 | `awaken.js` | awakening | World Awakening, the post-game after The Unfolded: `updateAwaken()` plays the story beat and `awakenWorld()` carves biome creases and seeds Foilite ore; `isAwake()` |
+| `lore.js` | lore, murals, landmarks, story updates | The main story thread (`docs/STORY.md`): per-world `lore` state, `LORE` pages read in the Journal tab (`loreHTML`), Wren's letters from ruin chests (`loreChest`), murals (`T.MURAL`, `placeMurals`, `readMural`), landmarks behind the world (`MARKS`, `planMarks`, `buildMarks`), `updateLore()`/`syncLore()` |
 | `save.js` | save/load, lifecycle | `save()`, `loadSave()`, `SAVE_KEY`, `SAVE_VER`, `migrateSave()`; `allocWorld`, `newWorld`, `loadWorld`, pause/title flow, save-code pack/unpack |
 | `main.js` | boot | Builds sprite sheets, loads or creates a world, main `frame()` loop |
 
@@ -87,13 +90,14 @@ How the modules fit together:
 - The World Awakening lives in the saved biome data: `bio.awake` (1 once awakened), `bio.creases` (`[x0, x1, biome]` strips that `biomeAt()` reports as that biome) and `bio.foil` (Foilite tiles seeded). A save that beat The Unfolded before awakening existed awakens when it is next played.
 - The world save also holds `pals` (partner stories: `q` personal quest per partner 1 asked / 2 done, `n` quest progress, `heard` banter lines said as `'partner:key'`). Older saves get defaults in `loadWorld()`.
 - The world save also holds `tut` (tutorial progress: next step `s`, paper hints already shown in `seen`). Saves without it load with the tutorial finished.
+- The world save also holds `lore` (`f`: story pages found, keyed by `LORE` key; `ch`: indices of chests that already gave a letter). The landmarks (`bio.marks`, `[key, x, ground y]`) and murals (`bio.murals`, the count painted as `T.MURAL` tiles) are added the first time an older save loads (`planMarks()`/`placeMurals()` in `loadWorld()`, before the chunks are built), and `syncLore()` quietly fills in pages already earned.
 - Every load goes through `migrateSave()` inside `loadWorld()`. Old-build saves can be made by running an old commit's `index.html` (three.js from the CDN) and copying the save out of `localStorage`. When a save needs a structural change, bump `SAVE_VER` and add a `if(d.v<N){...;d.v=N;}` step there. For a plain new field, filling a default in `loadWorld()` is enough: older saves won't have it.
 
 Browser-only saves are why the game will be self-hosted with server-side saves (issue #7). GitHub Pages is a test build only.
 
 ## Conventions and gotchas
 
-- **Tile IDs are saved as raw bytes.** Never renumber or reuse a value in `T`. Add new tiles with new IDs. The lookup arrays are sized 64 and the highest ID is currently 62 (`T.RARE`), so going past 63 means resizing them.
+- **Tile IDs are saved as raw bytes.** Never renumber or reuse a value in `T`. Add new tiles with new IDs. The lookup arrays are sized 64 and the highest ID is now 63 (`T.MURAL`), so the next new tile means resizing them first.
 - **Atlas cells are allocated in order** (`cellN++`). Adding cells in the middle shifts later cells. That's fine at runtime, since nothing saves cell indices, but keep new art grouped with its section.
 - **Art style:** cream paper, dark ink outlines (`INK = '#2a2130'`), rounded shapes, paper grain. Reuse the drawing helpers so new art matches.
 - **Code style is dense:** short names, many statements per line. Match the surrounding code rather than reformatting it; a big reformat makes diffs unreadable.
@@ -119,6 +123,10 @@ Browser-only saves are why the game will be self-hosted with server-side saves (
 - **World Awakening:** new post-game behavior should check `isAwake()` (or `BIO.awake`). Awakened enemies carry `e.awake` (more life and damage); spawn pools in `spawnLogic()` mix in foes from other regions. Creases never touch the town, the Ink Lake, camps or the shrine, and only rewrite natural ground (no placed background wall).
 - **Touch:** touch mode turns on at the first touch (or on a coarse-pointer device) and off when a real mouse moves; the `#touch` controls show only then, while playing. The joystick and held buttons set `touch.held[action]`, which `held()` reads like a key; one-shot buttons call the same functions as keys (`data-act` in `#touch` → `ACT` in `touch.js`). Tapping the world interacts when an NPC or an interactable tile (`TAPT`) is under the finger, otherwise it uses the held item there. In the backpack a tap is a click, a long press a right-click, and the Quick move toggle makes taps shift-clicks. A new action that players need on touch gets a button in `#touch`; new tutorial text names touch buttons through `TBTN` in `guide.js`.
 - **Accessibility settings:** motion (`SET.motion` `'auto'`/`'reduce'`/`'full'`), attack outlines (`SET.tele`, the `uOut` sprite uniform via `teleOutline()`), dialogue text speed (`SET.tspd`) and hold/toggle for block and bow draw (`SET.blockTog`, `SET.drawTog`). Check `reduceMotion()` rather than `matchMedia`, and write reduced-motion CSS as `body.rm ...` rules, so the Settings choice overrides the system one. Large motion (page turns, sway, camera moves, screen shake) should stop or cut to its end state when it's on.
+- **Lighting:** tiles carry propagated light per vertex (`aL.xy`) and a face shade (`aL.z`: 2 marks lava, 3–4 an emissive tile whose glow is `aL.z-3`, from `LIGHT`). The world shader bends that light with a normal map made from the atlas (`buildNormals()`; rerun it after redrawing atlas cells, as `applyCB()` does), lights the paper from the sun or moon (`U.uSun`) and adds up to `NDL` (16) dynamic lights filled by `updateDynLights()` (projectiles with `light`, glowing partners and pets, a held torch, and light tiles near the camera from `LTILE`, which flicker unless reduced motion is on). A new light-giving tile gets an `LTILE` entry.
+- **Particles:** one shared system in `render.js`. Named emitters are data in `PFX` (`cols`, `n`, `spd`, `grav`, `life`, `up`, `s`, `drag`, `sway`, `spin`, `glow`, `bright`); spawn with `emit(kind, x, y, overrides)`. `burst(x, y, cols, n, spd, o)` is the same with the emitter written inline. `glow` particles draw as soft round sparks that bloom.
+- **Post-processing** (`post.js`, Settings > Glow & color grading, `SET.post`): while on, `U.uHdr` is 1 and the scene renders to a half-float target, so emissive tiles, lava, glowing particles and the sun can go past 1.0; only what passes 1.0 blooms, so keep ordinary lit surfaces at or under 1. Grading follows `GRADE` (biome) × `SGRADE` (season), cooler at night. Where float targets are unsupported (`postOK` false) the checkbox is disabled and the scene renders straight to the screen.
+- **Story** (`lore.js`, `docs/STORY.md`): pages are `LORE` entries (`k`, `kind`, `t`, `x`, `h`, and `s` lines a partner says). Keys are saved in `lore.f`, so keep them stable. Letters are handed out in order when a ruin chest (brick back wall, `walls===3`) or buried treasure is opened, one per chest (`lore.ch`), so chests opened before a save had the story still give one; `placeMurals()` falls back to shared rooms, then deep cave walls, then any deep open spot (full scans), and tops up a world that came up short on its next load, so every world gets all four murals; keeper pages come from `quests`, partner pages from `player.partners`, the epilogue from `isAwake()`. Landmarks stand at z −24 (render order −12) and use the diorama's tint and fog uniforms (`DU`). Nothing in the story gates play.
 - Keep new input actions rebindable: keyboard in `DEF_BIND`/`ALT` (plus a `BINDLAB` label), gamepad in `DEF_PAD` (plus a `PADLAB` label; `-1` means unbound, as with Mount). Start and the d-pad/sticks are fixed, and backpack menus use a fixed gamepad layout (`fx` in `handlePad`).
 
 ## Testing
@@ -130,7 +138,7 @@ There are no automated tests yet (Playwright smoke tests are planned in #50). To
 3. Pause (saves), reload, and Continue: the world should come back intact.
 4. Export a save code, reload, and load it from the title screen.
 
-Chromium with Playwright is available in Claude Code cloud sessions for headless checks, but it can't judge game feel or difficulty.
+Chromium with Playwright is available in Claude Code cloud sessions for headless checks, but it can't judge game feel or difficulty. Its software WebGL runs at a few frames a second and `dt` is capped at 1/30 s, so game timers barely move there: call update functions directly (`import('/src/game.js')` in the page gives the live modules on the dev server) rather than waiting.
 
 ## Roadmap
 

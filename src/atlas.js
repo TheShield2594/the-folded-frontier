@@ -280,6 +280,18 @@ C.sign1=sticker(t=>{rr(t,28,20,8,40,2);fi(t,'#7b5234');rr(t,8,8,48,20,4);fi(t,'#
 C.pedestal=blockCell('#6c6e79',c=>{c.fillStyle='rgba(255,255,255,.12)';c.fillRect(0,0,64,10);c.strokeStyle='#c9a24a';c.lineWidth=2.5;c.beginPath();c.moveTo(32,20);c.lineTo(22,44);c.lineTo(42,44);c.closePath();c.stroke();circ(c,32,34,4);c.fillStyle='#c9a24a';c.fill();});
 C.rubble=sticker(t=>{for(const[x,y,r,col]of[[18,54,10,'#8d8f9a'],[36,56,8,'#9a6a3f'],[48,52,9,'#8d8f9a'],[28,46,6,'#c98f4f']]){t.beginPath();t.ellipse(x,y,r,r*.7,.3,0,6.28);fi(t,col,2);}rr(t,6,44,24,5,2);t.save();t.translate(40,40);t.rotate(-.6);rr(t,-12,-3,24,6,2);fi(t,'#c98f4f',1.6);t.restore();},2);
 C.altar=sticker(t=>{rr(t,8,34,48,26,4);fi(t,'#6c6e79');rr(t,4,30,56,8,3);fi(t,'#8d8f9a');t.beginPath();t.arc(32,20,12,0,6.283);t.arc(37,16,11,0,6.283,true);t.fillStyle='#b06ad0';t.fill();ink(t,2);t.strokeStyle='#c9a24a';t.lineWidth=2;t.beginPath();t.moveTo(18,46);t.lineTo(46,46);t.stroke();});
+// ---- murals (T.MURAL, meta = mural number): painted panels on ruin walls that tell the story (lore.js)
+const mural=pic=>sticker(t=>{rr(t,5,7,54,50,4);fi(t,'#7a5a3e',2.5);rr(t,10,12,44,40,2);fi(t,'#eadcbc',1.5);t.save();rr(t,10,12,44,40,2);t.clip();pic(t);t.restore();poly(t,[46,52,54,44,54,52]);fi(t,'#c9b58e',1.2);});
+C.murals=[
+  mural(t=>{poly(t,[10,44,20,26,26,34,34,20,44,36,54,24,54,52,10,52]);fi(t,'#8fb07a',1.5);for(const x of[20,34,54]){t.beginPath();t.moveTo(x,x===20?26:x===34?20:24);t.lineTo(x-2,52);ink(t,1,'rgba(42,33,48,.4)');}
+    t.beginPath();t.ellipse(30,48,7,3,0,0,6.283);fi(t,'#4a3570',1.2);t.beginPath();t.moveTo(38,12);t.quadraticCurveTo(52,14,50,24);t.lineTo(44,22);t.quadraticCurveTo(44,17,36,17);t.closePath();fi(t,'#e0b48a',1.5);}),
+  mural(t=>{poly(t,[14,20,50,16,52,46,12,48]);fi(t,'#f4ecd8',1.5);poly(t,[16,24,20,16,24,24]);fi(t,'#5a9a4c',1.2);rr(t,44,14,5,12,1);fi(t,'#c98466',1.2);t.beginPath();t.moveTo(20,44);t.quadraticCurveTo(26,36,32,44);t.quadraticCurveTo(38,50,44,42);ink(t,2,'#6b7f98');
+    for(const[x,y,c]of[[24,32,'#5aa7e0'],[32,28,'#f4f0e6'],[40,32,'#4a3570'],[32,38,'#c9853d']]){circ(t,x,y,2.6);fi(t,c,1);}}),
+  mural(t=>{for(let k=0;k<10;k++){const a=k/10*6.283;t.beginPath();t.moveTo(32+Math.cos(a)*26,32+Math.sin(a)*26);t.quadraticCurveTo(32+Math.cos(a+.5)*12,32+Math.sin(a+.5)*12,32+Math.cos(a)*6,32+Math.sin(a)*6);ink(t,1.4,'rgba(74,53,112,.6)');}
+    circ(t,32,24,5);fi(t,'#fbf8f0',1.5);poly(t,[26,30,38,30,40,46,24,46]);fi(t,'#fbf8f0',1.5);}),
+  mural(t=>{rr(t,12,16,18,30,1);fi(t,'#f4ecd8',1.2);poly(t,[34,46,40,20,46,40,50,18,54,46]);fi(t,'#e4dcf0',1.5);for(const[x0,y0,x1,y1]of[[40,20,42,46],[50,18,48,46]]){t.beginPath();t.moveTo(x0,y0);t.lineTo(x1,y1);ink(t,1.6,'#a9a0c8');}
+    t.beginPath();t.moveTo(31,31);t.lineTo(35,31);ink(t,1.5);poly(t,[35,28,38,31,35,34]);fi(t,INK,1);}),
+];
 C.tmap=sticker(t=>{poly(t,[8,12,26,8,40,14,56,10,56,52,40,56,26,50,8,54]);fi(t,'#e9dcc0');t.beginPath();t.moveTo(26,8);t.lineTo(26,50);t.moveTo(40,14);t.lineTo(40,56);ink(t,1.5,'rgba(42,33,48,.3)');t.setLineDash([3,3]);t.beginPath();t.moveTo(14,44);t.quadraticCurveTo(26,30,40,34);ink(t,2,'#8a5a33');t.setLineDash([]);t.beginPath();t.moveTo(40,28);t.lineTo(48,36);t.moveTo(48,28);t.lineTo(40,36);ink(t,3,'#d4483b');});
 C.foldblade=swordIcon('#f4f0e6',1);
 C.foldwave=sticker(t=>{t.beginPath();t.arc(30,32,22,-1.4,1.4);t.arc(22,32,18,1.2,-1.2,true);t.closePath();fi(t,'#fbf8f0',2.5);},2);
