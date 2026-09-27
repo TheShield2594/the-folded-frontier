@@ -1834,7 +1834,7 @@ function interact(){const tx=Math.floor(mouse.wx),ty=Math.floor(mouse.wy);
 function updatePlayer(dt){const p=player;updateGhosts(dt);updateDashHud(dt);updateDrawHud();if(p.dead){p.dashT=0;updateShield(dt);p.deadT-=dt;$('deadTxt').textContent=`Refolding in ${Math.max(0,Math.ceil(p.deadT))}…`;if(p.deadT<=0)respawn();return;}
   const cx=Math.floor(p.x);const lt=tileAt(cx,Math.floor(p.y+.7));p.inLiq=TP[lt].liq?lt:0;
   if(p.inLiq===T.INK&&!p.wasInk)stat('swims');p.wasInk=p.inLiq===T.INK;
-  if(p.inLiq===T.LAVA&&!hasBuff('fire')){if(p.inv_t<=0){hurtPlayer(30,p.x-p.face);playerStatus('fire');}burst(p.x,p.y+.5,['#ff8a3d','#ffd66b'],1,2,{grav:-4,bright:1});}
+  if(p.inLiq===T.LAVA&&!hasBuff('fire')){if(p.inv_t<=0)hurtPlayer(30,p.x-p.face,null,'fire');burst(p.x,p.y+.5,['#ff8a3d','#ffd66b'],1,2,{grav:-4,bright:1});}
   const hooked=hook.state===2;
   const onRope=tileAt(cx,Math.floor(p.y+.9))===T.ROPE||tileAt(cx,Math.floor(p.y+.2))===T.ROPE;
   const upH=!!(keys.w||keys.arrowup||pad.held.up),dnH=held('down');
