@@ -34,13 +34,15 @@ export const npcSpeaker=n=>({k:n.type,name:NPCDEF[n.type]?NPCDEF[n.type].name:''
 export const playerSpeaker=()=>({k:'player',name:'You',at:()=>({x:player.x,y:player.y+2.6})});
 export const partnerSpeaker=k=>({k,name:PARTNERS[k].name,at:()=>pt.type===k?{x:pt.x,y:pt.y+1}:{x:player.x,y:player.y+2.6}});
 
-const queue=[];let D=null;
+const queue=[];let D=null,prevFocus=null;
 export const talking=()=>!!D;
+// the dialogue takes focus while open and hands it back when it closes
+function restoreFocus(){const el=prevFocus;prevFocus=null;if(el&&el.isConnected&&typeof el.focus==='function')el.focus();}
 // drop queued and open conversations (starting or loading a world), without running their done() callbacks
-export function clearDlg(){queue.length=0;if(D){D=null;$('dlg').hidden=true;$('ui').classList.remove('talking');}}
+export function clearDlg(){queue.length=0;if(D){D=null;$('dlg').hidden=true;$('ui').classList.remove('talking');restoreFocus();}}
 // say(speaker, line or [lines], {done, wait}) queues a conversation; wait = seconds before it may open
 export function say(sp,lines,o={}){queue.push({sp,lines:[].concat(lines),done:o.done,wait:o.wait||0});}
-function open(c){D={c,i:0,sp:c.sp,expr:'neutral'};if(invOpen)setInv(false);setState('talk');$('ui').classList.add('talking');$('dlg').hidden=false;if(c.sp.k==='player')clearPlayerPics();$('dlgName').textContent=c.sp.name;line();}
+function open(c){prevFocus=document.activeElement;D={c,i:0,sp:c.sp,expr:'neutral'};if(invOpen)setInv(false);setState('talk');$('ui').classList.add('talking');$('dlg').hidden=false;if(c.sp.k==='player')clearPlayerPics();$('dlgName').textContent=c.sp.name;line();$('dlg').focus({preventScroll:true});}
 function line(){const txt=D.c.lines[D.i],el=$('dlgTxt');el.innerHTML='';D.chars=[];D.n=0;D.t=.18;D.done=false;D.blipN=0;D.exprAt={};
   let mode='',word=null,expr=D.expr;
   const re=/\{(\w+)\}|([*~])|(\s+)|([^\s*~{]+|\{)/g;let m;
@@ -59,7 +61,7 @@ function reveal(){const q=D.chars[D.n];if(D.exprAt[D.n])setExpr(D.exprAt[D.n]);q
 function finish(){while(D.n<D.chars.length){if(D.exprAt[D.n])setExpr(D.exprAt[D.n]);D.chars[D.n++].s.classList.add('on');}D.done=true;$('dlgNext').hidden=false;}
 // dlgNext(all): finish typing, else the next line; all=true closes the conversation
 export function dlgNext(all){if(!D)return;if(all){close();return;}if(!D.done){finish();return;}if(++D.i<D.c.lines.length)line();else close();}
-function close(){const c=D.c;D=null;$('dlg').hidden=true;$('ui').classList.remove('talking');if(state==='talk')setState('play');tone(420,300,.08,'triangle',.05);if(c.done)c.done();}
+function close(){const c=D.c;D=null;$('dlg').hidden=true;$('ui').classList.remove('talking');restoreFocus();if(state==='talk')setState('play');tone(420,300,.08,'triangle',.05);if(c.done)c.done();}
 export function updateDlg(dt){
   if(!D){if(!queue.length||state!=='play'||invOpen||mapOpen||player.dead)return;if((queue[0].wait-=dt)>0)return;open(queue.shift());}
   if(!D.done){D.t-=dt;while(D.t<=0&&D.n<D.chars.length)D.t+=reveal();if(D.n>=D.chars.length){D.done=true;$('dlgNext').hidden=false;}}
