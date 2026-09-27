@@ -5,68 +5,61 @@ Guide for working on The Folded Frontier: a papercraft 2D sandbox adventure (Pap
 ## Repo layout
 
 ```
-index.html   the whole game: CSS, HTML UI, and all JavaScript (~2,740 lines)
-README.md    player-facing overview and controls
-assets/      title.webp: title screen background (painted art with the logo baked in)
-.nojekyll    lets GitHub Pages serve files as-is
+index.html        HTML only: HUD, menus, title screen, pause, save-code dialog, settings
+src/style.css     all CSS
+src/main.js       entry point and boot (main frame loop)
+src/game.js       hub that re-exports every module in boot order (see "Modules" below)
+src/*.js          the game, split into ES modules (table below)
+public/assets/    title.webp: title screen background (painted art with the logo baked in)
+vite.config.js    Vite config (relative base so dist/ works from any path)
+.github/workflows/pages.yml  builds with Vite and deploys dist/ to GitHub Pages
 ```
 
-There is no build step, no package.json and no audio assets. The only image asset is `assets/title.webp`, the title screen background; it's loaded with `new Image()` and the `#title` overlay only gets its `bg` class (image, cream card behind the menu, HTML logo hidden on landscape screens) once it loads, so a missing file falls back to the plain overlay. All game art is drawn in code onto canvases, and all sound is synthesized with Web Audio. The only external dependency is three.js r128, loaded from cdnjs in a `<script>` tag.
+The project is built with Vite. The only runtime dependency is three.js, pinned to r128 (`three@0.128.0` from npm) and bundled into the build. There are no audio assets and the only image asset is `public/assets/title.webp`, the title screen background; it's loaded with `new Image()` and the `#title` overlay only gets its `bg` class (image, cream card behind the menu, HTML logo hidden on landscape screens) once it loads, so a missing file falls back to the plain overlay. All game art is drawn in code onto canvases, and all sound is synthesized with Web Audio.
 
 ## Running locally
 
-Open `index.html` in a browser, or serve the folder (preferred, and closer to the hosted setup):
-
 ```sh
-python3 -m http.server 8000
-# then open http://localhost:8000/
+npm install
+npm run dev       # dev server with reload, prints the local URL
+npm run build     # static build in dist/
+npm run preview   # serves dist/ to check the build
 ```
 
-You need network access to cdnjs for three.js. Save codes use `CompressionStream`, which requires a secure context (localhost or HTTPS).
+`dist/` is plain static files, deployable to GitHub Pages or any static host. Opening `index.html` straight from disk no longer works; use the dev server. Save codes use `CompressionStream`, which requires a secure context (localhost or HTTPS).
 
-## Where things live in `index.html`
+## Modules
 
-| Lines (approx.) | Contents |
-|---|---|
-| 8–199 | `<style>`: all CSS |
-| 200–300 | HTML: HUD, menus, title screen, pause, save-code dialog, settings |
-| 301 | three.js r128 `<script>` from cdnjs |
-| 302+ | Game script, one IIFE in `'use strict'` mode |
+Each file in `src/` is one or more of the old script's sections, in the same order. Sections still start with `// ================= name =================` banners, so search for the banner to find one.
 
-Inside the script, sections start with `// ================= name =================` banners. Search for the banner to find a section:
+| File | Sections | What it holds |
+|---|---|---|
+| `util.js` | constants & helpers | World sizes (`SIZES`), seeded RNG (`mulberry32`), noise (`makeNoise`), canvas drawing helpers (`rr`, `ink`, `fi`, `circ`, `poly`, `grain`) |
+| `settings.js` | settings, meta, keys | Default key bindings (`DEF_BIND`, `ALT`), settings (`SET`), interface/text size (`applyUI`, `upx`), achievements/stats (`META`), input state |
+| `atlas.js` | atlas | 1024×2048 texture atlas drawn in code; `C` maps names to atlas cells (blocks, decor, item icons, badges, farming, secrets) |
+| `items.js` | tiles, items | Tile enum `T`, tile properties via `def(id, {...})` into `TP`, `SOLID`/`OPAQUE`/`LIGHT` lookup arrays; `ITEMS` via `item(id, {...})`, `BADGES`, `RECIPES` (`[id, count, [[ingredient, n]...], station]`) |
+| `world.js` | world state, lighting | `tiles`/`walls`/`meta` typed arrays, chests, `generate(seed)` world generation, secrets & structures; tile light propagation |
+| `render.js` | three setup, chunk meshes, sprites & sheets, particles | Renderer, scene, camera; 32×32 chunk meshes (`CS=32`) rebuilt when marked dirty; procedural sprite sheets for player, enemies, biomes, partners; particles |
+| `audio.js` | audio | Web Audio setup, `tone()`, `SFX` (with random variants), music tracks (`MUS`, sequenced by `music()`, crossfaded by `setMusic()`), biome ambience (`updateAmbience`, `AMBW` layer weights) |
+| `entities.js` | entities, inventory helpers | `player`, enemy defs `EN`, enemies, pickups, projectiles, NPCs, boss, `QUESTS`; adding/removing items |
+| `ui.js` | UI, housing & merchant | Inventory, crafting, tooltips, toasts; room validation, `NPCDEF`, NPC move-in |
+| `input.js` | input | Keyboard and mouse |
+| `gameplay.js` | gameplay | Player physics, combat, mining/placing, enemy AI, spawning, bosses, events (largest module) |
+| `view.js` | crack/highlight overlays, time/sky, camera | Mining crack and tile highlight, day/night cycle and sky colors, camera follow and shake |
+| `partners.js` | partners | `PARTNERS` and partner behavior |
+| `map.js` | pop-up book, world map | Page-turn effect when entering a new biome; full map view |
+| `gamepad.js` | gamepad | Gamepad polling and menu navigation |
+| `hud.js` | settings & achievements UI, minimap/HUD | Settings panel, rebinding, achievements; minimap and HUD |
+| `save.js` | save/load, lifecycle | `save()`, `loadSave()`, `SAVE_KEY`, `SAVE_VER`, `migrateSave()`; `allocWorld`, `newWorld`, `loadWorld`, pause/title flow, save-code pack/unpack |
+| `main.js` | boot | Builds sprite sheets, loads or creates a world, main `frame()` loop |
 
-| Section | What it holds |
-|---|---|
-| constants & helpers | World sizes (`SIZES`), seeded RNG (`mulberry32`), noise (`makeNoise`), canvas drawing helpers (`rr`, `ink`, `fi`, `circ`, `poly`, `grain`) |
-| settings, meta, keys | Default key bindings (`DEF_BIND`, `ALT`), settings (`SET`), interface/text size (`applyUI`, `upx`), achievements/stats (`META`), input state |
-| atlas | 1024×2048 texture atlas drawn in code; `C` maps names to atlas cells (blocks, decor, item icons, badges, farming, secrets) |
-| tiles | Tile enum `T`, tile properties via `def(id, {...})` into `TP`, plus `SOLID`/`OPAQUE`/`LIGHT` lookup arrays |
-| items | `ITEMS` via `item(id, {...})`, `BADGES`, `RECIPES` (`[id, count, [[ingredient, n]...], station]`) |
-| world state | `tiles`/`walls`/`meta` typed arrays, chests, `generate(seed)` world generation, secrets & structures |
-| lighting | Tile light propagation |
-| three setup | Renderer, scene, camera |
-| chunk meshes | 32×32 chunk meshes (`CS=32`), rebuilt when marked dirty |
-| sprites & sheets | Procedural sprite sheets for player, enemies, biomes, partners |
-| particles | Particle effects |
-| audio | Web Audio setup, `tone()`, `SFX` (with random variants), music tracks (`MUS`, sequenced by `music()`, crossfaded by `setMusic()`), biome ambience (`updateAmbience`, `AMBW` layer weights) |
-| entities | `player`, enemy defs `EN`, enemies, pickups, projectiles, NPCs, boss, `QUESTS` |
-| inventory helpers | Adding/removing items |
-| UI | Inventory, crafting, tooltips, toasts |
-| housing & merchant | Room validation, `NPCDEF`, NPC move-in |
-| input | Keyboard and mouse |
-| gameplay | Player physics, combat, mining/placing, enemy AI, spawning, bosses, events (largest section) |
-| crack/highlight overlays | Mining crack and tile highlight |
-| time/sky | Day/night cycle, sky colors |
-| camera | Camera follow and shake |
-| partners | `PARTNERS` and partner behavior |
-| pop-up book | Page-turn effect when entering a new biome |
-| world map | Full map view |
-| gamepad | Gamepad polling and menu navigation |
-| settings & achievements UI | Settings panel, rebinding, achievements |
-| minimap/HUD | Minimap and HUD |
-| save/load | `save()`, `loadSave()`, `SAVE_KEY`, `SAVE_VER`, `migrateSave()` |
-| lifecycle | `allocWorld`, `newWorld`, `loadWorld`, pause/title flow, save-code pack/unpack |
-| boot | Builds sprite sheets, loads or creates a world, main `frame()` loop |
+How the modules fit together:
+
+- **Import shared names from `./game.js`**, never directly from another module. `game.js` re-exports every module in boot order, and `main.js` imports it first, so the modules run top to bottom in the same order the single script did. A direct import of a later module would make that module run early and can break boot with "Cannot access 'X' before initialization".
+- **Top-level code runs in module order.** A module's top-level code (not code inside functions) can use `const`/`let` values from modules above it in `game.js`, but not from modules below it. `function` declarations are hoisted and can be called from anywhere, as long as their bodies don't touch a value that hasn't been set yet.
+- **Imported bindings are read-only.** To reassign a `let` owned by another module, call its setter: the owning module exports `setX(v)` next to it (for example `setState('title')`, `setInvDirty(true)`, `setW(w)`), which assigns and returns the value. Mutating an object or array in place (`tiles[i]=...`, `player.hp-=...`) needs no setter. When you add a `let` another module has to reassign, add a setter to the module that declares it.
+- **Export anything another module uses**, and add it to the importing module's `import {...} from './game.js'` list. Names must stay unique across all modules, since `game.js` re-exports them all together.
+- Modules that use three.js start with `import * as THREE from 'three';`.
 
 ## Saves
 
@@ -85,7 +78,6 @@ Browser-only saves are why the game will be self-hosted with server-side saves (
 - **Atlas cells are allocated in order** (`cellN++`). Adding cells in the middle shifts later cells. That's fine at runtime, since nothing saves cell indices, but keep new art grouped with its section.
 - **Art style:** cream paper, dark ink outlines (`INK = '#2a2130'`), rounded shapes, paper grain. Reuse the drawing helpers so new art matches.
 - **Code style is dense:** short names, many statements per line. Match the surrounding code rather than reformatting it; a big reformat makes diffs unreadable.
-- Everything is in one closure, so there are no modules or globals to import. `function` declarations are hoisted and can be called from anywhere, but `const`/`let` values can't be used before their line has run during boot.
 - **Boss phases:** every boss runs `bossPhase()` at 50% and 25% life (`e.phase` 1 and 2), sits in `e.act==='phase'` (immune) and then `bossRefold()`s. Each boss's AI reads `e.phase` to add or change attacks, so a new boss should do the same.
 - **Fishing:** rods have `rod`/`fpow`, bait has `bait`, and catches come from `CATCH` (per biome, plus `lava`). The bobber is the `bob` object, updated in `updateFishing()`.
 - **Combat hooks:** `hurtEnemy(e,dmg,dir,kb,crit,elem)` and `hurtPlayer(dmg,from,src,elem)`. Pass the attacking enemy or projectile as `src` so shields can block and parry it (`hurtPlayer` returns `'parry'` on a parry); leave it out for damage that can't be blocked, like lava. Damage types are `'fire'`, `'ink'` and `'water'` (`ELEM`); each enemy's weakness, resistance and the type its own hits carry are set in the table right after `EN`, and projectile kinds take a type from `elem` in `PK`. Statuses live in `e.st` / `player.st` and are not saved.
@@ -97,7 +89,7 @@ Browser-only saves are why the game will be self-hosted with server-side saves (
 
 There are no automated tests yet (Playwright smoke tests are planned in #50). To check a change:
 
-1. Serve the folder and load it with the dev console open; confirm there are no errors.
+1. Run `npm run dev` and load it with the dev console open; confirm there are no errors. Run `npm run build` too, and check the build with `npm run preview` if the change touches boot order or imports.
 2. Create a new small world and play briefly.
 3. Pause (saves), reload, and Continue: the world should come back intact.
 4. Export a save code, reload, and load it from the title screen.
@@ -106,4 +98,4 @@ Chromium with Playwright is available in Claude Code cloud sessions for headless
 
 ## Roadmap
 
-Planned work is tracked in GitHub Issues, grouped under epic issues #1–#7. The split of `index.html` into Vite modules (#46) should come before any big new system.
+Planned work is tracked in GitHub Issues, grouped under epic issues #1–#7.
