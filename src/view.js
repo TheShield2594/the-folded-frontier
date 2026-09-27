@@ -4,7 +4,7 @@ import {
   atlasTex,BIO,biomeAt,C,camDist,camera,cellUV,clamp,clouds,cursor,dioLight,H,hasAcc,hasBuff,
   inkMoon,lerp,moonMesh,season,seasonSky,mouse,N,OPAQUE,pad,player,rainF,rand,reachOK,scene,selItem,setShakeT,setSnowF,
   shakeT,skyMesh,skyU,snowF,SPAWNX,state,sunMesh,surfAvg,T,tiles,U,W,worldMat,
-  worldTime,
+  worldTime,touch,
 } from './game.js';
 
 // ================= crack/highlight overlays =================
@@ -48,8 +48,12 @@ export function updateCamera(dt){const p=player;const tx=p.x+p.vx*.25,ty=p.y+1.2
   let sx=0,sy=0;if(shakeT>0){setShakeT(shakeT-(dt));sx=rand(-1,1)*shakeT*.6;sy=rand(-1,1)*shakeT*.6;}
   camera.position.set(cx+sx,cy+3.6+sy,camDist);camera.lookAt(cx+sx,cy+.4+sy,0);
   // mouse world
-  const v=new THREE.Vector3((mouse.x/innerWidth)*2-1,-(mouse.y/innerHeight)*2+1,.5).unproject(camera).sub(camera.position).normalize();const t=(.5-camera.position.z)/v.z;mouse.wx=camera.position.x+v.x*t;mouse.wy=camera.position.y+v.y*t;
+  [mouse.wx,mouse.wy]=screenToWorld(mouse.x,mouse.y);
   if(pad.active&&state==='play'){pad.aimT-=dt;if(pad.aimT>0){mouse.wx=p.x+pad.aimX*4.5;mouse.wy=p.y+1+pad.aimY*4.5;}else{mouse.wx=p.x+p.face*1.3;mouse.wy=p.y+.5;}}
+  // touch: aim with the Use stick (kept briefly after letting go), else just ahead of the player, unless a finger is on the world
+  else if(touch.on&&state==='play'&&!touch.world){if(touch.aim){touch.aimX=touch.aim[0];touch.aimY=touch.aim[1];}touch.aimT-=dt;if(touch.aim||touch.aimT>0){mouse.wx=p.x+touch.aimX*4.5;mouse.wy=p.y+1+touch.aimY*4.5;}else{mouse.wx=p.x+p.face*1.3;mouse.wy=p.y+.5;}}
   const nv=hasBuff('night');U.uP.value.set(p.x,p.y+1,hasAcc('light')?11:nv?10:4.5);U.uGlow.value=p.dead?0:(hasAcc('light')?.95:nv?.75:.32);}
+// screen px to world coordinates on the z=.5 plane the tiles sit on
+export function screenToWorld(x,y){const v=new THREE.Vector3((x/innerWidth)*2-1,-(y/innerHeight)*2+1,.5).unproject(camera).sub(camera.position).normalize();const t=(.5-camera.position.z)/v.z;return[camera.position.x+v.x*t,camera.position.y+v.y*t];}
 // Imported bindings are read-only, so other modules assign these through setters.
 export function setWorldClock(v){return worldClock=v;}
