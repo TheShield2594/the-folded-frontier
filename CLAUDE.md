@@ -15,7 +15,7 @@ vite.config.js    Vite config (relative base so dist/ works from any path)
 .github/workflows/pages.yml  builds with Vite and deploys dist/ to GitHub Pages
 ```
 
-The project is built with Vite. The only runtime dependency is three.js, pinned to r128 (`three@0.128.0` from npm) and bundled into the build. There are no audio assets and the only image asset is `public/assets/title.webp`, the title screen background; it's loaded with `new Image()` and the `#title` overlay only gets its `bg` class (image, cream card behind the menu, HTML logo hidden on landscape screens) once it loads, so a missing file falls back to the plain overlay. The title screen must fit without scrolling: it holds only the tagline and menu buttons, and the controls list lives in the `#howto` overlay behind the How to play button. All game art is drawn in code onto canvases, and all sound is synthesized with Web Audio.
+The project is built with Vite. The only runtime dependency is three.js, pinned to r186 (`three@0.186.1` from npm) and bundled into the build, so nothing loads from a CDN at runtime. three.js needs WebGL 2 since r163. There are no audio assets and the only image asset is `public/assets/title.webp`, the title screen background; it's loaded with `new Image()` and the `#title` overlay only gets its `bg` class (image, cream card behind the menu, HTML logo hidden on landscape screens) once it loads, so a missing file falls back to the plain overlay. The title screen must fit without scrolling: it holds only the tagline and menu buttons, and the controls list lives in the `#howto` overlay behind the How to play button. All game art is drawn in code onto canvases, and all sound is synthesized with Web Audio.
 
 ## Running locally
 
@@ -72,6 +72,7 @@ How the modules fit together:
 - **Imported bindings are read-only.** To reassign a `let` owned by another module, call its setter: the owning module exports `setX(v)` next to it (for example `setState('title')`, `setInvDirty(true)`, `setW(w)`), which assigns and returns the value. Mutating an object or array in place (`tiles[i]=...`, `player.hp-=...`) needs no setter. When you add a `let` another module has to reassign, add a setter to the module that declares it.
 - **Export anything another module uses**, and add it to the importing module's `import {...} from './game.js'` list. Names must stay unique across all modules, since `game.js` re-exports them all together.
 - Modules that use three.js start with `import * as THREE from 'three';`.
+- **Color management is off** (`THREE.ColorManagement.enabled=false` and `outputColorSpace=LinearSRGBColorSpace` in `render.js`), as it was before r152: canvas art, hex colors and shader math all stay in plain sRGB values. Don't set `colorSpace` on textures or add `#include <colorspace_fragment>` to shaders, or those objects will render lighter or darker than the rest.
 
 ## Saves
 
