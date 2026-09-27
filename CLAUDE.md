@@ -5,7 +5,7 @@ Guide for working on The Folded Frontier: a papercraft 2D sandbox adventure (Pap
 ## Repo layout
 
 ```
-index.html   the whole game: CSS, HTML UI, and all JavaScript (~2,170 lines)
+index.html   the whole game: CSS, HTML UI, and all JavaScript (~2,740 lines)
 README.md    player-facing overview and controls
 assets/      title.webp: title screen background (painted art with the logo baked in)
 .nojekyll    lets GitHub Pages serve files as-is
@@ -38,7 +38,7 @@ Inside the script, sections start with `// ================= name ==============
 | Section | What it holds |
 |---|---|
 | constants & helpers | World sizes (`SIZES`), seeded RNG (`mulberry32`), noise (`makeNoise`), canvas drawing helpers (`rr`, `ink`, `fi`, `circ`, `poly`, `grain`) |
-| settings, meta, keys | Default key bindings (`DEF_BIND`, `ALT`), settings (`SET`), achievements/stats (`META`), input state |
+| settings, meta, keys | Default key bindings (`DEF_BIND`, `ALT`), settings (`SET`), interface/text size (`applyUI`, `upx`), achievements/stats (`META`), input state |
 | atlas | 1024×2048 texture atlas drawn in code; `C` maps names to atlas cells (blocks, decor, item icons, badges, farming, secrets) |
 | tiles | Tile enum `T`, tile properties via `def(id, {...})` into `TP`, plus `SOLID`/`OPAQUE`/`LIGHT` lookup arrays |
 | items | `ITEMS` via `item(id, {...})`, `BADGES`, `RECIPES` (`[id, count, [[ingredient, n]...], station]`) |
@@ -48,7 +48,7 @@ Inside the script, sections start with `// ================= name ==============
 | chunk meshes | 32×32 chunk meshes (`CS=32`), rebuilt when marked dirty |
 | sprites & sheets | Procedural sprite sheets for player, enemies, biomes, partners |
 | particles | Particle effects |
-| audio | Web Audio setup, `tone()`, SFX and music synthesis, biome ambience (`updateAmbience`, `AMBW` layer weights) |
+| audio | Web Audio setup, `tone()`, `SFX` (with random variants), music tracks (`MUS`, sequenced by `music()`, crossfaded by `setMusic()`), biome ambience (`updateAmbience`, `AMBW` layer weights) |
 | entities | `player`, enemy defs `EN`, enemies, pickups, projectiles, NPCs, boss, `QUESTS` |
 | inventory helpers | Adding/removing items |
 | UI | Inventory, crafting, tooltips, toasts |
@@ -89,6 +89,8 @@ Browser-only saves are why the game will be self-hosted with server-side saves (
 - **Boss phases:** every boss runs `bossPhase()` at 50% and 25% life (`e.phase` 1 and 2), sits in `e.act==='phase'` (immune) and then `bossRefold()`s. Each boss's AI reads `e.phase` to add or change attacks, so a new boss should do the same.
 - **Fishing:** rods have `rod`/`fpow`, bait has `bait`, and catches come from `CATCH` (per biome, plus `lava`). The bobber is the `bob` object, updated in `updateFishing()`.
 - **Combat hooks:** `hurtEnemy(e,dmg,dir,kb,crit,elem)` and `hurtPlayer(dmg,from,src,elem)`. Pass the attacking enemy or projectile as `src` so shields can block and parry it (`hurtPlayer` returns `'parry'` on a parry); leave it out for damage that can't be blocked, like lava. Damage types are `'fire'`, `'ink'` and `'water'` (`ELEM`); each enemy's weakness, resistance and the type its own hits carry are set in the table right after `EN`, and projectile kinds take a type from `elem` in `PK`. Statuses live in `e.st` / `player.st` and are not saved.
+- **Music** is a step sequencer, not audio files: each `MUS` track is 8 bars of 8th notes (`mel` is one hex scale degree per step, `-` holds, `.` rests). `pickMusic()` chooses title, boss or the current biome, and `setMusic()` crossfades. To add a track, add a `MUS` entry and return its key from `pickMusic()`.
+- **UI scale:** `--ui` zooms all of `#ui` and `--ts` multiplies every CSS `font-size` (write new ones as `calc(Npx*var(--ts))`). Inside `#ui`, divide viewport units by `var(--ui)`, and set screen-space `left`/`top` from JS with `upx()`, or they land in the wrong place when zoomed.
 - Keep new input actions rebindable: keyboard in `DEF_BIND`/`ALT` (plus a `BINDLAB` label), gamepad in `DEF_PAD` (plus a `PADLAB` label). Start and the d-pad/sticks are fixed, and backpack menus use a fixed gamepad layout (`fx` in `handlePad`).
 
 ## Testing
