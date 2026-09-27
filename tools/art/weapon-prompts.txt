@@ -1,0 +1,94 @@
+The Folded Frontier: weapon and tool icon sheets. These are the item icons, which the game also uses as the weapon in the player's hand.
+
+How to run each one:
+- Model: Nano Banana Pro, 2K. Use 16:9 for the 2-row sheets and 21:9 or 16:9 for the shields.
+- Attach two references: player-parts-reference.png (style) and weapon-icons-now.jpg (the current icons, for layout and orientation).
+- Once you have one good sheet, attach it as an extra reference for the others so they match.
+- Paste each result here in its own message, or upload it to the branch in renders/ with the filename shown.
+
+======================================================================
+SWORDS  (save as renders/weapons-swords.png)
+======================================================================
+Swords icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering).
+
+Draw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:
+1. Wooden Sword: a simple carved wooden practice sword, light wood blade, darker wood grip
+2. Copper Sword: short copper blade (#c8743a) with rivets on the crossguard, leather-wrapped grip
+3. Iron Sword: straight grey iron blade (#8f98a3), plain crossguard, leather grip
+4. Gold Broadsword: wide gold blade (#f1c04f) with an engraved swirl near the guard, ornate crossguard, red gem in the pommel
+5. Frostsilver Blade: pale icy silver-blue blade (#cfe3ee) with ice crystals growing from the crossguard
+6. Ink Cutlass: curved dark violet-black cutlass (#3a2d4a) with ink drips along the edge and a glowing purple line (#b58cf0)
+7. Emberite Greatsword: large charcoal blade (#3b3034) with glowing ember-orange cracks (#ff7a2d) and a flame-shaped crossguard
+8. The Unfolded Edge: a legendary sword folded from cream paper (#f4f0e6) like origami, crisp fold creases and ink-drawn edges, a small ink-blot gem in the guard
+
+Orientation: every item lies diagonally at 45 degrees with the handle or grip at the bottom-left and the blade, head or tip at the top-right, like the icons in the second reference image.
+
+Each item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no numbers, no shadow, no ground.
+
+======================================================================
+TOOLS  (save as renders/weapons-tools.png)
+======================================================================
+Tools icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering).
+
+Draw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:
+1. Copper Pickaxe: copper head (#c8743a) with rivets, wooden handle
+2. Iron Pickaxe: grey iron head (#8f98a3), wooden handle
+3. Gold Pickaxe: gold head (#f1c04f) with an engraved line, wooden handle
+4. Frostsilver Pickaxe: pale icy silver-blue head (#cfe3ee) with small ice crystals, wooden handle
+5. Inkstone Pickaxe: dark violet-black stone head (#3a2d4a) with ink drips and a glowing purple seam (#b58cf0), dark handle
+6. Emberite Pickaxe: charcoal head (#3b3034) with glowing ember cracks (#ff7a2d), dark handle
+7. Wooden Hammer: chunky wooden mallet head on a wooden handle
+8. Paper Star: a four-pointed throwing star folded from white paper like origami, a small red dot in the middle (this one faces front, not diagonal)
+
+Orientation: every item lies diagonally at 45 degrees with the handle or grip at the bottom-left and the blade, head or tip at the top-right, like the icons in the second reference image. The Paper Star is the exception and faces front.
+
+Each item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no numbers, no shadow, no ground.
+
+======================================================================
+BOWS AND LAUNCHERS  (save as renders/weapons-ranged.png)
+======================================================================
+Bows and launchers icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering).
+
+Draw exactly 6 separate items in a neat grid of 2 rows and 3 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:
+1. Wooden Bow: simple wooden longbow with a leather grip and a cream string
+2. Gold Bow: gold bow (#f1c04f) with engraved tips and a red grip
+3. Feather Bow: pale frostsilver bow (#cfe3ee) with white feathers tied at both tips
+4. Moonstring Bow: dark violet bow (#5a3f7a) with small crescent moons at the tips and a glowing pale string
+5. Plane Launcher: a chunky blue paper tube (#6f9bc4) with a wooden handle underneath and a white paper plane poking out of the front
+6. Swallowtail Launcher: a violet paper tube (#6b4fa0) with a wooden handle underneath and a pale violet swallowtail paper plane poking out of the front
+
+Orientation: the bows are drawn diagonally as an arc from the top-left to the bottom-right, with the grip in the middle and the string on the lower-left side, like the bow icons in the second reference image. The launchers lie diagonally with the handle at the bottom-left and the open end pointing to the top-right.
+
+Each item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no numbers, no shadow, no ground.
+
+======================================================================
+TOMES AND STAFFS  (save as renders/weapons-magic.png)
+======================================================================
+Magic books and staffs icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering).
+
+Draw exactly 6 separate items in a neat grid of 2 rows and 3 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:
+1. Ink Bolt: a dark violet spell book (#3a2d4a) with a black ink-drop symbol on the cover
+2. Crane Swarm: a red spell book (#c0392b) with a white origami crane on the cover
+3. Tidal Tome: a deep blue spell book (#2d5f8a) with pale wavy water lines on the cover
+4. Moonlit Tome: a midnight blue spell book (#1e1b3a) with a glowing pale violet full moon on the cover
+5. Starfall Staff: a wooden staff topped with a big gold five-pointed star (#f1c04f)
+6. Ember Staff: a charcoal staff with a flickering orange flame (#ff7a2d, #ffd66b) at the top
+
+Orientation: the four books stand upright, seen from the front and slightly turned so the spine shows on the left. The two staffs lie diagonally at 45 degrees with the bottom end at the bottom-left and the star or flame at the top-right.
+
+Each item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no numbers, no shadow, no ground.
+
+======================================================================
+SHIELDS  (save as renders/weapons-shields.png)
+======================================================================
+Shields icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering).
+
+Draw exactly 4 separate items in a neat grid of 1 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:
+1. Wooden Shield: a kite-shaped shield of wooden planks with an iron rim and a small iron boss
+2. Iron Buckler: a small round grey iron buckler (#8f98a3) with a raised boss and rivets round the rim
+3. Quilted Shield: a round shield of stitched violet quilted cloth (#6b4fa0) with a dashed stitching ring and a grey boss
+4. Beacon Shield: a round silver shield with a glowing gold lantern-like boss (#f1c04f) in the middle
+
+Orientation: every shield faces front, upright.
+
+Each item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no numbers, no shadow, no ground.
