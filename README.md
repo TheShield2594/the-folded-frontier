@@ -14,8 +14,9 @@ To run locally, open `index.html` in a browser.
 
 - **Move / jump:** WASD, Space
 - **Use item:** left click · **Interact:** right click
-- **Backpack & crafting:** E · **Map:** M · **Heal:** H · **Flatten:** C · **Dash:** Shift · **Pause:** Esc
-- Gamepad supported (standard mapping, X dashes, RT uses items); rebind keys and gamepad buttons in Settings
+- **Backpack & crafting:** E · **Map:** M · **Heal:** H · **Flatten:** C · **Dash:** Shift · **Block:** X or hold right click (needs a shield) · **Pause:** Esc
+- Gamepad supported (standard mapping, X dashes, RT uses items, hold B to block); rebind keys and gamepad buttons in Settings
+- **Bows:** hold to draw, release to shoot; a full draw always crits
 - **NICE! hits:** click again when your sword flashes gold near the end of a swing for 1.8× damage; stomp and tap jump on impact
 
 ## Features
@@ -24,6 +25,8 @@ To run locally, open `index.html` in a browser.
 - Mining, building, crafting stations, ore tiers, grappling hook and rope
 - Melee, ranged and magic weapons; bosses including a secret one
 - A dash with invulnerability frames and a one-per-jump air dash
+- Charged bows, slow and heavy warhammers, and shields that block, or parry when raised just as a hit lands
+- Fire, ink and water damage types: fire burns, ink slows, water soaks and puts out fire, and every enemy has its own weakness and resistance
 - Enemies with their own attack patterns in every biome, plus rare gold-starred elite variants that hit harder and drop better loot
 - NPC townsfolk and housing, partners, badges, farming, potions, weather and the Ink Moon
 - Paper mechanics: peelable walls, pop-out sketched bridges, flattening, rebuildable camps with fast travel, ruins with secret rooms, treasure maps
