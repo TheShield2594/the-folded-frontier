@@ -7,8 +7,10 @@ The art style of The Folded Frontier, for anyone making sprites, tiles, icons or
 ## The look
 
 - **Paper cut-outs.** Every object reads as a piece of paper cut out and stuck on: a flat shape with its own border. Characters are made of separate pieces (head, torso, arms, legs), like a paper doll.
-- **Ink outline.** A thick, even, dark plum-black outline, `INK = #2a2130` (never pure black). Inner detail lines (creases, bark grooves, hair strands) are thinner and can be a darker shade of the fill.
-- **Cream sticker border.** Outside the ink, a cream paper border, `#fbf5e6`, all the way round the silhouette. In code, `makeSheet`/`stickerAt` add it (3 to 4 px at 1x). In painted art, it's the white border the renders come with.
+- **Ink outline.** A thick, even, dark plum-black outline, `INK = #2a2130` (never pure black), **0.05 of a tile wide as seen in game** (3 px on a 60 px sprite unit, about 3 px on a 64 px tile). Inner detail lines (creases, bark grooves, hair strands) are thinner and can be a darker shade of the fill.
+- **Cream sticker border.** Outside the ink, a cream paper border, `#fbf5e6`, **0.06 of a tile wide**, all the way round the silhouette. In code, `makeSheet`/`stickerAt` add it. Painted art gets it from `tools/art/build.py`, which replaces whatever border the render came with.
+- **Same weight everywhere.** Line weights are measured in tiles as the art appears in game, not in image pixels, so a big boss and a small icon have the same outline and border. When art is scaled, re-apply the outline at the final size (`build.py` does).
+- **One border per object.** A character made of pieces has ink round every piece but only one cream border, round the whole figure. Pieces overlapping each other show ink, never cream.
 - **Flat soft colour, simple shading.** One base colour per area, a darker shade for folds and the side away from the light, and one lighter highlight stroke on the upper left. No gradients beyond that, no realistic lighting, no cast shadows. The light comes from the upper left.
 - **Rounded and chunky.** Soft rounded shapes, cute chibi proportions (the head is about a third of a character's height), and nothing spindly. Origami creatures (Fold Fox, Great Crane) are the exception: they have crisp folded facets, but keep the same outline, border and palette.
 - **Paper grain.** A light speckle or fibre texture over everything (`grain()` in code). It should be barely visible at game size.
@@ -56,14 +58,14 @@ What has worked so far (see `CLAUDE.md` for the account and credit notes):
 
 - **Model:** Nano Banana Pro (`nano_banana_pro`, 2 credits, 2k). It follows the style and keeps a character consistent across renders. Seedream 4.5 is cheaper but drifted into pixel art for the player.
 - **Consistency:** pass an earlier render as a reference (`medias: [{value: <job id>, role: "image_references"}]`) and say "the exact same ... from the reference image". That's how the Fold Fox's second frame, the trunk and the player parts matched their originals.
-- **Background:** ask for a plain flat light grey background, no shadow, no ground, no text. `tools/art/cut.py` removes it.
+- **Background:** ask for a plain flat light grey background, no shadow, no ground, no text. `tools/art/build.py` removes it.
 - **Characters that animate:** ask for a parts sheet (head, torso, one arm, one leg, plus any gear) in side view, "laid out in a row with generous empty space between them, none touching", and rig the pieces in code, as the player does.
 
 Prompt template (fill in the brackets):
 
 > 2D game [enemy sprite / item icon / tile], full body, strict side view facing right, [pose]. [Subject, with its colours given as hex codes from the palette above]. Papercraft style like Paper Mario: a flat cut-out made of paper with thick dark plum-black ink outlines (#2a2130), a white paper cut-out border around the whole silhouette, subtle paper grain texture, flat soft colors, rounded chunky shapes[, cute chibi proportions]. Plain flat light grey background, no shadow, no ground, no text, centered, whole [subject] visible.
 
-After generating: cut out the background, scale to the frame size (2x is fine), check the silhouette at game size and next to its neighbours in a screenshot, then save as `.webp` (quality around 90, lossless for masks) in `assets/`.
+After generating: add the render to `tools/art/build.py` (it cuts out the background, scales to the frame size at 2x, redraws the outline and border at the house weight, and saves `.webp` in `assets/`), then check it in a game screenshot next to its neighbours at game size.
 
 ## Don'ts
 

@@ -1116,16 +1116,20 @@ function playerSheet(){const eq={};const a=player.armor;if(a[0])eq.helm=ITEMS[a[
 const PAINT={};
 // player_parts.webp: side-view head, torso, arm, leg and helmet, posed with the same POSES angles as drawHuman; [x,y,w,h,pivotX,pivotY] in the image
 // player_parts_mask.webp marks what armour recolours (tunic, trousers and boots, helmet metal). Frames are 2x the 96x144 code frames.
-const RIG={head:[0,0,95,94,46.2,86.8],torso:[97,0,88,85,55.7,9.4],arm:[187,0,30,77,13.3,6.3],leg:[219,0,35,90,15.7,7.8],helm:[256,0,60,68,0,0]};
+const RIG={head:[0,0,108,107,52.8,93.4],torso:[110,0,101,98,62.3,16.0],arm:[213,0,43,91,19.9,12.9],leg:[258,0,49,103,22.3,14.4],helm:[309,0,73,81,6.6,6.6]};
 function paintedPlayer(eq){const P=PAINT.player,c=mk(192*9,288),g=c.getContext('2d');
   const piece=(k,col,dark)=>{const[x,y,w,h]=RIG[k],p=mk(w,h),q=p.getContext('2d');q.drawImage(P.img,x,y,w,h,0,0,w,h);
     if(col){const t=mk(w,h),u=t.getContext('2d');u.drawImage(P.mask,x,y,w,h,0,0,w,h);u.globalCompositeOperation='source-in';u.fillStyle=col;u.fillRect(0,0,w,h);q.globalCompositeOperation='color';q.drawImage(t,0,0);}
     if(dark){q.globalCompositeOperation='source-atop';q.fillStyle='rgba(42,33,48,.28)';q.fillRect(0,0,w,h);}return p;};
   const head=piece('head'),torso=piece('torso',eq.mail),armA=piece('arm',eq.mail),armB=piece('arm',eq.mail,1),legA=piece('leg',eq.greaves),legB=piece('leg',eq.greaves,1),helm=eq.helm&&piece('helm',eq.helm);
-  const put=(p,k,x,y,a)=>{g.save();g.translate(x,y);g.rotate(a||0);g.drawImage(p,-RIG[k][4],-RIG[k][5]);g.restore();};
-  for(let f=0;f<9;f++){const o=POSES[f];g.save();g.beginPath();g.rect(f*192,0,192,288);g.clip();g.translate(f*192,(o.bob||0)*2);
-    put(legB,'leg',89,194,o.legB);put(armB,'arm',90,159,o.armB);put(torso,'torso',93,137);put(legA,'leg',103,194,o.legA);put(head,'head',93,140);
-    if(helm)g.drawImage(helm,57,48,82,90);put(armA,'arm',98,159,o.armA);g.restore();}
+  const put=(t,p,k,x,y,a)=>{t.save();t.translate(x,y);t.rotate(a||0);t.drawImage(p,-RIG[k][4],-RIG[k][5]);t.restore();};
+  const fr=mk(192,288),h=fr.getContext('2d'),sil=mk(192,288),s=sil.getContext('2d');
+  for(let f=0;f<9;f++){const o=POSES[f];h.clearRect(0,0,192,288);g.save();g.translate(f*192,0);g.beginPath();g.rect(0,0,192,288);g.clip();
+    h.save();h.translate(0,(o.bob||0)*2);put(h,legB,'leg',89,194,o.legB);put(h,armB,'arm',90,159,o.armB);put(h,torso,'torso',93,137);put(h,legA,'leg',103,194,o.legA);put(h,head,'head',93,140);
+    if(helm)h.drawImage(helm,48,39,99,107);put(h,armA,'arm',98,159,o.armA);h.restore();
+    // one cream border round the whole figure (parts only carry ink), like makeSheet
+    s.clearRect(0,0,192,288);s.globalCompositeOperation='source-over';s.drawImage(fr,0,0);s.globalCompositeOperation='source-in';s.fillStyle='#fbf5e6';s.fillRect(0,0,192,288);
+    for(let i=0;i<16;i++){const a=i/16*Math.PI*2;g.drawImage(sil,Math.cos(a)*7,Math.sin(a)*7);}g.drawImage(fr,0,0);g.restore();}
   return c;}
 const SHEETS={};
 function slimeDraw(col,crown){return(t,f,w,h)=>{const cx=w/2,by=h-7,sq=f?1:0;const sw=w*.78*(1+sq*.16),sh_=h*.66*(1-sq*.22);
