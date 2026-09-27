@@ -7,10 +7,11 @@ Guide for working on The Folded Frontier: a papercraft 2D sandbox adventure (Pap
 ```
 index.html   the whole game: CSS, HTML UI, and all JavaScript (~2,170 lines)
 README.md    player-facing overview and controls
+title.jpg    title screen background (painted art with the logo baked in)
 .nojekyll    lets GitHub Pages serve files as-is
 ```
 
-There is no build step, no package.json and no image/audio assets. All art is drawn in code onto canvases, and all sound is synthesized with Web Audio. The only external dependency is three.js r128, loaded from cdnjs in a `<script>` tag.
+There is no build step, no package.json and no audio assets. The only image asset is `title.jpg`, the title screen background; it's loaded with `new Image()` and the `#title` overlay only gets its `bg` class (image, cream card behind the menu, HTML logo hidden on landscape screens) once it loads, so a missing file falls back to the plain overlay. All game art is drawn in code onto canvases, and all sound is synthesized with Web Audio. The only external dependency is three.js r128, loaded from cdnjs in a `<script>` tag.
 
 ## Running locally
 
