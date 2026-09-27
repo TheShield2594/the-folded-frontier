@@ -129,16 +129,27 @@ def tintmask(k, im):
     else: m = np.zeros_like(al)
     return m & al
 
-def inked_pieces(img, n=4, grow=2):
-    """Split a parts sheet into its n pieces, left to right, each cut out as exactly its filled ink outline (plus a couple of
-    pixels of anti-aliasing), since restyle() replaces everything outside the ink anyway. This ignores the render's border,
-    its soft shadows and the blurry ghost blobs image models sometimes add, and keeps pale fills (chainmail) that are close
-    to the background grey. Returns (piece, (x, y) of its top-left in the render)."""
+def hull(mask):
+    """Filled convex hull of a mask."""
+    from scipy.spatial import ConvexHull
+    from PIL import ImageDraw
+    ys, xs = np.where(mask); pts = np.c_[xs, ys]; h = ConvexHull(pts)
+    im = Image.new('L', (mask.shape[1], mask.shape[0]), 0); ImageDraw.Draw(im).polygon([tuple(p) for p in pts[h.vertices]], fill=1)
+    return np.asarray(im).astype(bool)
+
+def inked_pieces(img, n=4, reach=90):
+    """Split a parts sheet into its n pieces, left to right. Pieces are found by their ink (so the blurry ghost blobs image
+    models sometimes add, which have none, are skipped); each piece is then everything inside its paper border, which also
+    closes edges the render left without ink (pale chainmail). restyle() replaces the border afterwards.
+    Returns (piece, (x, y) of its top-left in the render)."""
     a = np.asarray(img.convert('RGB')).astype(int); ink = a.max(axis=2) < 90
-    core = ndimage.binary_fill_holes(ndimage.binary_closing(ink, iterations=2))
+    bg = np.median(np.concatenate([a[0], a[-1], a[:, 0], a[:, -1]]), axis=0); fg = np.abs(a - bg).max(axis=2) >= 16
+    core = ndimage.binary_fill_holes(ndimage.binary_closing(np.pad(ink, 8), iterations=8))[8:-8, 8:-8]
     lab, m = ndimage.label(core); sz = ndimage.sum(core, lab, range(1, m + 1)); out = []
     for k in np.argsort(-sz)[:n] + 1:
-        mask = ndimage.binary_dilation(lab == k, iterations=grow)
+        c = lab == k; near = ndimage.binary_fill_holes(ndimage.binary_dilation(c, iterations=reach // 2) & fg)
+        far = ndimage.binary_fill_holes(ndimage.binary_dilation(c, iterations=reach) & fg)  # closes wide pale areas
+        mask = (far & hull(near)) | ndimage.binary_dilation(c, iterations=2)  # but no further out than the piece's own shape
         ys, xs = np.where(mask); sl = (slice(ys.min(), ys.max() + 1), slice(xs.min(), xs.max() + 1))
         out.append(((xs.min(), ys.min()), Image.fromarray(np.dstack([a.astype(np.uint8), (mask * 255).astype(np.uint8)])[sl], 'RGBA')))
     return [(im, o) for o, im in sorted(out, key=lambda t: t[0][0])]
@@ -151,7 +162,7 @@ ARMOR_PIV = {'cu': {'head': (331, 749), 'torso': (954, 371), 'arm': (1313, 368),
              'ik': {'head': (350, 760), 'torso': (985, 360), 'arm': (1380, 375), 'leg': (1698, 360)},
              'em': {'head': (368, 830), 'torso': (1045, 375), 'arm': (1445, 370), 'leg': (1733, 370)}}
 HEAD_FIX = {'fe': 1.15}  # renders that drew the head small for the torso
-BASE_H = {'head': 625, 'torso': 563, 'arm': 509, 'leg': 598}  # base part heights inside their ink outline in parts.png, so armour pieces match their size
+BASE_H = {'head': 669, 'torso': 608, 'arm': 553, 'leg': 643}  # base part heights in parts.png (paper border included), so armour pieces match their size
 
 def armor(img, m):
     """armor_<m>.webp: helmeted head, torso, arm, leg (ink only, no tint mask); prints the ARMOR_RIG entry."""
