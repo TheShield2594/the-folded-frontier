@@ -21,6 +21,7 @@ export * from './partners.js';
 export * from './pets.js';
 export * from './map.js';
 export * from './gamepad.js';
+export * from './touch.js';
 export * from './hud.js';
 export * from './guide.js';
 export * from './dialogue.js';

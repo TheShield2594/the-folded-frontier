@@ -21,6 +21,7 @@ applyUI();addEventListener('resize',applyUI);
 export const META=Object.assign({ach:{},stats:{}},loadJSON('folded-frontier-meta')||{});
 export const saveMeta=()=>saveJSON('folded-frontier-meta',META);
 export const keys={};export const pad={held:{},prev:{},aimX:1,aimY:0,active:false,aimT:0};
+export const touch={on:false,held:{},aim:null,aimT:0,world:false,quick:false};
 export const boundKeys=()=>Object.values(SET.bind);
 export function actKey(a,k){if(SET.bind[a]===k)return true;return ALT[a].includes(k)&&!boundKeys().includes(k);}
-export function held(a){if(keys[SET.bind[a]])return true;for(const k of ALT[a])if(keys[k]&&!boundKeys().includes(k))return true;return !!pad.held[a];}
+export function held(a){if(keys[SET.bind[a]])return true;for(const k of ALT[a])if(keys[k]&&!boundKeys().includes(k))return true;return !!pad.held[a]||!!touch.held[a];}

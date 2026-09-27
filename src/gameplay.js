@@ -4,7 +4,7 @@ import {
   $,AC,addItem,ambBus,ARMF,BADGES,bestDrop,bestKill,BIO,biomeAt,boss,boxHits,BUFFS,burst,camera,camT,chests,
   clamp,collide,consumeSel,countItem,crackerBoom,cursor,DASH_V,defense,dormant,dropItem,dummy,edmg,ELEM,
   ELITE_LOOT,ELITE_TINT,EN,enemies,floatText,H,hasAcc,hasBadge,hasBuff,held,HERBCOL,HERBS,iconTex,idx,
-  INKTINT,inNiceWin,isFest,invOpen,isNight,isOpaque,isSolid,ITEMS,keys,lerp,lightAt,makeElite,markDirty,meta,
+  INKTINT,inNiceWin,isFest,invOpen,isNight,isOpaque,isSolid,ITEMS,keys,touch,lerp,lightAt,makeElite,markDirty,meta,
   mouse,N,NICE_LATE,niceW,noise,noiseBuf,NPCDEF,npcs,OPAQUE,openSide,pad,parts,pick,pickups,player,
   popUp,projs,pt,pv,questDone,quests,rand,randi,removeEnemy,removeItem,rollWeather,scene,SEEDIDS,selItem,SET,
   setBoss,setInv,shoulderAt,setInvDirty,setTile,setTint,SFX,sh,shieldItem,SOIL,SOLID,spawnEnemy,spawnGhost,
@@ -307,7 +307,7 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateDashHud(d
   if(p.inLiq===T.LAVA&&!hasBuff('fire')){if(p.inv_t<=0)hurtPlayer(30,p.x-p.face,null,'fire');burst(p.x,p.y+.5,['#ff8a3d','#ffd66b'],1,2,{grav:-4,bright:1});}
   const hooked=hook.state===2;
   const onRope=tileAt(cx,Math.floor(p.y+.9))===T.ROPE||tileAt(cx,Math.floor(p.y+.2))===T.ROPE;
-  const upH=!!(keys.w||keys.arrowup||pad.held.up),dnH=held('down');
+  const upH=!!(keys.w||keys.arrowup||pad.held.up||touch.held.up),dnH=held('down');
   if(onRope&&(upH||dnH)&&!hooked)p.climb=true;if(!onRope||hooked)p.climb=false;
   // block: hold right-click, the Block key, or the gamepad Interact button with a shield equipped
   const shield=shieldItem(),wantBlock=!!shield&&(held('block')||mouse.r||(pad.active&&!!pad.held.interact))&&!hooked&&!p.climb&&!p.flat&&p.dashT<=0&&!cursor&&!invOpen;

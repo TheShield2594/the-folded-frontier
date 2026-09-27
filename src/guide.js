@@ -1,6 +1,6 @@
 // The storybook intro for new worlds and the first-night tutorial (plus hints for paper mechanics).
 import {
-  $,circ,enclosure,explored,grain,H,held,ink,invOpen,isNight,KEYNAME,META,pad,PADNAME,player,poly,rr,
+  $,circ,enclosure,explored,grain,H,held,ink,invOpen,isNight,KEYNAME,META,pad,PADNAME,player,poly,rr,touch,
   saveSettings,SET,SFX,setState,SOLID,state,T,tileAt,toast,W,worldTime,
 } from './game.js';
 
@@ -32,13 +32,15 @@ $('intro').addEventListener('click',skipIntro);
 // tut is saved with the world: s = next basic step, seen = paper hints already shown. Old saves load with everything done.
 export let tut={s:99,seen:{}};
 export const newTut=()=>({s:0,seen:{}});
-const PAD=()=>pad.active,kb=s=>`<kbd>${s}</kbd>`;
-const K=a=>kb(PAD()?PADNAME(SET.pad[a]):KEYNAME(SET.bind[a]));
-const USE=()=>kb(PAD()?PADNAME(SET.pad.use):'Left click'),INTER=()=>kb(PAD()?PADNAME(SET.pad.interact):'Right click');
+const PAD=()=>pad.active,TOUCH=()=>touch.on&&!pad.active,kb=s=>`<kbd>${s}</kbd>`;
+// on touch, name the on-screen button
+const TBTN={jump:'Jump',inv:'Bag',flat:'Flat',dash:'Dash',hook:'Hook',heal:'Heal',map:'Map',interact:'Talk',block:'Block'};
+const K=a=>kb(PAD()?PADNAME(SET.pad[a]):TOUCH()&&TBTN[a]?TBTN[a]:KEYNAME(SET.bind[a]));
+const USE=()=>kb(PAD()?PADNAME(SET.pad.use):TOUCH()?'Use':'Left click'),INTER=()=>kb(PAD()?PADNAME(SET.pad.interact):TOUCH()?'Tap':'Right click');
 const dusk=()=>{const h=19.5-worldTime;return h>0&&h<12?` About ${Math.max(1,Math.round(h*25))} seconds of daylight left.`:'';};
 const STEPS=[
-  {t:'Stretch your legs',x:()=>PAD()?`Walk with the left stick and jump with ${K('jump')}.`:`Walk with ${K('left')} ${K('right')} and jump with ${K('jump')}.`,start:g=>{g.x0=player.x;g.jumped=false;},done:g=>Math.abs(player.x-g.x0)>6&&g.jumped},
-  {t:'Dig in',x:()=>`Hold ${USE()} with your pickaxe to mine the ground. Trees chop the same way and give you wood.`,start:g=>{g.m0=META.stats.mined||0;},done:g=>(META.stats.mined||0)-g.m0>=4},
+  {t:'Stretch your legs',x:()=>PAD()||TOUCH()?`Walk with the ${TOUCH()?'':'left '}stick and jump with ${K('jump')}.`:`Walk with ${K('left')} ${K('right')} and jump with ${K('jump')}.`,start:g=>{g.x0=player.x;g.jumped=false;},done:g=>Math.abs(player.x-g.x0)>6&&g.jumped},
+  {t:'Dig in',x:()=>`Hold ${USE()}${TOUCH()?' (or touch the ground)':''} with your pickaxe to mine the ground. Trees chop the same way and give you wood.`,start:g=>{g.m0=META.stats.mined||0;},done:g=>(META.stats.mined||0)-g.m0>=4},
   {t:'Make something',x:()=>`Press ${K('inv')} to open your backpack. Craft a Workbench from 10 wood, then place it: most recipes need one nearby.`,ev:'craft'},
   {t:'Build a shelter',x:()=>`Night brings monsters. Get indoors before dark: your cabin works, or build a room with walls behind you, blocks around you and a door.${dusk()}`,done:()=>!!enclosure(Math.floor(player.x),Math.floor(player.y+.5))},
   {t:'Survive the night',x:()=>isNight()?'Monsters roam until morning. Stay inside, keep a torch lit, and fight from the doorway if you have to.':'Good, you have a place to hide. Keep exploring, and when night falls head back and wait for morning.',ev:'dawn'},

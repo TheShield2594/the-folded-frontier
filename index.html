@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Folded Frontier</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Grandstander:wght@500;700;800&display=swap">
@@ -26,12 +26,21 @@
   <div id="boss" hidden><div class="bn">King Slime</div><div class="bb"><i></i><b style="left:50%"></b><b style="left:25%"></b></div></div>
   <div id="evbar" hidden><div class="en"></div><div class="eb"><i></i></div></div>
   <div id="hotwrap"><div id="itemName"></div><div id="hotbar" class="grid"></div></div>
+  <div id="touch" hidden>
+    <div id="tStick" aria-label="Move"><i id="tStickK"></i></div>
+    <div id="tMenu"><button type="button" id="tPause" data-act="pause" aria-label="Pause">II</button><button type="button" id="tMap" data-act="map">Map</button><button type="button" id="tInv" data-act="inv">Bag</button></div>
+    <div id="tAct">
+      <div class="tRow"><button type="button" id="tHeal" data-act="heal">Heal</button><button type="button" id="tMount" data-act="mount">Ride</button><button type="button" id="tPartner" data-act="partner">Swap</button><button type="button" id="tAbility" data-act="ability">Pal</button></div>
+      <div class="tRow"><button type="button" id="tBlock" data-hold="block">Block</button><button type="button" id="tHook" data-act="hook">Hook</button><button type="button" id="tFlat" data-hold="flat">Flat</button><button type="button" id="tDash" data-act="dash">Dash</button><button type="button" id="tTalk" data-act="interact">Talk</button></div>
+      <div class="tRow"><div id="tUse" class="tBig" aria-label="Use item, drag to aim"><i id="tUseK"></i><span>Use</span></div><button type="button" id="tJump" class="tBig" data-act="jump" data-hold="jump">Jump</button></div>
+    </div>
+  </div>
   <div id="panel" hidden>
     <div id="tabs" role="tablist" aria-label="Backpack pages"><button type="button" role="tab" data-tab="inv"><img alt="">Backpack</button><button type="button" role="tab" data-tab="craft"><img alt="">Crafting</button><button id="partyBtn" type="button" role="tab" data-tab="party"><img alt="">Party</button><button id="bestBtn" type="button" role="tab" data-tab="bestiary"><img alt="">Bestiary</button><button id="musBtn" type="button" role="tab" data-tab="museum"><img alt="">Museum</button><button id="townBtn" type="button" role="tab" data-tab="town"><img alt="">Town</button></div>
     <div class="sheet pinned" id="sideSheet" hidden><h3 id="sideTitle">Chest</h3><div id="sideBody"></div></div>
     <div id="leftCol">
       <div class="sheet taped tl"><h3 class="stk">Backpack</h3><div id="grid" class="grid"></div>
-        <div class="row"><button id="houseBtn" type="button">Check this room</button><button id="sortBtn" class="ghost" type="button">Sort</button></div></div>
+        <div class="row"><button id="houseBtn" type="button">Check this room</button><button id="sortBtn" class="ghost" type="button">Sort</button><button id="quickBtn" class="ghost touchOnly" type="button">Quick move</button></div></div>
     </div>
     <div class="sheet pinned"><h3>Gear</h3><div id="equip"></div><div id="defTxt"></div></div>
     <div class="sheet taped tr" id="craft"><h3>Crafting</h3><div id="stations"></div><div id="recipes"></div></div>
@@ -70,6 +79,7 @@
           <dt>Pets &amp; mounts</dt><dd>Use a pet item to have it follow you (use it again to send it home). Use a mount item, or press <kbd>G</kbd>, to ride it: faster running and higher jumps. Flattening, climbing or firing the hook gets you down</dd>
           <dt><kbd>F</kbd></dt><dd>Fire the Grappling Hook. On a rope, hold <kbd>W</kbd> or <kbd>S</kbd> to climb</dd>
           <dt><kbd>H</kbd> · <kbd>M</kbd> · <kbd>Esc</kbd></dt><dd>Drink a healing potion · World map · Pause and save</dd>
+          <dt>Touch</dt><dd>On a phone or tablet, the stick on the left walks (push up or down to climb). Hold <b>Use</b> to use the held item and drag off it to aim, or touch the world to use it right there. Tap a townsperson, door or chest to talk or open it, or press <b>Talk</b> near one. In the backpack, tap to pick up and put down, hold to split a stack, and turn on <b>Quick move</b> to send items straight across</dd>
           <dt>Gamepad</dt><dd>Plug one in and press a button. X dashes, RT uses the held item (hold it to draw a bow) and holding B blocks. Keys and buttons can be changed in Settings.</dd>
           <dt>NICE!</dt><dd>Stomp enemies by landing on them and tap <kbd>Space</kbd> on impact. With a sword, click again when the blade flashes gold near the end of a swing for a bonus hit worth 1.8× damage. Clicking too early spoils that swing's chance.</dd>
         </dl>

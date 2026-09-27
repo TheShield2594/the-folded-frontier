@@ -14,7 +14,7 @@ import {
   updateHUD,updateNPC,updateNums,updateOverlays,updatePartner,updateParts,updatePickups,updatePlayer,
   updatePop,updateProjs,updateSky,updateTrail,updateWeather,visited,W,weather,wind,worldClock,worldTime,
   guideEv,updateGuide,cropGrowChance,isFest,newDay,seasonAmbient,updateTown,loadFailed,
-  evDawn,evDusk,fcount,updateEvents,updateDlg,palEv,updatePals,buildPetSheets,hidePets,updatePets,updateAwaken,updateDiorama,
+  evDawn,evDusk,fcount,updateEvents,updateDlg,palEv,updatePals,buildPetSheets,hidePets,updatePets,updateAwaken,updateDiorama,updateTouch,
 } from './game.js';
 
 // ================= boot =================
@@ -27,7 +27,7 @@ renderQuests();updateCoins();
 let ritualT=2,townT=3,cropT=1,liqT=0,bioT=0,starT=8,lastT=performance.now(),autosave=0,housingT=0,achT=2,mapRedraw=0;
 function frame(now){requestAnimationFrame(frame);let dt=(now-lastT)/1000;lastT=now;dt=Math.min(dt,1/30);setWorldClock(worldClock+(dt));
   if(player.sheetDirty){const c=playerSheet();player.mat.uniforms.map.value.dispose();player.mat.uniforms.map.value=canvasTex(c);player.sheetDirty=false;}
-  handlePad();
+  handlePad();updateTouch(dt);
   if(state==='play'&&!mapOpen){let gdt=dt;if(hitStop>0){setHitStop(hitStop-(dt));gdt=dt*.07;}const pt=worldTime;setWorldTime((worldTime+gdt*24/600)%24);if(pt<4.5&&worldTime>=4.5){angler.day++;newDay();evDawn();palEv('dawn');if(!player.dead)stat('nights');guideEv('dawn');}
     if(pt<4.5&&worldTime>=4.5&&inkMoon){setInkMoon(false);toast('The Ink Moon sets. You made it through!','gold');stat('inkmoons');fcount('moon');}
     if(pt<19.5&&worldTime>=19.5){setNightsSeen(nightsSeen+1);if(nightsSeen>=2&&Math.random()<.2){setInkMoon(true);toast('The Ink Moon is rising… stay close to home.','bad');SFX.boom();shake(.3);}evDusk();}
