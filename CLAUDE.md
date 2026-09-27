@@ -88,6 +88,15 @@ Browser-only saves are why the game will be self-hosted with server-side saves (
 - **Combat hooks:** `hurtEnemy(e,dmg,dir,kb,crit,elem)` and `hurtPlayer(dmg,from,src,elem)`. Pass the attacking enemy or projectile as `src` so shields can block and parry it (`hurtPlayer` returns `'parry'` on a parry); leave it out for damage that can't be blocked, like lava. Damage types are `'fire'`, `'ink'` and `'water'` (`ELEM`); each enemy's weakness, resistance and the type its own hits carry are set in the table right after `EN`, and projectile kinds take a type from `elem` in `PK`. Statuses live in `e.st` / `player.st` and are not saved.
 - Keep new input actions rebindable: keyboard in `DEF_BIND`/`ALT` (plus a `BINDLAB` label), gamepad in `DEF_PAD` (plus a `PADLAB` label). Start and the d-pad/sticks are fixed, and backpack menus use a fixed gamepad layout (`fx` in `handlePad`).
 
+## Generated art (Higgsfield)
+
+The owner has a Higgsfield Pro account connected as an MCP server (`mcp__Higgsfield__*`). When a task needs painted art (characters, items, key art, like `assets/title.webp`), generate it there instead of hand-drawing it in code:
+
+- Default to the plan's unlimited image models, preferably Seedream 4.5 (`seedream_v4_5`). `models_explore` with `unlim: true` lists the others (Seedream 5.0, Nano Banana, FLUX.2, ...). Paid credits are limited, so don't spend them without asking.
+- `generate_image` asks which balance to use when `use_unlim` is omitted; the owner has approved unlimited, so pass `use_unlim: true`.
+- Prompt for the house style: cream paper cut-outs, dark ink outlines, rounded shapes, paper grain, flat background (or run `remove_background`) for sprites.
+- Save results under `assets/` as compressed `.webp` and load them like the title image, with a fallback to the code-drawn art if the file is missing. Update the repo layout above when adding assets.
+
 ## Testing
 
 There are no automated tests yet (Playwright smoke tests are planned in #50). To check a change:
