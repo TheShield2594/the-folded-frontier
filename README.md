@@ -6,7 +6,7 @@ A papercraft sandbox adventure: Paper Mario's storybook look with Terraria's dig
 
 **Test build:** https://theshield2594.github.io/the-folded-frontier/
 
-> The GitHub Pages build is for testing only. Saves are kept in your browser, so clearing your cache or site data deletes your world. Use **Save code** in the pause menu to copy a backup of your world. A self-hosted version with server-side saves is planned (see [#7](https://github.com/TheShield2594/the-folded-frontier/issues/7)).
+> The GitHub Pages build is for testing only. Saves are kept in your browser, so clearing this site's data (cookies and site data in your browser settings) deletes your world. Use **Save code** in the pause menu to copy a backup of your world. A self-hosted version with server-side saves is planned (see [#7](https://github.com/TheShield2594/the-folded-frontier/issues/7)).
 
 To run locally, open `index.html` in a browser.
 
