@@ -93,7 +93,7 @@ Browser-only saves are why the game will be self-hosted with server-side saves (
 The owner has a Higgsfield Pro account connected as an MCP server (`mcp__Higgsfield__*`). When a task needs painted art (characters, items, key art, like `assets/title.webp`), generate it there instead of hand-drawing it in code:
 
 - Default to the plan's unlimited image models, preferably Seedream 4.5 (`seedream_v4_5`). `models_explore` with `unlim: true` lists the others (Seedream 5.0, Nano Banana, FLUX.2, ...). Paid credits are limited, so don't spend them without asking.
-- `generate_image` asks which balance to use when `use_unlim` is omitted; the owner has approved unlimited, so pass `use_unlim: true`.
+- Through MCP, `use_unlim: true` is refused for these models ("Unlimited generations aren't supported"), even on the Pro plan; the plan's unlimited seems to apply only on the Higgsfield website. MCP generations cost credits (Seedream 4.5: 1 credit per image), so check `get_cost` and ask the owner before generating.
 - Prompt for the house style: cream paper cut-outs, dark ink outlines, rounded shapes, paper grain, flat background (or run `remove_background`) for sprites.
 - Save results under `assets/` as compressed `.webp` and load them like the title image, with a fallback to the code-drawn art if the file is missing. Update the repo layout above when adding assets.
 
