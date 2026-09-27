@@ -15,7 +15,7 @@ import {
   updateHUD,updateNPC,updateNums,updateOverlays,updatePartner,updateParts,updatePickups,updatePlayer,
   updatePop,updateProjs,updateSky,updateTrail,updateWeather,visited,W,weather,wind,worldClock,worldTime,
   guideEv,updateGuide,cropGrowChance,isFest,newDay,seasonAmbient,updateTown,loadFailed,
-  evDawn,evDusk,fcount,updateEvents,updateDlg,palEv,updatePals,buildPetSheets,hidePets,updatePets,updateAwaken,updateLore,updateDiorama,updateTouch,
+  evDawn,evDusk,perfFrame,perfStart,fcount,updateEvents,updateDlg,palEv,updatePals,buildPetSheets,hidePets,updatePets,updateAwaken,updateLore,updateDiorama,updateTouch,
 } from './game.js';
 
 // ================= boot =================
@@ -26,7 +26,7 @@ player.mat=spriteMat(canvasTex(mk(8,8)),ARMF+1);player.mesh=new THREE.Mesh((()=>
 {const d=loadSave();if(d){try{loadWorld(d);}catch(e){loadFailed(e);newWorld(Math.floor(Math.random()*1e9));}$('contBtn').hidden=false;}else newWorld(Math.floor(Math.random()*1e9));}
 renderQuests();updateCoins();
 let ritualT=2,townT=3,cropT=1,liqT=0,bioT=0,starT=8,lastT=performance.now(),autosave=0,housingT=0,achT=2,mapRedraw=0;
-function frame(now){requestAnimationFrame(frame);const el=Math.max(0,(now-lastT)/1000);lastT=now;let dt=Math.min(el,1/30);setWorldClock(worldClock+(dt));
+function frame(now){requestAnimationFrame(frame);perfStart();const pf0=performance.now();const el=Math.max(0,(now-lastT)/1000);lastT=now;let dt=Math.min(el,1/30);setWorldClock(worldClock+(dt));
   if(player.sheetDirty){const c=playerSheet();player.mat.uniforms.map.value.dispose();player.mat.uniforms.map.value=canvasTex(c);player.sheetDirty=false;}
   handlePad();updateTouch(dt);
   if(state==='play'&&!mapOpen){let gdt=dt;if(hitStop>0){setHitStop(hitStop-(dt));gdt=dt*.07;}const pt=worldTime;setWorldTime((worldTime+gdt*24/600)%24);if(pt<4.5&&worldTime>=4.5){angler.day++;newDay();evDawn();palEv('dawn');if(!player.dead)stat('nights');guideEv('dawn');}
@@ -47,10 +47,10 @@ function frame(now){requestAnimationFrame(frame);const el=Math.max(0,(now-lastT)
   if(AC){setMusic(pickMusic());music(dt,isNight());}updateAmbience(dt);mouse.lp=false;mouse.rp=false;
   if(lightDirty){computeLightStrip(lx0-17,lx1+17);setLightDirty(false);setLx0(1e9);setLx1(-1);}
   updatePop(dt);if(state==='play')updateHouses(dt);updateDlg(dt);
-  let n=0;for(const k of dirty){buildChunk(k%CW,Math.floor(k/CW));dirty.delete(k);if(++n>=8)break;}
+  const pf1=performance.now();let n=0;for(const k of dirty){buildChunk(k%CW,Math.floor(k/CW));dirty.delete(k);if(++n>=8)break;}const pf2=performance.now();
   updateParts(dt);updateCamera(dt);updateDynLights(el);updateSky();updateDiorama();updateOverlays();updateNums(dt);
   clouds.forEach(c=>{c.position.x+=dt*c.userData.s*(1+Math.abs(wind)*5)*(wind<0?-1:1);if(c.position.x<-20)c.position.x=W+20;if(c.position.x>W+20)c.position.x=-20;});
   if(mapOpen){mapRedraw-=dt;if(mapRedraw<=0){mapRedraw=.5;drawMap();}}
   if(state!=='title'&&state!=='intro'){updateHUD(dt);if(invDirty||invOpen&&Math.random()<.1)refreshUI();}
-  renderFrame(dt);}
+  const pf3=performance.now();renderFrame(dt);perfFrame(el,pf1-pf0+pf3-pf2,pf2-pf1,performance.now()-pf3);}
 requestAnimationFrame(frame);
