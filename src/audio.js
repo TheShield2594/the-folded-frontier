@@ -93,7 +93,7 @@ function musicNote(M,r,dl,st,night){const s=r.step%64,bar=s>>3,b=s&7,ch=M.ch[bar
 export function music(dt,night){if(!AC)return;const now=AC.currentTime;
   for(let i=mTr.length-1;i>=0;i--){const r=mTr[i];if(r.out&&now>r.end){r.g.disconnect();mTr.splice(i,1);continue;}
     const M=MUS[r.k],st=30/M.bpm;if(r.next<now)r.next=now+.02;while(r.next<now+.2){musicNote(M,r,r.next-now,st,night);r.next+=st;r.step++;}}}
-export function pickMusic(){if(state==='title')return 'title';if(boss&&!boss.dying&&enemies.includes(boss))return 'boss';return MUS[curBio]?curBio:'forest';}
+export function pickMusic(){if(state==='title'||state==='intro')return 'title';if(boss&&!boss.dying&&enemies.includes(boss))return 'boss';return MUS[curBio]?curBio:'forest';}
 // ambience: looping noise beds (wind, water, rumble, cave air) plus one-shots (birds, crickets, drips, embers, bubbles).
 // Each layer's weight follows the biome, depth, nearby liquid and time of day, and eases toward its target so changes crossfade.
 const AMB={},AMBW={wind:0,water:0,rumble:0,cave:0,birds:0,crickets:0,drips:0,embers:0,bubbles:0},AMBT={birds:2,crickets:1,drips:3,embers:.5,bubbles:2};let ambLiq=[0,0],ambLiqT=0;

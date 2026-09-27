@@ -20,4 +20,5 @@ export * from './partners.js';
 export * from './map.js';
 export * from './gamepad.js';
 export * from './hud.js';
+export * from './guide.js';
 export * from './save.js';

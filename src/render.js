@@ -184,7 +184,7 @@ const barBgMat=new THREE.MeshBasicMaterial({color:0x2a2130,depthTest:false}),bar
 export const eliteMat=new THREE.MeshBasicMaterial({transparent:true,alphaTest:.5,depthTest:false}),threadGeo=new THREE.PlaneGeometry(.05,1);threadGeo.translate(0,.5,0);
 export function updateEnemyFx(e,dt){const top=e.y+e.h+(e.d.fly?.15:.3);e.hpShow=(e.hpShow||0)-dt;
   if(e.elite){if(!e.star){e.star=new THREE.Mesh(markGeo,eliteMat);e.star.renderOrder=8;scene.add(e.star);}e.star.visible=!e.burrow;e.star.position.set(e.x,top+.25+Math.sin(e.t*3)*.08,.69);e.star.rotation.z=Math.sin(e.t*2)*.2;}
-  if(e.warn){if(!e.mark){e.mark=new THREE.Mesh(markGeo,markMat);e.mark.renderOrder=8;scene.add(e.mark);}e.mark.visible=true;const k=1+.18*Math.sin(e.t*20);e.mark.scale.set(k,k,1);e.mark.position.set(e.x,top+(e.elite?1.05:.6),.7);}else if(e.mark)e.mark.visible=false;
+  if(e.warn){if(!e.mark){e.mark=new THREE.Mesh(markGeo,markMat);e.mark.renderOrder=8;scene.add(e.mark);}e.mark.visible=true;const k=(SET.cb&&SET.cb!=='off'?1.3:1)*(1+.18*Math.sin(e.t*20));e.mark.scale.set(k,k,1);e.mark.position.set(e.x,top+(e.elite?1.05:.6),.7);}else if(e.mark)e.mark.visible=false;
   const show=!e.d.boss&&e.hpShow>0&&e.hp<e.max;if(show&&!e.bar){const bg=new THREE.Mesh(barBgGeo,barBgMat),fg=new THREE.Mesh(barFgGeo,e.elite?barFgEliteMat:barFgMat);bg.renderOrder=6;fg.renderOrder=7;scene.add(bg,fg);e.bar=[bg,fg];}
   if(e.bar){e.bar[0].visible=e.bar[1].visible=show;if(show){const bw=Math.max(.9,e.w+.2);e.bar[0].scale.x=bw;e.bar[0].position.set(e.x,top+.12,.66);e.bar[1].scale.x=Math.max(.001,(bw-.08)*e.hp/e.max);e.bar[1].position.set(e.x-bw/2+.04,top+.12,.67);}}}
 function batDraw(t,f,c1,c2,eye){const up=f?-16:14;for(const s of[-1,1]){t.beginPath();t.moveTo(48,32);t.quadraticCurveTo(48+s*20,32+up-8,48+s*42,26+up);t.quadraticCurveTo(48+s*32,40+up*.3,48+s*26,34+up*.2);t.quadraticCurveTo(48+s*18,44,48,38);t.closePath();fi(t,c2,2.5);}
@@ -260,6 +260,12 @@ const iconCache={},iconTexCache={};
 function iconCanvas(id){const c=mk(64,64);const[x,y]=cellXY(ITEMS[id].cell);c.getContext('2d').drawImage(atlas,x,y,64,64,0,0,64,64);return c;}
 export function icon(id){return iconCache[id]||(iconCache[id]=iconCanvas(id).toDataURL());}
 export function iconTex(id){return iconTexCache[id]||(iconTexCache[id]=canvasTex(iconCanvas(id)));}
+// drops cached icons after their atlas cells are redrawn (color-vision mode changes the ore art)
+export function clearIcons(ids){for(const id of ids){delete iconCache[id];if(iconTexCache[id]){iconTexCache[id].dispose();delete iconTexCache[id];}}}
+// the "!" over an enemy winding up an attack; colorblind modes swap it for a bright warning triangle
+export function drawWarnMark(){const cb=SET.cb&&SET.cb!=='off';if(markMat.map)markMat.map.dispose();
+  markMat.map=canvasTex(makeSheet(1,64,64,t=>{if(cb){poly(t,[32,3,61,57,3,57]);fi(t,SET.cb==='trit'?'#ff5a8a':'#ffd23f',4.5);rr(t,28.5,19,7,23,3.5);t.fillStyle=INK;t.fill();circ(t,32,49,4);t.fill();}
+    else{rr(t,23,5,18,36,9);fi(t,'#d4483b',3);circ(t,32,52,7);fi(t,'#d4483b',3);}},3));markMat.needsUpdate=true;}
 
 // ================= particles =================
 const PMAX=600;const pMesh=new THREE.InstancedMesh(new THREE.PlaneGeometry(.17,.17),new THREE.MeshBasicMaterial({side:THREE.DoubleSide}),PMAX);pMesh.frustumCulled=false;

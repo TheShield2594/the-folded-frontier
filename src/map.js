@@ -8,7 +8,7 @@ import {
 
 // ================= pop-up book =================
 export const houses=[];export let visited=new Set(),houseT=0,houseCheckT=0,popAnim=[];
-function enclosure(sx,sy){if(sx<1||sy<1||sx>=W-1||sy>=H-1||OPAQUE[tileAt(sx,sy)])return null;const s0=idx(sx,sy);const seen=new Set([s0]),st=[s0];let minX=1e9,maxX=-1,minY=1e9,maxY=-1,key=s0,wallCount={},light=false,bed=false;
+export function enclosure(sx,sy){if(sx<1||sy<1||sx>=W-1||sy>=H-1||OPAQUE[tileAt(sx,sy)])return null;const s0=idx(sx,sy);const seen=new Set([s0]),st=[s0];let minX=1e9,maxX=-1,minY=1e9,maxY=-1,key=s0,wallCount={},light=false,bed=false;
   while(st.length){const i=st.pop();if(seen.size>420)return null;const x=i%W,y=(i/W)|0;if(walls[i]<2)return null;wallCount[walls[i]]=(wallCount[walls[i]]||0)+1;const t=tiles[i];if(LIGHT[t])light=true;if(t===T.BED)bed=true;
     if(i<key)key=i;minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);
     for(const n of[i-1,i+1,i-W,i+W]){const nx=n%W,ny=(n/W)|0;if(nx<=0||ny<=0||nx>=W-1||ny>=H-1)return null;const nt=tiles[n];if(OPAQUE[nt]||nt===T.DOOR||nt===T.PLATFORM)continue;if(!seen.has(n)){seen.add(n);st.push(n);}}}
