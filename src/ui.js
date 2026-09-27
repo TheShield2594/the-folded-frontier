@@ -1,6 +1,7 @@
 // Inventory, crafting, tooltips and toasts; housing and the merchant.
 import * as THREE from 'three';
 import {
+  reduceMotion,
   $,addItem,angler,ANGLER_REWARD,ANGLER_WHERE,anglerQuest,anglerTurnIn,BADGES,BEST,bestiary,BIO,bpMax,
   bpUsed,burst,camera,checkAch,chests,clamp,countAmmo,countBait,countItem,defense,dropHouse,dropItem,
   ELEM,EN,H,heal,houses,icon,idx,initAudio,ITEMS,KEYNAME,maxOf,mk,npcs,OPAQUE,padFocus,PARTNERS,pick,PK,
@@ -105,7 +106,7 @@ export function openSide(kind,key,list,title,line){side={kind,key,list,line,titl
 // [tab, title, icon item or null for the partner's portrait]
 const TABS=[['inv','Backpack','chest'],['craft','Crafting','bench'],['party','Party',null],['bestiary','Bestiary','lens'],['museum','Museum','fos_amm'],['town','Town','lanternp']];
 let craftOn=true;
-function turnPage(el){SFX.rustle(.25,.5);if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;el.classList.remove('turn');void el.offsetWidth;el.classList.add('turn');}
+function turnPage(el){SFX.rustle(.25,.5);if(reduceMotion())return;el.classList.remove('turn');void el.offsetWidth;el.classList.add('turn');}
 function closeSide(){side=null;$('sideSheet').hidden=true;$('panel').classList.remove('withSide');}
 function curTab(){return side?(TABS.some(t=>t[0]===side.kind)?side.kind:''):craftOn?'craft':'inv';}
 function syncTabs(){const on=curTab();for(const b of $('tabs').children){const t=TABS.find(t=>t[0]===b.dataset.tab),a=t[0]===on;b.classList.toggle('on',a);b.setAttribute('aria-selected',a);
@@ -200,7 +201,7 @@ const TINKER=[['kite',['glider','ribbon'],100],['beacon',['lantern','buckler'],1
 const SHOPS={painter:[['paint1',40],['paint2',40],['paint3',40],['paint4',40],['banr',25],['banb',25],['bang',25],['wallred',2],['wallblue',2],['wallgreen',2],['wallyellow',2]],
   tinkerer:[['b_quick',200],['b_feather',180],['bpup',400],['toolbelt',150],['magnet',120],['hook',150],['rope',1]],
   angler:[['fly',2],['glowlure',8],['rodwood',40],['potfish',30],['bucket',60],['seed_sun',5]],
-  farmer:[['seed_sun',4],['seed_wheat',4],['seed_frost',8],['seed_ink',10],['pot',20],['bucket',60]],
+  farmer:[['seed_sun',4],['seed_wheat',4],['seed_frost',8],['seed_ink',10],['seed_sunf',25],['pot',20],['bucket',60]],
   scout:[['tmap',120],['rope',1],['torch',4],['potnight',40],['lanternp',30],['glider',420]]};
 export const hasNPC=t=>npcs.some(n=>n.type===t&&n.home);
 export function makeNPC(type,x,y,home){const old=npcs.find(n=>n.type===type);if(old){scene.remove(old.mesh);if(old.bub)old.bub.remove();npcs.splice(npcs.indexOf(old),1);}

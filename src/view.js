@@ -1,8 +1,8 @@
 // Mining crack and highlight overlays, day/night sky and the camera.
 import * as THREE from 'three';
 import {
-  atlasTex,BIO,biomeAt,C,camDist,camera,cellUV,clamp,clouds,cursor,dioLight,H,hasAcc,hasBuff,
-  inkMoon,lerp,moonMesh,season,seasonSky,mouse,N,OPAQUE,pad,player,rainF,rand,reachOK,scene,selItem,setShakeT,setSnowF,
+  arenaF,atlasTex,BIO,biomeAt,boltF,C,camDist,camera,cellUV,clamp,clouds,cursor,dioLight,H,hasAcc,hasBuff,
+  fullMoon,inkMoon,lerp,moonMesh,season,seasonSky,mouse,N,OPAQUE,pad,player,rainF,rand,reachOK,scene,selItem,setShakeT,setSnowF,
   shakeT,skyMesh,skyU,snowF,SPAWNX,state,sunMesh,surfAvg,T,tiles,U,W,worldMat,
   worldTime,touch,
 } from './game.js';
@@ -33,7 +33,9 @@ export function updateSky(){const h=worldTime,f=dayF(h),warm=f>0&&f<1?Math.sin(f
     const ld=Math.max(0,Math.abs(camera.position.x-BIO.lake[0])-BIO.lake[1]);const lf=clamp(1-ld/25,0,1)*(1-under);skyU.uBot.value.lerp(cB.set('#9a88c0'),lf*.35);skyU.uTop.value.lerp(cB.set('#b6d7e6'),snowF*.3*f);}
   seasonSky(skyU,cB,f,under);
   if(rainF>0){skyU.uTop.value.lerp(cB.set('#6f7f8f'),rainF*.6*f+rainF*.2);skyU.uBot.value.lerp(cB.set('#a9b4bf'),rainF*.5*f);U.uSky.value.multiplyScalar(1-rainF*.25);}
-  if(inkMoon){const im=(1-f)*(1-under);skyU.uTop.value.lerp(cB.set('#2a0f3a'),im);skyU.uBot.value.lerp(cB.set('#6a2a5a'),im);moonMesh.material.color.set(0xd08aff);}else moonMesh.material.color.set(0xffffff);
+  if(arenaF>0){const af=arenaF*(1-under);skyU.uTop.value.lerp(cB.set('#3a1430'),af*.55);skyU.uBot.value.lerp(cB.set('#b0503a'),af*.4);}
+  if(boltF>0){const bf=boltF*(1-under);skyU.uTop.value.lerp(cB.set('#eeeaff'),bf*.7);skyU.uBot.value.lerp(cB.set('#fffbe8'),bf*.6);U.uSky.value.multiplyScalar(1+bf*.5);}
+  if(inkMoon){const im=(1-f)*(1-under);skyU.uTop.value.lerp(cB.set('#2a0f3a'),im);skyU.uBot.value.lerp(cB.set('#6a2a5a'),im);moonMesh.material.color.set(0xd08aff);}else moonMesh.material.color.set(0xffffff);moonMesh.scale.setScalar(fullMoon()&&!inkMoon?1.35:1);
   skyU.uStars.value=(1-f)*(1-under)*(1-rainF);skyU.uTime.value=worldClock;
   const cx=camera.position.x,cy=camera.position.y;skyMesh.position.x=cx;skyMesh.position.y=cy;
   const sa=(h-6)/12*Math.PI;sunMesh.position.set(cx-Math.cos(sa)*55,cy-2+Math.sin(sa)*34,-100);sunMesh.visible=sa>-0.3&&sa<Math.PI+.3&&under<.9;
@@ -43,16 +45,20 @@ export function updateSky(){const h=worldTime,f=dayF(h),warm=f>0&&f<1?Math.sin(f
 
 // ================= camera =================
 export const camT={x:SPAWNX,y:100};
-export function updateCamera(dt){const p=player;const tx=p.x+p.vx*.25,ty=p.y+1.2;const k=state==='title'?1:Math.min(1,dt*6);camT.x+=(tx-camT.x)*k;camT.y+=(ty-camT.y)*Math.min(1,dt*5);
-  const vh=2*camDist*Math.tan(16*Math.PI/180),vw=vh*camera.aspect;const cx=clamp(camT.x,vw/2+1,W-vw/2-1),cy=clamp(camT.y,vh/2+2,H-vh/2);
+// camFocus: a short camera move set by boss.js (at() -> [x, y] to look at, zoom multiplies the distance); eases in and out over dur seconds
+export const camFocus={t:0,dur:1,at:null,zoom:1};
+export function updateCamera(dt){const p=player;let tx=p.x+p.vx*.25,ty=p.y+1.2,zk=1;
+  if(camFocus.t>0&&state!=='title'){camFocus.t-=dt;const e=camFocus.t,w=Math.max(0,Math.min(1,(camFocus.dur-e)/.45,e/.6)),s2=w*w*(3-2*w),f=camFocus.at&&camFocus.at();if(f){tx=lerp(tx,f[0],s2);ty=lerp(ty,f[1],s2);}zk=lerp(1,camFocus.zoom,s2);}
+  const k=state==='title'?1:Math.min(1,dt*6);camT.x+=(tx-camT.x)*k;camT.y+=(ty-camT.y)*Math.min(1,dt*5);
+  const cd=camDist*zk,vh=2*cd*Math.tan(16*Math.PI/180),vw=vh*camera.aspect;const cx=clamp(camT.x,vw/2+1,W-vw/2-1),cy=clamp(camT.y,vh/2+2,H-vh/2);
   let sx=0,sy=0;if(shakeT>0){setShakeT(shakeT-(dt));sx=rand(-1,1)*shakeT*.6;sy=rand(-1,1)*shakeT*.6;}
-  camera.position.set(cx+sx,cy+3.6+sy,camDist);camera.lookAt(cx+sx,cy+.4+sy,0);
+  camera.position.set(cx+sx,cy+3.6+sy,cd);camera.lookAt(cx+sx,cy+.4+sy,0);
   // mouse world
   [mouse.wx,mouse.wy]=screenToWorld(mouse.x,mouse.y);
   if(pad.active&&state==='play'){pad.aimT-=dt;if(pad.aimT>0){mouse.wx=p.x+pad.aimX*4.5;mouse.wy=p.y+1+pad.aimY*4.5;}else{mouse.wx=p.x+p.face*1.3;mouse.wy=p.y+.5;}}
   // touch: aim with the Use stick (kept briefly after letting go), else just ahead of the player, unless a finger is on the world
   else if(touch.on&&state==='play'&&!touch.world){if(touch.aim){touch.aimX=touch.aim[0];touch.aimY=touch.aim[1];}touch.aimT-=dt;if(touch.aim||touch.aimT>0){mouse.wx=p.x+touch.aimX*4.5;mouse.wy=p.y+1+touch.aimY*4.5;}else{mouse.wx=p.x+p.face*1.3;mouse.wy=p.y+.5;}}
-  const nv=hasBuff('night');U.uP.value.set(p.x,p.y+1,hasAcc('light')?11:nv?10:4.5);U.uGlow.value=p.dead?0:(hasAcc('light')?.95:nv?.75:.32);}
+  const nv=hasBuff('night')||hasBuff('ghost');U.uP.value.set(p.x,p.y+1,hasAcc('light')?11:nv?10:4.5);U.uGlow.value=p.dead?0:(hasAcc('light')?.95:nv?.75:.32);}
 // screen px to world coordinates on the z=.5 plane the tiles sit on
 export function screenToWorld(x,y){const v=new THREE.Vector3((x/innerWidth)*2-1,-(y/innerHeight)*2+1,.5).unproject(camera).sub(camera.position).normalize();const t=(.5-camera.position.z)/v.z;return[camera.position.x+v.x*t,camera.position.y+v.y*t];}
 // Imported bindings are read-only, so other modules assign these through setters.

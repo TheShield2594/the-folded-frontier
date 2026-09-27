@@ -2,9 +2,10 @@
 // This is the entry point. Importing game.js runs every other module first, in the order it lists.
 import * as THREE from 'three';
 import {
+  reduceMotion,
   $,AC,ambient,ARMF,angler,biomeAt,BIONAME,buildBiomeSheets,buildChunk,buildMoreSheets,buildPartnerSheets,
   buildSheets,camera,camT,canvasTex,chapterCard,checkAch,checkRitual,checkRoom,circ,clamp,clouds,
-  computeLightStrip,crops,drawWarnMark,curBio,CW,dirty,drawMap,eliteMat,explored,fi,H,handlePad,hasNPC,hitStop,
+  computeLightStrip,crops,fullMoon,updateBossFx,rareGrowChance,drawWarnMark,curBio,CW,dirty,drawMap,eliteMat,explored,fi,H,handlePad,hasNPC,hitStop,
   inkMoon,invDirty,invOpen,isNight,lightDirty,loadSave,loadWorld,lx0,lx1,makeSheet,mapOpen,markChunk,
   meta,mk,mouse,music,newWorld,nightsSeen,NPCDEF,NPCORDER,pickMusic,player,playerSheet,poly,
   popUp,pt,rand,refreshUI,renderer,renderQuests,reveal,revealT,rr,save,scene,setCurBio,setHitStop,
@@ -30,11 +31,11 @@ function frame(now){requestAnimationFrame(frame);let dt=(now-lastT)/1000;lastT=n
   handlePad();updateTouch(dt);
   if(state==='play'&&!mapOpen){let gdt=dt;if(hitStop>0){setHitStop(hitStop-(dt));gdt=dt*.07;}const pt=worldTime;setWorldTime((worldTime+gdt*24/600)%24);if(pt<4.5&&worldTime>=4.5){angler.day++;newDay();evDawn();palEv('dawn');if(!player.dead)stat('nights');guideEv('dawn');}
     if(pt<4.5&&worldTime>=4.5&&inkMoon){setInkMoon(false);toast('The Ink Moon sets. You made it through!','gold');stat('inkmoons');fcount('moon');}
-    if(pt<19.5&&worldTime>=19.5){setNightsSeen(nightsSeen+1);if(nightsSeen>=2&&Math.random()<.2){setInkMoon(true);toast('The Ink Moon is rising… stay close to home.','bad');SFX.boom();shake(.3);}evDusk();}
-    updateEvents(dt,worldTime);updateWeather(dt);
+    if(pt<19.5&&worldTime>=19.5){setNightsSeen(nightsSeen+1);if(nightsSeen>=2&&Math.random()<.2){setInkMoon(true);toast('The Ink Moon is rising… stay close to home.','bad');SFX.boom();shake(.3);}else if(fullMoon())toast('A full moon rises. Moon Lilies bloom tonight.');evDusk();}
+    updateEvents(dt,worldTime);updateWeather(dt);updateBossFx(dt);
     updatePlayer(gdt);updateGuide(dt);updateFishing(gdt);updateEnemies(gdt);updateNPC(gdt);updatePartner(gdt);updatePals(dt);updatePets(gdt);updatePickups(gdt);updateProjs(gdt);spawnLogic(gdt);updateTrail(gdt);
-    liqT-=gdt;if(liqT<=0){liqT=.09;simLiquids();}ambient(gdt);seasonAmbient(gdt);bioT-=dt;if(bioT<=0){bioT=.6;const b=biomeAt(player.x,player.y);if(b!==curBio){if(!visited.has(b)){visited.add(b);chapterCard(b);if(!matchMedia('(prefers-reduced-motion: reduce)').matches)popUp();}else if(curBio)toast(`Entered the ${BIONAME[b]}`);setCurBio(b);stat('v_'+b);}}
-    cropT-=gdt;if(cropT<=0){cropT=1.5;for(const i of crops){if(tiles[i]!==T.CROP){crops.delete(i);continue;}const m=meta[i];if((m&3)<2&&Math.random()<cropGrowChance(i,Math.min(4,m>>2))){meta[i]=m+1;markChunk(i%W,(i/W)|0);}}}
+    liqT-=gdt;if(liqT<=0){liqT=.09;simLiquids();}ambient(gdt);seasonAmbient(gdt);bioT-=dt;if(bioT<=0){bioT=.6;const b=biomeAt(player.x,player.y);if(b!==curBio){if(!visited.has(b)){visited.add(b);chapterCard(b);if(!reduceMotion())popUp();}else if(curBio)toast(`Entered the ${BIONAME[b]}`);setCurBio(b);stat('v_'+b);}}
+    cropT-=gdt;if(cropT<=0){cropT=1.5;for(const i of crops){const rare=tiles[i]===T.RARE;if(tiles[i]!==T.CROP&&!rare){crops.delete(i);continue;}const m=meta[i];if((m&3)<2&&Math.random()<(rare?rareGrowChance(i,Math.min(3,m>>2)):cropGrowChance(i,Math.min(4,m>>2)))){meta[i]=m+1;markChunk(i%W,(i/W)|0);}}}
     ritualT-=gdt;if(ritualT<=0){ritualT=2;checkRitual();}updateAwaken(gdt);
     townT-=dt;if(townT<=0&&!player.dead){townT=3;updateTown();}
     if(isNight()){starT-=gdt;if(starT<=0){starT=rand(10,22)/(isFest('summer')?4:1);spawnFallingStar();}}

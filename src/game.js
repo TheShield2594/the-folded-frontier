@@ -17,6 +17,7 @@ export * from './ui.js';
 export * from './input.js';
 export * from './gameplay.js';
 export * from './view.js';
+export * from './boss.js';
 export * from './partners.js';
 export * from './pets.js';
 export * from './map.js';

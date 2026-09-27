@@ -1,5 +1,6 @@
 // The storybook intro for new worlds and the first-night tutorial (plus hints for paper mechanics).
 import {
+  reduceMotion,
   $,circ,enclosure,explored,grain,H,held,ink,invOpen,isNight,KEYNAME,META,pad,PADNAME,player,poly,rr,touch,
   saveSettings,SET,SFX,setState,SOLID,state,T,tileAt,toast,W,worldTime,
 } from './game.js';
@@ -18,7 +19,7 @@ function drawIntroArt(){const c=$('introArt'),t=c.getContext('2d'),w=c.width,h=c
   for(let x=-10;x<360;x+=14){t.beginPath();t.moveTo(x,430);t.lineTo(x+20,388);ink(t,1.2,'rgba(42,33,48,.16)');}
   grain(t,0,0,w,h,10);}
 export function playIntro(done){introEnd=done;introOn=true;setState('intro');$('title').hidden=true;drawIntroArt();const el=$('intro');el.className='';el.hidden=false;void el.offsetWidth;
-  const rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const rm=reduceMotion();
   const seq=rm?[[30,'show open'],[500,'l1'],[1700,'l2'],[2900,'l3'],[5000,'dive'],[5600,null]]
     :[[60,'show',()=>SFX.rustle(.2,.4)],[1300,'open',()=>SFX.unfold()],[2900,'l1'],[4600,'l2'],[6300,'l3'],[8800,'dive',()=>SFX.rustle(.4,.5)],[10200,null]];
   introTs=seq.map(([ms,cls,fx])=>setTimeout(()=>{if(!cls){endIntro();return;}el.classList.add(...cls.split(' '));if(fx)fx();},ms));}

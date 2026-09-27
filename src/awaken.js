@@ -1,5 +1,6 @@
 // World Awakening: the post-game that begins when The Unfolded falls.
 import {
+  reduceMotion,
   BIO,biomeAt,boss,burst,chapterCard,H,idx,makeNoise,mulberry32,player,playerSpeaker,popUp,quests,rebuildAll,
   say,seed,SFX,shake,SOLID,SPAWNX,stat,surf,T,tiles,toast,W,walls,
 } from './game.js';
@@ -36,6 +37,6 @@ export function awakenWorld(){if(isAwake()||!BIO.uw)return;const rng=mulberry32(
 let awT=3;
 export function updateAwaken(dt){if(!quests.unfolded||isAwake()||boss||player.dead){awT=3;return;}if((awT-=dt)>0)return;
   awakenWorld();stat('awakened');SFX.boom();shake(.8);burst(player.x,player.y+1,['#f4f0e6','#e9dcc0','#b06ad0','#fbf8f0'],70,10,{grav:0,life:1.4,bright:1});
-  chapterCard(null,'The World Awakens','Every page remembers how to fold','Epilogue');if(!matchMedia('(prefers-reduced-motion: reduce)').matches)popUp();
+  chapterCard(null,'The World Awakens','Every page remembers how to fold','Epilogue');if(!reduceMotion())popUp();
   toast('Creases split the land, Foilite glints in the deep, and the monsters grow bolder.','gold');
   say(playerSpeaker(),['{surprised}The ground is *humming*... like every page just ~unfolded~ at once.','{neutral}The land has creased where one place folded into another.','{happy}And something new glints down deep. Time for a *sharper pickaxe.*'],{wait:3});}
