@@ -44,7 +44,7 @@ function updateStorm(dt){wev.t-=dt;setWind(wev.dir*(1.6+Math.sin(performance.now
 
 // --- the Paper Army: folded soldiers march in from both sides until enough fall or the sun rises
 const bossesBeaten=()=>['king','crane','lev','folio'].filter(k=>quests[k]).length;
-function startArmy(){Object.assign(wev,{k:'army',n:0,goal:20+5*bossesBeaten(),cd:3});announce('army');SFX.boom();shake(.3);foeT=3;}
+export function startArmy(){Object.assign(wev,{k:'army',n:0,goal:20+5*bossesBeaten(),cd:3});announce('army');SFX.boom();shake(.3);foeT=3;}
 function updateArmy(dt){foeT-=dt;if(foeT>0||player.dead||!onSurface())return;foeT=rand(1.1,1.9);if(enemies.filter(e=>e.army&&!e.dying).length>=6+bossesBeaten())return;
   const pool=['crumple','crumple','zombie','toadstool'];if(quests.crane)pool.push('knight','foldfox');if(quests.lev)pool.push('knight','blot');
   const e=spawnNear(pick(pool),Math.random()<.5?-1:1);if(!e)return;e.army=true;if(Math.random()<.12)makeElite(e);}

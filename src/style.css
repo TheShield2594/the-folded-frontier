@@ -374,3 +374,7 @@ body.touch{-webkit-touch-callout:none;touch-action:manipulation;}
 .lore{padding:6px 9px;border:2px solid rgba(42,33,48,.25);border-radius:8px;background:#fbf5e8;margin-bottom:5px;transition:background .3s,border-color .3s;}
 .lore b{display:block;font-size:calc(13.5px*var(--ts));} .lore span{display:block;font-size:calc(12px*var(--ts));color:var(--ink2);line-height:1.35;}
 .lore.lock{background:transparent;border-style:dashed;} .lore.hl{background:#fff1c9;border-color:#c9a24a;}
+/* performance overlay (?perf in the URL, src/perf.js): left outside #ui so the UI zoom doesn't scale it */
+#perf{position:fixed;right:8px;top:190px;z-index:50;max-width:calc(100vw - 16px);background:rgba(20,16,26,.8);color:#f4ecd8;border-radius:8px;padding:6px 8px;font:11px/1.4 ui-monospace,Menlo,Consolas,monospace;pointer-events:none;}
+#perf pre{margin:0;white-space:pre-wrap;font:inherit;}
+#perf button{pointer-events:auto;margin:4px 4px 0 0;font:inherit;padding:2px 6px;border-radius:5px;border:1px solid #f4ecd8;background:#3a2f44;color:#f4ecd8;cursor:pointer;}

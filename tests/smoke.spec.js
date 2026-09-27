@@ -148,3 +148,26 @@ test('save code round trip loads the same world',async({page})=>{
   const after=await snapshot(page);
   for(const k of['seed','seedText','size','W','H','coins','inv','spawn','npcs'])expect(after[k],k).toEqual(before[k]);
 });
+
+test('a save that storage refuses is reported instead of "Game saved."',async({page})=>{
+  await boot(page);
+  await newSmallWorld(page);
+  // a full localStorage throws on setItem; the pause menu must say so
+  await page.evaluate(()=>{const o=Storage.prototype.setItem;window.__setItem=o;Storage.prototype.setItem=function(k,v){if(k==='folded-frontier-save-v1')throw new DOMException('full','QuotaExceededError');return o.call(this,k,v);};});
+  await pauseGame(page);
+  await expect(page.locator('.toast',{hasText:'Could not save'})).toBeVisible();
+  await expect(page.locator('.toast',{hasText:'Game saved.'})).toHaveCount(0);
+  await page.evaluate(()=>{Storage.prototype.setItem=window.__setItem;});
+});
+
+test('?perf shows the performance overlay with world and save numbers',async({page})=>{
+  await page.goto('/?perf');
+  await page.waitForFunction(async()=>(await import('/src/game.js')).state==='title');
+  await expect(page.locator('#perf')).toBeVisible();
+  await newSmallWorld(page);
+  await pauseGame(page);
+  await expect(page.locator('#perfTxt')).toContainText(/Fold \d+ ms/);
+  await expect(page.locator('#perfTxt')).toContainText(/Save 0\.\d+M chars/);
+  const r=await page.evaluate(async()=>(await import('/src/game.js')).perfReport());
+  expect(r).toContain('Small 420×170');
+});
