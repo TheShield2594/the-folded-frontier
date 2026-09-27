@@ -18,6 +18,7 @@ addEventListener('keydown',e=>{const k=e.key.toLowerCase();
   if(state==='intro'){skipIntro();return;}
   if(k==='escape'&&!$('settings').hidden){closeSettings();return;}
   if(k==='escape'&&!$('ach').hidden){$('ach').hidden=true;return;}
+  if(k==='escape'&&!$('howto').hidden){$('howto').hidden=true;return;}
   if(state==='play'){
     if(actKey('jump',k))jumpPress();
     if(actKey('inv',k))setInv(!invOpen);

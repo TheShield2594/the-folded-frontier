@@ -6,9 +6,9 @@ import {
   removeEnemy,renderQuests,saveMeta,scene,seed,seedText,setAngler,setBestiary,setBIO,setBlk,setBoss,
   setChests,setCHH,setChunks,setCurBio,setCW,setEnemies,setExplored,setH,setHeartsKey,setHintT,
   setInkMoon,setInv,setInvDirty,setLiqChunks,setMapBase,setMapOpen,setMapS,setMbImg,setMbx,setMeta,setN,
-  setNightsSeen,setNpcs,setPickups,setProjs,setQuests,setSeed,setSeedText,setSky,setSoundOn,setSPAWNX,
+  setNightsSeen,setNpcs,setPickups,setProjs,setQuests,setSeed,setSeedText,setSky,setSPAWNX,
   setStamp,setState,setSurf,setSurfAvg,setTiles,setVisited,setW,setWalls,setWeather,setWeatherT,setWind,
-  setWorldSize,setWorldTime,SIZES,soundOn,state,surf,syncPartners,tiles,toast,updateCoins,visited,W,
+  setWorldSize,setWorldTime,SIZES,state,surf,syncPartners,tiles,toast,updateCoins,visited,W,
   walls,weather,weatherT,wind,worldSize,worldTime,
   newTut,playIntro,SET,setTut,tut,
   BADGES,ITEMS,NPCDEF,PARTNERS,setTown,setWorldDay,town,worldDay,
@@ -96,8 +96,7 @@ $('codeLoad').addEventListener('click',async()=>{const v=$('codeTxt').value.trim
   loadWorld(d.save);$('codeBox').hidden=true;$('pause').hidden=true;if(state!=='play')startPlay();else setState('play');save();toast('World loaded from save code!','gold');}catch(e){$('codeMsg').textContent=e.message||'That code could not be read.';}});
 $('saveBtn').addEventListener('click',()=>{toast(save()?'Game saved.':'Saving is not available in this browser.',save()?'good':'bad');});
 $('quitBtn').addEventListener('click',()=>{save();setState('title');$('pause').hidden=true;$('title').hidden=false;$('contBtn').hidden=!hasSave();setInv(false);});
-function toggleSound(){setSoundOn(!soundOn);applyVolumes();$('sndBtn').textContent=$('snd2Btn').textContent='Sound: '+(soundOn?'On':'Off');}
-$('sndBtn').addEventListener('click',()=>{initAudio();toggleSound();});$('snd2Btn').addEventListener('click',()=>{initAudio();toggleSound();});
+$('helpBtn').addEventListener('click',()=>{$('howto').hidden=false;});$('helpClose').addEventListener('click',()=>{$('howto').hidden=true;});
 // title background: painted art from assets/title.webp; if it fails to load the plain overlay stays
 {const im=new Image();im.onload=()=>$('title').classList.add('bg');im.src='assets/title.webp';}
 // title letters
