@@ -51,6 +51,8 @@ Each file in `src/` is one or more of the old script's sections, in the same ord
 | `gamepad.js` | gamepad | Gamepad polling and menu navigation |
 | `hud.js` | settings & achievements UI, minimap/HUD | Settings panel, rebinding, achievements; minimap and HUD |
 | `guide.js` | intro, tutorial | Storybook intro for new worlds (`playIntro`, `skipIntro`, `state==='intro'`); first-night tutorial steps and paper-trick hints (`tut`, `updateGuide`, `guideEv(ev)` called from gameplay for `'craft'`, `'dawn'`, `'peel'`, `'pop'`, `'flat'`) |
+| `seasons.js` | seasons | Spring/summer/fall/winter cycle of `SEASON_DAYS` in-game days (`worldDay`, `season()`, `seasonInfo()`); per-season crop growth (`cropGrowChance`, `sheltered`), weather odds (`rollWeather`), canopies (`canopyCell`), sky tint and particles; festival on day `FEST_DAY` (`festival()`, `isFest(k)`); `newDay()` runs at each dawn |
+| `town.js` | town | Reactive settlement: `TOWN` upgrades unlock as NPCs move in and quests finish (`updateTown()` every 3 s), placing props on the green beside the starting cabin or running an effect (bridge repair); `town` state, `townLevel()`, Merchant's `BAZAAR` stock via `townShop()` |
 | `save.js` | save/load, lifecycle | `save()`, `loadSave()`, `SAVE_KEY`, `SAVE_VER`, `migrateSave()`; `allocWorld`, `newWorld`, `loadWorld`, pause/title flow, save-code pack/unpack |
 | `main.js` | boot | Builds sprite sheets, loads or creates a world, main `frame()` loop |
 
@@ -64,13 +66,14 @@ How the modules fit together:
 
 ## Saves
 
-- World save: `localStorage['folded-frontier-save-v1']` (the key name predates versioning; don't rename it). JSON with `v: SAVE_VER` (currently 2); `tiles`/`walls`/`meta`/`explored` are base64-encoded `Uint8Array`s. v2 added the per-world `bestiary` (`{type: {k: kills, e: elite kills, d: {itemId: count}}}`).
+- World save: `localStorage['folded-frontier-save-v1']` (the key name predates versioning; don't rename it). JSON with `v: SAVE_VER` (currently 3); `tiles`/`walls`/`meta`/`explored` are base64-encoded `Uint8Array`s. v2 added the per-world `bestiary` (`{type: {k: kills, e: elite kills, d: {itemId: count}}}`). v3 fills in fields builds older than the repo could leave out (biome ranges, `bio.camps`/`treasure`/`shown`, `p.world`) and adds `p.world.day` (season day counter) and `town` (`{f: {upgradeId: 1}, used: [columns]}`).
+- `cleanSave()` runs on every load after `migrateSave()`: it drops inventory/chest items, NPCs, partners and badges this build doesn't know, so a save never crashes on a removed id. If a save still can't load, `loadFailed()` copies it to `folded-frontier-save-v1-backup` (once) and the title screen stays up.
 - Settings: `localStorage['folded-frontier-settings']`. Achievements/stats: `localStorage['folded-frontier-meta']`.
 - Autosave runs every 60 seconds and when pausing or quitting.
 - Save codes: `FF1:` + base64(gzip(JSON `{save, meta}`)) via `CompressionStream`; `FF0:` is the uncompressed fallback. The Save code button is in the pause menu, and "Load save code" is on the title screen.
 - The world save also holds `angler` (fishing progress: fish caught, Angler requests done, day counter, today's request); older saves get defaults in `loadWorld()`.
 - The world save also holds `tut` (tutorial progress: next step `s`, paper hints already shown in `seen`). Saves without it load with the tutorial finished.
-- Every load goes through `migrateSave()` inside `loadWorld()`. When a save needs a structural change, bump `SAVE_VER` and add a `if(d.v<N){...;d.v=N;}` step there. For a plain new field, filling a default in `loadWorld()` is enough: older saves won't have it.
+- Every load goes through `migrateSave()` inside `loadWorld()`. Old-build saves can be made by running an old commit's `index.html` (three.js from the CDN) and copying the save out of `localStorage`. When a save needs a structural change, bump `SAVE_VER` and add a `if(d.v<N){...;d.v=N;}` step there. For a plain new field, filling a default in `loadWorld()` is enough: older saves won't have it.
 
 Browser-only saves are why the game will be self-hosted with server-side saves (issue #7). GitHub Pages is a test build only.
 
@@ -81,6 +84,8 @@ Browser-only saves are why the game will be self-hosted with server-side saves (
 - **Art style:** cream paper, dark ink outlines (`INK = '#2a2130'`), rounded shapes, paper grain. Reuse the drawing helpers so new art matches.
 - **Code style is dense:** short names, many statements per line. Match the surrounding code rather than reformatting it; a big reformat makes diffs unreadable.
 - **Boss phases:** every boss runs `bossPhase()` at 50% and 25% life (`e.phase` 1 and 2), sits in `e.act==='phase'` (immune) and then `bossRefold()`s. Each boss's AI reads `e.phase` to add or change attacks, so a new boss should do the same.
+- **Seasons:** new seasonal behavior should read `season()`/`isFest(k)` rather than counting days itself. Crops under a placed background wall (`walls>=2`) or deep underground ignore seasons. The seasonal canopies live at y=1792 in the atlas, below the 64px cells.
+- **Town:** props go only on free outdoor ground (no background wall) near `SPAWNX`, never over player blocks. Add an upgrade as a `TOWN` entry with `when()`, `need`, `msg` and either `props` or `run`.
 - **Fishing:** rods have `rod`/`fpow`, bait has `bait`, and catches come from `CATCH` (per biome, plus `lava`). The bobber is the `bob` object, updated in `updateFishing()`.
 - **Combat hooks:** `hurtEnemy(e,dmg,dir,kb,crit,elem)` and `hurtPlayer(dmg,from,src,elem)`. Pass the attacking enemy or projectile as `src` so shields can block and parry it (`hurtPlayer` returns `'parry'` on a parry); leave it out for damage that can't be blocked, like lava. Damage types are `'fire'`, `'ink'` and `'water'` (`ELEM`); each enemy's weakness, resistance and the type its own hits carry are set in the table right after `EN`, and projectile kinds take a type from `elem` in `PK`. Statuses live in `e.st` / `player.st` and are not saved.
 - **Music** is a step sequencer, not audio files: each `MUS` track is 8 bars of 8th notes (`mel` is one hex scale degree per step, `-` holds, `.` rests). `pickMusic()` chooses title, boss or the current biome, and `setMusic()` crossfades. To add a track, add a `MUS` entry and return its key from `pickMusic()`.

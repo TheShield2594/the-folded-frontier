@@ -2,11 +2,11 @@
 import * as THREE from 'three';
 import {
   $,AC,addItem,ambBus,BADGES,bestDrop,bestKill,BIO,biomeAt,boss,boxHits,BUFFS,burst,camera,camT,chests,
-  clamp,collide,consumeSel,countItem,crackerBoom,cursor,DASH_V,defense,dropItem,dummy,edmg,ELEM,
+  clamp,collide,consumeSel,countItem,crackerBoom,cursor,DASH_V,defense,dormant,dropItem,dummy,edmg,ELEM,
   ELITE_LOOT,ELITE_TINT,EN,enemies,floatText,H,hasAcc,hasBadge,hasBuff,held,HERBCOL,HERBS,iconTex,idx,
-  INKTINT,inNiceWin,invOpen,isNight,isOpaque,isSolid,ITEMS,keys,lerp,lightAt,makeElite,markDirty,meta,
+  INKTINT,inNiceWin,isFest,invOpen,isNight,isOpaque,isSolid,ITEMS,keys,lerp,lightAt,makeElite,markDirty,meta,
   mouse,N,NICE_LATE,niceW,noise,noiseBuf,NPCDEF,npcs,OPAQUE,openSide,pad,parts,pick,pickups,player,
-  popUp,projs,pt,pv,questDone,quests,rand,randi,removeEnemy,removeItem,scene,SEEDIDS,selItem,SET,
+  popUp,projs,pt,pv,questDone,quests,rand,randi,removeEnemy,removeItem,rollWeather,scene,SEEDIDS,selItem,SET,
   setBoss,setInv,setInvDirty,setTile,setTint,SFX,sh,shieldItem,SOIL,SOLID,spawnEnemy,spawnGhost,
   spriteMat,stat,state,surf,surfAvg,syncPartners,T,talkTo,threadGeo,tileAt,tiles,toast,tone,TP,U,
   updateCoins,updateDashHud,updateDrawHud,updateEnemyFx,updateGhosts,upx,W,WALLCOL,WALLDROP,walls,
@@ -259,7 +259,7 @@ const RAINN=260;const rainMesh=new THREE.InstancedMesh(new THREE.PlaneGeometry(.
 const drops=[];for(let i=0;i<RAINN;i++)drops.push({x:0,y:-999});
 let rainSrc=null,rainGain=null;
 function rainAudio(v){if(!AC)return;if(!rainSrc){try{rainSrc=AC.createBufferSource();rainSrc.buffer=noiseBuf;rainSrc.loop=true;const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=1400;rainGain=AC.createGain();rainGain.gain.value=0;rainSrc.connect(f).connect(rainGain).connect(ambBus);rainSrc.start();}catch(e){return;}}rainGain.gain.value=v*.16;}
-export function updateWeather(dt){weatherT-=dt;if(weatherT<=0){const r=Math.random();if(weather!=='clear'||r<.5){weather='clear';wind=0;weatherT=rand(120,240);}else if(r<.78){weather='rain';wind=rand(-.4,.4);weatherT=rand(70,150);toast('It starts to rain. Crops grow faster.');}else{weather='wind';wind=(Math.random()<.5?-1:1)*rand(.7,1.3);weatherT=rand(60,120);toast(`A strong wind blows ${wind>0?'east':'west'}.`);}}
+export function updateWeather(dt){weatherT-=dt;if(weatherT<=0){const r=weather!=='clear'?'clear':rollWeather();if(r==='clear'){weather='clear';wind=0;weatherT=rand(120,240);}else if(r==='rain'){weather='rain';wind=rand(-.4,.4);weatherT=rand(70,150);toast('It starts to rain. Crops grow faster.');}else if(r==='snow'){weather='snow';wind=rand(-.3,.3);weatherT=rand(80,160);toast('Snow starts to fall.');}else{weather='wind';wind=(Math.random()<.5?-1:1)*rand(.7,1.3);weatherT=rand(60,120);toast(`A strong wind blows ${wind>0?'east':'west'}.`);}}
   const cam=camera.position,surfaceView=cam.y>surfAvg-18&&biomeAt(cam.x,cam.y)!=='under';const target=weather==='rain'&&surfaceView?1:0;rainF+=(target-rainF)*Math.min(1,dt*.8);rainAudio(rainF);
   const vis=rainF>.02;rainMesh.visible=vis;if(vis){const ang=Math.atan2(-18,wind*8);for(let i=0;i<RAINN;i++){const d=drops[i];d.y-=dt*20;d.x+=dt*wind*8;if(d.y<cam.y-16||d.x<cam.x-30||d.x>cam.x+30||Math.random()<.002){d.x=cam.x+rand(-28,28);d.y=cam.y+rand(4,18);}
       dummy.position.set(d.x,d.y,.9);dummy.rotation.set(0,0,ang+Math.PI/2);const sc=i<RAINN*rainF?1:0;dummy.scale.set(sc,sc,sc);dummy.updateMatrix();rainMesh.setMatrixAt(i,dummy.matrix);}rainMesh.instanceMatrix.needsUpdate=true;}
@@ -294,7 +294,7 @@ function interact(){const tx=Math.floor(mouse.wx),ty=Math.floor(mouse.wy);
   if(t===T.ALTAR){toast('"Five small flames upon the stones, beneath a moon of ink, will wake the one who was unfolded."');SFX.pick();return;}
   if(t===T.DOOR){const top=meta[i]&2;const oy=top?ty-1:ty+1;const open=!(meta[i]&1);if(!open&&(entityIn(tx,ty)||entityIn(tx,oy))){return;}const nm=open?1:0;setTile(tx,ty,T.DOOR,(meta[i]&2)|nm);if(tileAt(tx,oy)===T.DOOR)setTile(tx,oy,T.DOOR,(meta[idx(tx,oy)]&2)|nm);SFX.door();return;}
   if(t===T.CHEST){if(!chests.has(i))chests.set(i,new Array(20).fill(null));if(!(meta[i]&4)){meta[i]|=4;if(chests.get(i).some(Boolean))stat('chests');}openSide('chest',i);SFX.door();return;}
-  if(t===T.CROP){const m=meta[i],ct=Math.min(4,m>>2);if((m&3)>=2){dropItem(HERBS[ct][0],randi(1,2),tx+.5,ty+.5);if(Math.random()<.6)dropItem(SEEDIDS[ct],randi(1,2),tx+.5,ty+.5);setTile(tx,ty,T.CROP,ct*4);stat('harvests');SFX.pick();burst(tx+.5,ty+.5,[HERBCOL[ct],'#86d15f'],8,3);}else toast(`${HERBS[ct][1]} is still growing.`);return;}
+  if(t===T.CROP){const m=meta[i],ct=Math.min(4,m>>2);if((m&3)>=2){dropItem(HERBS[ct][0],randi(1,2)*(isFest('fall')?2:1),tx+.5,ty+.5);if(Math.random()<.6)dropItem(SEEDIDS[ct],randi(1,2),tx+.5,ty+.5);setTile(tx,ty,T.CROP,ct*4);stat('harvests');SFX.pick();burst(tx+.5,ty+.5,[HERBCOL[ct],'#86d15f'],8,3);}else toast(dormant(i,ct)?`${HERBS[ct][1]} rests outdoors in winter. Grow it under placed background walls.`:`${HERBS[ct][1]} is still growing.`);return;}
   if(t===T.CLOCK){const h=Math.floor(worldTime),m=Math.floor((worldTime-h)*60);toast(`The clock reads ${(h%12)||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}.`);SFX.pick();return;}
   if(t===T.BED){player.spawn={x:tx+.5,y:ty};toast('Spawn point set.','good');SFX.pick();return;}}
 

@@ -117,6 +117,12 @@ stickerAt(768,768,256,256,t=>drawCanopy(t,['#3f7a2b','#5aa83c','#86d15f']),4);
 stickerAt(512,768,256,256,t=>drawCanopy(t,['#2f6a3a','#3f8f4f','#6cc07a']),4);
 stickerAt(256,768,256,256,t=>{for(const[y,w]of[[70,70],[120,96],[172,120]]){poly(t,[128,y-58,128+w/2+4,y+8,128-w/2-4,y+8]);t.fillStyle='#2e5a4a';t.fill();}for(const[y,w]of[[66,62],[116,88],[168,112]]){poly(t,[128,y-58,128+w/2,y,128-w/2,y]);fi(t,'#3f7a5f',3);t.beginPath();t.moveTo(128,y-58);t.lineTo(128,y);ink(t,2,'rgba(20,40,30,.35)');t.beginPath();t.moveTo(128-w/2+8,y-3);t.quadraticCurveTo(128,y-12,128+w/2-8,y-3);ink(t,6,'#f6f9fb');}},4);
 C.canopy=[[768,768],[512,768],[256,768]];
+// seasonal canopies for forest trees, in the free band at the bottom of the atlas (see seasons.js canopyCell)
+stickerAt(0,1792,256,256,t=>drawCanopy(t,['#b8561f','#e0823d','#f6b85a']),4);
+stickerAt(256,1792,256,256,t=>drawCanopy(t,['#8a2f22','#c9483a','#f1a04f']),4);
+stickerAt(512,1792,256,256,t=>{drawCanopy(t,['#8e9faf','#d3dfe8','#fbf8f0']);for(const[x,y,r]of[[128,158,66],[66,170,50],[190,170,50],[128,72,56]]){t.beginPath();t.arc(x,y,r*.9,Math.PI*1.15,Math.PI*1.85);ink(t,9,'#fbf8f0');}},4);
+stickerAt(768,1792,256,256,t=>drawCanopy(t,['#b85a86','#f3a6c4','#ffe1ec']),4);
+C.canopyFall=[[0,1792],[256,1792]];C.canopyWinter=[512,1792];C.canopySpring=[768,1792];
 // ---- biome blocks, liquids, new items
 C.snow=blockCell('#eef3f7',speck(['#d6e4ee','#ffffff','#c7d9e6'],30,.8,2));
 C.snowT=blockCell('#f6f9fb',c=>{c.lineWidth=2;for(let i=0;i<14;i++){const x=rand(4,60),y=rand(4,60);c.strokeStyle='#d6e4ee';c.beginPath();c.moveTo(x-3,y);c.lineTo(x+3,y);c.moveTo(x,y-3);c.lineTo(x,y+3);c.stroke();}});
