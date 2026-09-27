@@ -22,6 +22,8 @@ export function playIntro(done){introEnd=done;introOn=true;setState('intro');$('
   const seq=rm?[[30,'show open'],[500,'l1'],[1700,'l2'],[2900,'l3'],[5000,'dive'],[5600,null]]
     :[[60,'show',()=>SFX.rustle(.2,.4)],[1300,'open',()=>SFX.unfold()],[2900,'l1'],[4600,'l2'],[6300,'l3'],[8800,'dive',()=>SFX.rustle(.4,.5)],[10200,null]];
   introTs=seq.map(([ms,cls,fx])=>setTimeout(()=>{if(!cls){endIntro();return;}el.classList.add(...cls.split(' '));if(fx)fx();},ms));}
+// what the player says once the book has unfolded the world (staged dialogue, see dialogue.js)
+export const INTROSAY=['{surprised}Whoa... I am *unfolded!*','{happy}A cabin, a chest of supplies, a whole frontier to ~sketch in~.','{neutral}Better build something before *nightfall.*'];
 export function skipIntro(){if(introOn)endIntro();}
 function endIntro(){introTs.forEach(clearTimeout);introTs=[];introOn=false;$('intro').hidden=true;$('intro').className='';const f=introEnd;introEnd=null;if(f)f();}
 $('intro').addEventListener('click',skipIntro);

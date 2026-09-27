@@ -10,7 +10,7 @@ import {
   setBoss,setInv,shoulderAt,setInvDirty,setTile,setTint,SFX,sh,shieldItem,SOIL,SOLID,spawnEnemy,spawnGhost,
   spriteMat,stat,state,surf,surfAvg,syncPartners,T,talkTo,threadGeo,tileAt,tiles,toast,tone,TP,U,
   updateCoins,updateDashHud,updateDrawHud,updateEnemyFx,updateGhosts,upx,W,WALLCOL,WALLDROP,walls,
-  worldClock,worldTime,digFossil,evKill,fcount,npcLine,
+  worldClock,worldTime,digFossil,evKill,fcount,npcLine,plain,
   guideEv,
 } from './game.js';
 
@@ -596,7 +596,7 @@ export function updateNPC(dt){for(const n of npcs){n.t+=dt;n.timer-=dt;const h=n
   let want=near?0:(n.want||0);if(near)n.face=player.x>n.x?1:-1;if(h){if(n.x<h.minX+.7)want=1;if(n.x>h.maxX+.3)want=-1;}n.vx=want*1.6;if(want)n.face=want;n.vy-=50*dt;collide(n,dt);
   n.rot+=((n.face>0?0:Math.PI)-n.rot)*Math.min(1,dt*14);n.mesh.rotation.y=n.rot;n.mesh.material.uniforms.uFrame.value=want?Math.floor(n.t*5)%2:0;n.mesh.position.set(n.x,n.y-.08,n.mesh.position.z);setTint(n.mesh.material,n.x,n.y+1);
   if(n.y<-3&&h){n.x=(h.minX+h.maxX)/2+.5;n.y=h.y;}
-  n.bubT-=dt;if(near&&n.bubT<=0&&!n.bub){n.bub=document.createElement('div');n.bub.className='bubble';n.bub.textContent=npcLine(n.type,true);$('nums').appendChild(n.bub);n.bubLife=3.2;n.bubT=rand(9,16);}
+  n.bubT-=dt;if(near&&n.bubT<=0&&!n.bub){n.bub=document.createElement('div');n.bub.className='bubble';n.bub.textContent=plain(npcLine(n.type,true));$('nums').appendChild(n.bub);n.bubLife=3.2;n.bubT=rand(9,16);}
   if(n.bub){n.bubLife-=dt;pv.set(n.x,n.y+2.5,.5).project(camera);n.bub.style.left=upx((pv.x+1)/2*innerWidth);n.bub.style.top=upx((1-pv.y)/2*innerHeight);if(n.bubLife<=0){n.bub.remove();n.bub=null;}}}}
 export function updatePickups(dt){const p=player;for(let i=pickups.length-1;i>=0;i--){const k=pickups[i];k.age+=dt;k.t-=dt;const dx=p.x-k.x,dy=(p.y+.9)-k.y,d=Math.hypot(dx,dy);
   if(k.t<=0&&d<(hasAcc('magnet')?9:3.2)&&!p.dead){k.vx+=dx/d*dt*60;k.vy+=dy/d*dt*60;const v=Math.hypot(k.vx,k.vy);if(v>12){k.vx*=12/v;k.vy*=12/v;}k.x+=k.vx*dt;k.y+=k.vy*dt;

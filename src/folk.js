@@ -48,42 +48,45 @@ export function sideJournal(){const act=SIDEQ.filter(q=>folk.q[q.id]===1);return
 // Memory lines: [key, who ('*' for anyone, or space-separated NPC types), when, line]. Each NPC says each
 // line that applies once, the first time you talk to them after it becomes true, then may repeat it later.
 const MEMORY=[
-  ['king','merchant',()=>quests.king,'You flattened the King Slime! Gel prices have never been lower. Terrible for business.'],
-  ['king','nurse',()=>quests.king,'Still royal gel on your boots from the King Slime. Please wipe your feet.'],
-  ['king','painter',()=>quests.king,'I painted the King Slime from memory. The painting still wobbles.'],
-  ['crane','angler',()=>quests.crane,'Since the Great Crane fell, the koi in the snowfield bite twice as often.'],
-  ['crane','tinkerer',()=>quests.crane,'Crane Plumes! Lighter than air and twice as fussy. I love them.'],
-  ['crane','scout',()=>quests.crane,'With the Great Crane gone, I finally sketched the snowfield without being chased.'],
-  ['lev','angler',()=>quests.lev,'You beat the Inkwell Leviathan? The Ink Lake feels calmer. The fish feel braver.'],
-  ['lev','guide',()=>quests.lev,'The Leviathan is gone. Its Ink Hearts make a pickaxe that can reach Emberite.'],
-  ['folio','nurse',()=>quests.folio,'The Charred Folio! I saved some ointment for those scorch marks.'],
-  ['folio','curator',()=>quests.folio,'The Charred Folio was the oldest book in the land. Could you bring me a page? No? Fair.'],
-  ['unfolded','*',()=>quests.unfolded,'People say you solved the riddle of the ink shrine. The whole town is whispering about it.'],
-  ['allboss','merchant painter',()=>bosses()>=4,'Every big villain in this world, flattened. I hope you take a holiday.'],
-  ['max200','nurse',()=>player.max>=200,'Two hundred life! You are more patch than paper at this point.'],
-  ['moon','guide tinkerer',()=>(folk.n.moon||0)>0,'You made it through an Ink Moon. Most folks just hide under the bed.'],
-  ['fish10','angler',()=>angler.done>=10,()=>`${angler.done} requests done! You fish better than I do. Do not tell anyone.`],
-  ['camp','guide merchant',()=>camps()>0,'I heard you rebuilt an old camp out there. Travelers talk of nothing else.'],
-  ['town','guide',()=>['Town','Paper City'].includes(townLevel()),()=>`This place is a proper ${townLevel()} now. I had to redraw my maps.`],
-  ['city','*',()=>townLevel()==='Paper City','A Paper City! When you arrived, this was a clearing with a cabin.'],
-  ['q_wheat','merchant nurse',()=>folk.q.wheat===2,'The Farmer says you brought the wheat. Fresh bread in town, thanks to you.'],
-  ['q_supper','painter angler guide',()=>folk.q.supper===2,'That harvest supper! I am still full. Thank you for bringing the fish.'],
-  ['q_regions','guide painter',()=>folk.q.regions===2,'The Cartographer filled in the whole map with your notes. It hangs in the town hall now.'],
-  ['q_bones','*',()=>folk.q.bones===2,'An Inkosaur Skull in our own museum! I went to see it three times.'],
-  ['mus1','merchant painter',()=>donated()>=1,'I hear the museum has your name on a little plaque.'],
-  ['mus15','painter scout',()=>donated()>=15,'I sketched your exhibits in the museum. The fossils were excellent models. Very still.'],
-  ['col','curator guide',()=>Object.keys(folk.col).length>0,()=>`You completed ${Object.keys(folk.col).length>1?Object.keys(folk.col).length+' collections':'a whole collection'} in the museum. Scholars will write about you.`],
-  ['storm','*',()=>(folk.n.storm||0)>0,'That paper storm! I found a letter from my aunt stuck in the chimney.'],
-  ['army','merchant nurse tinkerer farmer',()=>(folk.n.army||0)>0,'You held off the Paper Army! We would have been folded into cranes without you.'],
-  ['trav','merchant',()=>(folk.n.trav||0)>0,'Did that traveling merchant come by again? Their prices are criminal. Mine are merely rude.'],
-  ['fossil','curator',()=>(folk.n.fossil||0)>0&&!donated(),'You found a fossil! Bring it to me. I will make it famous.'],
+  ['king','merchant',()=>quests.king,'{surprised}You *flattened* the King Slime! {angry}Gel prices have never been lower. Terrible for business.'],
+  ['king','nurse',()=>quests.king,'{sad}Still royal gel on your boots from the King Slime. {angry}Please *wipe your feet.*'],
+  ['king','painter',()=>quests.king,'{happy}I painted the King Slime from memory. {surprised}The painting still ~wobbles~.'],
+  ['crane','angler',()=>quests.crane,'{happy}Since the Great Crane fell, the koi in the snowfield bite *twice as often.*'],
+  ['crane','tinkerer',()=>quests.crane,'{surprised}Crane Plumes! Lighter than air and twice as fussy. {happy}I *love* them.'],
+  ['crane','scout',()=>quests.crane,'{happy}With the Great Crane gone, I finally sketched the snowfield *without being chased.*'],
+  ['lev','angler',()=>quests.lev,'{surprised}You beat the *Inkwell Leviathan?* {happy}The Ink Lake feels calmer. The fish feel braver.'],
+  ['lev','guide',()=>quests.lev,'{happy}The Leviathan is gone. Its *Ink Hearts* make a pickaxe that can reach Emberite.'],
+  ['folio','nurse',()=>quests.folio,'{surprised}The *Charred Folio!* {happy}I saved some ointment for those scorch marks.'],
+  ['folio','curator',()=>quests.folio,'{sad}The Charred Folio was the *oldest book* in the land. Could you bring me a page? {neutral}No? Fair.'],
+  ['unfolded','*',()=>quests.unfolded,'{surprised}People say you solved the riddle of the ink shrine. The whole town is ~whispering~ about it.'],
+  ['allboss','merchant painter',()=>bosses()>=4,'{surprised}Every big villain in this world, *flattened.* {happy}I hope you take a holiday.'],
+  ['max200','nurse',()=>player.max>=200,'{surprised}*Two hundred* life! {happy}You are more patch than paper at this point.'],
+  ['moon','guide tinkerer',()=>(folk.n.moon||0)>0,'{happy}You made it through an *Ink Moon.* {sad}Most folks just ~hide under the bed~.'],
+  ['fish10','angler',()=>angler.done>=10,()=>`{surprised}*${angler.done} requests* done! {happy}You fish better than I do. {angry}Do not tell ~anyone~.`],
+  ['camp','guide merchant',()=>camps()>0,'{happy}I heard you rebuilt an old camp out there. Travelers talk of *nothing else.*'],
+  ['town','guide',()=>['Town','Paper City'].includes(townLevel()),()=>`{happy}This place is a proper *${townLevel()}* now. {neutral}I had to redraw my maps.`],
+  ['city','*',()=>townLevel()==='Paper City','{surprised}A *Paper City!* {happy}When you arrived, this was a clearing with a cabin.'],
+  ['q_wheat','merchant nurse',()=>folk.q.wheat===2,'{happy}The Farmer says you brought the wheat. *Fresh bread* in town, thanks to you.'],
+  ['q_supper','painter angler guide',()=>folk.q.supper===2,'{happy}That harvest supper! I am *still full.* Thank you for bringing the fish.'],
+  ['q_regions','guide painter',()=>folk.q.regions===2,'{happy}The Cartographer filled in the *whole map* with your notes. It hangs in the town hall now.'],
+  ['q_bones','*',()=>folk.q.bones===2,'{surprised}An *Inkosaur Skull* in our own museum! {happy}I went to see it three times.'],
+  ['mus1','merchant painter',()=>donated()>=1,'{happy}I hear the museum has your name on a *little plaque.*'],
+  ['mus15','painter scout',()=>donated()>=15,'{happy}I sketched your exhibits in the museum. The fossils were excellent models. {neutral}*Very* still.'],
+  ['col','curator guide',()=>Object.keys(folk.col).length>0,()=>`{happy}You completed ${Object.keys(folk.col).length>1?Object.keys(folk.col).length+' collections':'a whole collection'} in the museum. Scholars will write about you.`],
+  ['storm','*',()=>(folk.n.storm||0)>0,'{surprised}That ~paper storm~! I found a letter from my aunt stuck in the *chimney.*'],
+  ['army','merchant nurse tinkerer farmer',()=>(folk.n.army||0)>0,'{happy}You held off the *Paper Army!* {sad}We would have been ~folded into cranes~ without you.'],
+  ['trav','merchant',()=>(folk.n.trav||0)>0,'{angry}Did that traveling merchant come by again? Their prices are *criminal.* {neutral}Mine are merely rude.'],
+  ['fossil','curator',()=>(folk.n.fossil||0)>0&&!donated(),'{surprised}You found a *fossil!* {happy}Bring it to me. I will make it famous.'],
 ];
 const said=v=>typeof v==='function'?v():v;
-// the line an NPC says when you talk to them; `passive` (a speech bubble while you walk past) never uses up a new line
-export function npcLine(type,passive){const d=NPCDEF[type];if(!d)return '';
-  if(!passive&&!folk.met[type]&&d.hello){folk.met[type]=1;return said(d.hello);}
+// the line an NPC says when you talk to them; `passive` (a speech bubble while you walk past) never uses up a new line.
+// Lines carry dialogue markup ({happy}, *word*; see dialogue.js), so show them through plain() outside staged dialogue.
+// lineNew is set when the line is a first meeting or a fresh memory line, which talkTo stages as dialogue.
+export let lineNew=false;
+export function npcLine(type,passive){const d=NPCDEF[type];lineNew=false;if(!d)return '';
+  if(!passive&&!folk.met[type]&&d.hello){folk.met[type]=1;lineNew=true;return said(d.hello);}
   const ok=MEMORY.filter(m=>(m[1]==='*'||m[1].split(' ').includes(type))&&m[2]());
-  if(!passive){const fresh=ok.find(m=>!folk.heard[type+':'+m[0]]);if(fresh){folk.heard[type+':'+fresh[0]]=1;return said(fresh[3]);}}
+  if(!passive){const fresh=ok.find(m=>!folk.heard[type+':'+m[0]]);if(fresh){folk.heard[type+':'+fresh[0]]=1;lineNew=true;return said(fresh[3]);}}
   if(ok.length&&Math.random()<.3)return said(pick(ok)[3]);
   const q=SIDEQ.find(q=>q.npc===type&&folk.q[q.id]===1);if(q&&Math.random()<.35)return q.give?`Any luck with the ${ITEMS[q.give[0][0]].name}?`:`How is "${q.n}" going?`;
   return pick(d.lines);}

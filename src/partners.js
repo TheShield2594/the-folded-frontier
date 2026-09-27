@@ -2,15 +2,19 @@
 import {
   $,BADGES,breakTile,burst,canvasTex,circ,enemies,fi,fireProj,hasBadge,hasNPC,heal,hurtEnemy,INK,ink,
   ITEMS,KEYNAME,makeSheet,mk,mouse,nearestEnemy,openSide,pickups,player,poly,portraitCache,quests,rr,
-  scene,SET,setInvDirty,setTint,SFX,SHEETS,spriteMesh,stat,state,T,tileAt,toast,TP,
+  scene,SET,setInvDirty,setTint,SFX,SHEETS,spriteMesh,stat,state,T,tileAt,toast,TP,partnerSpeaker,say,
 } from './game.js';
 
 // ================= partners =================
 export const PARTNERS={
-  lumi:{name:'Lumi',desc:'A lantern spirit. Lights the way.',move:'Flare',moveDesc:'Stuns nearby enemies.',cd:14,fly:1,how:'Joins when the Guide moves in.'},
-  snip:{name:'Snip',desc:'A scissor crab. Snips nearby enemies.',move:'Snip Spin',moveDesc:'Whirls around you, cutting everything close.',cd:10,how:'Joins after you defeat the King Slime.'},
-  smudge:{name:'Smudge',desc:'An ink puppy. Fetches items from far away.',move:'Dig',moveDesc:'Tunnels through blocks where you aim.',cd:6,how:'Joins after you defeat the Great Crane.'},
-  ember:{name:'Ember',desc:'An origami firebird. Shoots at enemies.',move:'Rekindle',moveDesc:'Heals half your life.',cd:45,fly:1,how:'Joins after you defeat the Inkwell Leviathan.'},
+  lumi:{name:'Lumi',desc:'A lantern spirit. Lights the way.',move:'Flare',moveDesc:'Stuns nearby enemies.',cd:14,fly:1,how:'Joins when the Guide moves in.',
+    hi:['{surprised}Oh! You can *see* me?','{happy}I am Lumi. I will keep the dark ~folded away~ for you.']},
+  snip:{name:'Snip',desc:'A scissor crab. Snips nearby enemies.',move:'Snip Spin',moveDesc:'Whirls around you, cutting everything close.',cd:10,how:'Joins after you defeat the King Slime.',
+    hi:['{angry}Snip snip! That jelly king kept me in a *jar* for ages.','{happy}I owe you one. Point me at something and I will *snip* it.']},
+  smudge:{name:'Smudge',desc:'An ink puppy. Fetches items from far away.',move:'Dig',moveDesc:'Tunnels through blocks where you aim.',cd:6,how:'Joins after you defeat the Great Crane.',
+    hi:['{sad}Arf... the big bird scared off everyone.','{happy}Can I come with you? I am *very* good at ~digging~!']},
+  ember:{name:'Ember',desc:'An origami firebird. Shoots at enemies.',move:'Rekindle',moveDesc:'Heals half your life.',cd:45,fly:1,how:'Joins after you defeat the Inkwell Leviathan.',
+    hi:['{surprised}The ink is gone and I am *still lit!*','{happy}Keep me close. When you crumple, I will ~rekindle~ you.']},
 };
 export const PORDER=['lumi','snip','smudge','ember'];
 export const pt={x:0,y:0,rot:0,t:0,cd:0,act:null,at:0,target:null,atkT:0,mesh:null,type:null,hudKey:''};
@@ -25,7 +29,7 @@ function drawPartner(t,type,f){const bob=f?2:0;
     t.beginPath();t.moveTo(46,34);t.quadraticCurveTo(50,22,56,28);t.fillStyle='#ffd66b';t.fill();}}
 export function buildPartnerSheets(){for(const k of PORDER){SHEETS['p_'+k]=makeSheet(2,96,96,(t,f)=>drawPartner(t,k,f));SHEETS['p_'+k+'T']=canvasTex(SHEETS['p_'+k]);}}
 export function pPortrait(k){if(portraitCache['p_'+k])return portraitCache['p_'+k];return portraitCache['p_'+k]=SHEETS['p_'+k].toDataURL?(()=>{const c=mk(96,96);c.getContext('2d').drawImage(SHEETS['p_'+k],0,0,96,96,0,0,96,96);return c.toDataURL();})():'';}
-function unlockPartner(k,quiet){const p=player;if(p.partners.includes(k))return;p.partners.push(k);if(!p.partner)setPartner(k);if(!quiet){toast(`${PARTNERS[k].name} joined your party! Press Q to switch partners and R for ${PARTNERS[k].move}.`,'gold');SFX.nice();stat('partners');}}
+function unlockPartner(k,quiet){const p=player;if(p.partners.includes(k))return;p.partners.push(k);if(!p.partner)setPartner(k);if(!quiet){toast(`${PARTNERS[k].name} joined your party! Press Q to switch partners and R for ${PARTNERS[k].move}.`,'gold');SFX.nice();stat('partners');say(partnerSpeaker(k),PARTNERS[k].hi,{wait:1.5});}}
 export function syncPartners(quiet){if(hasNPC('guide'))unlockPartner('lumi',quiet);if(quests.king)unlockPartner('snip',quiet);if(quests.crane)unlockPartner('smudge',quiet);if(quests.lev)unlockPartner('ember',quiet);}
 export function setPartner(k){player.partner=k;pt.type=null;pt.cd=0;pt.act=null;setInvDirty(true);}
 export function cyclePartner(){const p=player;if(state!=='play')return;if(!p.partners.length){toast('No partners yet. Your first one joins when the Guide moves in.');return;}const i=p.partners.indexOf(p.partner);const k=p.partners[(i+1)%p.partners.length];setPartner(k);toast(`${PARTNERS[k].name} is now with you.`);SFX.pick();burst(player.x-player.face,player.y+1.2,['#fbf8f0','#f1c04f'],10,3,{grav:0});}

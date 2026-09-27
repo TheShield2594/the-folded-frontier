@@ -8,7 +8,7 @@ import {
   scene,selItem,SET,setPadFocus,setPartner,SFX,SHEETS,SHOP,spriteMesh,stat,syncPartners,T,tileAt,tiles,
   travelTo,upx,W,walls,
   guideEv,town,TOWN,townLevel,townShop,
-  donate,folk,folkClick,folkHTML,npcLine,sideJournal,visited,wev,
+  donate,folk,folkClick,folkHTML,npcLine,lineNew,npcSpeaker,plain,say,sideJournal,visited,wev,
 } from './game.js';
 
 // ================= UI =================
@@ -93,10 +93,12 @@ $('sideBody').addEventListener('mousedown',e=>{if(side&&side.kind==='travel'){co
 export function openSide(kind,key,list,title,line){side={kind,key,list,line,title:title||'Merchant'};$('sideSheet').hidden=false;$('panel').classList.add('withSide');$('sideBody').dataset.h='';
   if(kind==='chest'){$('sideTitle').textContent='Chest';$('sideBody').innerHTML='<div class="grid"></div><p class="hint">Shift-click to move stacks between chest and backpack.</p>';const g=$('sideBody').querySelector('.grid');sideEls=[];for(let i=0;i<20;i++){const el=mkSlot('chest',i,g);el.dataset.k='x';sideEls.push(el);}}
   else{$('sideTitle').textContent=title||(kind==='town'?'Town':'Merchant');renderSide();}if(!invOpen)setInv(true);}
-export function talkTo(n){const d=NPCDEF[n.type],line=npcLine(n.type),t=n.type;SFX.pick();
+// a first meeting or a fresh memory line is staged as dialogue first, and the NPC's panel opens after it
+export function talkTo(n){const raw=npcLine(n.type);if(lineNew){say(npcSpeaker(n),raw,{done:()=>openTalk(n,plain(raw))});}else openTalk(n,plain(raw),1);}
+function openTalk(n,line,bub){const d=NPCDEF[n.type],t=n.type;SFX.pick();
   if(t==='merchant')openSide('shop',null,townShop(SHOP),'Merchant',line);else if(t==='painter')openSide('shop',null,SHOPS.painter,'Painter',line);else if(t==='nurse')openSide('nurse',null,null,'Nurse',line);else if(t==='guide')openSide('guide',null,null,'Guide',line);else if(t==='angler')openSide('angler',null,SHOPS.angler,'Angler',line);else if(t==='tinkerer')openSide('tinker',null,SHOPS.tinkerer,'Tinkerer',line);
   else openSide('folk',t,t==='traveler'?(wev.trav?wev.trav.stock:[]):SHOPS[t],d.name,line);
-  if(n.bub){n.bub.remove();n.bub=null;}n.bub=document.createElement('div');n.bub.className='bubble';n.bub.textContent=line;$('nums').appendChild(n.bub);n.bubLife=3;n.bubT=10;}
+  if(n.bub){n.bub.remove();n.bub=null;}if(!bub)return;n.bub=document.createElement('div');n.bub.className='bubble';n.bub.textContent=line;$('nums').appendChild(n.bub);n.bubLife=3;n.bubT=10;}
 export function setInv(o){if(!o){if(padFocus)padFocus.classList.remove('padfocus');setPadFocus(null);$('padHint').hidden=true;}if(!o&&side&&!$('sideSheet').hidden){}invOpen=o;$('help').hidden=o;$('panel').hidden=!o;$('hotwrap').style.visibility=o?'hidden':'visible';if(!o){side=null;$('sideSheet').hidden=true;$('panel').classList.remove('withSide');if(cursor){const l=addItem(cursor.id,cursor.n);if(l)dropItem(cursor.id,l,player.x,player.y+1);cursor=null;}$('tip').hidden=true;}
   gridEls.concat(armorEls,accEls).forEach(el=>el.dataset.k='x');craftKey='';invDirty=true;}
 function canGo(kind,i,s){if(!s)return true;const it=ITEMS[s.id];if(kind==='armor')return it.slot===i;if(kind==='acc')return !!it.acc&&!player.acc.some((a,k)=>k!==i&&a&&a.id===s.id);return true;}
@@ -143,26 +145,26 @@ export function checkRoom(sx,sy){if(sx<1||sy<1||sx>=W-1||sy>=H-1||OPAQUE[tileAt(
   if(!table)return{ok:false,why:'The room needs a table or workbench.'};if(!chair)return{ok:false,why:'The room needs a chair.'};
   return{ok:true,bed,minX,maxX,minY,seen};}
 export const NPCDEF={
-  merchant:{name:'Merchant',need:'Moves into the first empty house.',ok:()=>true,
+  merchant:{name:'Merchant',need:'Moves into the first empty house.',ok:()=>true,hello:'{happy}A roof and four walls! {surprised}Is that a *customer?* {happy}Torches, potions, fair prices. Mostly fair.',
     lines:['Torches! Potions! Things that go on your face!','Coins are just paper with ambition.','Mind the slimes. They stain.']},
-  guide:{name:'Guide',need:'Arrives once the Merchant has a home.',ok:()=>hasNPC('merchant'),
+  guide:{name:'Guide',need:'Arrives once the Merchant has a home.',ok:()=>hasNPC('merchant'),hello:'{happy}Hello, traveler! I am the Guide. Hold anything up and I will tell you what it *makes.*',
     lines:['Hold anything and ask me what it makes.','Every boss drops the key to the next ore.','Stuck? Talk to me. That is literally my job.']},
-  painter:{name:'Painter',need:'Arrives once two townsfolk have homes.',ok:()=>npcs.filter(n=>n.home).length>=2,
+  painter:{name:'Painter',need:'Arrives once two townsfolk have homes.',ok:()=>npcs.filter(n=>n.home).length>=2,hello:'{sad}These walls are so *plain.* {happy}Give me a week and some paint and this town will ~sparkle~.',
     lines:['A room without art is just a box.','Paper walls! In colors!','Hold still, you have a lovely silhouette.']},
-  nurse:{name:'Nurse',need:'Arrives when your max life is over 100.',ok:()=>player.max>100&&hasNPC('merchant'),
+  nurse:{name:'Nurse',need:'Arrives when your max life is over 100.',ok:()=>player.max>100&&hasNPC('merchant'),hello:'{surprised}Look at those creases! {happy}Good thing I brought *glue and ribbon.*',
     lines:['Crumpled again? Let me smooth that out.','Drink water. Avoid lava.','I patch paper, not pride.']},
-  tinkerer:{name:'Tinkerer',need:'Arrives after you defeat any boss.',ok:()=>(quests.king||quests.crane||quests.lev||quests.folio)&&hasNPC('merchant'),
+  tinkerer:{name:'Tinkerer',need:'Arrives after you defeat any boss.',ok:()=>(quests.king||quests.crane||quests.lev||quests.folio)&&hasNPC('merchant'),hello:'{happy}You beat a *boss* with that gear? {surprised}Bring it here, I can make it ~better~.',
     lines:['Bring me two gadgets and I will make one better gadget.','Glue, string and optimism.','A Tool Belt! Changes lives!']},
-  angler:{name:'Angler',need:'Arrives once you have caught a fish.',ok:()=>angler.caught>0&&hasNPC('merchant'),
+  angler:{name:'Angler',need:'Arrives once you have caught a fish.',ok:()=>angler.caught>0&&hasNPC('merchant'),hello:'{surprised}You caught a fish? *Here?* {happy}Then this is my kind of town.',
     lines:['Fish bite better in the rain. Everyone knows that.','The Ink Lake is the deepest pool around. Big bites.','I once caught a koi folded from a thousand cranes. Honest.']},
-  farmer:{name:'Farmer',need:'Arrives once you have harvested a grown crop.',ok:()=>(folk.n.harvest||0)>0&&hasNPC('merchant'),hello:'Saw your crops coming up and thought: that is a town that needs a farmer. Got a spare room?',
+  farmer:{name:'Farmer',need:'Arrives once you have harvested a grown crop.',ok:()=>(folk.n.harvest||0)>0&&hasNPC('merchant'),hello:'{happy}Saw your crops coming up and thought: that is a town that needs a *farmer.* Got a spare room?',
     lines:['Crops under a roof ignore the weather. Crops outside sulk in winter.','Paper Wheat loves the fall. So do I.','Seeds! Seeds for every soil!']},
-  scout:{name:'Cartographer',need:'Arrives once you have explored three regions.',ok:()=>visited.size>=3&&hasNPC('merchant'),hello:'You have been all over! I make maps. Well, I start maps. Help me finish one?',
+  scout:{name:'Cartographer',need:'Arrives once you have explored three regions.',ok:()=>visited.size>=3&&hasNPC('merchant'),hello:'{surprised}You have been *all over!* {happy}I make maps. {sad}Well, I *start* maps. {happy}Help me finish one?',
     lines:['North is up. Usually.','Every blank page on a map is a promise.','I once mapped a cave that turned out to be a very large bat.']},
   curator:{name:'Curator',need:'Arrives once three townsfolk have homes and you have found a fossil or caught a fish.',ok:()=>npcs.filter(n=>n.home).length>=3&&((folk.n.fossil||0)>0||angler.caught>0),
-    hello:'A town with no museum? Unthinkable! I will open one right here. Bring me fossils, fish and curiosities.',
+    hello:'{angry}A town with no museum? *Unthinkable!* {happy}I will open one right here. Bring me fossils, fish and curiosities.',
     lines:['Please do not touch the exhibits. Unless you are donating them.','Every find tells a story. Most of them are about dirt.','A museum is a library of things.']},
-  traveler:{name:'Traveling Merchant',need:'Visits now and then, from dawn until dusk.',ok:()=>false,hello:'Wares from far-off pages! Buy now, I am gone by nightfall.',
+  traveler:{name:'Traveling Merchant',need:'Visits now and then, from dawn until dusk.',ok:()=>false,hello:'{happy}Wares from *far-off pages!* Buy now, I am ~gone by nightfall~.',
     lines:['Rare goods, fair prices. Well, rare goods.','I have folded myself across a dozen maps.','Tomorrow I will be three biomes away.']},
 };
 export const NPCORDER=['merchant','guide','painter','nurse','tinkerer','angler','farmer','scout','curator'];
