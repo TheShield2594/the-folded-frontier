@@ -48,7 +48,7 @@ Inside the script, sections start with `// ================= name ==============
 | chunk meshes | 32×32 chunk meshes (`CS=32`), rebuilt when marked dirty |
 | sprites & sheets | Procedural sprite sheets for player, enemies, biomes, partners |
 | particles | Particle effects |
-| audio | Web Audio setup, `tone()`, SFX and music synthesis |
+| audio | Web Audio setup, `tone()`, SFX and music synthesis, biome ambience (`updateAmbience`, `AMBW` layer weights) |
 | entities | `player`, enemy defs `EN`, enemies, pickups, projectiles, NPCs, boss, `QUESTS` |
 | inventory helpers | Adding/removing items |
 | UI | Inventory, crafting, tooltips, toasts |
@@ -74,6 +74,7 @@ Inside the script, sections start with `// ================= name ==============
 - Settings: `localStorage['folded-frontier-settings']`. Achievements/stats: `localStorage['folded-frontier-meta']`.
 - Autosave runs every 60 seconds and when pausing or quitting.
 - Save codes: `FF1:` + base64(gzip(JSON `{save, meta}`)) via `CompressionStream`; `FF0:` is the uncompressed fallback. The Save code button is in the pause menu, and "Load save code" is on the title screen.
+- The world save also holds `angler` (fishing progress: fish caught, Angler requests done, day counter, today's request); older saves get defaults in `loadWorld()`.
 - Every load goes through `migrateSave()` inside `loadWorld()`. When a save needs a structural change, bump `SAVE_VER` and add a `if(d.v<N){...;d.v=N;}` step there. For a plain new field, filling a default in `loadWorld()` is enough: older saves won't have it.
 
 Browser-only saves are why the game will be self-hosted with server-side saves (issue #7). GitHub Pages is a test build only.
@@ -85,6 +86,8 @@ Browser-only saves are why the game will be self-hosted with server-side saves (
 - **Art style:** cream paper, dark ink outlines (`INK = '#2a2130'`), rounded shapes, paper grain. Reuse the drawing helpers so new art matches.
 - **Code style is dense:** short names, many statements per line. Match the surrounding code rather than reformatting it; a big reformat makes diffs unreadable.
 - Everything is in one closure, so there are no modules or globals to import. `function` declarations are hoisted and can be called from anywhere, but `const`/`let` values can't be used before their line has run during boot.
+- **Boss phases:** every boss runs `bossPhase()` at 50% and 25% life (`e.phase` 1 and 2), sits in `e.act==='phase'` (immune) and then `bossRefold()`s. Each boss's AI reads `e.phase` to add or change attacks, so a new boss should do the same.
+- **Fishing:** rods have `rod`/`fpow`, bait has `bait`, and catches come from `CATCH` (per biome, plus `lava`). The bobber is the `bob` object, updated in `updateFishing()`.
 - **Combat hooks:** `hurtEnemy(e,dmg,dir,kb,crit,elem)` and `hurtPlayer(dmg,from,src,elem)`. Pass the attacking enemy or projectile as `src` so shields can block and parry it (`hurtPlayer` returns `'parry'` on a parry); leave it out for damage that can't be blocked, like lava. Damage types are `'fire'`, `'ink'` and `'water'` (`ELEM`); each enemy's weakness, resistance and the type its own hits carry are set in the table right after `EN`, and projectile kinds take a type from `elem` in `PK`. Statuses live in `e.st` / `player.st` and are not saved.
 - Keep new input actions rebindable: keyboard in `DEF_BIND`/`ALT` (plus a `BINDLAB` label), gamepad in `DEF_PAD` (plus a `PADLAB` label). Start and the d-pad/sticks are fixed, and backpack menus use a fixed gamepad layout (`fx` in `handlePad`).
 
