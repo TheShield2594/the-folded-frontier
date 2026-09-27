@@ -1,9 +1,9 @@
 // three.js renderer, scene and camera, chunk meshes, procedural sprite sheets and particles.
 import * as THREE from 'three';
 import {
-  $,atlas,blk,C,canopyCell,cellXY,circ,computeLight,CS,fi,grain,H,idx,INK,ink,isOpaque,ITEMS,LB,lightAt,meta,mk,
+  $,atlas,blk,buildDiorama,C,canopyCell,cellXY,circ,computeLight,CS,fi,grain,H,idx,INK,ink,isOpaque,ITEMS,LB,lightAt,meta,mk,
   mulberry32,N,OPAQUE,pick,player,poly,rand,rr,seed,SET,sh,sky,stamp,surfAvg,T,tileAt,tiles,TP,W,
-  WALLCELL,walls,
+  WALLCELL,walls,markFg,
 } from './game.js';
 
 // ================= three setup =================
@@ -40,27 +40,18 @@ function discTex(sun){const c=mk(256,256),t=c.getContext('2d');t.translate(128,1
   const s=mk(256,256),g=s.getContext('2d');g.drawImage(c,0,0);return canvasTex(s);}
 export const sunMesh=new THREE.Mesh(new THREE.PlaneGeometry(14,14),new THREE.MeshBasicMaterial({map:discTex(1),transparent:true,depthWrite:false}));
 export const moonMesh=new THREE.Mesh(new THREE.PlaneGeometry(11,11),new THREE.MeshBasicMaterial({map:discTex(0),transparent:true,depthWrite:false}));
-sunMesh.position.z=moonMesh.position.z=-100;scene.add(sunMesh,moonMesh);
-function hillTex(cols,seed2,amp,trees){const c=mk(1024,512),t=c.getContext('2d');const r=mulberry32(seed2);
-  const top=y=>y;for(let L=0;L<2;L++){t.beginPath();t.moveTo(-12,530);const ph=r()*6,base=190+L*60;for(let x=-12;x<=1036;x+=8){const y=base-amp*(.5+.5*Math.sin(x/1024*Math.PI*2*2+ph))-amp*.4*Math.sin(x/1024*Math.PI*2*5+ph*2);t.lineTo(x,top(y));}t.lineTo(1036,530);t.closePath();fi(t,cols[L],4);
-    if(trees&&L===1){for(let k=0;k<9;k++){const x=r()*1000+12,y=base-amp*(.5+.5*Math.sin(x/1024*Math.PI*4+ph))-amp*.4*Math.sin(x/1024*Math.PI*10+ph*2);poly(t,[x-9,y+6,x,y-24,x+9,y+6]);fi(t,cols[2],3);}}}
-  grain(t,0,0,1024,512,10);const tx=canvasTex(c);tx.wrapS=THREE.RepeatWrapping;return tx;}
-function hillLayer(tex,z,w,h,rep,y){tex.repeat.set(rep,1);const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:tex,transparent:true,alphaTest:.5,depthWrite:true}));m.position.set(W/2,y,z);scene.add(m);return m;}
-export let hillsFar,hillsNear;
+sunMesh.position.z=moonMesh.position.z=-100;sunMesh.renderOrder=moonMesh.renderOrder=-100;scene.add(sunMesh,moonMesh);
 export const clouds=[];
 function makeCloud(){const c=mk(256,128),t=c.getContext('2d');const bl=[[70,80,34],[120,64,44],[175,78,36],[100,90,28],[150,92,28]];for(const[x,y,r]of bl){circ(t,x,y+4,r);t.fillStyle='rgba(42,33,48,.15)';t.fill();}for(const[x,y,r]of bl){circ(t,x,y,r);fi(t,'#fbf8f0',3.5);}t.fillStyle='#fbf8f0';t.fillRect(60,86,130,20);return canvasTex(c);}
-export let snowFar=null,snowNear=null,snowF=0;
-export function buildBackdrop(){[hillsFar,hillsNear,snowFar,snowNear].forEach(m=>{if(m){scene.remove(m);m.geometry.dispose();}});
-  hillsFar=hillLayer(hillTex(['#86b7b9','#6fa1a8','#5b8f98'],seed+3,55,true),-45,W+300,70,8,surfAvg+1);
-  hillsNear=hillLayer(hillTex(['#7cae6a','#5f9754','#3f7a3b'],seed+5,60,true),-16,W+160,44,10,surfAvg-4);
-  snowFar=hillLayer(hillTex(['#dfe9f0','#c9d9e4','#a9c3d3'],seed+13,55,true),-44.5,W+300,70,8,surfAvg+1);snowNear=hillLayer(hillTex(['#eef4f8','#d6e4ee','#9fb6c6'],seed+15,60,true),-15.6,W+160,44,10,surfAvg-4);[snowFar,snowNear].forEach(m=>{m.visible=false;});
-  clouds.forEach(c=>scene.remove(c));clouds.length=0;const ct=makeCloud();for(let i=0;i<9;i++){const m=new THREE.Mesh(new THREE.PlaneGeometry(10,5),new THREE.MeshBasicMaterial({map:ct,transparent:true,alphaTest:.4}));m.position.set(rand(0,W),surfAvg+rand(16,30),-30-rand(0,10));m.userData.s=rand(.3,.9);scene.add(m);clouds.push(m);}}
+export let snowF=0;
+export function buildBackdrop(){buildDiorama();
+  clouds.forEach(c=>scene.remove(c));clouds.length=0;const ct=makeCloud();for(let i=0;i<9;i++){const m=new THREE.Mesh(new THREE.PlaneGeometry(10,5),new THREE.MeshBasicMaterial({map:ct,transparent:true,alphaTest:.4}));m.position.set(rand(0,W),surfAvg+rand(16,30),-30-rand(0,10));m.userData.s=rand(.3,.9);m.renderOrder=-15;scene.add(m);clouds.push(m);}}
 
 // ================= chunk meshes =================
 export let CW=Math.ceil(W/CS),CHH=Math.ceil(H/CS);export let chunks=[],liqChunks=[];export const dirty=new Set();
 export function cellUV(c){const[x,y]=cellXY(c);return regionUV(x,y,64,64);}
 function regionUV(px,py,w,h){const e=.6/1024,f=.6/2048;return[px/1024+e,1-(py+h)/2048+f,(px+w)/1024-e,1-py/2048-f];}
-export function buildChunk(cx,cy){const P=[],UV=[],L=[],I=[];let vc=0;const LP={P:[],UV:[],L:[],I:[],vc:0};
+export function buildChunk(cx,cy){markFg(cx);const P=[],UV=[],L=[],I=[];let vc=0;const LP={P:[],UV:[],L:[],I:[],vc:0};
   const lquad=(v,uv,l,shd)=>{LP.P.push(...v);LP.UV.push(uv[0],uv[1],uv[2],uv[1],uv[2],uv[3],uv[0],uv[3]);for(let k=0;k<4;k++)LP.L.push(l[k][0],l[k][1],shd);const c=LP.vc;LP.I.push(c,c+1,c+2,c,c+2,c+3);LP.vc+=4;};
   const quad=(v,uv,l,shd)=>{P.push(...v);UV.push(uv[0],uv[1],uv[2],uv[1],uv[2],uv[3],uv[0],uv[3]);for(let k=0;k<4;k++)L.push(l[k][0],l[k][1],shd);I.push(vc,vc+1,vc+2,vc,vc+2,vc+3);vc+=4;};
   const cl=(x,y)=>{let s=0,b=0,w=0;for(let dx=-1;dx<=0;dx++)for(let dy=-1;dy<=0;dy++){const tx=x+dx,ty=y+dy;if(tx<0||ty<0||tx>=W||ty>=H)continue;const i=ty*W+tx;const wt=LB[tiles[i]]?.3:1;s+=sky[i]*wt;b+=blk[i]*wt;w+=wt;}return w?[s/w,b/w]:[0,0];};
