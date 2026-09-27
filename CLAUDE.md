@@ -63,17 +63,17 @@ Inside the script, sections start with `// ================= name ==============
 | gamepad | Gamepad polling and menu navigation |
 | settings & achievements UI | Settings panel, rebinding, achievements |
 | minimap/HUD | Minimap and HUD |
-| save/load | `save()`, `loadSave()`, `SAVE_KEY` |
+| save/load | `save()`, `loadSave()`, `SAVE_KEY`, `SAVE_VER`, `migrateSave()` |
 | lifecycle | `allocWorld`, `newWorld`, `loadWorld`, pause/title flow, save-code pack/unpack |
 | boot | Builds sprite sheets, loads or creates a world, main `frame()` loop |
 
 ## Saves
 
-- World save: `localStorage['folded-frontier-save-v1']`. JSON with `v: 1`; `tiles`/`walls`/`meta`/`explored` are base64-encoded `Uint8Array`s.
+- World save: `localStorage['folded-frontier-save-v1']` (the key name predates versioning; don't rename it). JSON with `v: SAVE_VER` (currently 2); `tiles`/`walls`/`meta`/`explored` are base64-encoded `Uint8Array`s. v2 added the per-world `bestiary` (`{type: {k: kills, e: elite kills, d: {itemId: count}}}`).
 - Settings: `localStorage['folded-frontier-settings']`. Achievements/stats: `localStorage['folded-frontier-meta']`.
 - Autosave runs every 60 seconds and when pausing or quitting.
 - Save codes: `FF1:` + base64(gzip(JSON `{save, meta}`)) via `CompressionStream`; `FF0:` is the uncompressed fallback. The Save code button is in the pause menu, and "Load save code" is on the title screen.
-- `loadWorld()` fills missing fields with defaults. Keep that working when you add new saved state: older saves won't have the new field.
+- Every load goes through `migrateSave()` inside `loadWorld()`. When a save needs a structural change, bump `SAVE_VER` and add a `if(d.v<N){...;d.v=N;}` step there. For a plain new field, filling a default in `loadWorld()` is enough: older saves won't have it.
 
 Browser-only saves are why the game will be self-hosted with server-side saves (issue #7). GitHub Pages is a test build only.
 
@@ -84,7 +84,7 @@ Browser-only saves are why the game will be self-hosted with server-side saves (
 - **Art style:** cream paper, dark ink outlines (`INK = '#2a2130'`), rounded shapes, paper grain. Reuse the drawing helpers so new art matches.
 - **Code style is dense:** short names, many statements per line. Match the surrounding code rather than reformatting it; a big reformat makes diffs unreadable.
 - Everything is in one closure, so there are no modules or globals to import. `function` declarations are hoisted and can be called from anywhere, but `const`/`let` values can't be used before their line has run during boot.
-- Keep new input actions rebindable (`DEF_BIND`/`ALT`) and give them a gamepad mapping in the gamepad section.
+- Keep new input actions rebindable: keyboard in `DEF_BIND`/`ALT` (plus a `BINDLAB` label), gamepad in `DEF_PAD` (plus a `PADLAB` label). Start and the d-pad/sticks are fixed, and backpack menus use a fixed gamepad layout (`fx` in `handlePad`).
 
 ## Testing
 
