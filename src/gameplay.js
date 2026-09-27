@@ -289,7 +289,7 @@ export function updateWeather(dt){weatherT-=dt;if(weatherT<=0){const r=weather!=
   for(const pa of parts)if(pa.grav<3&&pa.grav>0)pa.vx+=wind*dt*6;}
 // Dynamic lights (up to NDL, nearest the camera first) on top of the propagated tile light: glowing projectiles
 // and spells, light-giving partners and pets, fallen stars, a torch in the player's hand, and light tiles near the
-// camera (LTILE: color, radius, strength), which flicker unless reduced motion is on. The tile scan runs 4 times a second.
+// camera (LTILE: color, radius, strength), which flicker unless reduced motion is on. The tile scan runs 4 times a second of real time (el).
 const LTILE={[T.TORCH]:[1,.72,.38,7,.32,1],[T.CANDLE]:[1,.8,.5,5,.26,1],[T.LANTERNP]:[1,.62,.55,6,.28,.4],[T.FURNACE]:[1,.55,.25,6,.3,1],[T.ALTAR]:[.75,.45,1,6,.35,.3],
   [T.LAVA]:[1,.45,.15,7,.42,.5],[T.EMBERORE]:[1,.5,.2,3,.28,.6],[T.FOIL]:[.82,.76,1,3,.3,.2],[T.MUSH]:[1,.62,.32,3,.18,.2],[T.HEART]:[1,.42,.5,3,.24,.3],[T.ALCHEMY]:[.6,1,.7,3,.2,.3]};
 let lScan=0,lTiles=[];
@@ -297,9 +297,9 @@ function scanLights(){lTiles=[];const cx=Math.floor(camera.position.x),cy=Math.f
   for(let y=Math.max(0,cy-20);y<=Math.min(H-1,cy+20);y++)for(let x=Math.max(0,cx-32);x<=Math.min(W-1,cx+32);x++){const t=tiles[y*W+x],d=LTILE[t];if(!d)continue;
     // lava: only its surface, every 3rd column, so a pool gives a few lights instead of hundreds
     if(t===T.LAVA&&(tileAt(x,y+1)===T.LAVA||x%3))continue;lTiles.push([x+.5,y+.6,d,x*7.1+y*3.3]);}}
-export function updateDynLights(){const L=[];for(const q of projs)if(q.k.light)L.push([q.x,q.y,q.k.light]);if(pt.mesh&&pt.mesh.visible&&player.partner==='lumi')L.push([pt.x,pt.y,[1,.85,.5,8.5]]);if(pt.mesh&&pt.mesh.visible&&player.partner==='ember')L.push([pt.x,pt.y,[1,.6,.3,4]]);for(const k of pickups)if(k.id==='fstar')L.push([k.x,k.y+.3,[1,.85,.4,3.5]]);if(petS.mesh&&petS.mesh.visible&&petS.type==='moth')L.push([petS.x,petS.y+.5,[1,.85,.45,5]]);
+export function updateDynLights(el=1/60){const L=[];for(const q of projs)if(q.k.light)L.push([q.x,q.y,q.k.light]);if(pt.mesh&&pt.mesh.visible&&player.partner==='lumi')L.push([pt.x,pt.y,[1,.85,.5,8.5]]);if(pt.mesh&&pt.mesh.visible&&player.partner==='ember')L.push([pt.x,pt.y,[1,.6,.3,4]]);for(const k of pickups)if(k.id==='fstar')L.push([k.x,k.y+.3,[1,.85,.4,3.5]]);if(petS.mesh&&petS.mesh.visible&&petS.type==='moth')L.push([petS.x,petS.y+.5,[1,.85,.45,5]]);
   const p=player,it=selItem();if(it&&it.id==='torch'&&!p.dead&&state==='play')L.push([p.x+p.face*.5,p.y+1.1+(p.rideY||0),[1,.75,.42,6.5],.55]);
-  if((lScan-=1/60)<=0){lScan=.25;scanLights();}const fl=reduceMotion()?0:1,tm=worldClock;
+  if((lScan-=el)<=0){lScan=.25;scanLights();}const fl=reduceMotion()?0:1,tm=worldClock;
   for(const[x,y,d,ph]of lTiles)L.push([x,y,[d[0],d[1],d[2],d[3]],d[4]*(1+fl*d[5]*(.13*Math.sin(tm*9.3+ph)+.07*Math.sin(tm*23.7+ph*1.7)))]);
   const cx=camera.position.x,cy=camera.position.y-3;L.sort((a,b)=>Math.hypot(a[0]-cx,a[1]-cy)-Math.hypot(b[0]-cx,b[1]-cy));
   for(let i=0;i<NDL;i++){const l=L[i];if(l){U.uDL.value[i].set(l[0],l[1],l[2][3],l[3]??1);U.uDLC.value[i].set(l[2][0],l[2][1],l[2][2]);}else U.uDL.value[i].w=0;}}
@@ -329,7 +329,7 @@ function interact(){const tx=Math.floor(mouse.wx),ty=Math.floor(mouse.wy);
   if(t===T.MURAL){readMural(tx,ty);SFX.rustle(.2,.5);return;}
   if(t===T.ALTAR){toast('"Five small flames upon the stones, beneath a moon of ink, will wake the one who was unfolded."');SFX.pick();return;}
   if(t===T.DOOR){const top=meta[i]&2;const oy=top?ty-1:ty+1;const open=!(meta[i]&1);if(!open&&(entityIn(tx,ty)||entityIn(tx,oy))){return;}const nm=open?1:0;setTile(tx,ty,T.DOOR,(meta[i]&2)|nm);if(tileAt(tx,oy)===T.DOOR)setTile(tx,oy,T.DOOR,(meta[idx(tx,oy)]&2)|nm);SFX.door();return;}
-  if(t===T.CHEST){if(!chests.has(i))chests.set(i,new Array(20).fill(null));if(!(meta[i]&4)){meta[i]|=4;if(chests.get(i).some(Boolean))stat('chests');loreChest(i);}openSide('chest',i);SFX.door();return;}
+  if(t===T.CHEST){if(!chests.has(i))chests.set(i,new Array(20).fill(null));if(!(meta[i]&4)){meta[i]|=4;if(chests.get(i).some(Boolean))stat('chests');}loreChest(i);openSide('chest',i);SFX.door();return;}
   if(t===T.CROP){const m=meta[i],ct=Math.min(4,m>>2);if((m&3)>=2){dropItem(HERBS[ct][0],randi(1,2)*(isFest('fall')?2:1),tx+.5,ty+.5);if(Math.random()<.6)dropItem(SEEDIDS[ct],randi(1,2),tx+.5,ty+.5);setTile(tx,ty,T.CROP,ct*4);stat('harvests');SFX.pick();burst(tx+.5,ty+.5,[HERBCOL[ct],'#86d15f'],8,3);}else toast(dormant(i,ct)?`${HERBS[ct][1]} rests outdoors in winter. Grow it under placed background walls.`:`${HERBS[ct][1]} is still growing.`);return;}
   if(t===T.RARE){const m=meta[i],ct=Math.min(3,m>>2);if((m&3)>=2){dropItem(RARE[ct][0],randi(1,2)*(isFest('fall')?2:1),tx+.5,ty+.5);if(Math.random()<.5)dropItem(RSEEDS[ct],1,tx+.5,ty+.5);setTile(tx,ty,T.RARE,ct*4);stat('harvests');fcount('harvest');SFX.pick();burst(tx+.5,ty+.5,[RARECOL[ct],'#fbf8f0'],10,3,{bright:1});}else toast(`${RARE[ct][1]} is still growing. ${RAREHOW[ct]}`);return;}
   if(t===T.CLOCK){const h=Math.floor(worldTime),m=Math.floor((worldTime-h)*60);toast(`The clock reads ${(h%12)||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}.`);SFX.pick();return;}

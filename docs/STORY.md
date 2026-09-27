@@ -41,8 +41,8 @@ says the world doesn't need Folders anymore; it needs someone to walk it.
 | Pieces | Where | Code |
 |---|---|---|
 | 3 landmarks | Walk up to the Folded Tree, the Clocktower or the Paper Dragon. They stand on the surface and show on the world map once explored. | `MARKS`, `planMarks()`, `updateLore()` |
-| 5 letters (Wren) | The first time you open a chest in a ruin (brick back wall) or a buried treasure chest, in order. | `loreChest(i)` from the chest code in `gameplay.js` |
-| 4 murals | Painted on the back walls of ruins and the ink shrine (`T.MURAL`). Right-click (or tap) one to read it. | `placeMurals()`, `readMural()` |
+| 5 letters (Wren) | Opening a chest in a ruin (brick back wall) or a buried treasure chest, in order, one per chest (`lore.ch`). Chests opened before the story existed still give one. | `loreChest(i)` from the chest code in `gameplay.js` |
+| 4 murals | Painted on the back walls of ruins and the ink shrine (`T.MURAL`); worlds with too few rooms get the rest on deep cave walls. Right-click (or tap) one to read it. | `placeMurals()`, `readMural()` |
 | 5 keepers | Defeating each boss, including The Unfolded. | `updateLore()` reads `quests` |
 | 4 partners | Each partner remembers something about the Folders a little after joining you, and says it. | `updateLore()` reads `player.partners` |
 | 1 epilogue | After the World Awakening. | `isAwake()` |

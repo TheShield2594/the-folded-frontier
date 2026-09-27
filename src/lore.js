@@ -2,16 +2,16 @@
 import * as THREE from 'three';
 import {
   $,BIO,biomeAt,canvasTex,chapterCard,circ,DU,enemies,fi,grain,H,idx,ink,isAwake,meta,mk,mulberry32,PARTNERS,partnerSpeaker,
-  player,poly,quests,rr,say,scene,seed,setInvDirty,setTab,SFX,SPAWNX,surf,T,tiles,toast,W,walls,
+  OPAQUE,player,poly,quests,rr,say,scene,seed,setInvDirty,setTab,SFX,SPAWNX,surf,T,tiles,toast,W,walls,
 } from './game.js';
 
 // ================= lore =================
 // The mystery (docs/STORY.md): the world was folded from the First Page by the Folders; three landmarks pin it down,
 // four keepers hold its seams, and the folds are failing because the First Page (The Unfolded) wants to lie flat.
-// Every piece is optional and can be found in any order. Per-world state: lore.f = {key: 1} for pages found
+// Every piece is optional and can be found in any order. Per-world state: lore.f = {key: 1} for pages found, lore.ch = chests that already gave a letter
 // (keys are saved, keep them stable). Pages are read in the backpack's Journal tab (loreHTML).
 export let lore={f:{}};
-export const newLore=()=>({f:{}});
+export const newLore=()=>({f:{},ch:[]});
 // kind: landmark, letter, mural, keeper (key = the boss's quest), partner (key = the partner), epilogue.
 // t title, x text, h hint while locked; partners also say their page (s) a little after they join.
 export const LORE=[
@@ -69,8 +69,8 @@ const KIND={landmark:'Landmarks',letter:'Wren\'s letters',mural:'Murals',keeper:
 export const loreCount=()=>LORE.filter(l=>lore.f[l.k]).length;
 // find a page; quiet skips the toast (pages filled in on load)
 export function findLore(k,quiet){if(!LK[k]||lore.f[k])return false;lore.f[k]=1;setInvDirty(true);if(!quiet){toast(`New Journal page: ${LK[k].t} (${loreCount()} of ${LORE.length})`,'gold');SFX.nice();}return true;}
-// first opening of a chest: ruins (brick back wall) and buried treasure hold Wren's letters, in order
-export function loreChest(i){const tr=(BIO.treasure||[]).some(([x,y])=>idx(x,y)===i);if(walls[i]!==3&&!tr)return;const l=LORE.find(l=>l.kind==='letter'&&!lore.f[l.k]);if(l&&findLore(l.k))toast(`A letter was tucked inside: "${l.t}"`);}
+// opening a chest (the first time it gives one, even if it was opened before this build): ruins (brick back wall) and buried treasure hold Wren's letters, in order
+export function loreChest(i){const tr=(BIO.treasure||[]).some(([x,y])=>idx(x,y)===i);if(walls[i]!==3&&!tr)return;lore.ch=lore.ch||[];if(lore.ch.includes(i))return;const l=LORE.find(l=>l.kind==='letter'&&!lore.f[l.k]);if(l&&findLore(l.k)){lore.ch.push(i);toast(`A letter was tucked inside: "${l.t}"`);}}
 // right-click a mural: find its page and open the Journal on it
 export function readMural(x,y){const k='m'+((meta[idx(x,y)]&3)+1);findLore(k);openJournal(k);}
 export function openJournal(k){setTab('story');if(!k)return;setTimeout(()=>{const el=$('sideBody').querySelector(`[data-lore="${k}"]`);if(!el)return;el.scrollIntoView({block:'center'});el.classList.add('hl');setTimeout(()=>el.classList.remove('hl'),1600);},60);}
@@ -88,7 +88,11 @@ export function placeMurals(){if(!BIO||!BIO.uw||BIO.murals!=null)return;const rn
     if(y>surf[x]-20||Math.abs(x-SPAWNX)<30)continue;
     if(tiles[i-W]===T.AIR&&tiles[i-1]===T.AIR&&tiles[i+1]===T.AIR&&(tiles[i-2*W]===T.BRICK||tiles[i-2*W]===T.STONE))cand.push([x,y]);}
   for(let i=cand.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[cand[i],cand[j]]=[cand[j],cand[i]];}
-  const out=[];for(const c of cand){if(out.length>=4)break;if(out.every(o=>Math.abs(o[0]-c[0])>14||Math.abs(o[1]-c[1])>10))out.push(c);}
+  const out=[],far=(c,dx,dy)=>out.every(o=>Math.abs(o[0]-c[0])>dx||Math.abs(o[1]-c[1])>dy);
+  for(const c of cand)if(out.length<4&&far(c,14,10))out.push(c);
+  // too few rooms (small worlds): share a room, then fall back to a deep natural cave wall
+  for(const c of cand)if(out.length<4&&far(c,2,2))out.push(c);
+  if(out.length<4)for(let a=0;a<4000&&out.length<4;a++){const x=2+Math.floor(rng()*(W-4)),y=3+Math.floor(rng()*(H-6)),i=y*W+x;if(y>surf[x]-20||Math.abs(x-SPAWNX)<30||walls[i]!==1||tiles[i]!==T.AIR||tiles[i-W]!==T.AIR||!OPAQUE[tiles[i-2*W]]||!far([x,y],6,6))continue;out.push([x,y]);}
   out.forEach(([x,y],n)=>{const i=idx(x,y);tiles[i]=T.MURAL;meta[i]=n;});BIO.murals=out.length;}
 
 // ================= landmarks =================

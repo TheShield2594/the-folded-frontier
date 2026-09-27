@@ -10,8 +10,10 @@ import {arenaF,biomeAt,camera,clamp,dayF,inkMoon,renderer,scene,season,SET,surfA
 // float targets are unsupported (postOK), the scene renders straight to the screen as it always did.
 export const postOK=renderer.extensions.has('EXT_color_buffer_float')||renderer.extensions.has('EXT_color_buffer_half_float');
 const rtOpt={type:THREE.HalfFloatType,format:THREE.RGBAFormat,minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,depthBuffer:false,stencilBuffer:false};
-let rtS=null,rtA=null,rtB=null;const sz=new THREE.Vector2();
-function makeTargets(){sz.set(0,0);[rtS,rtA,rtB].forEach(t=>t&&t.dispose());rtS=new THREE.WebGLRenderTarget(4,4,Object.assign({},rtOpt,{depthBuffer:true,samples:4}));rtA=new THREE.WebGLRenderTarget(4,4,rtOpt);rtB=new THREE.WebGLRenderTarget(4,4,rtOpt);}
+let rtS=null,rtA=null,rtB=null,postFail=false;const sz=new THREE.Vector2();
+// multisampled float renderbuffers are optional in WebGL 2: use the most samples RGBA16F supports, up to 4, or none
+const MSAA=(()=>{try{const gl=renderer.getContext(),s=gl.getInternalformatParameter(gl.RENDERBUFFER,gl.RGBA16F,gl.SAMPLES);return s&&s.length?Math.min(4,Math.max(...s)):0;}catch(e){return 0;}})();
+function makeTargets(){sz.set(0,0);[rtS,rtA,rtB].forEach(t=>t&&t.dispose());rtS=new THREE.WebGLRenderTarget(4,4,Object.assign({},rtOpt,{depthBuffer:true,samples:MSAA}));rtA=new THREE.WebGLRenderTarget(4,4,rtOpt);rtB=new THREE.WebGLRenderTarget(4,4,rtOpt);}
 function sizeTargets(){const v=renderer.getDrawingBufferSize(new THREE.Vector2());if(v.equals(sz))return;sz.copy(v);rtS.setSize(v.x,v.y);const qx=Math.max(1,v.x>>2),qy=Math.max(1,v.y>>2);rtA.setSize(qx,qy);rtB.setSize(qx,qy);
   const px=new THREE.Vector2(1/qx,1/qy);MB.uniforms.uPx.value.set(1/v.x,1/v.y);MH.uniforms.uPx.value.copy(px);MC.uniforms.uAsp.value=v.x/v.y;}
 const VS=`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}`;
@@ -42,12 +44,15 @@ function updateGrade(dt){const cx=camera.position.x,cy=camera.position.y,b=biome
   if(inkMoon)tgt.t.multiply(new THREE.Vector3(1+night*.06,1-night*.06,1+night*.08));if(arenaF>0){tgt.t.multiply(new THREE.Vector3(1+arenaF*.08,1-arenaF*.04,1-arenaF*.02));tgt.v+=arenaF*.12;}
   const k=Math.min(1,dt*1.5);cur.t.lerp(tgt.t,k);cur.s+=(tgt.s-cur.s)*k;cur.v+=(tgt.v-cur.v)*k;
   MC.uniforms.uTint.value.copy(cur.t);MC.uniforms.uSat.value=cur.s;MC.uniforms.uVig.value=cur.v;MC.uniforms.uLift.value.set(.018,.012,.004);}
-export const postOn=()=>postOK&&SET.post!==false;
+export const postOn=()=>postOK&&!postFail&&SET.post!==false;
 // called from the main loop in place of renderer.render(scene, camera)
 export function renderFrame(dt){const on=postOn();U.uHdr.value=on?1:0;
   if(!on){if(rtS){[rtS,rtA,rtB].forEach(t=>t.dispose());rtS=null;sz.set(0,0);}renderer.setRenderTarget(null);renderer.render(scene,camera);return;}
   if(!rtS)makeTargets();sizeTargets();updateGrade(dt);
-  renderer.setRenderTarget(rtS);renderer.render(scene,camera);
+  renderer.setRenderTarget(rtS);
+  // a scene target the device can't render to turns post-processing off for the session and draws straight to the screen
+  if(!rtS.checked){rtS.checked=1;const gl=renderer.getContext();if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE){postFail=true;renderFrame(dt);return;}}
+  renderer.render(scene,camera);
   MB.uniforms.tS.value=rtS.texture;pass(MB,rtA);
   for(const st of[1,2,3.5]){MH.uniforms.tS.value=rtA.texture;MH.uniforms.uDir.value.set(st,0);pass(MH,rtB);MH.uniforms.tS.value=rtB.texture;MH.uniforms.uDir.value.set(0,st);pass(MH,rtA);}
   MC.uniforms.tS.value=rtS.texture;MC.uniforms.tB.value=rtA.texture;pass(MC,null);}
