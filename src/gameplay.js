@@ -10,20 +10,20 @@ import {
   setBoss,setInv,setInvDirty,setTile,setTint,SFX,sh,shieldItem,SOIL,SOLID,spawnEnemy,spawnGhost,
   spriteMat,stat,state,surf,surfAvg,syncPartners,T,talkTo,threadGeo,tileAt,tiles,toast,tone,TP,U,
   updateCoins,updateDashHud,updateDrawHud,updateEnemyFx,updateGhosts,upx,W,WALLCOL,WALLDROP,walls,
-  worldClock,worldTime,
+  worldClock,worldTime,digFossil,evKill,fcount,npcLine,
   guideEv,
 } from './game.js';
 
 // ================= gameplay =================
 export function reachOK(tx,ty,r=6){r+=hasAcc('reach')?2:0;return Math.hypot(tx+.5-player.x,ty+.5-(player.y+.9))<=r;}
 export function breakTile(x,y,drop=true){const i=idx(x,y),t=tiles[i];if(t===T.AIR)return;const d=TP[t];
-  if(t===T.CROP){const m=meta[i],ty=Math.min(4,m>>2),st=m&3;setTile(x,y,T.AIR);if(drop){if(st>=2){dropItem(HERBS[ty][0],randi(1,2),x+.5,y+.5);dropItem(SEEDIDS[ty],randi(1,3),x+.5,y+.5);stat('harvests');}else dropItem(SEEDIDS[ty],1,x+.5,y+.5);}burst(x+.5,y+.5,['#5aa83c','#86d15f'],6,3);SFX.dig();return true;}
+  if(t===T.CROP){const m=meta[i],ty=Math.min(4,m>>2),st=m&3;setTile(x,y,T.AIR);if(drop){if(st>=2){dropItem(HERBS[ty][0],randi(1,2),x+.5,y+.5);dropItem(SEEDIDS[ty],randi(1,3),x+.5,y+.5);stat('harvests');fcount('harvest');}else dropItem(SEEDIDS[ty],1,x+.5,y+.5);}burst(x+.5,y+.5,['#5aa83c','#86d15f'],6,3);SFX.dig();return true;}
   if(drop&&t===T.TUFT&&Math.random()<.07)dropItem('seed_sun',1,x+.5,y+.5);if(drop&&t===T.BLOOM&&Math.random()<.12)dropItem('seed_frost',1,x+.5,y+.5);
   if(t===T.CHEST){const box=chests.get(i);if(box&&box.some(Boolean)){toast('Empty the chest before breaking it.','bad');return false;}chests.delete(i);}
   if(t===T.TRUNK){let by=y;while(tileAt(x,by-1)===T.TRUNK)by--;let ty=by,n=0;while(tileAt(x,ty)===T.TRUNK){setTile(x,ty,T.AIR);burst(x+.5,ty+.5,['#7b5234','#5a3a22'],4,3);n++;ty++;}
     burst(x+.5,ty+2,['#5aa83c','#86d15f','#3f7a2b'],30,6,{grav:6,life:1.6});dropItem('wood',n+3,x+.5,by+1);SFX.brk();questDone('tree');stat('trees');supportCheck(x,by);return true;}
   if(t===T.DOOR){const top=meta[i]&2;const oy=top?y-1:y+1;if(tileAt(x,oy)===T.DOOR)setTile(x,oy,T.AIR);}
-  setTile(x,y,T.AIR);if(drop&&d.drop)dropItem(d.drop,1,x+.5,y+.5);
+  setTile(x,y,T.AIR);if(drop&&d.drop)dropItem(d.drop,1,x+.5,y+.5);if(drop)digFossil(x,y,t);
   burst(x+.5,y+.5,[d.col,sh(d.col,.75),sh(d.col,1.2)],OPAQUE[t]?12:6,4.5);SFX.brk();supportCheck(x,y);return true;}
 function supportCheck(x,y){const dn=tileAt(x,y-1);if(dn!==T.AIR&&TP[dn]&&TP[dn].hang&&!(isSolid(x,y)||tileAt(x,y)===T.PLATFORM||(TP[dn].wallok&&walls[idx(x,y-1)])))breakTile(x,y-1);const up=tileAt(x,y+1);if(up===T.TRUNK){breakTile(x,y+1);return;}if(up!==T.AIR&&TP[up].floor&&!isSolid(x,y)&&!(up===T.DOOR&&(meta[idx(x,y+1)]&2)))breakTile(x,y+1);
   for(const[dx,dy]of[[0,1],[-1,0],[1,0],[0,-1]]){const nx=x+dx,ny=y+dy;if(tileAt(nx,ny)===T.TORCH&&!torchSupported(nx,ny))breakTile(nx,ny);}}
@@ -52,7 +52,7 @@ export function hurtEnemy(e,dmg,dir,kb=5,crit=false,elem=null){if(e.dying)return
   if(e.elite)kb*=.5;if(hasBadge('power'))dmg*=1.15;if(hasBuff('fed'))dmg*=1.05;const real=Math.max(1,Math.round(dmg-e.d.def/2));e.hp-=real;e.flash=.12;e.vx=dir*kb*(e.d.boss?.25:1);if(!e.d.fly||true)e.vy=Math.max(e.vy,e.d.boss?2:5);
   floatText(e.x,e.y+e.h,crit?real+'!':real,crit?'crit':tag==='weak'?'weak':'');if(tag&&!(e.tagT>0)){e.tagT=1.2;floatText(e.x,e.y+e.h+.6,tag==='weak'?'weak!':'resist',tag==='weak'?'tag '+elem:'miss');}burst(e.x,e.y+e.h/2,e.d.col,5,4);burst(e.x-dir*e.w*.3,e.y+e.h/2,['#fffaf0','#ffe58a'],crit?9:5,7,{grav:0,life:.25,up:0});SFX.hit();shake(crit?.25:.1);hitPause(crit?.09:.04);e.hpShow=3;
   if(e.hp<=0)killEnemy(e);else if(elem&&tag!=='res')applyStatus(e,elem,real);}
-function killEnemy(e){e.dying=.3;stat('kills');bestKill(e);hitPause(e.d.boss?.35:.07);SFX.brk();burst(e.x,e.y+e.h/2,e.d.col.concat(['#fbf8f0']),e.d.boss?80:22,e.d.boss?9:6,{grav:9,life:1.3});
+function killEnemy(e){e.dying=.3;stat('kills');bestKill(e);evKill(e);hitPause(e.d.boss?.35:.07);SFX.brk();burst(e.x,e.y+e.h/2,e.d.col.concat(['#fbf8f0']),e.d.boss?80:22,e.d.boss?9:6,{grav:9,life:1.3});
   const[c0,c1]=e.d.coins;const coins=Math.round(randi(c0,c1)*(hasBadge('money')?1.5:1)*(e.elite?3:1));if(!e.parent&&!e.d.boss){if(hasBadge('heartf')&&Math.random()<.22)dropItem('hpheart',1,e.x,e.y+e.h/2);if(hasBadge('flowerf')&&Math.random()<.22)dropItem('mpstar',1,e.x,e.y+e.h/2);}dropItem('coin',e.inked?coins*2:coins,e.x,e.y+e.h/2);if(e.inked||e.type==='wraith'){if(Math.random()<.5)dropItem('moonink',randi(1,e.type==='wraith'?3:2),e.x,e.y+e.h/2);}else if(isNight()&&!e.d.boss&&!e.parent&&Math.random()<.04)dropItem('moonink',1,e.x,e.y+e.h/2);for(const[id,a,b,p]of e.d.drops)if(Math.random()<(e.elite?Math.min(1,p*2):p)){const n=randi(a,b)+(e.elite?1:0);dropItem(id,n,e.x,e.y+e.h/2);bestDrop(e,id,n);}
   if(e.elite){dropItem(pick(ELITE_LOOT),1,e.x,e.y+e.h/2);stat('elites');}
   if(e.d.split)for(let k=0,n=e.elite?3:2;k<n;k++){const s=spawnEnemy(e.d.split,e.x+(k-(n-1)/2)*.5,e.y+.2);s.vx=(k-(n-1)/2)*5||rand(-2,2);s.vy=9;s.timer=rand(.5,1);}
@@ -559,12 +559,12 @@ export function updateEnemies(dt){const p=player;for(let i=enemies.length-1;i>=0
   if(e.elite)m.scale.multiplyScalar(1.2);
   setTint(m.material,e.x,e.y+e.h/2);if(e.inked)m.material.uniforms.uTint.value.multiply(INKTINT);if(e.elite){m.material.uniforms.uTint.value.multiply(ELITE_TINT);if(Math.random()<dt*4)burst(e.x+rand(-e.w/2,e.w/2),e.y+rand(0,e.h),['#f1c04f','#fff3c0'],1,.6,{grav:-1,life:.6,bright:1});}if(e.st)statusFx(e,m,dt);m.material.uniforms.uFlash.value=e.flash>0?.8:(e.warn?.15+.12*Math.sin(e.t*28):0);updateEnemyFx(e,dt);}
   if(boss){$('boss').querySelector('i').style.width=clamp(boss.hp/boss.max*100,0,100)+'%';}}
-export function updateNPC(dt){for(const n of npcs){n.t+=dt;n.timer-=dt;const h=n.home;if(n.timer<=0){n.timer=rand(1.5,4);const r=Math.random();n.want=r<.45?0:(r<.72?-1:1);}
+export function updateNPC(dt){for(const n of npcs){n.t+=dt;n.timer-=dt;const h=n.home||n.roam;if(n.timer<=0){n.timer=rand(1.5,4);const r=Math.random();n.want=r<.45?0:(r<.72?-1:1);}
   const near=Math.abs(player.x-n.x)<3&&Math.abs(player.y-n.y)<2.5&&!player.dead;
   let want=near?0:(n.want||0);if(near)n.face=player.x>n.x?1:-1;if(h){if(n.x<h.minX+.7)want=1;if(n.x>h.maxX+.3)want=-1;}n.vx=want*1.6;if(want)n.face=want;n.vy-=50*dt;collide(n,dt);
   n.rot+=((n.face>0?0:Math.PI)-n.rot)*Math.min(1,dt*14);n.mesh.rotation.y=n.rot;n.mesh.material.uniforms.uFrame.value=want?Math.floor(n.t*5)%2:0;n.mesh.position.set(n.x,n.y-.08,n.mesh.position.z);setTint(n.mesh.material,n.x,n.y+1);
   if(n.y<-3&&h){n.x=(h.minX+h.maxX)/2+.5;n.y=h.y;}
-  n.bubT-=dt;if(near&&n.bubT<=0&&!n.bub){n.bub=document.createElement('div');n.bub.className='bubble';n.bub.textContent=pick(NPCDEF[n.type].lines);$('nums').appendChild(n.bub);n.bubLife=3.2;n.bubT=rand(9,16);}
+  n.bubT-=dt;if(near&&n.bubT<=0&&!n.bub){n.bub=document.createElement('div');n.bub.className='bubble';n.bub.textContent=npcLine(n.type,true);$('nums').appendChild(n.bub);n.bubLife=3.2;n.bubT=rand(9,16);}
   if(n.bub){n.bubLife-=dt;pv.set(n.x,n.y+2.5,.5).project(camera);n.bub.style.left=upx((pv.x+1)/2*innerWidth);n.bub.style.top=upx((1-pv.y)/2*innerHeight);if(n.bubLife<=0){n.bub.remove();n.bub=null;}}}}
 export function updatePickups(dt){const p=player;for(let i=pickups.length-1;i>=0;i--){const k=pickups[i];k.age+=dt;k.t-=dt;const dx=p.x-k.x,dy=(p.y+.9)-k.y,d=Math.hypot(dx,dy);
   if(k.t<=0&&d<(hasAcc('magnet')?9:3.2)&&!p.dead){k.vx+=dx/d*dt*60;k.vy+=dy/d*dt*60;const v=Math.hypot(k.vx,k.vy);if(v>12){k.vx*=12/v;k.vy*=12/v;}k.x+=k.vx*dt;k.y+=k.vy*dt;

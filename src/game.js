@@ -23,4 +23,6 @@ export * from './hud.js';
 export * from './guide.js';
 export * from './seasons.js';
 export * from './town.js';
+export * from './folk.js';
+export * from './events.js';
 export * from './save.js';

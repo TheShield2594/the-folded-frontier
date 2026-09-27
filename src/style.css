@@ -195,6 +195,20 @@ button.ghost{background:var(--paper2);}
 .npcRow .ok{color:var(--good);font-weight:800;}
 .sideTip{font-size:calc(13px*var(--ts));line-height:1.45;max-width:260px;background:#fff8e4;border:2px solid var(--ink);border-radius:8px;padding:8px 10px;margin-bottom:8px;}
 .sideTip b{display:block;font-family:'Bagel Fat One',sans-serif;font-weight:400;font-size:calc(14px*var(--ts));margin-bottom:2px;}
+.sideTip.talk{background:#fbf8f0;border-style:dashed;font-style:italic;} .sideTip.talk b{font-style:normal;}
+.sideTip.quest small{display:block;margin-top:4px;font-size:calc(11.5px*var(--ts));color:var(--ink2);font-style:normal;}
+.musH{margin:8px 0 4px;} .musH b{display:block;font-size:calc(13px*var(--ts));} .musH small{font-size:calc(11px*var(--ts));color:var(--ink2);}
+.musG{display:grid;grid-template-columns:1fr 1fr;gap:0 5px;}
+#sideBody .shopi.mus{padding:3px 5px;gap:5px;font-size:calc(11.5px*var(--ts));} .shopi.mus img{width:24px;height:24px;}
+.shopi.mus.done{background:#e6f2d8;cursor:default;} .shopi.mus.done .pr{color:var(--good);}
+#quests .sj{margin-top:4px;} #quests .side small{color:var(--ink2);}
+#evbar{position:absolute;left:50%;top:14px;transform:translateX(-50%);width:min(340px,calc(60vw / var(--ui)));text-align:center;pointer-events:none;}
+#boss:not([hidden])~#evbar{top:62px;}
+#evbar .en{display:inline-block;background:var(--paper);border:2px solid var(--ink);border-radius:999px;padding:1px 12px;font-weight:800;font-size:calc(12.5px*var(--ts));box-shadow:2px 2px 0 rgba(20,14,26,.5);}
+#evbar .eb{height:9px;margin-top:4px;border:2px solid var(--ink);border-radius:6px;background:#3a2c3f;overflow:hidden;}
+#evbar .eb i{display:block;height:100%;width:100%;background:linear-gradient(#fbf8f0,#cfc3a8);transition:width .3s;}
+#evbar.army .en{background:#f7d6cf;} #evbar.army .eb i{background:linear-gradient(#ff9a7a,#d4483b);}
+#evbar.trav .en{background:#fff0bf;}
 .mini-rec{display:flex;gap:6px;align-items:center;font-size:calc(12px*var(--ts));margin:3px 0;}
 .mini-rec img{width:22px;height:22px;}
 #dashCd{position:fixed;left:0;top:0;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;pointer-events:none;border:2px solid var(--ink);background:conic-gradient(var(--gold) var(--f,0deg),rgba(42,33,48,.45) 0);box-shadow:1px 2px 0 rgba(20,14,26,.4);transition:transform .25s,opacity .25s;}

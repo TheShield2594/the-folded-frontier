@@ -2,6 +2,7 @@
 // in and quests finish. Unlocked upgrades are saved in `town.f`; the props are ordinary saved tiles.
 import {
   burst,checkAch,chests,groundY,hasNPC,idx,meta,player,quests,SFX,SPAWNX,setTile,T,tiles,toast,W,
+  folk,MUSEUM,
 } from './game.js';
 
 // ================= town =================
@@ -15,10 +16,14 @@ export const TOWN=[
   {id:'clinic',n:'Town alchemy table',when:()=>hasNPC('nurse'),need:'The Nurse moves in',props:[T.ALCHEMY,T.TORCH],msg:'The Nurse set up an alchemy table in town. Brew potions there.'},
   {id:'forge',n:'Town forge',when:()=>hasNPC('tinkerer'),need:'The Tinkerer moves in',props:[T.FURNACE,T.ANVIL],msg:'The Tinkerer opened a town forge with a furnace and anvil.'},
   {id:'bait',n:'Bait box',when:()=>hasNPC('angler'),need:'The Angler moves in',props:[T.CHEST,T.BENCH],chest:[['fly',15],['glowlure',3]],msg:'The Angler left a bait box on the green. Help yourself!'},
+  {id:'farm',n:'Farm plot',when:()=>hasNPC('farmer'),need:'The Farmer moves in',props:[T.POT,T.FLOWER2,T.POT,T.BENCH],msg:'The Farmer planted pots and set up a potting bench on the green.'},
+  {id:'mapboard',n:'Map board',when:()=>hasNPC('scout'),need:'The Cartographer moves in',props:[[T.SIGN,1],T.LANTERNP],msg:'The Cartographer put up a map board. It doubles as a signpost.'},
+  {id:'museum',n:'Museum displays',when:()=>hasNPC('curator'),need:'The Curator moves in',props:[T.PEDESTAL,0,T.PEDESTAL,0,T.PEDESTAL],msg:'The Curator set out display stands on the green. Bring rare finds to fill the museum!'},
   {id:'bridges',n:'Repaired bridges',when:()=>quests.king,need:'Defeat the King Slime',run:repairBridges,msg:'Grateful townsfolk rebuilt every sketched bridge in the world.'},
   {id:'bazaar',n:'Bazaar goods',when:()=>quests.crane&&hasNPC('merchant'),need:'Defeat the Great Crane (with the Merchant in town)',props:[T.BENCH,T.POT],msg:'Traders arrived! The Merchant now stocks rarer goods.'},
   {id:'lamps',n:'Street lamps',when:()=>quests.lev,need:'Defeat the Inkwell Leviathan',props:[T.TORCH,0,T.TORCH,0,T.TORCH],msg:'Lamps now light the town at night.'},
   {id:'clock',n:'Town clock',when:()=>quests.folio,need:'Defeat the Charred Folio',props:[T.CLOCK],msg:'The town raised a clock to mark your victory.'},
+  {id:'gallery',n:'Grand exhibit',when:()=>MUSEUM.every(c=>folk.col[c.id]),need:'Complete every museum collection',props:[{stack:[T.PEDESTAL,T.CANDLE]},0,{stack:[T.PEDESTAL,T.CANDLE]}],msg:'The Curator unveiled a grand exhibit. Every collection is complete!'},
   {id:'statue',n:'Monument',when:()=>quests.unfolded,need:'Solve the riddle of the ink shrine',props:[{stack:[T.PEDESTAL,T.CANDLE]}],msg:'A monument now stands in town, lit by a candle that never goes out.'}];
 export const BAZAAR=[['seed_frost',8],['seed_ink',8],['seed_ember',10],['potswift',60],['potregen',60],['glowlure',8]];
 const TOWNLV=[[0,'Clearing'],[1,'Hamlet'],[3,'Village'],[6,'Town'],[9,'Paper City']];

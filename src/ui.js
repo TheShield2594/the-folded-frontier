@@ -8,6 +8,7 @@ import {
   scene,selItem,SET,setPadFocus,setPartner,SFX,SHEETS,SHOP,spriteMesh,stat,syncPartners,T,tileAt,tiles,
   travelTo,upx,W,walls,
   guideEv,town,TOWN,townLevel,townShop,
+  donate,folk,folkClick,folkHTML,npcLine,sideJournal,visited,wev,
 } from './game.js';
 
 // ================= UI =================
@@ -51,7 +52,9 @@ function nextTip(){const q=quests,has=id=>countItem(id)>0||player.armor.some(s=>
   if(q.folio&&!q.unfolded)return 'They say an old shrine hums beneath the ground on Ink Moon nights. Five small flames, and a riddle carved in stone.';
   if(!q.folio)return 'Ink Hearts make an Inkstone Pickaxe for Emberite deep down. Brew Fire Resistance Potions from Emberbloom first. A Burnt Bookmark summons the Charred Folio.';
   return 'You have beaten every boss in this world. Maybe try a Large world with a new seed?';}
-function sideHTML(){const k=side.kind;
+function sideHTML(){const k=side.kind;if(k==='folk')return folkHTML(side.key,side.line)+(side.list&&side.list.length?`<h3 style="margin-top:10px">For sale</h3>`+shopHTML(side.list):'');
+  return (side.line?`<div class="sideTip talk"><b>${side.title}</b>${side.line}</div>`:'')+sideBody(k);}
+function sideBody(k){
   if(k==='shop'){const list=side.list||SHOP;return shopHTML(list)+`<p class="hint">Shift-click to buy 10. Shift-click items in your backpack to sell them.</p>`;}
   if(k==='nurse'){const miss=Math.ceil(player.max-player.hp),cost=Math.max(miss>0||player.potT>0?1:0,Math.ceil(miss*.8)+(player.potT>0?10:0));
     return `<div class="sideTip"><b>Patch-up</b>${miss>0||player.potT>0?`Heal ${miss} life${player.potT>0?' and clear potion sickness':''}.`:'You look perfectly smooth already.'}</div>${cost?`<div class="shopi ${player.coins<cost?'poor':''}" data-a="heal"><img src="${icon('heart')}" alt=""><span>Heal me</span><span class="pr"><img src="${icon('coin')}" alt="">${cost}</span></div>`:''}`;}
@@ -79,19 +82,21 @@ $('sideBody').addEventListener('mousedown',e=>{if(side&&side.kind==='travel'){co
   if(side&&side.kind==='party'){const pc=e.target.closest('.pcard'),bd=e.target.closest('.bdg');if(pc&&player.partners.includes(pc.dataset.p)){setPartner(pc.dataset.p);SFX.pick();}else if(bd){const b=bd.dataset.b,on=player.badgesOn;if(on.includes(b))on.splice(on.indexOf(b),1);else if(bpUsed()+BADGES[b][1]>bpMax()){toast(`Not enough BP. ${BADGES[b][0]} needs ${BADGES[b][1]}.`,'bad');return;}else on.push(b);SFX.pick();}$('sideBody').dataset.h='';invDirty=true;return;}
   const el=e.target.closest('.shopi');if(!el||!side)return;$('sideBody').dataset.h='';invDirty=true;
   if(el.dataset.a==='fishq'){anglerTurnIn();return;}
+  if(el.dataset.q){folkClick(el.dataset.q);return;}if(el.dataset.m){donate(el.dataset.m);return;}
   if(el.dataset.a==='heal'){const miss=Math.ceil(player.max-player.hp),cost=Math.max(1,Math.ceil(miss*.8)+(player.potT>0?10:0));if(player.coins<cost){toast('Not enough coins.','bad');return;}player.coins-=cost;updateCoins();if(miss>0)heal(miss);player.potT=0;SFX.potion();return;}
   if(el.dataset.t!=null){const[out,parts,fee]=TINKER[+el.dataset.t];if(player.coins<fee){toast('Not enough coins.','bad');return;}
     for(const id of parts){if(!(countItem(id)>0||player.acc.some(s=>s&&s.id===id))){toast(`You need a ${ITEMS[id].name}.`,'bad');return;}}
     for(const id of parts){if(countItem(id)>0)removeItem(id,1);else{const k=player.acc.findIndex(s=>s&&s.id===id);player.acc[k]=null;}}
     player.coins-=fee;updateCoins();const left=addItem(out,1);if(left)dropItem(out,1,player.x,player.y+1);SFX.craft();toast(`Tinkered a ${ITEMS[out].name}!`,'gold');return;}
   if(el.dataset.s==null)return;const list=side.list||SHOP;const[id,p]=list[+el.dataset.s];const qty=e.shiftKey?10:1;let bought=0;for(let k=0;k<qty;k++){if(player.coins<p)break;player.coins-=p;bought++;}
-  if(!bought){toast('Not enough coins.','bad');return;}updateCoins();const left=addItem(id,bought);if(left)dropItem(id,left,player.x,player.y+1);SFX.coin();});
-export function openSide(kind,key,list,title){side={kind,key,list};$('sideSheet').hidden=false;$('panel').classList.add('withSide');$('sideBody').dataset.h='';
+  if(!bought){toast('Not enough coins.','bad');return;}updateCoins();if(side.key==='traveler')stat('travbuys');const left=addItem(id,bought);if(left)dropItem(id,left,player.x,player.y+1);SFX.coin();});
+export function openSide(kind,key,list,title,line){side={kind,key,list,line,title:title||'Merchant'};$('sideSheet').hidden=false;$('panel').classList.add('withSide');$('sideBody').dataset.h='';
   if(kind==='chest'){$('sideTitle').textContent='Chest';$('sideBody').innerHTML='<div class="grid"></div><p class="hint">Shift-click to move stacks between chest and backpack.</p>';const g=$('sideBody').querySelector('.grid');sideEls=[];for(let i=0;i<20;i++){const el=mkSlot('chest',i,g);el.dataset.k='x';sideEls.push(el);}}
   else{$('sideTitle').textContent=title||(kind==='town'?'Town':'Merchant');renderSide();}if(!invOpen)setInv(true);}
-export function talkTo(n){const d=NPCDEF[n.type];SFX.pick();
-  if(n.type==='merchant')openSide('shop',null,townShop(SHOP),'Merchant');else if(n.type==='painter')openSide('shop',null,SHOPS.painter,'Painter');else if(n.type==='nurse')openSide('nurse',null,null,'Nurse');else if(n.type==='guide')openSide('guide',null,null,'Guide');else if(n.type==='angler')openSide('angler',null,SHOPS.angler,'Angler');else openSide('tinker',null,SHOPS.tinkerer,'Tinkerer');
-  if(n.bub){n.bub.remove();n.bub=null;}n.bub=document.createElement('div');n.bub.className='bubble';n.bub.textContent=pick(d.lines);$('nums').appendChild(n.bub);n.bubLife=3;n.bubT=10;}
+export function talkTo(n){const d=NPCDEF[n.type],line=npcLine(n.type),t=n.type;SFX.pick();
+  if(t==='merchant')openSide('shop',null,townShop(SHOP),'Merchant',line);else if(t==='painter')openSide('shop',null,SHOPS.painter,'Painter',line);else if(t==='nurse')openSide('nurse',null,null,'Nurse',line);else if(t==='guide')openSide('guide',null,null,'Guide',line);else if(t==='angler')openSide('angler',null,SHOPS.angler,'Angler',line);else if(t==='tinkerer')openSide('tinker',null,SHOPS.tinkerer,'Tinkerer',line);
+  else openSide('folk',t,t==='traveler'?(wev.trav?wev.trav.stock:[]):SHOPS[t],d.name,line);
+  if(n.bub){n.bub.remove();n.bub=null;}n.bub=document.createElement('div');n.bub.className='bubble';n.bub.textContent=line;$('nums').appendChild(n.bub);n.bubLife=3;n.bubT=10;}
 export function setInv(o){if(!o){if(padFocus)padFocus.classList.remove('padfocus');setPadFocus(null);$('padHint').hidden=true;}if(!o&&side&&!$('sideSheet').hidden){}invOpen=o;$('help').hidden=o;$('panel').hidden=!o;$('hotwrap').style.visibility=o?'hidden':'visible';if(!o){side=null;$('sideSheet').hidden=true;$('panel').classList.remove('withSide');if(cursor){const l=addItem(cursor.id,cursor.n);if(l)dropItem(cursor.id,l,player.x,player.y+1);cursor=null;}$('tip').hidden=true;}
   gridEls.concat(armorEls,accEls).forEach(el=>el.dataset.k='x');craftKey='';invDirty=true;}
 function canGo(kind,i,s){if(!s)return true;const it=ITEMS[s.id];if(kind==='armor')return it.slot===i;if(kind==='acc')return !!it.acc&&!player.acc.some((a,k)=>k!==i&&a&&a.id===s.id);return true;}
@@ -119,7 +124,7 @@ export let heartsKey='';
 export function renderHearts(){const per=20,n=Math.ceil(player.max/per);const key=player.hp+'/'+player.max+'/'+Math.floor(player.mana)+'/'+player.maxMana;if(key===heartsKey)return;heartsKey=key;let h='';for(let i=0;i<n;i++){const f=clamp((player.hp-i*per)/per,0,1);h+=`<img src="${icon('heart')}" alt="" style="opacity:${f>0?1:.28};transform:scale(${f>0?.65+.35*f:.8});filter:${f>0?'none':'grayscale(1)'}">`;}$('hearts').innerHTML=h;
   let m='';for(let i=0;i<player.maxMana/20;i++){const f=clamp((player.mana-i*20)/20,0,1);m+=`<img src="${icon('manacrystal')}" alt="" style="opacity:${f>0?1:.3};transform:scale(${f>0?.6+.4*f:.75});filter:${f>0?'none':'grayscale(1)'}">`;}$('mana').innerHTML=m;
   $('hpTxt').textContent=`Life ${Math.ceil(player.hp)} / ${player.max} · Mana ${Math.floor(player.mana)} / ${player.maxMana}`;}
-export function renderQuests(){$('quests').innerHTML='<b>Journal</b>'+QUESTS.map(([k,t])=>`<div class="${quests[k]?'done':''}"><i></i>${t}</div>`).join('');}
+export function renderQuests(){$('quests').innerHTML='<b>Journal</b>'+QUESTS.map(([k,t])=>`<div class="${quests[k]?'done':''}"><i></i>${t}</div>`).join('')+sideJournal();}
 export function updateCoins(){$('coins').innerHTML=`<img src="${icon('coin')}" alt="">${player.coins}`;}
 export function toast(msg,cls=''){const d=document.createElement('div');d.className='toast '+cls;d.textContent=msg;$('toasts').appendChild(d);while($('toasts').children.length>5)$('toasts').firstChild.remove();setTimeout(()=>{d.style.transition='opacity .4s';d.style.opacity=0;setTimeout(()=>d.remove(),400);},3800);}
 const nums=[];export const pv=new THREE.Vector3();
@@ -150,12 +155,23 @@ export const NPCDEF={
     lines:['Bring me two gadgets and I will make one better gadget.','Glue, string and optimism.','A Tool Belt! Changes lives!']},
   angler:{name:'Angler',need:'Arrives once you have caught a fish.',ok:()=>angler.caught>0&&hasNPC('merchant'),
     lines:['Fish bite better in the rain. Everyone knows that.','The Ink Lake is the deepest pool around. Big bites.','I once caught a koi folded from a thousand cranes. Honest.']},
+  farmer:{name:'Farmer',need:'Arrives once you have harvested a grown crop.',ok:()=>(folk.n.harvest||0)>0&&hasNPC('merchant'),hello:'Saw your crops coming up and thought: that is a town that needs a farmer. Got a spare room?',
+    lines:['Crops under a roof ignore the weather. Crops outside sulk in winter.','Paper Wheat loves the fall. So do I.','Seeds! Seeds for every soil!']},
+  scout:{name:'Cartographer',need:'Arrives once you have explored three regions.',ok:()=>visited.size>=3&&hasNPC('merchant'),hello:'You have been all over! I make maps. Well, I start maps. Help me finish one?',
+    lines:['North is up. Usually.','Every blank page on a map is a promise.','I once mapped a cave that turned out to be a very large bat.']},
+  curator:{name:'Curator',need:'Arrives once three townsfolk have homes and you have found a fossil or caught a fish.',ok:()=>npcs.filter(n=>n.home).length>=3&&((folk.n.fossil||0)>0||angler.caught>0),
+    hello:'A town with no museum? Unthinkable! I will open one right here. Bring me fossils, fish and curiosities.',
+    lines:['Please do not touch the exhibits. Unless you are donating them.','Every find tells a story. Most of them are about dirt.','A museum is a library of things.']},
+  traveler:{name:'Traveling Merchant',need:'Visits now and then, from dawn until dusk.',ok:()=>false,hello:'Wares from far-off pages! Buy now, I am gone by nightfall.',
+    lines:['Rare goods, fair prices. Well, rare goods.','I have folded myself across a dozen maps.','Tomorrow I will be three biomes away.']},
 };
-export const NPCORDER=['merchant','guide','painter','nurse','tinkerer','angler'];
+export const NPCORDER=['merchant','guide','painter','nurse','tinkerer','angler','farmer','scout','curator'];
 const TINKER=[['kite',['glider','ribbon'],100],['beacon',['lantern','buckler'],100],['quilt',['patch','buckler'],60]];
 const SHOPS={painter:[['paint1',40],['paint2',40],['paint3',40],['paint4',40],['banr',25],['banb',25],['bang',25],['wallred',2],['wallblue',2],['wallgreen',2],['wallyellow',2]],
   tinkerer:[['b_quick',200],['b_feather',180],['bpup',400],['toolbelt',150],['magnet',120],['hook',150],['rope',1]],
-  angler:[['fly',2],['glowlure',8],['rodwood',40],['potfish',30],['bucket',60],['seed_sun',5]]};
+  angler:[['fly',2],['glowlure',8],['rodwood',40],['potfish',30],['bucket',60],['seed_sun',5]],
+  farmer:[['seed_sun',4],['seed_wheat',4],['seed_frost',8],['seed_ink',10],['pot',20],['bucket',60]],
+  scout:[['tmap',120],['rope',1],['torch',4],['potnight',40],['lanternp',30],['glider',420]]};
 export const hasNPC=t=>npcs.some(n=>n.type===t&&n.home);
 export function makeNPC(type,x,y,home){const old=npcs.find(n=>n.type===type);if(old){scene.remove(old.mesh);if(old.bub)old.bub.remove();npcs.splice(npcs.indexOf(old),1);}
   const n={type,x,y,w:.78,h:1.82,vx:0,vy:0,face:1,rot:0,t:rand(0,3),timer:2,home,step:1,onGround:false,bubT:rand(2,6)};if(home&&home.key==null)home.key=idx(Math.floor((home.minX+home.maxX)/2),home.y);

@@ -1,7 +1,7 @@
 // Settings and achievements panels, minimap and HUD.
 import {
   $,applyUI,applyVolumes,blk,BUFFS,clamp,countItem,dayF,DEF_BIND,DEF_PAD,DEF_SET,ELEM,enemies,explored,
-  atlasTex,clearIcons,drawOres,drawWarnMark,H,hexRgb,hintT,icon,initAudio,inkMoon,isNight,lerp,META,npcs,
+  atlasTex,clearIcons,drawOres,drawWarnMark,H,hexRgb,hintT,icon,initAudio,inkMoon,isNight,lerp,META,npcs,wev,
   ORECOL,player,PSTAT,renderHearts,saveMeta,saveSettings,SET,setCamDist,setHintT,setInvDirty,setSoundOn,SFX,sky,soundOn,
   seasonIdx,seasonInfo,SEASONS,state,surf,T,tiles,TP,W,WALLCOL,walls,weather,worldTime,
 } from './game.js';
@@ -83,6 +83,12 @@ const ACH=[
  {id:'weak',name:'Know Your Enemy',desc:'Hit enemies 50 times with a damage type they are weak to.',icon:'firearrow',key:'weakhits',target:50},
  {id:'fish',name:'Gone Fishing',desc:'Catch 25 fish.',icon:'minnow',key:'fish',target:25},
  {id:'angler',name:'Reel Deal',desc:"Finish 5 of the Angler's requests.",icon:'rodiron',key:'fishq',target:5},
+ {id:'donate',name:'Patron of the Arts',desc:'Donate 15 finds to the museum.',icon:'fos_amm',key:'donations',target:15},
+ {id:'collect',name:'Complete Set',desc:'Complete a museum collection.',icon:'fos_skull',key:'collections',target:1},
+ {id:'sideq',name:'Good Neighbor',desc:'Finish 3 side quests for the townsfolk.',icon:'bread',key:'sideq',target:3},
+ {id:'storm',name:'Paper Weight',desc:'Ride out a Paper Storm.',icon:'paper',key:'storms',target:1},
+ {id:'army',name:'Hold the Line',desc:'Defeat the Paper Army.',icon:'banr',key:'armies',target:1},
+ {id:'trav',name:'Window Shopper',desc:'Buy something from the Traveling Merchant.',icon:'coin',key:'travbuys',target:1},
  {id:'armor',name:'Fully Folded',desc:'Wear a full set of armor.',icon:'mailfe',test:p=>p.armor.every(Boolean)},
 ];
 export function stat(k,n=1){META.stats[k]=(META.stats[k]||0)+n;checkAch();}
@@ -109,7 +115,7 @@ function drawMini(){const p=player,x0=Math.floor(p.x)-70,y0=Math.floor(p.y)+40,d
   mctx.putImageData(mimg,0,0);const dot=(x,y,col,s=2)=>{mctx.fillStyle=col;mctx.fillRect(Math.round(x-x0)-s/2,Math.round(y0-y)-s,s,s);};
   for(const e of enemies)dot(e.x,e.y+e.h/2,e.d.boss?'#7fd3f0':'#ff5a4a',e.d.boss?4:2);npcs.forEach(n=>dot(n.x,n.y+1,'#6cf07a',3));dot(p.x,p.y+1,'#fff',3);}
 let buffKey='';
-export function updateHUD(dt){renderHearts();const h=Math.floor(worldTime),m=Math.floor((worldTime-h)*60/10)*10;$('clock').textContent=`${(h%12)||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}${inkMoon&&isNight()?' · Ink Moon':weather==='rain'?' · Rain':weather==='wind'?' · Windy':weather==='snow'?' · Snow':''}`;{const si=seasonInfo(),k=si.k+si.day+(si.fest||'');if($('season').dataset.k!==k){$('season').dataset.k=k;$('season').className='chip season '+si.k;$('season').textContent=si.fest?`${si.n} ${si.day} · ${si.fest}`:`${si.n} · Day ${si.day}`;$('season').title=si.fest?'Festival day!':si.festIn?`${SEASONS[seasonIdx()].fest} in ${si.festIn} day${si.festIn>1?'s':''}`:`Year ${si.year}`;}}
+export function updateHUD(dt){renderHearts();const h=Math.floor(worldTime),m=Math.floor((worldTime-h)*60/10)*10;$('clock').textContent=`${(h%12)||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}${inkMoon&&isNight()?' · Ink Moon':wev.k==='storm'?' · Paper Storm':weather==='rain'?' · Rain':weather==='wind'?' · Windy':weather==='snow'?' · Snow':''}`;{const si=seasonInfo(),k=si.k+si.day+(si.fest||'');if($('season').dataset.k!==k){$('season').dataset.k=k;$('season').className='chip season '+si.k;$('season').textContent=si.fest?`${si.n} ${si.day} · ${si.fest}`:`${si.n} · Day ${si.day}`;$('season').title=si.fest?'Festival day!':si.festIn?`${SEASONS[seasonIdx()].fest} in ${si.festIn} day${si.festIn>1?'s':''}`:`Year ${si.year}`;}}
   const sts=Object.keys(player.st||{}).filter(k=>player.st[k]>0);
   const bk=Object.keys(player.buffs).map(k=>k+Math.ceil(player.buffs[k])).join()+'|'+sts.map(k=>k+Math.ceil(player.st[k])).join();if(bk!==buffKey){buffKey=bk;$('buffs').innerHTML=Object.keys(player.buffs).map(k=>{const s2=Math.ceil(player.buffs[k]);return `<span class="buff" title="${BUFFS[k][2]}"><img src="${icon(BUFFS[k][1])}" alt="">${BUFFS[k][0]} ${Math.floor(s2/60)}:${String(s2%60).padStart(2,'0')}</span>`;}).join('')
     +sts.map(k=>{const E=ELEM[PSTAT[k][0]];return `<span class="buff bad" title="${PSTAT[k][1]}"><img src="${icon(E.icon)}" alt="">${E.st} ${Math.ceil(player.st[k])}s</span>`;}).join('');}
