@@ -5,7 +5,7 @@ import {
   fireHook,held,hook,initAudio,invOpen,ITEMS,keys,mapOpen,pad,padRebinding,partnerAbility,pause,player,
   pv,quickHeal,rebinding,renderBinds,renderer,saveSettings,scene,SET,setCamDist,setCursor,setInv,
   setInvDirty,setPadRebinding,setRebinding,SFX,stat,stompNice,toggleMap,upx,
-  skipIntro,dlgNext,
+  skipIntro,dlgNext,toggleMount,
 } from './game.js';
 
 // ================= input =================
@@ -28,7 +28,7 @@ addEventListener('keydown',e=>{const k=e.key.toLowerCase();
     if(actKey('heal',k))quickHeal();
     if(actKey('dash',k))dashPress();
     if(actKey('hook',k))fireHook();
-    if(actKey('partner',k))cyclePartner();if(actKey('ability',k))partnerAbility();
+    if(actKey('partner',k))cyclePartner();if(actKey('ability',k))partnerAbility();if(actKey('mount',k))toggleMount();
     if(/^[0-9]$/.test(k)&&!boundKeys().includes(k)){player.sel=(+k+9)%10;setInvDirty(true);}
     if(k==='='||k==='+'){setCamDist(SET.zoom=clamp(camDist-4,28,64));saveSettings();}if(k==='-'){setCamDist(SET.zoom=clamp(camDist+4,28,64));saveSettings();}
   }else if(state==='paused'&&k==='escape')pause(false);});

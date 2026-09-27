@@ -9,6 +9,7 @@ import {
   travelTo,upx,W,walls,
   guideEv,town,TOWN,townLevel,townShop,
   donate,folk,folkClick,folkHTML,npcLine,lineNew,npcSpeaker,plain,say,sideJournal,visited,wev,
+  MOUNTS,PETORDER,PETS,toggleMount,togglePet,
 } from './game.js';
 
 // ================= UI =================
@@ -67,6 +68,8 @@ function sideBody(k){
   if(k==='travel'){const list=[{n:'Home',x:player.spawn.x-.5,y:player.spawn.y}].concat((BIO.camps||[]).filter(c=>c.done).map((c,j)=>({n:`Camp ${j+1}`,x:c.sx,y:c.sy})));
     return list.map((w,j)=>{const d=Math.round((w.x-player.x)*2);return `<div class="shopi" data-w="${j}"><img src="${icon('tmap')}" alt=""><span>${w.n}<br><small style="color:var(--ink2)">${Math.abs(d)} ft ${d<0?'west':'east'}</small></span><span class="pr">Go</span></div>`;}).join('')+'<p class="hint">Rebuild more abandoned camps to add signposts.</p>';}
   if(k==='party'){const p=player;return `<h3>Partners</h3>`+PORDER.map(id=>{const d=PARTNERS[id],has=p.partners.includes(id);return `<div class="pcard ${p.partner===id?'on':''} ${has?'':'lock'}" data-p="${id}"><img src="${pPortrait(id)}" alt="" style="${has?'':'filter:grayscale(1) brightness(.6)'}"><div><b>${has?d.name:'???'}</b><span>${has?`${d.desc} Move: ${d.move}. ${d.moveDesc}`:d.how}</span></div></div>`;}).join('')+
+    `<h3 style="margin-top:10px">Pets &amp; mount</h3>`+PETORDER.map(id=>{const d=PETS[id],has=countItem(d.item)>0;return `<div class="pcard ${p.pet===id?'on':''} ${has?'':'lock'}" data-pet="${id}"><img src="${icon(d.item)}" alt="" style="${has?'':'filter:grayscale(1) brightness(.6)'}"><div><b>${has?d.name:'???'}</b><span>${has?(p.pet===id?'Following you. Click to send it home.':'Click to call it.'):d.how}</span></div></div>`;}).join('')+
+    Object.keys(MOUNTS).map(id=>{const d=MOUNTS[id],has=countItem(d.item)>0;return `<div class="pcard ${p.mount===id?'on':''} ${has?'':'lock'}" data-mount="${id}"><img src="${icon(d.item)}" alt="" style="${has?'':'filter:grayscale(1) brightness(.6)'}"><div><b>${has?d.name:'???'}</b><span>${has?(p.mount===id?'Riding. Click to get down.':`Mount. Click or press ${KEYNAME(SET.bind.mount)} to ride: ${Math.round((d.spd-1)*100)}% faster, higher jumps.`):d.how}</span></div></div>`;}).join('')+
     `<h3 style="margin-top:10px">Badges · BP ${bpUsed()} / ${bpMax()}</h3>`+(p.badges.length?p.badges.map(b=>{const[n,bp,d,cell]=BADGES[b];return `<div class="bdg ${p.badgesOn.includes(b)?'on':''}" data-b="${b}"><img src="${icon('b_'+b)}" alt=""><div><b>${n}</b><span>${d}</span></div><em>${bp} BP</em></div>`;}).join(''):'<p class="hint">No badges yet. Bosses, chests, the Merchant and the Tinkerer all have them.</p>')+`<p class="hint">Click a badge to equip or remove it. Each boss you defeat adds 3 BP.</p>`;}
   if(k==='bestiary'){const found=BEST.filter(r=>bestiary[r[0]]).length;return `<p class="hint" style="margin-top:0">${found} of ${BEST.length} entries filled in. Defeat an enemy to sketch it here.</p>`+BEST.map(([t,name,where])=>{const b=bestiary[t];
       if(!b)return `<div class="bst lock"><img src="${bestSketch(t)}" alt=""><div><b>???</b><span>${where}</span></div></div>`;
@@ -79,7 +82,8 @@ function bestSketch(t){if(bestCache[t])return bestCache[t];const d=EN[t],src=SHE
 function renderSide(){if(!side||side.kind==='chest')return;const html=sideHTML();if($('sideBody').dataset.h!==html){$('sideBody').innerHTML=html;$('sideBody').dataset.h=html;}}
 function renderShop(){renderSide();}
 $('sideBody').addEventListener('mousedown',e=>{if(side&&side.kind==='travel'){const el=e.target.closest('.shopi');if(!el)return;const list=[{x:player.spawn.x-.5,y:player.spawn.y}].concat((BIO.camps||[]).filter(c=>c.done).map(c=>({x:c.sx,y:c.sy})));const w=list[+el.dataset.w];if(w)travelTo(w.x,w.y);return;}
-  if(side&&side.kind==='party'){const pc=e.target.closest('.pcard'),bd=e.target.closest('.bdg');if(pc&&player.partners.includes(pc.dataset.p)){setPartner(pc.dataset.p);SFX.pick();}else if(bd){const b=bd.dataset.b,on=player.badgesOn;if(on.includes(b))on.splice(on.indexOf(b),1);else if(bpUsed()+BADGES[b][1]>bpMax()){toast(`Not enough BP. ${BADGES[b][0]} needs ${BADGES[b][1]}.`,'bad');return;}else on.push(b);SFX.pick();}$('sideBody').dataset.h='';invDirty=true;return;}
+  if(side&&side.kind==='party'){const pc=e.target.closest('.pcard'),bd=e.target.closest('.bdg');
+    if(pc&&(pc.dataset.pet||pc.dataset.mount)){const k=pc.dataset.pet||pc.dataset.mount,d=(pc.dataset.pet?PETS:MOUNTS)[k];if(countItem(d.item)>0){if(pc.dataset.pet)togglePet(k);else toggleMount(k);}$('sideBody').dataset.h='';invDirty=true;return;}if(pc&&player.partners.includes(pc.dataset.p)){setPartner(pc.dataset.p);SFX.pick();}else if(bd){const b=bd.dataset.b,on=player.badgesOn;if(on.includes(b))on.splice(on.indexOf(b),1);else if(bpUsed()+BADGES[b][1]>bpMax()){toast(`Not enough BP. ${BADGES[b][0]} needs ${BADGES[b][1]}.`,'bad');return;}else on.push(b);SFX.pick();}$('sideBody').dataset.h='';invDirty=true;return;}
   const el=e.target.closest('.shopi');if(!el||!side)return;$('sideBody').dataset.h='';invDirty=true;
   if(el.dataset.a==='fishq'){anglerTurnIn();return;}
   if(el.dataset.q){folkClick(el.dataset.q);return;}if(el.dataset.m){donate(el.dataset.m);return;}

@@ -23,6 +23,7 @@ const bosses=()=>['king','crane','lev','folio','unfolded'].filter(k=>quests[k]).
 export const SIDEQ=[
   {id:'wheat',npc:'farmer',n:'Bread for the Town',ask:'The whole town wants bread and my field is still seedlings. Could you bring me 10 Paper Wheat?',give:[['wheat',10]],reward:[['seed_ember',3],['seed_ink',3],['coin',120]],done:'Golden! This will feed the town for a week. Take these seeds, they grow in stranger soil.'},
   {id:'supper',npc:'farmer',n:'Harvest Supper',after:'wheat',ask:'I am throwing a harvest supper. Bring 4 Paper Bread and 2 Grilled Fish and you are the guest of honor.',give:[['bread',4],['grilledfish',2]],reward:[['potregen',2],['bpup',1],['coin',150]],done:'The supper was a triumph. Someone even danced. It was the Tinkerer. It was alarming.'},
+  {id:'moths',npc:'farmer',n:'Night Lights',after:'supper',ask:'Moths keep eating my lanterns instead of my crops. Bring me 3 Paper Lanterns and 5 Glowcaps to lure them off, and I will introduce you to the one moth I actually like.',give:[['lanternp',3],['mushroom',5]],reward:[['pet_moth',1],['coin',100]],done:'They are dancing round the lanterns now. This little one kept following me, so she is yours. She glows!'},
   {id:'camp',npc:'scout',n:'Lost Camps',ask:'There are abandoned camps out in the wilds. Rebuild one and I can mark it on the map.',prog:()=>[camps(),1],reward:[['tmap',1],['coin',120]],done:'Marked it! Here, a torn map I could not make sense of. Maybe you can.'},
   {id:'regions',npc:'scout',n:'The Whole Map',after:'camp',ask:()=>`My map has blank pages. Visit every region of this world and tell me what you saw. (${visited.size} of ${Object.keys(BIONAME).length})`,prog:()=>[Object.keys(BIONAME).filter(b=>visited.has(b)).length,Object.keys(BIONAME).length],reward:[['glider',1],['coin',250]],done:'Every page filled in! Take my old glider. I only ever used it to fall slowly.'},
   {id:'exhibit',npc:'curator',n:'The First Exhibit',ask:()=>`An empty museum is just a quiet room. Donate 5 different finds to get us started. (${Math.min(5,donated())} of 5)`,prog:()=>[donated(),5],reward:[['lanternp',2],['coin',200]],done:'Splendid! We had our first visitor today. It was the Merchant, but still.'},
@@ -59,6 +60,10 @@ const MEMORY=[
   ['folio','nurse',()=>quests.folio,'{surprised}The *Charred Folio!* {happy}I saved some ointment for those scorch marks.'],
   ['folio','curator',()=>quests.folio,'{sad}The Charred Folio was the *oldest book* in the land. Could you bring me a page? {neutral}No? Fair.'],
   ['unfolded','*',()=>quests.unfolded,'{surprised}People say you solved the riddle of the ink shrine. The whole town is ~whispering~ about it.'],
+  ['awake','guide',()=>BIO.awake,'{surprised}The world *woke up* when The Unfolded fell. {neutral}The land has creased where one page pressed into another, and *Foilite* glints deep down. You will need an Emberite Pickaxe to cut it.'],
+  ['awake2','merchant nurse scout',()=>BIO.awake,'{sad}Since the world woke up, everything out there is ~meaner~. {happy}Do be careful. And buy *potions.*'],
+  ['stag','scout farmer',()=>countItem('stag')>0,'{surprised}Was that you bounding past on a *paper stag?* {happy}Very majestic. Mind the crops.'],
+  ['pet','nurse painter',()=>!!player.pet,'{happy}Oh, you brought a little friend! {surprised}Does it need a *checkup?*'],
   ['allboss','merchant painter',()=>bosses()>=4,'{surprised}Every big villain in this world, *flattened.* {happy}I hope you take a holiday.'],
   ['max200','nurse',()=>player.max>=200,'{surprised}*Two hundred* life! {happy}You are more patch than paper at this point.'],
   ['moon','guide tinkerer',()=>(folk.n.moon||0)>0,'{happy}You made it through an *Ink Moon.* {sad}Most folks just ~hide under the bed~.'],

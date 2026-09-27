@@ -47,6 +47,7 @@ Each file in `src/` is one or more of the old script's sections, in the same ord
 | `gameplay.js` | gameplay | Player physics, combat, mining/placing, enemy AI, spawning, bosses, events (largest module) |
 | `view.js` | crack/highlight overlays, time/sky, camera | Mining crack and tile highlight, day/night cycle and sky colors, camera follow and shake |
 | `partners.js` | partners | `PARTNERS` and partner behavior |
+| `pets.js` | pets & mounts | Cosmetic pets (`PETS`, `togglePet`, follower in `petS`) and mounts (`MOUNTS`, `toggleMount`, `dismount`); their sprite drawings `drawPet`/`drawStag`, which the atlas also uses for their icons |
 | `map.js` | pop-up book, world map | Page-turn effect when entering a new biome; full map view |
 | `gamepad.js` | gamepad | Gamepad polling and menu navigation |
 | `hud.js` | settings & achievements UI, minimap/HUD | Settings panel, rebinding, achievements; minimap and HUD |
@@ -56,6 +57,7 @@ Each file in `src/` is one or more of the old script's sections, in the same ord
 | `town.js` | town | Reactive settlement: `TOWN` upgrades unlock as NPCs move in and quests finish (`updateTown()` every 3 s), placing props on the green beside the starting cabin or running an effect (bridge repair); `town` state, `townLevel()`, Merchant's `BAZAAR` stock via `townShop()` |
 | `folk.js` | folk, museum | Per-world `folk` state; NPC memory dialogue (`MEMORY`, `npcLine(type, passive)`); side quests for the Farmer, Cartographer and Curator (`SIDEQ`, `folkClick`, `folkHTML`); the museum (`MUSEUM` collections, `donate`, `museumHTML`); fossil drops (`digFossil`) |
 | `events.js` | events | World events beyond the Ink Moon, state in `wev`: Paper Storm, Paper Army invasion, Traveling Merchant. `evDawn()`/`evDusk()` roll them, `updateEvents()` runs them and the `#evbar` banner, `evKill(e)` counts invaders |
+| `awaken.js` | awakening | World Awakening, the post-game after The Unfolded: `updateAwaken()` plays the story beat and `awakenWorld()` carves biome creases and seeds Foilite ore; `isAwake()` |
 | `save.js` | save/load, lifecycle | `save()`, `loadSave()`, `SAVE_KEY`, `SAVE_VER`, `migrateSave()`; `allocWorld`, `newWorld`, `loadWorld`, pause/title flow, save-code pack/unpack |
 | `main.js` | boot | Builds sprite sheets, loads or creates a world, main `frame()` loop |
 
@@ -76,6 +78,8 @@ How the modules fit together:
 - Save codes: `FF1:` + base64(gzip(JSON `{save, meta}`)) via `CompressionStream`; `FF0:` is the uncompressed fallback. The Save code button is in the pause menu, and "Load save code" is on the title screen.
 - The world save also holds `angler` (fishing progress: fish caught, Angler requests done, day counter, today's request); older saves get defaults in `loadWorld()`.
 - The world save also holds `folk` (`q` side quest states 1 accepted / 2 done, `heard` memory lines per NPC as `'type:key'`, `met` introduced NPCs, `n` per-world counters such as `harvest`, `fossil`, `storm`, `army`, `moon`, `mus` donated item ids, `col` rewarded museum collections) and `ev` (the running world event, a pending storm, the event cooldown and the Traveling Merchant's visit). Both are filled with defaults in `loadWorld()` for older saves.
+- The player save holds `pet` (the following pet's key, or null); `cleanSave()` drops unknown pets. Mounts are not saved: loading a world always dismounts.
+- The World Awakening lives in the saved biome data: `bio.awake` (1 once awakened), `bio.creases` (`[x0, x1, biome]` strips that `biomeAt()` reports as that biome) and `bio.foil` (Foilite tiles seeded). A save that beat The Unfolded before awakening existed awakens when it is next played.
 - The world save also holds `tut` (tutorial progress: next step `s`, paper hints already shown in `seen`). Saves without it load with the tutorial finished.
 - Every load goes through `migrateSave()` inside `loadWorld()`. Old-build saves can be made by running an old commit's `index.html` (three.js from the CDN) and copying the save out of `localStorage`. When a save needs a structural change, bump `SAVE_VER` and add a `if(d.v<N){...;d.v=N;}` step there. For a plain new field, filling a default in `loadWorld()` is enough: older saves won't have it.
 
@@ -83,7 +87,7 @@ Browser-only saves are why the game will be self-hosted with server-side saves (
 
 ## Conventions and gotchas
 
-- **Tile IDs are saved as raw bytes.** Never renumber or reuse a value in `T`. Add new tiles with new IDs. The lookup arrays are sized 64 and the highest ID is currently 60, so going past 63 means resizing them.
+- **Tile IDs are saved as raw bytes.** Never renumber or reuse a value in `T`. Add new tiles with new IDs. The lookup arrays are sized 64 and the highest ID is currently 61 (`T.FOIL`), so going past 63 means resizing them.
 - **Atlas cells are allocated in order** (`cellN++`). Adding cells in the middle shifts later cells. That's fine at runtime, since nothing saves cell indices, but keep new art grouped with its section.
 - **Art style:** cream paper, dark ink outlines (`INK = '#2a2130'`), rounded shapes, paper grain. Reuse the drawing helpers so new art matches.
 - **Code style is dense:** short names, many statements per line. Match the surrounding code rather than reformatting it; a big reformat makes diffs unreadable.
@@ -100,7 +104,9 @@ Browser-only saves are why the game will be self-hosted with server-side saves (
 - **Staged dialogue:** first meetings (`hello`), fresh `MEMORY` lines, partner greetings (`PARTNERS[k].hi`) and the player's lines after the intro (`INTROSAY`) play through `say()`. Line markup: `{happy}`/`{surprised}`/`{sad}`/`{angry}`/`{neutral}` switch the portrait's expression where they appear, `*word*` bounces, `~word~` shivers. `npcLine()` returns marked-up text and sets `lineNew` for lines worth staging; show NPC lines anywhere else through `plain()`. Human portraits are `facePic(type, expr)`, which redraws frame 0 of an `npcSheet()` with `drawHuman`'s expression face; partners get an emote mark on their sprite. A new NPC needs a `VOICE` entry.
 - **Museum:** collections are `MUSEUM` entries (`items`, `tip`, `reward`); donated ids are saved, so renaming an item id un-donates it.
 - **World events:** big events (`wev.k`: `'storm'`, `'army'`) don't overlap and set `wev.cd` (dawns before the next); the Traveling Merchant is separate (`wev.trav`) and is an NPC with no home and a `roam` range. Paper Army soldiers carry `e.army`. A new event needs an `EVENTS` entry, a trigger in `evDawn`/`evDusk`, an update branch and rewards.
-- Keep new input actions rebindable: keyboard in `DEF_BIND`/`ALT` (plus a `BINDLAB` label), gamepad in `DEF_PAD` (plus a `PADLAB` label). Start and the d-pad/sticks are fixed, and backpack menus use a fixed gamepad layout (`fx` in `handlePad`).
+- **Pets & mounts:** a pet is a `PETS` entry plus an item with `pet:'key'`; a mount is a `MOUNTS` entry plus an item with `mount:'key'`. Both only work while their item is in the backpack. Draw the sprite in `drawPet`/`drawStag` (facing right) and add its sheet in `buildPetSheets()`. Riding raises the player's hitbox to `MOUNTS[k].h` and the sprite by `player.rideY`; anything drawn at the player's hands or shoulder must add `player.rideY`. Flattening, climbing, the hook and death dismount.
+- **World Awakening:** new post-game behavior should check `isAwake()` (or `BIO.awake`). Awakened enemies carry `e.awake` (more life and damage); spawn pools in `spawnLogic()` mix in foes from other regions. Creases never touch the town, the Ink Lake, camps or the shrine, and only rewrite natural ground (no placed background wall).
+- Keep new input actions rebindable: keyboard in `DEF_BIND`/`ALT` (plus a `BINDLAB` label), gamepad in `DEF_PAD` (plus a `PADLAB` label; `-1` means unbound, as with Mount). Start and the d-pad/sticks are fixed, and backpack menus use a fixed gamepad layout (`fx` in `handlePad`).
 
 ## Testing
 

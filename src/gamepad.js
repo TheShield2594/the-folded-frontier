@@ -3,7 +3,7 @@ import {
   $,closeSettings,craft,cyclePartner,dashPress,fireHook,initAudio,invOpen,jumpPress,mapOpen,mouse,npcs,
   pad,padRebinding,partnerAbility,pause,placeTip,player,renderBinds,saveSettings,SET,setInv,setInvDirty,
   setPadRebinding,SFX,slotClick,state,T,tileAt,toggleMap,upx,
-  skipIntro,dlgNext,
+  skipIntro,dlgNext,toggleMount,
 } from './game.js';
 
 // ================= gamepad =================
@@ -32,7 +32,7 @@ export function handlePad(){const gps=navigator.getGamepads?navigator.getGamepad
   if(e('dash'))dashPress();
   if(e('pl')){player.sel=(player.sel+9)%10;setInvDirty(true);}if(e('pr')){player.sel=(player.sel+1)%10;setInvDirty(true);}
   if(e('use'))mouse.lp=true;
-  if(e('interact'))padInteract();if(e('hook'))fireHook();if(e('ability'))partnerAbility();if(e('partner'))cyclePartner();}
+  if(e('interact'))padInteract();if(e('hook'))fireHook();if(e('ability'))partnerAbility();if(e('partner'))cyclePartner();if(e('mount'))toggleMount();}
 export let padFocus=null,padNavT=0,padNavDir='',padLast=performance.now();
 function focusables(){return[...document.querySelectorAll('#sideSheet .slot,#sideSheet .shopi,#sideSheet .pcard,#sideSheet .bdg,#panel .slot,#panel .rec,#panel button')].filter(el=>{const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&!el.closest('[hidden]');});}
 function setFocus(el){if(padFocus)padFocus.classList.remove('padfocus');padFocus=el;if(!el)return;el.classList.add('padfocus');el.scrollIntoView({block:'nearest',inline:'nearest'});const r=el.getBoundingClientRect();
