@@ -1120,7 +1120,8 @@ const PAINT={armor:{}};
 const RIG={head:[0,0,108,107,52.8,93.4],torso:[110,0,101,98,62.3,16.0],arm:[213,0,43,91,19.9,12.9],leg:[258,0,49,103,22.3,14.4],helm:[309,0,73,81,6.6,6.6]};
 // armor_<metal>.webp: that metal's set drawn on the character (head wearing the helmet, torso, arm, leg), same layout as RIG;
 // a slot whose metal has no painted set tints the plain parts instead
-const ARMOR_RIG={cu:{head:[0,0,107,107,50.8,93.0],torso:[109,0,100,99,65.2,16.6],arm:[211,0,46,91,25.6,14.2],leg:[259,0,48,103,23.9,15.0]}};
+const ARMOR_RIG={cu:{head:[0,0,107,107,50.9,93.1],torso:[109,0,100,99,65.2,16.6],arm:[211,0,46,91,25.6,14.2],leg:[259,0,48,103,23.9,15.0]},
+  au:{head:[0,0,111,123,65.2,108.7],torso:[113,0,100,99,64.2,16.8],arm:[215,0,45,91,25.4,14.7],leg:[262,0,53,103,25.7,15.6]}};
 function paintedPlayer(eq,met){const P=PAINT.player,c=mk(192*9,288),g=c.getContext('2d');
   const piece=(k,slot,dark)=>{const m=slot&&met[slot],A=m&&PAINT.armor[m],r=(A?ARMOR_RIG[m]:RIG)[k],[x,y,w,h]=r,p=mk(w,h),q=p.getContext('2d');q.drawImage(A||P.img,x,y,w,h,0,0,w,h);
     const col=!A&&slot&&eq[slot];

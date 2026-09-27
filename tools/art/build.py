@@ -140,14 +140,16 @@ def inked_pieces(img, n=4, bw=30):
     return [im for _, im in sorted(out, key=lambda t: t[0])]
 
 # joint points per armour render, in its piece-local source px (neck base, neck top, shoulder, hip); a new render needs its own
-ARMOR_PIV = {'cu': {'head': (258, 505), 'torso': (356, 60), 'arm': (125, 50), 'leg': (114, 55)}}
+ARMOR_PIV = {'cu': {'head': (258, 505), 'torso': (356, 60), 'arm': (125, 50), 'leg': (114, 55)},
+             'au': {'head': (335, 585), 'torso': (343, 60), 'arm': (118, 50), 'leg': (117, 55)}}
 BASE_H = {'head': 669, 'torso': 608, 'arm': 553, 'leg': 643}  # base part heights in parts.png, so armour pieces match their size
 
 def armor(img, m):
     """armor_<m>.webp: helmeted head, torso, arm, leg (ink only, no tint mask); prints the ARMOR_RIG entry."""
-    x = 0; pieces = []; rows = []
-    for k, im in zip(('head', 'torso', 'arm', 'leg'), inked_pieces(img)):
-        s = PART_S * BASE_H[k] / im.height; im, pad = restyle(im, 120 / s, border=False)
+    x = 0; pieces = []; rows = []; ps = inked_pieces(img); st = PART_S * BASE_H['torso'] / ps[1].height
+    for k, im in zip(('head', 'torso', 'arm', 'leg'), ps):
+        s = st * 1.04 if k == 'head' else PART_S * BASE_H[k] / im.height  # heads by the torso's scale: crests and plumes vary in height
+        im, pad = restyle(im, 120 / s, border=False)
         w, h = round(im.width * s), round(im.height * s); r = im.resize((w, h), Image.LANCZOS)
         px, py = ARMOR_PIV[m][k]; pieces.append((r, x))
         rows.append(f"{k}:[{x},0,{w},{h},{round((px + pad) * s, 1)},{round((py + pad) * s, 1)}]"); x += w + 2

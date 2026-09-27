@@ -100,14 +100,14 @@ The game is moving characters, creatures and objects from code-drawn art to pain
 |---|---|---|
 | Title screen | `title.webp` | plain title overlay |
 | Player | `player_parts.webp`, `player_parts_mask.webp` | `drawHuman` player in `playerSheet()` |
-| Copper armour (helmet, chainmail, greaves) | `armor_cu.webp` | tinted plain parts |
+| Copper and gold armour (helmet, chainmail, greaves) | `armor_cu.webp`, `armor_au.webp` | tinted plain parts |
 | Fold Fox | `foldfox.webp` (2 frames) | `SHEETS.foldfox` |
 | Leafy tree canopies (bright and dark) | `trees.webp` | `C.canopy[0]`, `C.canopy[1]` |
 | Tree trunk (bark tile and root base) | `trunk.webp` | `C.trunk` cell (drawn wider, see below) |
 
 Still code-drawn, to be painted:
 
-- **Armour sets:** iron, gold, frostsilver, inkstone, emberite (prompts in `tools/art/armor-prompts.txt`; until painted, these tint the plain parts).
+- **Armour sets:** iron, frostsilver, inkstone, emberite (prompts in `tools/art/armor-prompts.txt`; until painted, these tint the plain parts).
 - **Enemies:** Green Slime, Blue Slime, Paper Zombie, Watcher Eye, Cave Bat, Cardboard Knight, Crumple, Toadstool Lobber, Dune Fin, Shell Scarab, Sun Kite, Flurry, Snow Roller, Snowlet, Frost Puff, Ink Blot, Ink Squid, Ink Wisp, Quillfish, Cinder Bat, Ash Imp, Firecracker Imp, Ash Spider, Ink Wraith.
 - **Bosses:** King Slime, Great Crane, Inkwell Leviathan (head, body segment, tail), Charred Folio, The Unfolded (ink shrine).
 - **NPCs:** Guide, Painter, Nurse, Tinkerer, Merchant.
