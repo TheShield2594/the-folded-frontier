@@ -36,7 +36,7 @@
     </div>
   </div>
   <div id="panel" hidden>
-    <div id="tabs" role="tablist" aria-label="Backpack pages"><button type="button" role="tab" data-tab="inv"><img alt="">Backpack</button><button type="button" role="tab" data-tab="craft"><img alt="">Crafting</button><button id="partyBtn" type="button" role="tab" data-tab="party"><img alt="">Party</button><button id="bestBtn" type="button" role="tab" data-tab="bestiary"><img alt="">Bestiary</button><button id="musBtn" type="button" role="tab" data-tab="museum"><img alt="">Museum</button><button id="townBtn" type="button" role="tab" data-tab="town"><img alt="">Town</button></div>
+    <div id="tabs" role="tablist" aria-label="Backpack pages"><button type="button" role="tab" data-tab="inv"><img alt="">Backpack</button><button type="button" role="tab" data-tab="craft"><img alt="">Crafting</button><button id="partyBtn" type="button" role="tab" data-tab="party"><img alt="">Party</button><button id="bestBtn" type="button" role="tab" data-tab="bestiary"><img alt="">Bestiary</button><button id="musBtn" type="button" role="tab" data-tab="museum"><img alt="">Museum</button><button id="townBtn" type="button" role="tab" data-tab="town"><img alt="">Town</button><button id="loreBtn" type="button" role="tab" data-tab="story"><img alt="">Journal</button></div>
     <div class="sheet pinned" id="sideSheet" hidden><h3 id="sideTitle">Chest</h3><div id="sideBody"></div></div>
     <div id="leftCol">
       <div class="sheet taped tl"><h3 class="stk">Backpack</h3><div id="grid" class="grid"></div>
@@ -100,7 +100,7 @@
     <div class="menu" style="margin:12px 0 0"><button id="createBtn" type="button">Create world</button><button id="nwCancel" class="ghost" type="button">Back</button></div></div></div></div>
   <div id="loading" class="over" hidden><div class="card"><h1 class="logo" style="font-size:clamp(32px,calc(6vw / var(--ui)),54px)">Folding your world…</h1></div></div>
   <div id="map" class="over" hidden><div class="sheet"><h3>World map</h3><canvas id="mapC" width="1260" height="510"></canvas>
-    <div class="mapLeg"><span><i style="background:#fff"></i>You</span><span><i style="background:#6cf07a"></i>Merchant</span><span><i style="background:#e8636a"></i>Spawn point</span><span><i style="background:#f1c04f"></i>Chests you've found</span><span>Unexplored areas stay dark. M or Esc closes.</span></div></div></div>
+    <div class="mapLeg"><span><i style="background:#fff"></i>You</span><span><i style="background:#6cf07a"></i>Merchant</span><span><i style="background:#e8636a"></i>Spawn point</span><span><i style="background:#f1c04f"></i>Chests you've found</span><span><i style="background:#b06ad0;border-radius:2px;transform:rotate(45deg)"></i>Landmarks</span><span>Unexplored areas stay dark. M or Esc closes.</span></div></div></div>
   <div id="settings" class="over" hidden><div class="card"><div class="sheet">
     <h3>Settings</h3>
     <div class="set">
@@ -116,6 +116,7 @@
       <label for="hitC">Hit pause</label><input type="checkbox" id="hitC">
       <label for="numsC">Damage and pickup numbers</label><input type="checkbox" id="numsC">
       <label for="fgC">Foreground scenery</label><input type="checkbox" id="fgC">
+      <label for="postC">Glow &amp; color grading</label><input type="checkbox" id="postC">
       <label for="cbS">Color vision</label><select id="cbS"><option value="off">Standard colors</option><option value="deut">Deuteranopia (green-weak)</option><option value="prot">Protanopia (red-weak)</option><option value="trit">Tritanopia (blue-weak)</option></select>
       <label for="introC">Story intro on new worlds</label><input type="checkbox" id="introC">
       <label for="hintsC">Tutorial hints</label><input type="checkbox" id="hintsC">

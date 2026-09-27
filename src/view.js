@@ -40,6 +40,9 @@ export function updateSky(){const h=worldTime,f=dayF(h),warm=f>0&&f<1?Math.sin(f
   const cx=camera.position.x,cy=camera.position.y;skyMesh.position.x=cx;skyMesh.position.y=cy;
   const sa=(h-6)/12*Math.PI;sunMesh.position.set(cx-Math.cos(sa)*55,cy-2+Math.sin(sa)*34,-100);sunMesh.visible=sa>-0.3&&sa<Math.PI+.3&&under<.9;
   const ma=(((h+12)%24)-6)/12*Math.PI;moonMesh.position.set(cx-Math.cos(ma)*55,cy-2+Math.sin(ma)*34,-100);moonMesh.visible=ma>-0.3&&ma<Math.PI+.3&&under<.9;
+  // the sun (or the moon, dimmer) lights the normal-mapped paper from where it hangs in the sky; with post-processing both glow past white
+  {const a=f>.05?sa:ma,dx=-Math.cos(a),dy=Math.max(.15,Math.sin(a)),l=Math.hypot(dx,dy,1.1);U.uSun.value.set(dx/l,dy/l,1.1/l,(f>.05?f:.45)*(1-under)*(1-rainF*.6));}
+  const hd=U.uHdr.value;sunMesh.material.color.setScalar(1+.7*hd);moonMesh.material.color.multiplyScalar(1+.35*hd);
   const tint=lerp(.35,1,f)*(1-under*.6);dioLight(tint*lerp(1,1.05,warm),tint*lerp(1,.85,warm),tint*lerp(1.05,.8,warm),under);
   clouds.forEach(c=>{c.material.color.setRGB(tint*lerp(1,1.1,warm),tint*lerp(1,.85,warm),tint*lerp(1,.8,warm));});}
 
