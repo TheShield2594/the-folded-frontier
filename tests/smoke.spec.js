@@ -34,6 +34,10 @@ async function newSmallWorld(page){
   await expect(page.locator('#newWorld')).toBeVisible();
   await page.fill('#seedIn',SEED);
   await page.click('#sizeSeg button[data-s="s"]');
+  // pick a look: the next hair style and the second shirt color
+  await page.click('#lookRows button[data-k="hairS"][data-d="1"]');
+  await page.click('#lookRows button[data-k="tunic"][data-v="1"]');
+  await expect(page.locator('#lookRows b[data-n="hairS"]')).toHaveText('Long');
   await page.click('#createBtn');
   await expect(page.locator('#title')).toBeHidden();
   await page.waitForFunction(async()=>(await import('/src/game.js')).state==='play');
@@ -46,7 +50,7 @@ function installSnapshot(){
     let h=2166136261;for(const a of[g.tiles,g.walls,g.meta])for(let i=0;i<a.length;i++)h=Math.imul(h^a[i],16777619)>>>0;
     const p=g.player;
     return {state:g.state,seed:g.seed,seedText:g.seedText,size:g.worldSize,W:g.W,H:g.H,tiles:h,time:g.worldTime,
-      x:p.x,y:p.y,hp:p.hp,coins:p.coins,inv:JSON.stringify(p.inv),spawn:JSON.stringify(p.spawn),npcs:g.npcs.length};
+      x:p.x,y:p.y,hp:p.hp,coins:p.coins,inv:JSON.stringify(p.inv),spawn:JSON.stringify(p.spawn),look:JSON.stringify(p.look),npcs:g.npcs.length};
   };
 }
 const snapshot=page=>page.evaluate(async()=>window.__snap(await import('/src/game.js')));
@@ -86,7 +90,7 @@ test('creates a small world and spawns the player',async({page})=>{
   const s=await page.evaluate(async()=>{
     const g=await import('/src/game.js'),p=g.player;
     return {W:g.W,H:g.H,size:g.worldSize,seedText:g.seedText,x:p.x,y:p.y,hp:p.hp,dead:p.dead,visible:p.mesh.visible,
-      inv:p.inv.filter(Boolean).map(i=>i.id),saved:!!localStorage.getItem('folded-frontier-save-v1')};
+      inv:p.inv.filter(Boolean).map(i=>i.id),look:p.look,saved:!!localStorage.getItem('folded-frontier-save-v1')};
   });
   expect(s.size).toBe('s');
   expect(s.seedText).toBe(SEED);
@@ -96,6 +100,8 @@ test('creates a small world and spawns the player',async({page})=>{
   expect(s.dead).toBeFalsy();
   expect(s.visible).toBe(true);
   expect(s.inv).toEqual(expect.arrayContaining(['copperpick','coppersword','torch']));
+  // the look picked in the dialog
+  expect(s.look).toMatchObject({hairS:1,tunic:1});
   // a new world is saved right away
   expect(s.saved).toBe(true);
   await expect(page.locator('canvas').first()).toBeVisible();

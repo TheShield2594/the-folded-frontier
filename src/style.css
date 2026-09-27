@@ -191,7 +191,20 @@ body.rm #chapter.in .ch-page,body.rm #chapter.out .ch-page{animation:none}
 #achPop{position:absolute;left:50%;top:70px;transform:translateX(-50%);display:flex;gap:10px;align-items:center;background:var(--gold);border:2.5px solid var(--ink);border-radius:12px;padding:8px 18px 8px 10px;box-shadow:4px 5px 0 rgba(20,14,26,.55);animation:achIn .45s cubic-bezier(.2,.9,.3,1.4);}
 #achPop img{width:40px;height:40px;} #achPop small{display:block;font-size:calc(11px*var(--ts));font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--ink2);} #achPop b{font-family:'Bagel Fat One',sans-serif;font-weight:400;font-size:calc(18px*var(--ts));}
 @keyframes achIn{from{transform:translate(-50%,-160%) rotate(-4deg)}}
-#newWorld .card{max-width:520px;}
+#newWorld .card{max-width:560px;max-height:calc(100vh / var(--ui) - 32px);overflow-y:auto;}
+.lookBox{display:flex;gap:14px;align-items:flex-start;margin-top:12px;border-top:2px dashed rgba(42,33,48,.25);padding-top:10px;}
+.lookBox>div{flex:1;min-width:0;}
+#lookPrev{width:72px;height:108px;flex:none;background:#fffaf0;border:2px solid var(--ink);border-radius:10px;padding:6px 10px;}
+.lookHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:calc(14px*var(--ts));}
+.lookHead button{font-size:calc(12.5px*var(--ts));padding:4px 12px;}
+.lookRows{gap:6px 12px;margin-bottom:0;}
+.cyc{display:flex;align-items:center;gap:6px;} .cyc b{min-width:64px;text-align:center;font-size:calc(13px*var(--ts));}
+.cyc button{background:var(--paper2);padding:2px 10px;font-size:calc(14px*var(--ts));}
+.sws{display:flex;gap:5px;flex-wrap:wrap;}
+.sws button{width:22px;height:22px;padding:0;border-radius:50%;background:var(--c);border:2px solid var(--ink);box-shadow:none;}
+.sws button:hover,.sws button:active{box-shadow:none;}
+.sws button.on{outline:3px solid var(--gold);outline-offset:1px;}
+@media (max-width:420px){.lookBox{flex-direction:column;align-items:center;}.lookBox>div{width:100%;}}
 .seg{display:flex;gap:6px;flex-wrap:wrap;} .seg button{background:var(--paper2);} .seg button.on{background:var(--gold);}
 #seedIn{font:inherit;font-weight:700;font-size:calc(14px*var(--ts));padding:6px 10px;border:2px solid var(--ink);border-radius:8px;background:#fffaf0;color:var(--ink);width:100%;box-sizing:border-box;min-width:0;}
 .seedRow{display:flex;gap:8px;align-items:center;min-width:0;}

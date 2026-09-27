@@ -13,7 +13,7 @@ import {
   palEv,partnerCheer,
   updateCoins,updateDashHud,updateDrawHud,updateEnemyFx,updateGhosts,upx,W,WALLCOL,WALLDROP,walls,
   worldClock,worldTime,digFossil,evKill,fcount,npcLine,plain,
-  guideEv,dismount,MOUNTS,petS,toggleMount,togglePet,NDL,emit,loreChest,readMural,
+  guideEv,dismount,MOUNTS,petS,toggleMount,togglePet,NDL,emit,loreChest,readMural,PF,lookColors,SHEETS,canvasTex,
 } from './game.js';
 
 // ================= gameplay =================
@@ -62,7 +62,7 @@ function killEnemy(e){if(e.d.boss&&!e.parent){if(!e.defeat){e.defeat=true;e.act=
   if(e.elite){dropItem(pick(ELITE_LOOT),1,e.x,e.y+e.h/2);stat('elites');if(e.awake&&Math.random()<.02)dropItem('pet_crease',1,e.x,e.y+e.h/2);}
   if(e.d.split)for(let k=0,n=e.elite?3:2;k<n;k++){const s=spawnEnemy(e.d.split,e.x+(k-(n-1)/2)*.5,e.y+.2);s.vx=(k-(n-1)/2)*5||rand(-2,2);s.vy=9;s.timer=rand(.5,1);}
   if(e.segs)e.segs.forEach(sg=>{if(!sg.dying){sg.dying=.35;burst(sg.x,sg.y+sg.h/2,e.d.col,14,6,{grav:6});}});
-  if(e.d.boss){questDone(e.d.quest);partnerCheer(2);setTimeout(()=>syncPartners(),1200);if(e.type==='king')stat('kings');else stat('k_'+e.type);setBoss(null);$('boss').hidden=true;toast(`${e.d.name} has been defeated!`,'gold');SFX.boom();shake(.6);}}
+  if(e.d.boss){questDone(e.d.quest);partnerCheer(2);playerCheer(1.6);setTimeout(()=>syncPartners(),1200);if(e.type==='king')stat('kings');else stat('k_'+e.type);setBoss(null);$('boss').hidden=true;toast(`${e.d.name} has been defeated!`,'gold');SFX.boom();shake(.6);}}
 export function stompNice(){const e=player.stompTarget;player.stompWin=0;player.stompTarget=null;if(!e||e.dying)return;hurtEnemy(e,14*(hasBadge('stomp')?2:1),player.face,3,true);stat('nices');floatText(e.x,e.y+e.h+.6,'NICE!','nice');SFX.nice();player.vy=Math.max(player.vy,17);}
 function steam(x,y){burst(x,y,['#fbf8f0','#dfe6ea','#c9d4da'],10,2.5,{grav:-3,life:.8});SFX.sizzle();}
 // statuses from typed damage. Enemies keep them in e.st, the player in player.st (seconds left). Bosses shrug them off twice as fast.
@@ -86,9 +86,20 @@ function updatePlayerStatus(dt){const p=player,st=p.st;if(!st)return;for(const k
   if(st.burn>0){if(p.inLiq===T.INK||hasBuff('fire'))st.burn=0;else{p.hp-=4*dt;p.regenT=0;if(Math.random()<dt*20)emit('embers',p.x+rand(-.3,.3),p.y+rand(.2,1.6),{cols:ELEM.fire.col,spd:1,grav:-5,life:.5,sway:0});if(p.hp<=0){p.hp=0;die();return;}}}
   if(st.ink>0&&Math.random()<dt*8)emit('ink',p.x+rand(-.3,.3),p.y+1,{cols:ELEM.ink.col,n:1,spd:.4});
   if(st.soak>0&&Math.random()<dt*8)burst(p.x+rand(-.3,.3),p.y+rand(.3,1.7),ELEM.water.col,1,.4,{grav:8,life:.6});}
+// status overlays: a burning, ink-stained or soaked player is tinted like an enemy (statusFx) and wears a cut-paper overlay
+// (SHEETS.pstatus: 0 flames, 1 ink, 2 drips) as its own mesh over the sprite; burning shows over ink over soaked
+let stMesh=null;
+function statusOverlay(dt){const p=player,st=p.st||{},m=p.mesh,f=st.burn>0?0:st.ink>0?1:st.soak>0?2:-1;
+  if(f>=0){const u=p.mat.uniforms.uTint.value;if(st.burn>0)u.multiply(BURNTINT);if(st.ink>0)u.multiply(STAINTINT);if(st.soak>0)u.multiply(SOAKTINT);}
+  if(f<0||p.dead||!m.visible){if(stMesh)stMesh.visible=false;return;}
+  if(!stMesh){stMesh=new THREE.Mesh(m.geometry,spriteMat(canvasTex(SHEETS.pstatus),3));stMesh.renderOrder=4;scene.add(stMesh);}
+  p.stT=(p.stT||0)+dt;const u=stMesh.material.uniforms;u.uFrame.value=f;setTint(stMesh.material,p.x,p.y+1);
+  stMesh.visible=true;stMesh.position.set(p.x,m.position.y+(f===2&&!reduceMotion()?-Math.abs(Math.sin(p.stT*3))*.05:0),.2);
+  // flames flicker by flipping the cut-out every few frames
+  const fl=f===0&&!reduceMotion()&&Math.floor(p.stT*9)&1?-1:1;stMesh.scale.set(m.scale.x*fl,m.scale.y,1);stMesh.rotation.y=m.rotation.y;}
 // shields: the best shield worn in an accessory slot blocks. Raising it within PARRY_W of a hit parries: no damage, attacker staggered, projectiles bounce back.
 const PARRY_W=.2;
-function parry(src){const p=player;p.inv_t=.35;p.parryOK=false;p.shieldFlash=.3;stat('parries');const cx=p.x+p.face*.7,cy=p.y+1.1;
+function parry(src){const p=player;p.inv_t=.35;p.parryT=.3;p.parryOK=false;p.shieldFlash=.3;stat('parries');const cx=p.x+p.face*.7,cy=p.y+1.1;
   floatText(cx,p.y+2.4,'PARRY!','nice');SFX.parry();hitPause(.12);shake(.22);burst(cx,cy,['#fff3c0','#f1c04f','#fbf8f0'],18,7,{grav:0,life:.35,bright:1});$('vig').classList.add('parry');setTimeout(()=>$('vig').classList.remove('parry'),200);
   if(src.k){const sp=Math.hypot(src.vx,src.vy)*1.2;src.hostile=false;src.src='parry';src.hit=new Set();src.dmg*=1.5;src.t=0;src.vx=p.face*Math.max(Math.abs(src.vx),sp*.8);src.vy=-src.vy*.5;return;}
   const e=src.parent||src;if(e.dying)return;e.stun=e.d.boss?.5:1.4;e.vx=(e.x>p.x?1:-1)*(e.d.boss?2:9);if(!e.d.fly)e.vy=Math.max(e.vy,5);e.flash=.2;burst(e.x,e.y+e.h+.2,['#fff3c0','#ffe58a'],8,2,{grav:0,life:.6,bright:1});}
@@ -96,10 +107,18 @@ export function hurtPlayer(dmg,from,src,elem){if(player.dead)return;if(player.da
   let blk=0;if(player.blocking&&src&&(from-player.x)*player.face>-.25){if(player.parryOK&&player.blockT<PARRY_W*niceW()){parry(src);return 'parry';}blk=(shieldItem()||{block:0}).block;}
   if(hasBadge('close')&&player.hp<player.max*.25&&Math.random()<.25){player.inv_t=.5;floatText(player.x,player.y+2,'MISS!','nice');return;}let real=Math.max(1,Math.round(dmg*(1-blk)-defense()/2));if(hasBadge('last')&&player.hp<player.max*.2)real=Math.max(1,Math.round(real/2));player.hp-=real;player.inv_t=.7;player.regenT=0;const kb=blk?.35:1;player.vx=(player.x<from?-1:1)*7*kb;player.vy=7*kb;
   floatText(player.x,player.y+2,real,'p');if(blk){SFX.block();shake(.1);hitPause(.04);burst(player.x+player.face*.6,player.y+1.1,['#fbf8f0','#dcd3c2','#ffe58a'],8,4,{grav:0,life:.3});stat('blocks');}
-  else{SFX.hurt();shake(.25);hitPause(.06);$('vig').classList.add('hurt');setTimeout(()=>$('vig').classList.remove('hurt'),180);burst(player.x,player.y+1,['#d4483b','#fbf8f0'],6,4);if(elem)playerStatus(elem);}
+  else{player.hurtT=.3;SFX.hurt();shake(.25);hitPause(.06);$('vig').classList.add('hurt');setTimeout(()=>$('vig').classList.remove('hurt'),180);burst(player.x,player.y+1,['#d4483b','#fbf8f0'],6,4);if(elem)playerStatus(elem);}
   if(player.hp<=0){player.hp=0;die();}}
-function die(){dismount(true);player.dead=true;player.deadT=4;const lost=Math.floor(player.coins*.25);player.coins-=lost;updateCoins();burst(player.x,player.y+1,['#2f7f86','#d4483b','#f1cfa6','#fbf8f0'],50,7,{grav:8,life:1.5});player.mesh.visible=false;SFX.die();stat('deaths');$('dead').hidden=false;if(lost)toast(`Dropped ${lost} coins in the tumble.`,'bad');}
-function respawn(){player.dead=false;player.dashT=player.dashCD=player.dashI=0;player.st={};player.draw=null;player.blocking=player.blockOn=false;player.hp=player.max;player.x=player.spawn.x;player.y=player.spawn.y;player.vx=player.vy=0;player.mesh.visible=true;$('dead').hidden=true;player.inv_t=2;}
+function die(){dismount(true);player.dead=true;player.deadT=4;player.dieT=0;player.swing=null;player.draw=null;const lost=Math.floor(player.coins*.25);player.coins-=lost;updateCoins();SFX.die();stat('deaths');$('dead').hidden=false;if(lost)toast(`Dropped ${lost} coins in the tumble.`,'bad');}
+function respawn(){endDie();player.dead=false;player.dashT=player.dashCD=player.dashI=0;player.st={};player.draw=null;player.blocking=player.blockOn=false;player.hp=player.max;player.x=player.spawn.x;player.y=player.spawn.y;player.vx=player.vy=0;player.mesh.visible=true;$('dead').hidden=true;player.inv_t=2;}
+// the death pose: the player buckles (the 'ko' face), tips over backward for DIE_T seconds, then bursts into scraps and the sheet hides until respawn
+const DIE_T=.7;
+function dieAnim(dt){const p=player,m=p.mesh;if(p.dieT==null)return;p.dieT+=dt;const k=Math.min(1,p.dieT/DIE_T);p.mat.uniforms.uFrame.value=PF.death;p.mat.uniforms.uFlash.value=0;
+  m.scale.set(1,1-.12*k,1);m.rotation.z=reduceMotion()?0:k*k*1.3;setTint(p.mat,p.x,p.y+1);statusOverlay(0);
+  if(k>=1){const c=lookColors(p.look);endDie();m.visible=false;burst(p.x,p.y+.6,[c.tunic,c.scarf||'#d4483b',c.skin,'#fbf8f0'],50,7,{grav:8,life:1.5});SFX.crunch();}}
+export function endDie(){const p=player;p.dieT=null;if(p.mesh){p.mesh.rotation.z=0;p.mesh.scale.set(1,1,1);}}
+// a little celebration: arms up and a hop (boss defeated, a partner joins, a quest or achievement done)
+export function playerCheer(t=1.2){if(!player.dead)player.cheerT=Math.max(player.cheerT||0,t);}
 export function quickHeal(){if(player.potT>0){toast(`Potion sickness: wait ${Math.ceil(player.potT)}s.`,'bad');return;}const k=player.inv.findIndex(s=>s&&s.id==='potion');if(k<0){toast('No healing potions.','bad');return;}const s=player.inv[k];s.n--;if(!s.n)player.inv[k]=null;setInvDirty(true);heal(60*(hasBadge('dip')?1.5:1));player.potT=30;SFX.potion();}
 export function heal(n){const h=Math.min(n,player.max-player.hp);player.hp+=h;floatText(player.x,player.y+2,'+'+Math.round(h),'heal');burst(player.x,player.y+1,['#9be27d','#fbf8f0'],10,3,{grav:-2});}
 export let shakeT=0;export let hitStop=0;function hitPause(t){if(SET.hitstop)hitStop=Math.max(hitStop,t);}
@@ -241,7 +260,7 @@ export function updateFishing(dt){const p=player,it=selItem();
       else if(bob.state===3){bob.bite-=dt;if(bob.bite<=0){bob.state=2;bob.wait=biteWait(fishPower(rod));const bi=bestBait();if(bi>=0&&Math.random()<.35){const s=p.inv[bi];s.n--;if(!s.n)p.inv[bi]=null;setInvDirty(true);toast('Something stole your bait!','bad');}else floatText(bob.x,bob.y+.9,'got away','miss');}}}}
   if(!bob.state){bobMesh.visible=lineObj.visible=false;return;}
   // hold the rod up toward the bobber while the line is out
-  p.face=bob.x>=p.x?1:-1;if(!p.swing||p.swing.tool!==bob.rod)p.swing={t:0,dur:1,tool:bob.rod,aim:p.face>0?1.1:Math.PI-1.1};else p.swing.t=0;
+  p.face=bob.x>=p.x?1:-1;const ca=bob.state===1&&bob.t<.3?lerp(2.7,1.1,EZ.o2(bob.t/.3)):bob.state===3?1.1+Math.sin(bob.t*40)*.1:1.1,aim=p.face>0?ca:Math.PI-ca;if(!p.swing||p.swing.tool!==bob.rod)p.swing={t:0,dur:1,tool:bob.rod,aim};else{p.swing.t=0;p.swing.aim=aim;}
   bobMesh.visible=lineObj.visible=true;bobMesh.position.set(bob.x,bob.y+.1,.46);bobMesh.rotation.z=bob.state===1?bob.t*8:Math.sin(bob.t*2.4)*.15;setTint(bobMesh.material,bob.x,bob.y);
   let tx0=p.x+p.face*.9,ty0=p.y+2.2;if(toolMesh&&toolPivot.visible){toolPivot.updateMatrixWorld(true);toolMesh.localToWorld(tipV.set(1.08,1.08,0));tx0=tipV.x;ty0=tipV.y;}
   const pos=lineObj.geometry.attributes.position,bx=bob.x,by=bob.y+.32,sag=bob.state===1?0:Math.min(1.6,Math.hypot(bx-tx0,by-ty0)*.12);
@@ -335,7 +354,7 @@ function interact(){const tx=Math.floor(mouse.wx),ty=Math.floor(mouse.wy);
   if(t===T.CLOCK){const h=Math.floor(worldTime),m=Math.floor((worldTime-h)*60);toast(`The clock reads ${(h%12)||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}.`);SFX.pick();return;}
   if(t===T.BED){player.spawn={x:tx+.5,y:ty};toast('Spawn point set.','good');SFX.pick();return;}}
 
-export function updatePlayer(dt){const p=player;updateGhosts(dt);updateDashHud(dt);updateDrawHud();if(p.dead){p.dashT=0;updateShield(dt);p.deadT-=dt;$('deadTxt').textContent=`Refolding in ${Math.max(0,Math.ceil(p.deadT))}…`;if(p.deadT<=0)respawn();return;}
+export function updatePlayer(dt){const p=player;updateGhosts(dt);updateDashHud(dt);updateDrawHud();if(p.dead){p.dashT=0;updateShield(dt);dieAnim(dt);p.deadT-=dt;$('deadTxt').textContent=`Refolding in ${Math.max(0,Math.ceil(p.deadT))}…`;if(p.deadT<=0)respawn();return;}
   const cx=Math.floor(p.x);const lt=tileAt(cx,Math.floor(p.y+.7));p.inLiq=TP[lt].liq?lt:0;
   if(p.inLiq===T.INK&&!p.wasInk)stat('swims');p.wasInk=p.inLiq===T.INK;
   if(p.inLiq===T.LAVA&&!hasBuff('fire')){if(p.inv_t<=0)hurtPlayer(30,p.x-p.face,null,'fire');burst(p.x,p.y+.5,['#ff8a3d','#ffd66b'],1,2,{grav:-4,bright:1});}
@@ -365,7 +384,7 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateDashHud(d
   if(p.flat&&p.jbuf>0){p.jbuf=0;}
   if(p.jbuf>0&&p.inLiq&&!p.onGround){p.vy=Math.max(p.vy,8.5);p.jbuf=0;burst(p.x,p.y+1.6,['#a894d0','#fbf8f0'],3,1.5,{grav:-3,life:.6});}
   else if(p.jbuf>0){if(p.coyote>0){p.vy=jv;p.coyote=0;p.jbuf=0;p.climb=false;SFX.jump();}else if(hasAcc('djump')&&!p.usedDouble&&p.stompWin<=0){p.vy=jv*.88;p.usedDouble=true;stat('glides');p.jbuf=0;burst(p.x,p.y,['#fbf8f0','#dcd3c2'],10,3,{grav:2});SFX.jump();}}
-  if(p.climb){p.vy=upH?5.5:dnH?-5.5:0;p.x+=(cx+.5-p.x)*Math.min(1,dt*12);p.usedDouble=false;}
+  if(p.climb){p.vy=upH?5.5:dnH?-5.5:0;p.climbT=(p.climbT||0)+Math.abs(p.vy)*dt*.6;p.x+=(cx+.5-p.x)*Math.min(1,dt*12);p.usedDouble=false;}
   else if(!hooked){if(!held('jump')&&p.vy>6&&!p.inLiq)p.vy-=70*dt;
     if(hasBadge('feather')&&held('jump')&&p.vy<-4&&!p.inLiq){p.vy-=52*dt;p.vy=Math.max(p.vy,-4);}else if(p.inLiq){p.vy-=16*dt;if(held('jump'))p.vy=Math.min(p.vy+34*dt,6);if(p.vy<-5)p.vy=-5;}else{p.vy-=52*dt;if(p.vy<-30)p.vy=-30;}}
   p.dashCD=Math.max(0,p.dashCD-dt);p.dashI-=dt;
@@ -373,7 +392,7 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateDashHud(d
   updateHook(dt);
   p.prevY=p.y;p.step=true;
   collide(p,dt);if(p.onGround){p.usedDouble=false;p.airDashed=false;}
-  if(p.landV<-9){emit('dust',p.x,p.y,{n:p.landV<-18?10:5,spd:p.landV<-18?3.5:2});p.squash=.14;}p.landV=0;
+  if(p.landV<-9){emit('dust',p.x,p.y,{n:p.landV<-18?10:5,spd:p.landV<-18?3.5:2});p.squash=.14;p.landT=.12;}p.landV=0;
   if(p.onGround&&Math.abs(p.vx)>3.5){p.stepT=(p.stepT||0)-dt;if(p.stepT<=0){p.stepT=.24;const gt=tileAt(Math.floor(p.x),Math.floor(p.y-.5));if(gt&&TP[gt]&&OPAQUE[gt])burst(p.x-p.face*.25,p.y+.05,[sh(TP[gt].col,1.1),'#e9dfc9'],2,1.2,{up:1.2,grav:6,life:.5});}}
   p.squash=Math.max(0,(p.squash||0)-dt);
   if(p.y<-5){p.hp=0;die();}
@@ -399,10 +418,14 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateDashHud(d
   // pickups magnet handled in pickups
   // mesh
   const m=p.mesh;const target=p.face>0?0:Math.PI;p.rot+=(target-p.rot)*Math.min(1,dt*16);m.rotation.y=p.rot;
-  let f=0;const sp=p.swing&&!p.blocking&&(p.swing.sword||p.swing.tool)?swingPose(p.swing):null;if(sp)f=sp.f;else if(p.blocking||p.swing&&(p.swing.sword||p.swing.tool))f=8;else if(!p.onGround)f=p.vy>0?6:7;else if(Math.abs(p.vx)>.5){p.walkT+=dt*Math.abs(p.vx)*1.3;f=2+Math.floor(p.walkT)%4;}else{p.walkT=0;f=Math.floor(worldClock*1.6)%2;}
+  // which sheet frame (render.js POSES/PF): swings and aimed items first, then reactions (parry, block, hurt), then movement
+  for(const k of['hurtT','parryT','landT','cheerT'])if(p[k]>0)p[k]-=dt;if(p.swing||Math.abs(p.vx)>.5||!p.onGround)p.cheerT=0;
+  let f=0;const sp=p.swing&&!p.blocking&&(p.swing.sword||p.swing.tool)?swingPose(p.swing):null;if(sp)f=sp.f;else if(p.parryT>0)f=PF.parry;else if(p.blocking)f=PF.block;else if(p.swing&&(p.swing.sword||p.swing.tool))f=PF.hold;
+  else if(p.hurtT>0)f=PF.hurt;else if(p.flat)f=PF.flat;else if(p.dashT>0)f=PF.dash;else if(p.climb)f=PF.climb0+(Math.floor(p.climbT||0)&1);else if(!p.onGround)f=p.vy>0?PF.jump:PF.fall;else if(p.landT>0)f=PF.land;
+  else if(Math.abs(p.vx)>.5){p.walkT+=dt*Math.abs(p.vx)*1.3;f=PF.walk+Math.floor(p.walkT)%4;}else if(p.cheerT>0)f=PF.cheer0+(Math.floor(p.cheerT*5)&1);else{p.walkT=0;f=Math.floor(worldClock*1.6)%2;}
   if(p.mount&&!sp&&!p.blocking)f=Math.floor(worldClock*1.6)%2;
-  p.mat.uniforms.uFrame.value=f;m.position.set(p.x,p.y-.08+(p.rideY||0),.15);setTint(p.mat,p.x,p.y+1);p.mat.uniforms.uFlash.value=p.inv_t>0&&!(p.inv_t>1.3)?(Math.floor(p.inv_t*14)%2?.6:0):0;
-  const sq=(p.onGround?(p.squash>0?1-p.squash*.9:1):clamp(1+p.vy*.006,.92,1.08))*(sp?sp.sq:1);m.scale.set(1/Math.sqrt(sq),sq,1);if(p.flat){m.scale.set(1.3,.42,1);p.mat.uniforms.uFrame.value=0;}
+  p.mat.uniforms.uFrame.value=f;m.position.set(p.x,p.y-.08+(p.rideY||0),.15);setTint(p.mat,p.x,p.y+1);statusOverlay(dt);p.mat.uniforms.uFlash.value=p.inv_t>0&&!(p.inv_t>1.3)?(Math.floor(p.inv_t*14)%2?.6:0):0;
+  const sq=(p.onGround?(p.squash>0?1-p.squash*.9:1):clamp(1+p.vy*.006,.92,1.08))*(sp?sp.sq:1);m.scale.set(1/Math.sqrt(sq),sq,1);if(p.flat)m.scale.set(1.3,.42,1);if(p.cheerT>0&&!reduceMotion())m.position.y+=Math.abs(Math.sin(p.cheerT*10))*.12;
   if(p.dashT>0){m.scale.x*=1.22;m.scale.y*=.9;p.ghostT-=dt;if(p.ghostT<=0){p.ghostT=.03;spawnGhost();}}
   updateTool(sp,sq);updateShield(dt);}
 // sword: a three-hit combo, each cut keyframed as [k end, arm angle, easing, body frame]. Angles are world radians
@@ -417,10 +440,15 @@ function swingArm(s,k){if(s.heavy)return swingAngle(k,true);const K=SWKEYS[s.com
 function swingFrame(s,k){if(s.heavy)return k<.38?10:k<.7?11:12;for(const q of SWKEYS[s.combo])if(k<=q[0])return q[3];return 9;}
 // the whole pose for a swing at k: arm angle, blade angle (the blade drags behind a fast arm, then whips past it on the
 // follow-through), body frame, arm stretch and body squash. Tools and aimed items just point the arm.
-function swingPose(s,k=clamp(s.t/s.dur,0,1)){const p=player;if(s.aim!=null){const a=p.face>0?s.aim:Math.PI-s.aim;return{arm:a,blade:a,f:9,v:0,sc:1,sq:1};}
-  if(!s.sword){const a=lerp(1.9,-.5,Math.sin(k*Math.PI*.5));return{arm:a,blade:a,f:9,v:0,sc:1,sq:1};}
+function swingPose(s,k=clamp(s.t/s.dur,0,1)){const p=player;if(s.aim!=null){const a=p.face>0?s.aim:Math.PI-s.aim;return{arm:a,blade:a,f:aimFrame(s,k),v:0,sc:1,sq:1};}
+  if(!s.sword){const it=ITEMS[s.tool]||{};if(it.hammer){const a=lerp(2.5,-.9,EZ.io(k));return{arm:a,blade:a,f:k<.4?10:12,v:0,sc:1,sq:k<.4?.97:1};}
+    const a=lerp(1.9,-.5,Math.sin(k*Math.PI*.5));return{arm:a,blade:a,f:it.pick?(k<.45?PF.mine0:PF.mine1):9,v:0,sc:1,sq:1};}
   const a=swingArm(s,k),dk=.02,v=(k>dk?a-swingArm(s,k-dk):swingArm(s,k+dk)-a)/(dk*s.dur),f=swingFrame(s,k);
   return{arm:a,blade:a+clamp(-v*.006,-.5,.5),f,v,sc:1+Math.min(.2,Math.abs(v)*.004),sq:f===10?.96:f===11?1.04:1};}
+// the body under an aimed arm: drawing a bow, the loose after, casting, and the rod's cast and reel
+function aimFrame(s,k){const it=ITEMS[s.tool]||{};if(s.draw!=null)return PF.bow;
+  if(it.rod)return bob.state===1&&bob.t<.3?PF.fcast:bob.state===3?PF.reel0+(Math.floor(bob.t*12)&1):PF.reel0;
+  if(it.magic)return PF.cast;if(it.ammo==='arrow')return k<.7?PF.bowrel:PF.bow;return 9;}
 const ARML=.367;
 function swingHand(sp,sq=1){const p=player,[sx,sy]=shoulderAt(sp.f),l=ARML*sp.sc;return[p.x+p.face*(sx+Math.cos(sp.arm)*l),p.y-.08+(p.rideY||0)+sy*sq+Math.sin(sp.arm)*l];}
 function swingTip(s,k){const p=player,sp=swingPose(s,k),[hx,hy]=swingHand(sp),r=1.5*(s.heavy?1.2:1);return[hx+p.face*Math.cos(sp.blade)*r,hy+Math.sin(sp.blade)*r];}

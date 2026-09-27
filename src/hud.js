@@ -4,6 +4,7 @@ import {
   atlasTex,buildNormals,postOK,clearIcons,drawOres,drawWarnMark,H,hexRgb,hintT,icon,initAudio,inkMoon,isNight,lerp,META,npcs,wev,
   ORECOL,player,PSTAT,renderHearts,saveMeta,saveSettings,SET,setCamDist,setHintT,setInvDirty,setSoundOn,SFX,sky,soundOn,
   fullMoon,seasonIdx,seasonInfo,SEASONS,state,surf,T,tiles,TP,W,WALLCOL,walls,weather,worldTime,
+  playerCheer,
 } from './game.js';
 
 // ================= settings & achievements UI =================
@@ -105,7 +106,7 @@ const ACH=[
 export function stat(k,n=1){META.stats[k]=(META.stats[k]||0)+n;checkAch();}
 export function checkAch(){if(state==='title')return;for(const a of ACH){if(META.ach[a.id])continue;const ok=a.test?a.test(player):(META.stats[a.key]||0)>=a.target;if(ok){META.ach[a.id]=Date.now();achQ.push(a);if(!achBusy)nextAch();saveMeta();}}}
 const achQ=[];let achBusy=false;
-function nextAch(){const a=achQ.shift(),el=$('achPop');if(!a){achBusy=false;el.hidden=true;return;}achBusy=true;el.hidden=false;el.innerHTML=`<img src="${icon(a.icon)}" alt=""><div><small>Achievement unlocked</small><b>${a.name}</b></div>`;el.style.animation='none';void el.offsetWidth;el.style.animation='';SFX.nice();setTimeout(nextAch,3200);}
+function nextAch(){const a=achQ.shift(),el=$('achPop');if(!a){achBusy=false;el.hidden=true;return;}achBusy=true;el.hidden=false;playerCheer(1);el.innerHTML=`<img src="${icon(a.icon)}" alt=""><div><small>Achievement unlocked</small><b>${a.name}</b></div>`;el.style.animation='none';void el.offsetWidth;el.style.animation='';SFX.nice();setTimeout(nextAch,3200);}
 function renderAch(){const n=ACH.filter(a=>META.ach[a.id]).length;$('achHead').textContent=`Achievements · ${n} of ${ACH.length}`;
   $('achList').innerHTML=ACH.map(a=>{const got=!!META.ach[a.id];const pr=!got&&a.key&&a.target>1?`<i>${Math.min(META.stats[a.key]||0,a.target).toLocaleString()} / ${a.target.toLocaleString()}</i>`:'';return`<div class="ac ${got?'':'lock'}"><img src="${icon(a.icon)}" alt=""><div><b>${a.name}</b><span>${a.desc}</span>${pr}</div></div>`;}).join('');$('ach').hidden=false;}
 ['setBtn','set2Btn'].forEach(id=>$(id).addEventListener('click',()=>{initAudio();openSettings();}));

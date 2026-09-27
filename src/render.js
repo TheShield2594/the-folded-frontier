@@ -137,48 +137,106 @@ export function setTile(x,y,t,m=0){if(x<0||y<0||x>=W||y>=H)return;const i=idx(x,
 // ================= sprites & sheets =================
 export function makeSheet(n,fw,fh,draw,b=4){const out=mk(n*fw,fh),o=out.getContext('2d');for(let f=0;f<n;f++){const tmp=mk(fw,fh),t=tmp.getContext('2d');draw(t,f);grain(t,0,0,fw,fh,12);const sil=mk(fw,fh),s=sil.getContext('2d');s.drawImage(tmp,0,0);s.globalCompositeOperation='source-in';s.fillStyle='#fbf5e6';s.fillRect(0,0,fw,fh);
   o.save();o.beginPath();o.rect(f*fw,0,fw,fh);o.clip();for(let i=0;i<16;i++){const a=i/16*Math.PI*2;o.drawImage(sil,f*fw+Math.cos(a)*b,Math.sin(a)*b);}o.drawImage(tmp,f*fw,0);o.restore();}return out;}
-function leg(t,x,y,a,col,boot){t.save();t.translate(x,y);t.rotate(a);rr(t,-6.5,-4,13,28,6);fi(t,col);if(boot){rr(t,-7,17,17,11,5);fi(t,boot);}t.restore();}
-function arm(t,x,y,a,col,skin){t.save();t.translate(x,y);t.rotate(a);rr(t,-5.5,-3,11,22,5.5);fi(t,col);circ(t,0,22,5.5);fi(t,skin);t.restore();}
+// Humans (the player and townsfolk) are drawn as layers over body parts, back to front. The look `o` says what each layer wears:
+//  body: skin | face: eyeCol, eyeY, noBlush, blink, face (an expression, as faceX) | hair: hair color, hairS style | hat: hat color, hatS style
+//  shirt: tunic | pants: pants, belt | boots: boots | cape: scarf (at the neck), cape (down the back) | acc: back/extra/front draw callbacks
+//  armor: helm, mail, greaves, the worn armor's colors, drawn over the clothes
+// HUMAN_ORDER is the list of [part, layer] steps; a layer with nothing to wear on a part draws nothing, so any mix of armor, clothes
+// and cosmetics is one redraw of the sheet (player.sheetDirty), not a new hand-drawn one. The held weapon, the shield and status
+// overlays are their own meshes over the sprite (gameplay.js).
+const HIP=110,LIMB={legB:[43,HIP,.8],armB:[42,82,.78],legA:[53,HIP,1],armA:[55,82,1]};
+const HUMAN_ORDER=[['back','cape'],['back','hair'],['legB','pants'],['legB','armor'],['legB','boots'],['armB','shirt'],['armB','armor'],['armB','body'],['back','acc'],
+  ['torso','shirt'],['torso','armor'],['torso','pants'],['legA','pants'],['legA','armor'],['legA','boots'],
+  ['head','body'],['head','hair'],['head','armor'],['head','face'],['head','hat'],['neck','cape'],['head','acc'],['armA','shirt'],['armA','armor'],['armA','body'],['front','acc']];
+const isArm=p=>p==='armA'||p==='armB',isLeg=p=>p==='legA'||p==='legB';
+// hair styles: [cap over the head, piece behind the head (drawn before the body)]
+const HAIRCAP={short:[29,60,22,26,50,26,76,26,73,46],long:[28,66,20,24,50,25,77,25,74,47],bun:[29,60,22,26,50,26,76,26,73,46],pony:[29,60,22,26,50,26,76,26,73,46]};
+function hairCap(t,o){const s=o.hairS||'short';
+  if(s==='spiky'){poly(t,[29,58,20,40,31,36,26,20,42,28,46,12,56,25,68,14,67,30,80,30,73,46,66,39,61,45,55,37,47,42,41,36,37,52]);fi(t,o.hair);return;}
+  if(s==='curly'){const B=[[32,52,7],[31,40,8],[38,30,8],[50,26,9],[62,28,8],[70,37,7],[40,40,6],[54,36,5]];t.beginPath();for(const[x,y,r]of B){t.moveTo(x+r,y);t.arc(x,y,r,0,6.28);}ink(t,5);t.fillStyle=o.hair;t.fill();
+    t.fillStyle='rgba(255,255,255,.2)';for(const[x,y]of[[38,28],[50,23],[62,26]]){circ(t,x,y,2.4);t.fill();}return;}
+  const c=HAIRCAP[s]||HAIRCAP.short;t.beginPath();t.moveTo(c[0],c[1]);t.quadraticCurveTo(c[2],c[3],c[4],c[5]);t.quadraticCurveTo(c[6],c[7],c[8],c[9]);t.lineTo(66,39);t.lineTo(61,45);t.lineTo(55,37);t.lineTo(47,42);t.lineTo(41,36);
+  t.lineTo(37,s==='long'?66:52);t.closePath();fi(t,o.hair);}
+function hairBack(t,o){const s=o.hairS,w=o.wave||0;if(s==='long'){t.beginPath();t.moveTo(30,42);t.quadraticCurveTo(18,70,24+w*.4,92);t.lineTo(40+w*.3,90);t.quadraticCurveTo(36,70,42,48);t.closePath();fi(t,o.hair);}
+  else if(s==='bun'){circ(t,29,31,9);fi(t,o.hair);t.beginPath();t.moveTo(34,24);t.lineTo(37,36);ink(t,3,sh(o.hair,.6));}
+  else if(s==='pony'){t.beginPath();t.moveTo(34,32);t.quadraticCurveTo(14,32,12+w,64);t.quadraticCurveTo(22,56,24,50);t.quadraticCurveTo(28,44,36,46);t.closePath();fi(t,o.hair);circ(t,31,38,4);fi(t,o.scarf||'#d4483b',2);}}
+function hat(t,o){const s=o.hatS,c=o.hat;
+  if(s==='cap'){t.beginPath();t.moveTo(28,44);t.quadraticCurveTo(28,20,50,20);t.quadraticCurveTo(70,20,72,40);t.closePath();fi(t,c);rr(t,58,36,24,7,3.5);fi(t,sh(c,.8));circ(t,50,21,3);fi(t,sh(c,.8),2);}
+  else if(s==='beret'){t.beginPath();t.ellipse(46,30,25,10,-.12,0,6.28);fi(t,c);t.beginPath();t.moveTo(44,20);t.lineTo(42,13);ink(t,3);}
+  else if(s==='straw'){t.beginPath();t.ellipse(50,36,34,7,-.05,0,6.28);fi(t,'#e0c07a');t.beginPath();t.moveTo(32,36);t.quadraticCurveTo(32,14,50,14);t.quadraticCurveTo(68,14,68,36);t.closePath();fi(t,'#e0c07a');
+    rr(t,32,28,36,7,2);fi(t,c,2);t.strokeStyle='rgba(42,33,48,.25)';t.lineWidth=1;for(let x=38;x<66;x+=6){t.beginPath();t.moveTo(x,17);t.lineTo(x-2,27);t.stroke();}}
+  else if(s==='beanie'){t.beginPath();t.moveTo(27,46);t.quadraticCurveTo(26,18,50,18);t.quadraticCurveTo(74,18,73,44);t.closePath();fi(t,c);rr(t,26,38,48,9,4);fi(t,sh(c,.8));circ(t,50,15,6);fi(t,'#fbf8f0');}}
+const HL={
+  body(t,p,o,k){if(isArm(p)){circ(t,0,22,5.5);fi(t,k<1?sh(o.skin,.85):o.skin);}else if(p==='head'){circ(t,50,50,22);fi(t,o.skin);}},
+  shirt(t,p,o,k){if(isArm(p)){rr(t,-5.5,-3,11,22,5.5);fi(t,k<1?sh(o.tunic,k):o.tunic);}else if(p==='torso'){rr(t,33,72,31,42,11);fi(t,o.tunic);t.fillStyle='rgba(255,255,255,.18)';t.fillRect(37,76,6,30);}},
+  pants(t,p,o,k){if(isLeg(p)){rr(t,-6.5,-4,13,28,6);fi(t,k<1?sh(o.pants,k):o.pants);}else if(p==='torso'){t.fillStyle=o.belt||'#5a3a22';t.fillRect(34,102,29,5);}},
+  boots(t,p,o,k){if(isLeg(p)&&o.boots){rr(t,-7,17,17,11,5);fi(t,k<1?sh(o.boots,k):o.boots);}},
+  armor(t,p,o,k){const s=c=>k<1?sh(c,k):c;
+    if(isLeg(p)&&o.greaves){rr(t,-6.5,-4,13,26,6);fi(t,s(o.greaves));circ(t,0,9,4.5);fi(t,s(sh(o.greaves,1.2)),2);}
+    else if(isArm(p)&&o.mail){rr(t,-5.5,-3,11,20,5.5);fi(t,s(o.mail));circ(t,0,1,7.5);fi(t,s(sh(o.mail,1.15)),2);}
+    else if(p==='torso'&&o.mail){rr(t,33,72,31,42,11);fi(t,o.mail);t.fillStyle='rgba(42,33,48,.35)';for(let y=80;y<108;y+=7)for(let x=39;x<60;x+=7){circ(t,x,y,1.4);t.fill();}}
+    else if(p==='head'&&o.helm){t.beginPath();t.moveTo(26,54);t.quadraticCurveTo(24,24,50,24);t.quadraticCurveTo(76,24,74,50);t.lineTo(66,48);t.lineTo(66,40);t.lineTo(34,40);t.lineTo(34,56);t.closePath();fi(t,o.helm);t.fillStyle='rgba(255,255,255,.35)';t.fillRect(38,29,14,4);}},
+  hair(t,p,o){if(!o.hair||o.helm)return;if(p==='head')hairCap(t,o);else if(p==='back')hairBack(t,o);},
+  hat(t,p,o){if(o.hatS&&o.hatS!=='none'&&!o.helm)hat(t,o);},
+  cape(t,p,o){const w=o.wave||0;
+    if(p==='back'&&o.cape){t.beginPath();t.moveTo(34,70);t.quadraticCurveTo(22,96,14+w,124);t.lineTo(30+w*.6,128);t.quadraticCurveTo(38,104,52,74);t.closePath();fi(t,sh(o.cape,.8));}
+    else if(p==='neck'&&o.scarf){rr(t,32,67,35,9,4);fi(t,o.scarf);if(o.cape)return;t.beginPath();t.moveTo(36,70);t.quadraticCurveTo(24,72+w,16,82+w);t.lineTo(22,84+w);t.quadraticCurveTo(28,78,38,76);t.closePath();fi(t,o.scarf,2);}},
+  acc(t,p,o){const f=p==='back'?o.back:p==='head'?o.extra:o.front;if(f)f(t);},
+  face(t,p,o){const ey=o.eyeY||50,X=faceX||o.face;
+    for(const ex of[58,48]){if(X==='happy'){t.beginPath();t.arc(ex,ey+2,3.8,3.5,5.9);ink(t,2.6,o.eyeCol||INK);continue;}
+      // hurt: eyes squeezed shut; ko: crossed out (the death pose)
+      if(X==='hurt'){const d=ex>50?-1:1;t.beginPath();t.moveTo(ex-3.5*d,ey-3.5);t.lineTo(ex+3*d,ey);t.lineTo(ex-3.5*d,ey+3.5);ink(t,2.4,o.eyeCol||INK);continue;}
+      if(X==='ko'){t.beginPath();t.moveTo(ex-3,ey-3);t.lineTo(ex+3,ey+3);t.moveTo(ex+3,ey-3);t.lineTo(ex-3,ey+3);ink(t,2.4,o.eyeCol||INK);continue;}
+      const r=X==='surprised'?1.3:1;t.beginPath();t.ellipse(ex,ey,3*r,o.blink?1:5*r,0,0,6.28);t.fillStyle=o.eyeCol||INK;t.fill();if(!o.blink){circ(t,ex+1,ey-2,1.3*r);t.fillStyle='#fff';t.fill();}}
+    // brows only when a portrait asks for an expression (see facePic)
+    if(faceX&&X!=='happy'){const b=X==='sad'?[-7,-10]:X==='angry'?[-10,-6]:[-12,-12];for(const[x0,x1]of[[44,51],[62,55]]){t.beginPath();t.moveTo(x0,ey+b[0]);t.lineTo(x1,ey+b[1]);ink(t,2.4);}}
+    if(!o.noBlush){circ(t,63,58,X==='happy'?5:4);t.fillStyle='rgba(230,110,110,.45)';t.fill();}
+    t.beginPath();if(X==='happy'){t.moveTo(53.5,58);t.quadraticCurveTo(58,67,62.5,58);t.closePath();fi(t,'#9a3b3b',1.8);}else if(X==='surprised'||X==='hurt'){t.ellipse(58,61,2.6,3.6,0,0,6.28);fi(t,'#6a2a2a',1.6);}
+    else if(X==='sad'||X==='ko'){t.arc(58,64,3.5,3.5,5.9);ink(t,2);}else if(X==='angry'){t.moveTo(54,61.5);t.lineTo(58,60);t.lineTo(62,61.5);ink(t,2);}else{t.arc(58,59,3.5,.2,2.6);ink(t,2);}}};
+// one part's layers, with a limb's transform (at its own joint, or at x,y,a for the lone arm frame)
+function humanPart(t,o,p,x,y,a){const L=LIMB[p];if(L){t.save();t.translate(x??L[0],y??L[1]);t.rotate(a??(o[p]||0));}for(const[q,l]of HUMAN_ORDER)if(q===p)HL[l](t,p,o,L?L[2]:1);if(L)t.restore();}
 // faceX: the expression drawHuman gives the face ('happy','surprised','sad','angry'); only set while facePic draws a portrait
 let faceX=null;
-function drawHuman(t,o){t.save();t.translate(0,o.bob||0);if(o.lean){t.translate(48,138);t.rotate(o.lean);t.translate(-48,-138);}const hip=110;
-  leg(t,43,hip,o.legB,sh(o.greaves||o.pants,.8),sh(o.boots,.8));
-  arm(t,42,82,o.armB,sh(o.mail||o.tunic,.78),sh(o.skin,.85));
-  if(o.back)o.back(t);
-  rr(t,33,72,31,42,11);fi(t,o.mail||o.tunic);
-  if(o.mail){t.fillStyle='rgba(42,33,48,.35)';for(let y=80;y<108;y+=7)for(let x=39;x<60;x+=7){circ(t,x,y,1.4);t.fill();}}
-  else{t.fillStyle='rgba(255,255,255,.18)';t.fillRect(37,76,6,30);}
-  t.fillStyle=o.belt||'#5a3a22';t.fillRect(34,102,29,5);
-  leg(t,53,hip,o.legA,o.greaves||o.pants,o.boots);
-  circ(t,50,50,22);fi(t,o.skin);
-  if(o.helm){t.beginPath();t.moveTo(26,54);t.quadraticCurveTo(24,24,50,24);t.quadraticCurveTo(76,24,74,50);t.lineTo(66,48);t.lineTo(66,40);t.lineTo(34,40);t.lineTo(34,56);t.closePath();fi(t,o.helm);t.fillStyle='rgba(255,255,255,.35)';t.fillRect(38,29,14,4);}
-  else if(o.hair){t.beginPath();t.moveTo(29,60);t.quadraticCurveTo(22,26,50,26);t.quadraticCurveTo(76,26,73,46);t.lineTo(66,39);t.lineTo(61,45);t.lineTo(55,37);t.lineTo(47,42);t.lineTo(41,36);t.lineTo(37,52);t.closePath();fi(t,o.hair);}
-  const ey=o.eyeY||50,X=faceX;for(const ex of[58,48]){if(X==='happy'){t.beginPath();t.arc(ex,ey+2,3.8,3.5,5.9);ink(t,2.6,o.eyeCol||INK);continue;}
-    const r=X==='surprised'?1.3:1;t.beginPath();t.ellipse(ex,ey,3*r,o.blink?1:5*r,0,0,6.28);t.fillStyle=o.eyeCol||INK;t.fill();if(!o.blink){circ(t,ex+1,ey-2,1.3*r);t.fillStyle='#fff';t.fill();}}
-  // brows only when a portrait asks for an expression (see facePic)
-  if(X&&X!=='happy'){const b=X==='sad'?[-7,-10]:X==='angry'?[-10,-6]:[-12,-12];for(const[x0,x1]of[[44,51],[62,55]]){t.beginPath();t.moveTo(x0,ey+b[0]);t.lineTo(x1,ey+b[1]);ink(t,2.4);}}
-  if(!o.noBlush){circ(t,63,58,X==='happy'?5:4);t.fillStyle='rgba(230,110,110,.45)';t.fill();}
-  t.beginPath();if(X==='happy'){t.moveTo(53.5,58);t.quadraticCurveTo(58,67,62.5,58);t.closePath();fi(t,'#9a3b3b',1.8);}else if(X==='surprised'){t.ellipse(58,61,2.6,3.6,0,0,6.28);fi(t,'#6a2a2a',1.6);}
-  else if(X==='sad'){t.arc(58,64,3.5,3.5,5.9);ink(t,2);}else if(X==='angry'){t.moveTo(54,61.5);t.lineTo(58,60);t.lineTo(62,61.5);ink(t,2);}else{t.arc(58,59,3.5,.2,2.6);ink(t,2);}
-  if(o.scarf){rr(t,32,67,35,9,4);fi(t,o.scarf);t.beginPath();t.moveTo(36,70);t.quadraticCurveTo(24,72+(o.wave||0),16,82+(o.wave||0));t.lineTo(22,84+(o.wave||0));t.quadraticCurveTo(28,78,38,76);t.closePath();fi(t,o.scarf,2);}
-  if(o.extra)o.extra(t);
-  if(!o.noArm)arm(t,55,82,o.armA,o.mail||o.tunic,o.skin);
-  if(o.front)o.front(t);
+function drawHuman(t,o){t.save();t.translate(0,o.bob||0);if(o.lean){t.translate(48,138);t.rotate(o.lean);t.translate(-48,-138);}
+  for(const[p,l]of HUMAN_ORDER){if(p==='armA'&&o.noArm)continue;const L=LIMB[p];if(L){t.save();t.translate(L[0],L[1]);t.rotate(o[p]||0);HL[l](t,p,o,L[2]);t.restore();}else HL[l](t,p,o,1);}
   t.restore();}
+// Player poses, one sheet frame each. 0-1 idle, 2-5 walk, 6 jump, 7 fall, 8 hold (a tool or item at rest)
 const POSES=[{legA:.03,legB:-.03,armA:.12,armB:-.12},{legA:.03,legB:-.03,armA:.18,armB:-.08,bob:1.5,wave:2}];
 for(let k=0;k<4;k++){const ph=k/4*Math.PI*2,s=Math.sin(ph);POSES.push({legA:s*.6,legB:-s*.6,armA:-s*.65,armB:s*.65,bob:-Math.abs(Math.cos(ph))*2.5+1,wave:s*3});}
 POSES.push({legA:-.7,legB:.4,armA:-2.5,armB:-.5,wave:-4},{legA:.3,legB:-.3,armA:-2.9,armB:-2.5,wave:5},{legA:.25,legB:-.25,armA:-1.6,armB:.25});
 // swing bodies (frames 9-12) leave the front arm off: gameplay draws it as its own mesh so it can follow the weapon every frame.
-// 9 hold, 10 coiled back (weight on the back foot), 11 mid-strike, 12 lunged forward into the follow-through; frame 13 is the lone arm, pivot at the frame centre
+// 9 hold, 10 coiled back (weight on the back foot), 11 mid-strike, 12 lunged forward into the follow-through
 export const SWPOSE=[{legA:.25,legB:-.25,armB:.25},{legA:-.35,legB:.5,armB:.9,lean:-.13,bob:1,wave:-3},{legA:.45,legB:-.3,armB:-.6,lean:.07,wave:3},{legA:.7,legB:-.55,armB:-1.1,lean:.17,bob:3.5,wave:5}];
-for(const o of SWPOSE)o.noArm=1;POSES.push(...SWPOSE);export const ARMF=POSES.length;
+for(const o of SWPOSE)o.noArm=1;POSES.push(...SWPOSE);
+// the rest of the animation set, by name (PF.land etc.). Arm angles: 0 hangs down, negative swings forward, positive back.
+// noArm frames are aimed or tool poses whose front arm is the arm mesh; face sets the expression for that frame.
+const MOREPOSE={land:{legA:.55,legB:-.5,armA:-.55,armB:.55,bob:4},dash:{legA:-.9,legB:.75,armA:.95,armB:1.25,lean:.2,wave:7},
+  hurt:{legA:.35,legB:-.45,armA:.9,armB:1.2,lean:-.2,bob:1,wave:-5,face:'hurt'},death:{legA:.65,legB:-.15,armA:.35,armB:.6,lean:-.17,bob:4,face:'ko'},
+  flat:{legA:-.75,legB:.75,armA:-1.9,armB:1.9,blink:1},mine0:{legA:.35,legB:-.35,armB:.6,lean:-.1,bob:1,noArm:1},mine1:{legA:.5,legB:-.4,armB:-.55,lean:.2,bob:3.5,noArm:1},
+  bow:{legA:.45,legB:-.45,armB:-1.35,lean:-.06,noArm:1},bowrel:{legA:.45,legB:-.45,armB:.75,lean:.04,wave:3,noArm:1},cast:{legA:.4,legB:-.3,armB:-2.4,lean:-.1,wave:4,bob:-1,noArm:1},
+  block:{legA:.5,legB:-.5,armA:-1.5,armB:-.3,lean:-.08,bob:2},parry:{legA:.6,legB:-.45,armA:-2.2,armB:.6,lean:.12,wave:4,face:'happy'},
+  fcast:{legA:.4,legB:-.4,armB:.45,lean:.15,noArm:1},reel0:{legA:.3,legB:-.3,armB:-1.1,lean:-.12,noArm:1},reel1:{legA:.3,legB:-.3,armB:-.8,lean:-.16,bob:1,noArm:1},
+  climb0:{legA:-.6,legB:.1,armA:-2.9,armB:-2.2},climb1:{legA:.1,legB:-.6,armA:-2.2,armB:-2.9},
+  cheer0:{legA:.2,legB:-.2,armA:-2.8,armB:2.8,bob:-3,wave:4,face:'happy'},cheer1:{legA:-.1,legB:.1,armA:-2.5,armB:2.5,wave:-3,face:'happy'}};
+export const PF={idle:0,walk:2,jump:6,fall:7,hold:8,swing:9};for(const k in MOREPOSE){PF[k]=POSES.length;POSES.push(MOREPOSE[k]);}
+// the lone front arm is the last frame, pivot at the frame centre. The sheet is one row of 96px frames: keep it under 4096px (42 frames).
+export const ARMF=POSES.length;
 // the front shoulder of frame f in world units from the bottom of the player mesh, so the arm mesh lines up with the body
 export function shoulderAt(f){const o=POSES[f]||{},l=o.lean||0,x=7*Math.cos(l)+56*Math.sin(l),y=7*Math.sin(l)-56*Math.cos(l)+138+(o.bob||0);return[x/60,(144-y)/60];}
+// Player customization (New World dialog, saved as p.look): each field is an index into its list, so a save can't carry a bad value.
+// hat and cape take the accent color; the straw hat keeps its own straw.
+export const LOOK={hairS:['short','long','spiky','bun','pony','curly'],hair:['#5a3526','#2a2130','#a86b3a','#e0b04f','#c9503a','#e8e2d6','#5a6fb0','#d97aa0'],
+  skin:['#f1cfa6','#f6dcc0','#e0a878','#c98a60','#9a6440','#6b4430'],tunic:['#2f7f86','#d4483b','#4f7fa6','#3f7a5f','#7a5aa8','#e0a04f','#3b3552','#e8e2d6'],
+  hatS:['none','cap','beret','straw','beanie'],capeS:['scarf','cape','none'],acc:['#d4483b','#f1c04f','#3f7a5f','#4f7fa6','#7a5aa8','#2a2130']};
+export function cleanLook(l){const o={};for(const k in LOOK){const v=l&&l[k];o[k]=Number.isInteger(v)&&v>=0&&v<LOOK[k].length?v:0;}return o;}
+export function lookColors(l){l=cleanLook(l);const a=LOOK.acc[l.acc],c=LOOK.capeS[l.capeS];
+  return{skin:LOOK.skin[l.skin],hair:LOOK.hair[l.hair],hairS:LOOK.hairS[l.hairS],tunic:LOOK.tunic[l.tunic],hatS:LOOK.hatS[l.hatS],hat:a,scarf:c==='none'?null:a,cape:c==='cape'?a:null};}
 export function playerSheet(){return makeSheet(ARMF+1,96,144,playerDraw());}
-function playerDraw(){const eq={};const a=player.armor;if(a[0])eq.helm=ITEMS[a[0].id].color;if(a[1])eq.mail=ITEMS[a[1].id].color;if(a[2])eq.greaves=ITEMS[a[2].id].color;
-  const look={skin:'#f1cfa6',tunic:'#2f7f86'};Object.assign(look,eq);
-  return (t,f)=>{if(f===ARMF){arm(t,48,72,0,look.mail||look.tunic,look.skin);return;}drawHuman(t,Object.assign({skin:'#f1cfa6',hair:'#5a3526',tunic:'#2f7f86',pants:'#3b3552',boots:'#6b4430',scarf:'#d4483b',
-    back:tt=>{tt.beginPath();tt.moveTo(38,74);tt.lineTo(58,104);ink(tt,3.5,'#6b4430');rr(tt,24,92,16,16,4);fi(tt,'#b9874f',2);}},eq,POSES[f]));};}
+function playerDraw(look=player.look){const eq={};const a=player.armor||[];if(a[0])eq.helm=ITEMS[a[0].id].color;if(a[1])eq.mail=ITEMS[a[1].id].color;if(a[2])eq.greaves=ITEMS[a[2].id].color;
+  const base=Object.assign({pants:'#3b3552',boots:'#6b4430',back:tt=>{tt.beginPath();tt.moveTo(38,74);tt.lineTo(58,104);ink(tt,3.5,'#6b4430');rr(tt,24,92,16,16,4);fi(tt,'#b9874f',2);}},lookColors(look),eq);
+  return (t,f)=>{if(f===ARMF){humanPart(t,base,'armA',48,72,0);return;}drawHuman(t,Object.assign({},base,POSES[f]));};}
+// lookPic(look): the player standing in a given look, for the New World dialog's preview
+export function lookPic(look){return makeSheet(1,96,144,t=>playerDraw(look)(t,0));}
 // Townsfolk sheets keep their draw function so facePic() can redraw frame 0 with an expression.
 const NPCDRAW={};function npcSheet(k,draw){NPCDRAW[k]=draw;return makeSheet(2,96,144,draw);}
 // facePic(k, expr): one standing frame of an NPC type (or 'player') drawn with the given expression, for dialogue portraits
@@ -191,6 +249,12 @@ function slimeDraw(col,crown){return(t,f,w,h)=>{const cx=w/2,by=h-7,sq=f?1:0;con
   if(crown){const cy=by-sh_*.93,s=2.6;poly(t,[cx-18*s,cy,cx+18*s,cy,cx+20*s,cy-22*s,cx+10*s,cy-10*s,cx,cy-26*s,cx-10*s,cy-10*s,cx-20*s,cy-22*s]);fi(t,'#f1c04f',5);circ(t,cx,cy-9*s,4*s);fi(t,'#e0506b',4);}
   else{t.beginPath();t.arc(cx+sw*.2,by-sh_*.25,3,.2,2.9);ink(t,2);}};}
 export function buildSheets(){
+  // the player's status overlays (gameplay.js statusOverlay): 0 paper flames, 1 ink blots and drips, 2 water drops
+  SHEETS.pstatus=makeSheet(3,96,144,(t,f)=>{
+    if(f===0){for(const[x,y,h,c]of[[26,126,26,'#ff8a3d'],[70,128,30,'#ff8a3d'],[34,98,20,'#ffd66b'],[66,84,22,'#ffd66b'],[22,72,18,'#ff8a3d'],[76,58,16,'#ffd66b']]){t.beginPath();t.moveTo(x-7,y);t.quadraticCurveTo(x-8,y-h*.6,x,y-h);t.quadraticCurveTo(x+8,y-h*.6,x+7,y);t.closePath();fi(t,c,2);t.beginPath();t.moveTo(x-3,y);t.quadraticCurveTo(x,y-h*.7,x+3,y);t.closePath();t.fillStyle='#fff3c0';t.fill();}}
+    else if(f===1){for(const[x,y,r]of[[44,86,6],[58,98,4.5],[40,56,4],[62,40,3.5],[50,112,4]]){circ(t,x,y,r);fi(t,'#3a2a5a',1.8);circ(t,x+r*.8,y+r*.6,r*.4);t.fillStyle='#3a2a5a';t.fill();}
+      for(const[x,y,l]of[[36,62,14],[60,104,12],[48,90,10]]){rr(t,x-2,y,4,l,2);fi(t,'#3a2a5a',1.5);circ(t,x,y+l,3);t.fillStyle='#3a2a5a';t.fill();}}
+    else for(const[x,y,r]of[[30,40,4],[70,52,3.5],[26,80,4.5],[74,96,4],[40,20,3.5],[62,24,3]]){t.beginPath();t.moveTo(x,y-r*2);t.quadraticCurveTo(x+r,y-r*.3,x+r,y+r*.3);t.arc(x,y+r*.3,r,0,Math.PI);t.quadraticCurveTo(x-r,y-r*.3,x,y-r*2);fi(t,'#a8e4ff',1.8);circ(t,x-r*.35,y,r*.3);t.fillStyle='#fff';t.fill();}});
   SHEETS.slime=makeSheet(2,96,80,(t,f)=>slimeDraw('#6cc57a')(t,f,96,80));
   SHEETS.bslime=makeSheet(2,96,80,(t,f)=>slimeDraw('#5aa7e0')(t,f,96,80));
   SHEETS.king=makeSheet(2,340,280,(t,f)=>slimeDraw('#5aa7e0',1)(t,f,340,280),6);

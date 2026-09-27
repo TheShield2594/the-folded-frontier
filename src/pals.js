@@ -4,6 +4,7 @@ import {
   $,biomeAt,boss,camera,curBio,dlgBusy,enemies,inkMoon,isFest,isNight,npcs,PARTNERS,partnerCheer,
   partnerSpeaker,player,pick,plain,pt,pv,quests,rand,renderQuests,say,season,setInvDirty,SFX,stat,state,
   toast,upx,wev,
+  playerCheer,
 } from './game.js';
 
 // ================= partner stories =================
@@ -30,7 +31,7 @@ export const PQUEST={
 export function palQuestTxt(k){const q=PQUEST[k],s=pals.q[k];if(s===2)return `✓ ${q.n}: ${q.up}`;if(!s)return '';return `${q.n}: ${Math.min(pals.n[k]||0,q.need)} / ${q.need} ${q.what}.`;}
 export function palJournal(){const k=player.partner;if(!k||pals.q[k]!==1)return '';return `<b class="sj">Partner</b><div class="side"><i></i>${PQUEST[k].n} <small>(${PARTNERS[k].name} · ${Math.min(pals.n[k]||0,PQUEST[k].need)}/${PQUEST[k].need})</small></div>`;}
 function bump(k){if(player.partner!==k||pals.q[k]!==1)return;const q=PQUEST[k],n=pals.n[k]=(pals.n[k]||0)+1;
-  if(n>=q.need){pals.q[k]=2;SFX.nice();toast(`${PARTNERS[k].name}'s quest is done! ${q.up}`,'gold');partnerCheer(2);say(partnerSpeaker(k),q.done,{wait:.8});stat('palquests');}
+  if(n>=q.need){pals.q[k]=2;SFX.nice();toast(`${PARTNERS[k].name}'s quest is done! ${q.up}`,'gold');partnerCheer(2);playerCheer(1.2);say(partnerSpeaker(k),q.done,{wait:.8});stat('palquests');}
   else if(q.need<=5||n%5===0)toast(`${q.n}: ${n} of ${q.need} ${q.what}`,'good');renderQuests();setInvDirty(true);}
 // progress hooks: 'dawn' (main loop), 'fossil' (digFossil), 'kill' (killEnemy)
 export function palEv(ev,e){const k=player.partner;if(!k||player.dead)return;

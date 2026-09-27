@@ -4,6 +4,7 @@ import {
   ITEMS,KEYNAME,makeSheet,mk,mouse,nearestEnemy,pickups,player,poly,portraitCache,quests,rr,
   scene,SET,setInvDirty,setTint,SFX,SHEETS,spriteMesh,stat,state,T,tileAt,toast,TP,partnerSpeaker,say,
   chapterCard,moveName,palUp,playerSpeaker,renderQuests,
+  playerCheer,
 } from './game.js';
 
 // ================= partners =================
@@ -38,7 +39,7 @@ export function buildPartnerSheets(){for(const k of PORDER){SHEETS['p_'+k]=makeS
 export function pPortrait(k){if(portraitCache['p_'+k])return portraitCache['p_'+k];return portraitCache['p_'+k]=SHEETS['p_'+k].toDataURL?(()=>{const c=mk(96,96);c.getContext('2d').drawImage(SHEETS['p_'+k],0,0,96,96,0,0,96,96);return c.toDataURL();})():'';}
 function unlockPartner(k,quiet){const p=player;if(p.partners.includes(k))return;p.partners.push(k);if(!p.partner)setPartner(k);if(!quiet){recruit(k);}}
 // the recruitment moment: the new partner comes along at once, a card announces them, they hop and say hello and you answer
-function recruit(k){const d=PARTNERS[k];setPartner(k);partnerCheer(2.4);SFX.nice();stat('partners');chapterCard(null,d.name,d.desc,'A new friend joins');
+function recruit(k){const d=PARTNERS[k];setPartner(k);partnerCheer(2.4);playerCheer(1.4);SFX.nice();stat('partners');chapterCard(null,d.name,d.desc,'A new friend joins');
   burst(player.x,player.y+2,['#fbf8f0','#f1c04f','#d4483b','#8fc9ec'],36,7,{grav:5,life:1.2});toast(`${d.name} joined your party! Press ${KEYNAME(SET.bind.partner)} to switch partners and ${KEYNAME(SET.bind.ability)} for ${d.move}.`,'gold');
   say(partnerSpeaker(k),d.hi,{wait:1.5,done:()=>say(playerSpeaker(),d.re,{done:()=>partnerCheer(1)})});}
 export function syncPartners(quiet){if(hasNPC('guide'))unlockPartner('lumi',quiet);if(quests.king)unlockPartner('snip',quiet);if(quests.crane)unlockPartner('smudge',quiet);if(quests.lev)unlockPartner('ember',quiet);}

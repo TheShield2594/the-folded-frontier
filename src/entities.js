@@ -8,7 +8,7 @@ import {
 } from './game.js';
 
 // ================= entities =================
-export const player={buffs:{},partners:[],partner:null,badges:[],badgesOn:[],bpUps:0,x:0,y:0,w:.78,h:1.82,vx:0,vy:0,face:1,rot:0,hp:100,max:100,inv:new Array(40).fill(null),armor:[null,null,null],acc:[null,null,null],sel:0,coins:0,
+export const player={buffs:{},partners:[],partner:null,badges:[],badgesOn:[],bpUps:0,x:0,y:0,w:.78,h:1.82,vx:0,vy:0,face:1,rot:0,hp:100,max:100,inv:new Array(40).fill(null),armor:[null,null,null],acc:[null,null,null],look:null,sel:0,coins:0,
   onGround:false,coyote:0,jbuf:0,jumpAge:9,usedDouble:false,swing:null,lastSwingEnd:-9,niceNext:false,inv_t:0,spawn:{x:0,y:0},regenT:0,potT:0,mineP:0,mineTile:-1,placeT:0,walkT:0,dead:false,deadT:0,stompWin:0,stompTarget:null,dashT:0,dashCD:0,dashI:0,dashDir:1,airDashed:false,ghostT:0,dashPing:0,sheetDirty:true,mesh:null,mat:null,prevY:0};
 export let enemies=[],pickups=[],projs=[],npcs=[],boss=null;
 export let worldTime=7.5,quests={},hintT=0;

@@ -96,6 +96,8 @@
     <div class="set"><label for="seedIn">Seed</label><div class="seedRow"><input id="seedIn" type="text" maxlength="24" autocomplete="off" spellcheck="false"><button id="seedRnd" class="ghost" type="button">Random</button></div>
       <span>Size</span><div class="seg" id="sizeSeg"><button type="button" data-s="s">Small</button><button type="button" data-s="m">Medium</button><button type="button" data-s="l">Large</button></div></div>
     <p class="note" id="sizeNote"></p>
+    <div class="lookBox"><canvas id="lookPrev" width="96" height="144" role="img" aria-label="Preview of your character"></canvas>
+      <div><div class="lookHead"><b>Your look</b><button id="lookRnd" class="ghost" type="button">Shuffle</button></div><div class="set lookRows" id="lookRows"></div></div></div>
     <p class="note">Every world has a meadow, a snowfield, an ink lake, a desert and a burnt underworld far below. The same seed always makes the same world.</p>
     <div class="menu" style="margin:12px 0 0"><button id="createBtn" type="button">Create world</button><button id="nwCancel" class="ghost" type="button">Back</button></div></div></div></div>
   <div id="loading" class="over" hidden><div class="card"><h1 class="logo" style="font-size:clamp(32px,calc(6vw / var(--ui)),54px)">Folding your world…</h1></div></div>
