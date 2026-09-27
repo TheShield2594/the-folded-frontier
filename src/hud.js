@@ -16,7 +16,7 @@ export function renderBinds(){$('binds').innerHTML=Object.keys(BINDLAB).map(a=>`
   $('padBinds').innerHTML=Object.keys(PADLAB).map(a=>`<div class="bind"><span>${PADLAB[a]}</span><button type="button" data-a="${a}" class="${padRebinding===a?'wait':''}">${padRebinding===a?'Press a button…':PADNAME(SET.pad[a])}</button></div>`).join('');}
 $('binds').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;padRebinding=null;rebinding=b.dataset.a;renderBinds();});
 $('padBinds').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;rebinding=null;padRebinding=b.dataset.a;renderBinds();});
-function openSettings(){$('sndC').checked=soundOn;$('volMaster').value=SET.vol;$('volMusic').value=SET.music;$('volSfx').value=SET.sfx;$('volAmb').value=SET.amb;$('zoomR').value=SET.zoom;$('uiR').value=SET.ui;$('txtR').value=SET.text;uiLabels();$('shakeC').checked=SET.shake;$('hitC').checked=SET.hitstop;$('numsC').checked=SET.nums;$('cbS').value=SET.cb;$('introC').checked=SET.intro;$('hintsC').checked=SET.hints;rebinding=null;renderBinds();$('settings').hidden=false;}
+function openSettings(){$('sndC').checked=soundOn;$('volMaster').value=SET.vol;$('volMusic').value=SET.music;$('volSfx').value=SET.sfx;$('volAmb').value=SET.amb;$('zoomR').value=SET.zoom;$('uiR').value=SET.ui;$('txtR').value=SET.text;uiLabels();$('shakeC').checked=SET.shake;$('hitC').checked=SET.hitstop;$('numsC').checked=SET.nums;$('fgC').checked=SET.fg;$('cbS').value=SET.cb;$('introC').checked=SET.intro;$('hintsC').checked=SET.hints;rebinding=null;renderBinds();$('settings').hidden=false;}
 export function closeSettings(){$('settings').hidden=true;rebinding=padRebinding=null;saveSettings();}
 $('sndC').addEventListener('change',e=>{SET.snd=e.target.checked;setSoundOn(SET.snd);initAudio();applyVolumes();});
 $('volMaster').addEventListener('input',e=>{SET.vol=+e.target.value;initAudio();applyVolumes();});
@@ -31,6 +31,7 @@ $('uiR').addEventListener('change',()=>{applyUI();saveSettings();});$('txtR').ad
 $('shakeC').addEventListener('change',e=>{SET.shake=e.target.checked;});
 $('hitC').addEventListener('change',e=>{SET.hitstop=e.target.checked;});
 $('numsC').addEventListener('change',e=>{SET.nums=e.target.checked;});
+$('fgC').addEventListener('change',e=>{SET.fg=e.target.checked;});
 $('cbS').addEventListener('change',e=>{SET.cb=e.target.value;applyCB();saveSettings();});
 $('introC').addEventListener('change',e=>{SET.intro=e.target.checked;});
 $('hintsC').addEventListener('change',e=>{SET.hints=e.target.checked;});

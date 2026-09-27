@@ -1,9 +1,9 @@
 // Mining crack and highlight overlays, day/night sky and the camera.
 import * as THREE from 'three';
 import {
-  atlasTex,BIO,biomeAt,C,camDist,camera,cellUV,clamp,clouds,cursor,H,hasAcc,hasBuff,hillsFar,hillsNear,
+  atlasTex,BIO,biomeAt,C,camDist,camera,cellUV,clamp,clouds,cursor,dioLight,H,hasAcc,hasBuff,
   inkMoon,lerp,moonMesh,season,seasonSky,mouse,N,OPAQUE,pad,player,rainF,rand,reachOK,scene,selItem,setShakeT,setSnowF,
-  shakeT,skyMesh,skyU,snowF,snowFar,snowNear,SPAWNX,state,sunMesh,surfAvg,T,tiles,U,W,worldMat,
+  shakeT,skyMesh,skyU,snowF,SPAWNX,state,sunMesh,surfAvg,T,tiles,U,W,worldMat,
   worldTime,
 } from './game.js';
 
@@ -32,15 +32,13 @@ export function updateSky(){const h=worldTime,f=dayF(h),warm=f>0&&f<1?Math.sin(f
     const sd=camera.position.x<BIO.snow[0]?BIO.snow[0]-camera.position.x:camera.position.x>BIO.snow[1]?camera.position.x-BIO.snow[1]:0;setSnowF(snowF+((clamp(1-sd/25,0,1)*(1-under)-snowF)*.15));
     const ld=Math.max(0,Math.abs(camera.position.x-BIO.lake[0])-BIO.lake[1]);const lf=clamp(1-ld/25,0,1)*(1-under);skyU.uBot.value.lerp(cB.set('#9a88c0'),lf*.35);skyU.uTop.value.lerp(cB.set('#b6d7e6'),snowF*.3*f);}
   seasonSky(skyU,cB,f,under);
-  const sw=snowF>.5||season().k==='winter'&&under<.5;[snowFar,snowNear].forEach(m=>{if(m)m.visible=sw;});[hillsFar,hillsNear].forEach(m=>{if(m)m.visible=!sw;});
   if(rainF>0){skyU.uTop.value.lerp(cB.set('#6f7f8f'),rainF*.6*f+rainF*.2);skyU.uBot.value.lerp(cB.set('#a9b4bf'),rainF*.5*f);U.uSky.value.multiplyScalar(1-rainF*.25);}
   if(inkMoon){const im=(1-f)*(1-under);skyU.uTop.value.lerp(cB.set('#2a0f3a'),im);skyU.uBot.value.lerp(cB.set('#6a2a5a'),im);moonMesh.material.color.set(0xd08aff);}else moonMesh.material.color.set(0xffffff);
   skyU.uStars.value=(1-f)*(1-under)*(1-rainF);skyU.uTime.value=worldClock;
   const cx=camera.position.x,cy=camera.position.y;skyMesh.position.x=cx;skyMesh.position.y=cy;
   const sa=(h-6)/12*Math.PI;sunMesh.position.set(cx-Math.cos(sa)*55,cy-2+Math.sin(sa)*34,-100);sunMesh.visible=sa>-0.3&&sa<Math.PI+.3&&under<.9;
   const ma=(((h+12)%24)-6)/12*Math.PI;moonMesh.position.set(cx-Math.cos(ma)*55,cy-2+Math.sin(ma)*34,-100);moonMesh.visible=ma>-0.3&&ma<Math.PI+.3&&under<.9;
-  const tint=lerp(.35,1,f)*(1-under*.6);[hillsFar,hillsNear].forEach(m=>{if(m)m.material.color.setRGB(tint*lerp(1,1.05,warm),tint*lerp(1,.85,warm),tint*lerp(1.05,.8,warm));});
-  [snowFar,snowNear].forEach(m=>{if(m)m.material.color.setRGB(tint,tint,tint*1.02);});
+  const tint=lerp(.35,1,f)*(1-under*.6);dioLight(tint*lerp(1,1.05,warm),tint*lerp(1,.85,warm),tint*lerp(1.05,.8,warm),under);
   clouds.forEach(c=>{c.material.color.setRGB(tint*lerp(1,1.1,warm),tint*lerp(1,.85,warm),tint*lerp(1,.8,warm));});}
 
 // ================= camera =================
