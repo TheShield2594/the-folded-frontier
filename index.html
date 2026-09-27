@@ -144,6 +144,10 @@ button.ghost{background:var(--paper2);}
 .over{position:absolute;inset:0;display:grid;place-items:center;pointer-events:auto;background:rgba(27,22,38,.45);padding:16px;box-sizing:border-box;}
 .card{max-width:560px;width:100%;}
 #title{background:linear-gradient(rgba(27,22,38,.15),rgba(27,22,38,.65));}
+#title.bg{background:#efe4cc url(title.jpg) center top/cover no-repeat;align-items:start;overflow-y:auto;}
+#title.bg>.card{background:rgba(247,238,220,.8);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:2.5px solid var(--ink);border-radius:14px;box-shadow:4px 5px 0 rgba(20,14,26,.45);padding:16px 16px 14px;box-sizing:border-box;}
+#title.bg .tag{color:var(--ink);text-shadow:none;margin-bottom:16px;}
+@media (min-aspect-ratio:1/1){#title.bg .logo{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);margin:0;}#title.bg>.card{margin-top:calc(max(100vh,42.4vw)*.43 - 16px);}}
 .logo{font-family:'Bagel Fat One','Arial Black',sans-serif;font-size:clamp(44px,9vw,92px);line-height:.92;color:var(--paper);text-align:center;margin:0 0 6px;text-shadow:0 3px 0 #d8c3a0,0 6px 0 var(--kraft2),5px 11px 0 rgba(20,14,26,.55);letter-spacing:.01em;text-wrap:balance;}
 .logo span{display:inline-block;animation:flipin .7s cubic-bezier(.2,.9,.3,1.3) both;}
 @keyframes flipin{from{transform:rotateY(90deg) translateY(-10px)}}
@@ -2461,6 +2465,8 @@ $('saveBtn').addEventListener('click',()=>{toast(save()?'Game saved.':'Saving is
 $('quitBtn').addEventListener('click',()=>{save();state='title';$('pause').hidden=true;$('title').hidden=false;$('contBtn').hidden=!hasSave();setInv(false);});
 function toggleSound(){soundOn=!soundOn;applyVolumes();$('sndBtn').textContent=$('snd2Btn').textContent='Sound: '+(soundOn?'On':'Off');}
 $('sndBtn').addEventListener('click',()=>{initAudio();toggleSound();});$('snd2Btn').addEventListener('click',()=>{initAudio();toggleSound();});
+// title background: painted art from title.jpg; if it fails to load the plain overlay stays
+{const im=new Image();im.onload=()=>$('title').classList.add('bg');im.src='title.jpg';}
 // title letters
 $('logo').innerHTML='Folded Frontier'.split(' ').map((w,wi)=>`<span style="display:inline-block;white-space:nowrap">${[...w].map((c,i)=>`<span style="animation-delay:${(wi*7+i)*45}ms">${c}</span>`).join('')}</span>`).join(' ');
 
