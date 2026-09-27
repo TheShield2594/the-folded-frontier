@@ -1,13 +1,13 @@
 // Player physics, combat, mining/placing, enemy AI, spawning, bosses and events.
 import * as THREE from 'three';
 import {
-  $,AC,addItem,ambBus,BADGES,bestDrop,bestKill,BIO,biomeAt,boss,boxHits,BUFFS,burst,camera,camT,chests,
+  $,AC,addItem,ambBus,ARMF,BADGES,bestDrop,bestKill,BIO,biomeAt,boss,boxHits,BUFFS,burst,camera,camT,chests,
   clamp,collide,consumeSel,countItem,crackerBoom,cursor,DASH_V,defense,dormant,dropItem,dummy,edmg,ELEM,
   ELITE_LOOT,ELITE_TINT,EN,enemies,floatText,H,hasAcc,hasBadge,hasBuff,held,HERBCOL,HERBS,iconTex,idx,
   INKTINT,inNiceWin,isFest,invOpen,isNight,isOpaque,isSolid,ITEMS,keys,lerp,lightAt,makeElite,markDirty,meta,
   mouse,N,NICE_LATE,niceW,noise,noiseBuf,NPCDEF,npcs,OPAQUE,openSide,pad,parts,pick,pickups,player,
   popUp,projs,pt,pv,questDone,quests,rand,randi,removeEnemy,removeItem,rollWeather,scene,SEEDIDS,selItem,SET,
-  setBoss,setInv,setInvDirty,setTile,setTint,SFX,sh,shieldItem,SOIL,SOLID,spawnEnemy,spawnGhost,
+  setBoss,setInv,shoulderAt,setInvDirty,setTile,setTint,SFX,sh,shieldItem,SOIL,SOLID,spawnEnemy,spawnGhost,
   spriteMat,stat,state,surf,surfAvg,syncPartners,T,talkTo,threadGeo,tileAt,tiles,toast,tone,TP,U,
   updateCoins,updateDashHud,updateDrawHud,updateEnemyFx,updateGhosts,upx,W,WALLCOL,WALLDROP,walls,
   worldClock,worldTime,digFossil,evKill,fcount,npcLine,
@@ -128,7 +128,8 @@ function useItem(it,dt){const tx=Math.floor(mouse.wx),ty=Math.floor(mouse.wy);co
       const ok=sm==='king'?player.y>=surf[clamp(Math.floor(player.x),0,W-1)]-10&&b!=='under':sm==='crane'?b==='snow':sm==='lev'?b==='lake':b==='under';if(!ok){toast(need,'bad');return;}if(boss){toast('A boss is already here.','bad');return;}consumeSel();
       const side=Math.random()<.5?-1:1;if(sm==='king')spawnEnemy('king',player.x+side*18,Math.min(H-8,player.y+22));else if(sm==='crane')spawnEnemy('crane',player.x+side*18,Math.min(H-6,player.y+14));else if(sm==='lev')spawnEnemy('lev',player.x+side*14,player.y-14);else spawnEnemy('folio',player.x+side*20,player.y+8);
       toast({king:'The ground trembles… the King Slime approaches!',crane:'A great shadow folds across the snow…',lev:'The ink begins to churn…',folio:'Pages rustle in the heat. The Charred Folio opens!'}[sm],'bad');SFX.boom();shake(.4);}}}
-function startSwing(it,nice){const p=player;if(it.wave){const a=Math.atan2(mouse.wy-(p.y+1.1),mouse.wx-p.x);fireProj('wave',p.x+Math.cos(a)*.8,p.y+1.1+Math.sin(a)*.8,Math.cos(a)*22,Math.sin(a)*22,Math.round(it.dmg*.55),{src:'ranged'});}p.face=mouse.wx>p.x?1:-1;p.swing={t:0,dur:it.dur,tool:it.id,hit:new Set(),dmg:it.dmg,kb:it.kb,nice,sword:true,heavy:!!it.heavy,elem:it.elem||null};if(it.heavy)SFX.heave();else SFX.swing();if(nice){floatText(p.x+p.face,p.y+2.3,'NICE!','nice');SFX.nice();stat('nices');}}
+function startSwing(it,nice){const p=player;if(it.wave){const a=Math.atan2(mouse.wy-(p.y+1.1),mouse.wx-p.x);fireProj('wave',p.x+Math.cos(a)*.8,p.y+1.1+Math.sin(a)*.8,Math.cos(a)*22,Math.sin(a)*22,Math.round(it.dmg*.55),{src:'ranged'});}p.face=mouse.wx>p.x?1:-1;const ch=!it.heavy&&p.swEnd!=null&&worldClock-p.lastSwingEnd<.5,combo=ch?((p.combo||0)+1)%3:0;if(!it.heavy)p.combo=combo;
+  p.swing={t:0,dur:it.dur,tool:it.id,hit:new Set(),dmg:it.dmg,kb:it.kb*(combo===2?1.3:1),nice,sword:true,heavy:!!it.heavy,elem:it.elem||null,combo,from:ch?p.swEnd:1.6};if(it.heavy)SFX.heave();else if(combo===2)SFX.finisher();else SFX.swing();if(nice){floatText(p.x+p.face,p.y+2.3,'NICE!','nice');SFX.nice();stat('nices');}}
 export const hook={state:0,x:0,y:0,vx:0,vy:0};
 const chainMesh=new THREE.Mesh((()=>{const g=new THREE.PlaneGeometry(1,.1);g.translate(.5,0,0);return g;})(),new THREE.MeshBasicMaterial({color:0x7a5a3a}));chainMesh.visible=false;chainMesh.renderOrder=4;scene.add(chainMesh);
 let hookMesh=null;
@@ -339,7 +340,7 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateDashHud(d
   p.manaT=(p.manaT||0)+dt;if(p.manaT>.8&&p.mana<p.maxMana)p.mana=Math.min(p.maxMana,p.mana+dt*(3+p.maxMana*.05)*(Math.abs(p.vx)<.5?1.6:1));
   p.inv_t-=dt;p.potT=Math.max(0,p.potT-dt);p.stompWin-=dt;p.regenT+=dt;if(p.regenT>5&&p.hp<p.max){p.hp=Math.min(p.max,p.hp+dt*(p.regenT>12?3:1));}if(hasBadge('happy')&&p.hp<p.max)p.hp=Math.min(p.max,p.hp+dt);const rg=(hasBuff('regen')?2:0)+(hasBuff('fed')?.5:0)+(hasAcc('nightregen')&&isNight()?1:0);if(rg&&p.hp<p.max)p.hp=Math.min(p.max,p.hp+rg*dt);
   for(const k in p.buffs){p.buffs[k]-=dt;if(p.buffs[k]<=0){delete p.buffs[k];toast(`${BUFFS[k][0]} wore off.`);}}
-  updatePlayerStatus(dt);if(p.dead)return;
+  updatePlayerStatus(dt);if(p.dead){updateTool(null,1);return;}
   if(wind&&!p.onGround&&hook.state!==2&&!p.inLiq)p.vx+=wind*dt*3;
   // items
   const it=selItem();p.mineP=p.mineP||0;
@@ -349,19 +350,39 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateDashHud(d
     else if(!s&&since<NICE_LATE*niceW()&&!p.lastEarly){startSwing(it,true);}}
   const useHeld=mouse.l||(pad.active&&!!pad.held.use);if(useHeld&&!cursor&&!p.blocking){if(it)useItem(it,dt);}else{if(p.draw)releaseBow();if(p.mineTile!==-2)p.mineP=Math.max(0,p.mineP-dt*2);if(p.mineTile===-2)p.mineTile=-1;p.placeT=0;}
   if(mouse.rp)interact();
-  if(p.swing){const s=p.swing;s.t+=dt;if(s.sword){const k=s.t/s.dur;const ang=swingAngle(k,s.heavy);const tipX=p.x+p.face*Math.cos(ang)*1.6,tipY=p.y+1.1+Math.sin(ang)*1.6;if(s.heavy&&!s.slam&&k>=HAM_HIT)hammerImpact(s,tipX,tipY);if(inNiceWin(s)){if(!s.cued){s.cued=true;SFX.cue();burst(tipX,tipY,['#fff3c0','#f1c04f','#fbf8f0'],7,3,{grav:0,life:.3,bright:1});}burst(tipX,tipY,['#fff3c0','#ffe58a'],1,1,{grav:0,life:.3,bright:1});}
-      if(!s.heavy||(k>.46&&k<.8))for(const e of enemies){if(e.dying||s.hit.has(e))continue;const cx=e.x,cy=e.y+e.h/2;const dx=cx-p.x,dy=cy-(p.y+1);if((dx*p.face>-.6)&&Math.hypot(dx,dy)<2.1+e.w/2){s.hit.add(e);hurtEnemy(e,s.dmg*(s.nice?1.8:1)*rand(.9,1.1),p.face,s.kb,s.nice,s.elem);if(s.heavy)stagger(e);}}}
-    if(s.t>=s.dur){p.swing=null;if(s.sword){p.lastSwingEnd=worldClock;p.lastEarly=!!s.early;if(p.niceNext){p.niceNext=false;startSwing(ITEMS[s.tool],true);}else if((mouse.l||(pad.active&&pad.held.use))&&it&&it.dmg&&!it.use&&!it.ranged&&!it.magic&&!cursor)startSwing(it,false);}}}
+  if(p.swing){const s=p.swing;s.t+=dt;if(s.sword){const k=s.t/s.dur;const[tipX,tipY]=swingTip(s,Math.min(1,k));if(!s.heavy)swingStep(s,k);if(s.heavy&&!s.slam&&k>=HAM_HIT)hammerImpact(s,tipX,tipY);if(inNiceWin(s)){if(!s.cued){s.cued=true;SFX.cue();burst(tipX,tipY,['#fff3c0','#f1c04f','#fbf8f0'],7,3,{grav:0,life:.3,bright:1});}burst(tipX,tipY,['#fff3c0','#ffe58a'],1,1,{grav:0,life:.3,bright:1});}
+      if(s.heavy?k>.46&&k<.8:k>=SWKEYS[s.combo][0][0]*.5)for(const e of enemies){if(e.dying||s.hit.has(e))continue;const cx=e.x,cy=e.y+e.h/2;const dx=cx-p.x,dy=cy-(p.y+1);if((dx*p.face>-.6)&&Math.hypot(dx,dy)<2.1+e.w/2){s.hit.add(e);hurtEnemy(e,s.dmg*(s.nice?1.8:1)*rand(.9,1.1),p.face,s.kb,s.nice,s.elem);if(s.heavy)stagger(e);}}}
+    if(s.t>=s.dur){p.swing=null;if(s.sword){p.lastSwingEnd=worldClock;p.swEnd=s.heavy?null:swingArm(s,1);p.lastEarly=!!s.early;if(p.niceNext){p.niceNext=false;startSwing(ITEMS[s.tool],true);}else if((mouse.l||(pad.active&&pad.held.use))&&it&&it.dmg&&!it.use&&!it.ranged&&!it.magic&&!cursor)startSwing(it,false);}}}
   // pickups magnet handled in pickups
   // mesh
   const m=p.mesh;const target=p.face>0?0:Math.PI;p.rot+=(target-p.rot)*Math.min(1,dt*16);m.rotation.y=p.rot;
-  let f=0;if(p.blocking||p.swing&&(p.swing.sword||p.swing.tool))f=8;else if(!p.onGround)f=p.vy>0?6:7;else if(Math.abs(p.vx)>.5){p.walkT+=dt*Math.abs(p.vx)*1.3;f=2+Math.floor(p.walkT)%4;}else{p.walkT=0;f=Math.floor(worldClock*1.6)%2;}
+  let f=0;const sp=p.swing&&!p.blocking&&(p.swing.sword||p.swing.tool)?swingPose(p.swing):null;if(sp)f=sp.f;else if(p.blocking||p.swing&&(p.swing.sword||p.swing.tool))f=8;else if(!p.onGround)f=p.vy>0?6:7;else if(Math.abs(p.vx)>.5){p.walkT+=dt*Math.abs(p.vx)*1.3;f=2+Math.floor(p.walkT)%4;}else{p.walkT=0;f=Math.floor(worldClock*1.6)%2;}
   p.mat.uniforms.uFrame.value=f;m.position.set(p.x,p.y-.08,.15);setTint(p.mat,p.x,p.y+1);p.mat.uniforms.uFlash.value=p.inv_t>0&&!(p.inv_t>1.3)?(Math.floor(p.inv_t*14)%2?.6:0):0;
-  const sq=p.onGround?(p.squash>0?1-p.squash*.9:1):clamp(1+p.vy*.006,.92,1.08);m.scale.set(1/Math.sqrt(sq),sq,1);if(p.flat){m.scale.set(1.3,.42,1);p.mat.uniforms.uFrame.value=0;}
+  const sq=(p.onGround?(p.squash>0?1-p.squash*.9:1):clamp(1+p.vy*.006,.92,1.08))*(sp?sp.sq:1);m.scale.set(1/Math.sqrt(sq),sq,1);if(p.flat){m.scale.set(1.3,.42,1);p.mat.uniforms.uFrame.value=0;}
   if(p.dashT>0){m.scale.x*=1.22;m.scale.y*=.9;p.ghostT-=dt;if(p.ghostT<=0){p.ghostT=.03;spawnGhost();}}
-  updateTool();updateShield(dt);}
-// sword: a quick eased arc. Warhammer: wind up behind the head, then slam down in front (impact at HAM_HIT).
-const HAM_HIT=.54;
+  updateTool(sp,sq);updateShield(dt);}
+// sword: a three-hit combo, each cut keyframed as [k end, arm angle, easing, body frame]. Angles are world radians
+// relative to facing (0 forward, + up). A cut coils back (anticipation), snaps through fast (ease-out-quart), overshoots, then settles.
+// 0 overhead cut, 1 rising cut back up, 2 a wider lunging finisher. Each wind-up starts from where the last cut ended so chains flow.
+// Warhammer: wind up behind the head, then slam down in front (impact at HAM_HIT).
+const HAM_HIT=.54,EZ={o2:x=>1-(1-x)**2,o4:x=>1-(1-x)**4,io:x=>x<.5?2*x*x:1-(2-2*x)**2/2};
+export const SWKEYS=[[[.2,2.45,'o2',10],[.46,-.85,'o4',11],[1,-.55,'io',12]],[[.2,-.95,'o2',12],[.46,2.35,'o4',10],[1,1.85,'io',9]],[[.3,2.85,'o2',10],[.52,-1,'o4',11],[1,-.65,'io',12]]];
+const LUNGE=[2.5,2.5,7];
+function swingArm(s,k){if(s.heavy)return swingAngle(k,true);const K=SWKEYS[s.combo];let a=s.from,k0=0;
+  for(const[k1,a1,ez]of K){if(k<=k1)return lerp(a,a1,EZ[ez](clamp((k-k0)/(k1-k0),0,1)));a=a1;k0=k1;}return a;}
+function swingFrame(s,k){if(s.heavy)return k<.38?10:k<.7?11:12;for(const q of SWKEYS[s.combo])if(k<=q[0])return q[3];return 9;}
+// the whole pose for a swing at k: arm angle, blade angle (the blade drags behind a fast arm, then whips past it on the
+// follow-through), body frame, arm stretch and body squash. Tools and aimed items just point the arm.
+function swingPose(s,k=clamp(s.t/s.dur,0,1)){const p=player;if(s.aim!=null){const a=p.face>0?s.aim:Math.PI-s.aim;return{arm:a,blade:a,f:9,v:0,sc:1,sq:1};}
+  if(!s.sword){const a=lerp(1.9,-.5,Math.sin(k*Math.PI*.5));return{arm:a,blade:a,f:9,v:0,sc:1,sq:1};}
+  const a=swingArm(s,k),dk=.02,v=(k>dk?a-swingArm(s,k-dk):swingArm(s,k+dk)-a)/(dk*s.dur),f=swingFrame(s,k);
+  return{arm:a,blade:a+clamp(-v*.006,-.5,.5),f,v,sc:1+Math.min(.2,Math.abs(v)*.004),sq:f===10?.96:f===11?1.04:1};}
+const ARML=.367;
+function swingHand(sp,sq=1){const p=player,[sx,sy]=shoulderAt(sp.f),l=ARML*sp.sc;return[p.x+p.face*(sx+Math.cos(sp.arm)*l),p.y-.08+sy*sq+Math.sin(sp.arm)*l];}
+function swingTip(s,k){const p=player,sp=swingPose(s,k),[hx,hy]=swingHand(sp),r=1.5*(s.heavy?1.2:1);return[hx+p.face*Math.cos(sp.blade)*r,hy+Math.sin(sp.blade)*r];}
+// the moment a cut starts its strike: step into it, and the finisher kicks up dust and a little shake
+function swingStep(s,k){const p=player,w=SWKEYS[s.combo][0][0];if(s.stepped||k<w)return;s.stepped=true;
+  if(p.onGround&&!p.blocking){p.vx=p.face*Math.max(p.vx*p.face,LUNGE[s.combo]);if(s.combo===2)burst(p.x-p.face*.3,p.y+.05,['#e9dfc9','#c9a574'],6,2.5,{up:1});}if(s.combo===2)shake(.1);}
 function swingAngle(k,heavy){if(heavy){if(k<.38)return lerp(1.2,2.55,1-Math.pow(1-k/.38,2));if(k<HAM_HIT){const e=(k-.38)/(HAM_HIT-.38);return lerp(2.55,-1.2,e*e);}return lerp(-1.2,-.95,(k-HAM_HIT)/(1-HAM_HIT));}
   const e=1-Math.pow(1-k,2.2);return lerp(2.1,-1.0,e);}
 function hammerImpact(s,tx,ty){const p=player;s.slam=true;SFX.slam();shake(.3);const gy=Math.floor(ty-.2);
@@ -381,27 +402,38 @@ function kingQuake(e){const p=player,n=e.big?3:1;for(const s of[-1,1])for(let k=
   if(e.big){e.big=false;if(!p.dead&&p.onGround&&Math.abs(p.x-e.x)<8&&Math.abs(p.y-e.y)<2.5)hurtPlayer(e.d.dmg,e.x,e);}}
 // heavy hits throw enemies up and cancel whatever attack they were winding up
 function stagger(e){if(e.dying||e.d.boss||e.parent)return;if(!e.d.fly&&!e.burrow)e.vy=Math.max(e.vy,e.elite?6:9);if(e.act==='wind'||e.act==='aim'||e.act==='puff'){e.act=null;e.cd=Math.max(e.cd||0,1.2);e.inf=0;floatText(e.x,e.y+e.h+.6,'staggered','miss');}}
-const TR=16,trailPos=new Float32Array(TR*6),trailA=new Float32Array(TR*2),trailGeo=new THREE.BufferGeometry();
+const TR=28,trailPos=new Float32Array(TR*6),trailA=new Float32Array(TR*2),trailGeo=new THREE.BufferGeometry();
 trailGeo.setAttribute('position',new THREE.BufferAttribute(trailPos,3));trailGeo.setAttribute('aA',new THREE.BufferAttribute(trailA,1));
 {const I=[];for(let i=0;i<TR-1;i++){const a=i*2;I.push(a,a+1,a+3,a,a+3,a+2);}trailGeo.setIndex(I);}
 const trailMat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,uniforms:{uC:{value:new THREE.Color(1,1,1)}},
   vertexShader:`attribute float aA;varying float vA;void main(){vA=aA;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
   fragmentShader:`uniform vec3 uC;varying float vA;void main(){gl_FragColor=vec4(uC,vA);}`});
-const trailMesh=new THREE.Mesh(trailGeo,trailMat);trailMesh.frustumCulled=false;trailMesh.renderOrder=4;trailMesh.visible=false;scene.add(trailMesh);const trail=[];
-export function updateTrail(dt){const p=player,s=p.swing;for(const t of trail)t.age+=dt;while(trail.length&&trail[0].age>.13)trail.shift();
-  if(s&&s.sword&&!p.dead&&!(s.heavy&&s.t<s.dur*.36)){const k=clamp(s.t/s.dur,0,1),ang=swingAngle(k,s.heavy),dx=Math.cos(ang)*p.face,dy=Math.sin(ang),ox=p.x+p.face*.2,oy=p.y+1.05;trail.push({bx:ox+dx*.55,by:oy+dy*.55,tx:ox+dx*1.55,ty:oy+dy*1.55,age:0});if(trail.length>TR)trail.shift();trailMat.uniforms.uC.value.set(s.nice?0xffd66b:0xfffaf0);}
-  const n=trail.length;trailMesh.visible=n>1;if(n<2)return;
-  for(let i=0;i<TR;i++){const t=trail[Math.min(i,n-1)];const a=i<n?Math.max(0,1-t.age/.13)*(i/(n-1))*.8:0;trailPos.set([t.bx,t.by,.3,t.tx,t.ty,.3],i*6);trailA[i*2]=a*.15;trailA[i*2+1]=a;}
-  trailGeo.attributes.position.needsUpdate=true;trailGeo.attributes.aA.needsUpdate=true;}
-const toolPivot=new THREE.Group();scene.add(toolPivot);let toolMesh=null,toolId=null;
-function updateTool(){const p=player,s=p.swing;if(!s||!s.tool||p.dead){toolPivot.visible=false;return;}if(toolId!==s.tool){if(toolMesh){toolPivot.remove(toolMesh);toolMesh.material.dispose();}const g=new THREE.PlaneGeometry(1.25,1.25);g.translate(.5,.5,0);toolMesh=new THREE.Mesh(g,spriteMat(iconTex(s.tool)));toolPivot.add(toolMesh);toolId=s.tool;}
-  toolPivot.visible=true;const k=clamp(s.t/s.dur,0,1);const ang=s.aim!=null?(p.face>0?s.aim:Math.PI-s.aim):s.sword?swingAngle(k,s.heavy):lerp(1.9,-.5,Math.sin(k*Math.PI*.5+.0));
-  if(s.aim!=null){const r=.55+.2*(1-k);toolPivot.position.set(p.x+p.face*.25-Math.cos(s.aim)*r,p.y+1.1-Math.sin(s.aim)*r,.18);}else toolPivot.position.set(p.x+p.face*.2,p.y+1.05,.18);const ts=s.heavy?1.2:1;toolPivot.scale.set(p.face*ts,ts,1);toolPivot.rotation.z=(ang-Math.PI/4)*p.face;setTint(toolMesh.material,p.x,p.y+1);toolMesh.material.uniforms.uFlash.value=inNiceWin(s)||s.draw>=1?.55+.2*Math.sin(worldClock*30):s.nice?.35:s.draw?s.draw*.25:0;}
+const trailMesh=new THREE.Mesh(trailGeo,trailMat);trailMesh.frustumCulled=false;trailMesh.renderOrder=4;trailMesh.visible=false;scene.add(trailMesh);
+// the smear is rebuilt every frame from the swing curve itself (not from past frames), so the arc stays smooth at any
+// frame rate; it only shows where the blade is moving fast, and takes the weapon's element colour
+const TRCOL={fire:0xffb070,ink:0xc9b0f0,water:0xa8e4ff};
+export function updateTrail(dt){const p=player,s=p.swing;
+  if(!s||!s.sword||p.dead||p.blocking||s.heavy&&s.t<s.dur*.36){trailMesh.visible=false;return;}
+  const k=clamp(s.t/s.dur,0,1),span=s.heavy?.22:.3,ts=s.heavy?1.2:1,sp0=swingPose(s,k),[sx,sy]=shoulderAt(sp0.f),top=p.y-.08+sy;
+  trailMat.uniforms.uC.value.set(s.nice?0xffd66b:TRCOL[s.elem]||0xfffaf0);let any=0;
+  for(let i=0;i<TR;i++){const u=i/(TR-1),kk=Math.max(0,k-span*(1-u)),sp=swingPose(s,kk),l=ARML*sp.sc,hx=p.x+p.face*(sx+Math.cos(sp.arm)*l),hy=top+Math.sin(sp.arm)*l;
+    const dx=p.face*Math.cos(sp.blade),dy=Math.sin(sp.blade),a=u**1.4*clamp((Math.abs(sp.v)-4)/16,0,1)*(s.combo===2?.95:.8);if(a>.02)any=1;
+    trailPos.set([hx+dx*.35*ts,hy+dy*.35*ts,.3,hx+dx*1.6*ts,hy+dy*1.6*ts,.3],i*6);trailA[i*2]=a*.1;trailA[i*2+1]=a;}
+  trailMesh.visible=!!any;trailGeo.attributes.position.needsUpdate=true;trailGeo.attributes.aA.needsUpdate=true;}
+const toolPivot=new THREE.Group();scene.add(toolPivot);let toolMesh=null,toolId=null,armMesh=null,aimHand=[0,0];
+// while swinging, the body frame has no front arm; this mesh (the sheet's last frame) draws it from the shoulder to the weapon's grip
+function updateArm(sp,sq){const p=player;if(!sp||p.dead||p.flat||!p.mesh.visible){if(armMesh)armMesh.visible=false;return;}
+  if(!armMesh){armMesh=new THREE.Mesh(new THREE.PlaneGeometry(1.6,2.4),spriteMat(p.mat.uniforms.map.value,ARMF+1));armMesh.material.uniforms.uFrame.value=ARMF;scene.add(armMesh);}
+  const u=armMesh.material.uniforms,[sx,sy]=shoulderAt(sp.f);u.map.value=p.mat.uniforms.map.value;u.uFrames.value=ARMF+1;u.uTint.value.copy(p.mat.uniforms.uTint.value);u.uFlash.value=p.mat.uniforms.uFlash.value;
+  armMesh.visible=true;armMesh.position.set(p.x+p.face*sx,p.y-.08+sy*sq,.185);armMesh.scale.set(p.face,sp.sc,1);armMesh.rotation.z=(sp.arm+Math.PI/2)*p.face;}
+function updateTool(sp,sq){const p=player,s=p.swing;updateArm(sp,sq);if(!s||!s.tool||p.dead){toolPivot.visible=false;return;}if(toolId!==s.tool){if(toolMesh){toolPivot.remove(toolMesh);toolMesh.material.dispose();}const g=new THREE.PlaneGeometry(1.25,1.25);g.translate(.5,.5,0);toolMesh=new THREE.Mesh(g,spriteMat(iconTex(s.tool)));toolPivot.add(toolMesh);toolId=s.tool;}
+  toolPivot.visible=true;const k=clamp(s.t/s.dur,0,1),ang=sp?sp.blade:s.aim!=null?(p.face>0?s.aim:Math.PI-s.aim):lerp(1.9,-.5,Math.sin(k*Math.PI*.5));
+  if(s.aim!=null){const r=.55+.2*(1-k),[hx,hy]=aimHand=sp?swingHand(sp,sq):[p.x+p.face*.25,p.y+1.1];toolPivot.position.set(hx-Math.cos(s.aim)*r,hy-Math.sin(s.aim)*r,.18);}else if(sp){const[hx,hy]=swingHand(sp,sq);toolPivot.position.set(hx,hy,.18);}else toolPivot.position.set(p.x+p.face*.2,p.y+1.05,.18);const ts=s.heavy?1.2:1;toolPivot.scale.set(p.face*ts,ts,1);toolPivot.rotation.z=(ang-Math.PI/4)*p.face;setTint(toolMesh.material,p.x,p.y+1);toolMesh.material.uniforms.uFlash.value=inNiceWin(s)||s.draw>=1?.55+.2*Math.sin(worldClock*30):s.nice?.35:s.draw?s.draw*.25:0;}
 // a nocked arrow slides back along the bow while drawing
 let nockMesh=null,nockId=null,shieldMesh=null,shieldId=null;
 function updateNock(){const p=player,s=p.swing;if(!s||s.draw==null||p.dead){if(nockMesh)nockMesh.visible=false;return;}const ai=findAmmo('arrow'),id=ai>=0?p.inv[ai].id:'arrow';
   if(nockId!==id){if(nockMesh){scene.remove(nockMesh);nockMesh.material.dispose();nockMesh.geometry.dispose();}nockMesh=new THREE.Mesh(new THREE.PlaneGeometry(.8,.8),spriteMat(iconTex(id)));nockMesh.renderOrder=5;scene.add(nockMesh);nockId=id;}
-  const a=s.aim,r=.25-.42*s.draw;nockMesh.visible=true;nockMesh.position.set(p.x+p.face*.25+Math.cos(a)*r,p.y+1.15+Math.sin(a)*r,.19);nockMesh.rotation.z=a-Math.PI/4;setTint(nockMesh.material,p.x,p.y+1);nockMesh.material.uniforms.uFlash.value=s.draw>=1?.5:0;}
+  const a=s.aim,r=.25-.42*s.draw;nockMesh.visible=true;nockMesh.position.set(aimHand[0]+Math.cos(a)*r,aimHand[1]+.05+Math.sin(a)*r,.19);nockMesh.rotation.z=a-Math.PI/4;setTint(nockMesh.material,p.x,p.y+1);nockMesh.material.uniforms.uFlash.value=s.draw>=1?.5:0;}
 // the raised shield sits in front of the player; it glows while a parry would still land
 function updateShield(dt){const p=player;p.shieldFlash=Math.max(0,(p.shieldFlash||0)-dt);updateNock();if(!p.blocking||p.dead){if(shieldMesh)shieldMesh.visible=false;return;}const id=shieldItem().id;
   if(shieldId!==id){if(shieldMesh){scene.remove(shieldMesh);shieldMesh.material.dispose();shieldMesh.geometry.dispose();}shieldMesh=new THREE.Mesh(new THREE.PlaneGeometry(1,1),spriteMat(iconTex(id)));shieldMesh.renderOrder=5;scene.add(shieldMesh);shieldId=id;}
