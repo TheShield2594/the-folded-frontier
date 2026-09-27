@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import {
   atlasTex,BIO,biomeAt,C,camDist,camera,cellUV,clamp,clouds,cursor,H,hasAcc,hasBuff,hillsFar,hillsNear,
-  inkMoon,lerp,moonMesh,mouse,N,OPAQUE,pad,player,rainF,rand,reachOK,scene,selItem,setShakeT,setSnowF,
+  inkMoon,lerp,moonMesh,season,seasonSky,mouse,N,OPAQUE,pad,player,rainF,rand,reachOK,scene,selItem,setShakeT,setSnowF,
   shakeT,skyMesh,skyU,snowF,snowFar,snowNear,SPAWNX,state,sunMesh,surfAvg,T,tiles,U,W,worldMat,
   worldTime,
 } from './game.js';
@@ -31,7 +31,8 @@ export function updateSky(){const h=worldTime,f=dayF(h),warm=f>0&&f<1?Math.sin(f
   if(BIO&&BIO.uw){const uwf=clamp((BIO.uw+16-camera.position.y)/12,0,1);if(uwf>0){skyU.uTop.value.lerp(cB.set('#2a0e0a'),uwf);skyU.uBot.value.lerp(cB.set('#8a3414'),uwf);}
     const sd=camera.position.x<BIO.snow[0]?BIO.snow[0]-camera.position.x:camera.position.x>BIO.snow[1]?camera.position.x-BIO.snow[1]:0;setSnowF(snowF+((clamp(1-sd/25,0,1)*(1-under)-snowF)*.15));
     const ld=Math.max(0,Math.abs(camera.position.x-BIO.lake[0])-BIO.lake[1]);const lf=clamp(1-ld/25,0,1)*(1-under);skyU.uBot.value.lerp(cB.set('#9a88c0'),lf*.35);skyU.uTop.value.lerp(cB.set('#b6d7e6'),snowF*.3*f);}
-  const sw=snowF>.5;[snowFar,snowNear].forEach(m=>{if(m)m.visible=sw;});[hillsFar,hillsNear].forEach(m=>{if(m)m.visible=!sw;});
+  seasonSky(skyU,cB,f,under);
+  const sw=snowF>.5||season().k==='winter'&&under<.5;[snowFar,snowNear].forEach(m=>{if(m)m.visible=sw;});[hillsFar,hillsNear].forEach(m=>{if(m)m.visible=!sw;});
   if(rainF>0){skyU.uTop.value.lerp(cB.set('#6f7f8f'),rainF*.6*f+rainF*.2);skyU.uBot.value.lerp(cB.set('#a9b4bf'),rainF*.5*f);U.uSky.value.multiplyScalar(1-rainF*.25);}
   if(inkMoon){const im=(1-f)*(1-under);skyU.uTop.value.lerp(cB.set('#2a0f3a'),im);skyU.uBot.value.lerp(cB.set('#6a2a5a'),im);moonMesh.material.color.set(0xd08aff);}else moonMesh.material.color.set(0xffffff);
   skyU.uStars.value=(1-f)*(1-under)*(1-rainF);skyU.uTime.value=worldClock;

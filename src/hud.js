@@ -3,7 +3,7 @@ import {
   $,applyUI,applyVolumes,blk,BUFFS,clamp,countItem,dayF,DEF_BIND,DEF_PAD,DEF_SET,ELEM,enemies,explored,
   atlasTex,clearIcons,drawOres,drawWarnMark,H,hexRgb,hintT,icon,initAudio,inkMoon,isNight,lerp,META,npcs,
   ORECOL,player,PSTAT,renderHearts,saveMeta,saveSettings,SET,setCamDist,setHintT,setInvDirty,SFX,sky,
-  state,surf,T,tiles,TP,W,WALLCOL,walls,weather,worldTime,
+  seasonIdx,seasonInfo,SEASONS,state,surf,T,tiles,TP,W,WALLCOL,walls,weather,worldTime,
 } from './game.js';
 
 // ================= settings & achievements UI =================
@@ -108,7 +108,7 @@ function drawMini(){const p=player,x0=Math.floor(p.x)-70,y0=Math.floor(p.y)+40,d
   mctx.putImageData(mimg,0,0);const dot=(x,y,col,s=2)=>{mctx.fillStyle=col;mctx.fillRect(Math.round(x-x0)-s/2,Math.round(y0-y)-s,s,s);};
   for(const e of enemies)dot(e.x,e.y+e.h/2,e.d.boss?'#7fd3f0':'#ff5a4a',e.d.boss?4:2);npcs.forEach(n=>dot(n.x,n.y+1,'#6cf07a',3));dot(p.x,p.y+1,'#fff',3);}
 let buffKey='';
-export function updateHUD(dt){renderHearts();const h=Math.floor(worldTime),m=Math.floor((worldTime-h)*60/10)*10;$('clock').textContent=`${(h%12)||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}${inkMoon&&isNight()?' · Ink Moon':weather==='rain'?' · Rain':weather==='wind'?' · Windy':''}`;
+export function updateHUD(dt){renderHearts();const h=Math.floor(worldTime),m=Math.floor((worldTime-h)*60/10)*10;$('clock').textContent=`${(h%12)||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}${inkMoon&&isNight()?' · Ink Moon':weather==='rain'?' · Rain':weather==='wind'?' · Windy':weather==='snow'?' · Snow':''}`;{const si=seasonInfo(),k=si.k+si.day+(si.fest||'');if($('season').dataset.k!==k){$('season').dataset.k=k;$('season').className='chip season '+si.k;$('season').textContent=si.fest?`${si.n} ${si.day} · ${si.fest}`:`${si.n} · Day ${si.day}`;$('season').title=si.fest?'Festival day!':si.festIn?`${SEASONS[seasonIdx()].fest} in ${si.festIn} day${si.festIn>1?'s':''}`:`Year ${si.year}`;}}
   const sts=Object.keys(player.st||{}).filter(k=>player.st[k]>0);
   const bk=Object.keys(player.buffs).map(k=>k+Math.ceil(player.buffs[k])).join()+'|'+sts.map(k=>k+Math.ceil(player.st[k])).join();if(bk!==buffKey){buffKey=bk;$('buffs').innerHTML=Object.keys(player.buffs).map(k=>{const s2=Math.ceil(player.buffs[k]);return `<span class="buff" title="${BUFFS[k][2]}"><img src="${icon(BUFFS[k][1])}" alt="">${BUFFS[k][0]} ${Math.floor(s2/60)}:${String(s2%60).padStart(2,'0')}</span>`;}).join('')
     +sts.map(k=>{const E=ELEM[PSTAT[k][0]];return `<span class="buff bad" title="${PSTAT[k][1]}"><img src="${icon(E.icon)}" alt="">${E.st} ${Math.ceil(player.st[k])}s</span>`;}).join('');}

@@ -74,6 +74,8 @@ button.ghost{background:var(--paper2);}
 #info{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
 .chip{background:var(--paper);border:2px solid var(--ink);border-radius:999px;padding:2px 10px;font-size:calc(12.5px*var(--ts));font-weight:800;box-shadow:2px 2px 0 rgba(20,14,26,.5);font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:5px;}
 .chip img{width:16px;height:16px;}
+.chip.season::before{content:'';width:10px;height:10px;border-radius:50%;border:2px solid var(--ink);background:#86d15f;}
+.chip.spring::before{background:#f3a6c4;} .chip.summer::before{background:#f1c04f;} .chip.fall::before{background:#e0823d;} .chip.winter::before{background:#dbe6ee;}
 #boss{position:absolute;left:50%;top:14px;transform:translateX(-50%);width:min(420px,calc(70vw / var(--ui)));text-align:center;}
 #boss .bn{font-family:'Bagel Fat One',sans-serif;color:var(--paper);font-size:calc(18px*var(--ts));text-shadow:2px 2px 0 var(--ink);}
 #boss .bb{height:16px;border:2.5px solid var(--ink);border-radius:9px;background:#3a2c3f;overflow:hidden;box-shadow:3px 3px 0 rgba(20,14,26,.5);position:relative;}

@@ -7,7 +7,7 @@ import {
   placeTip,player,PORDER,pPortrait,questDone,quests,QUESTS,rand,RECIPES,registerHouseAt,removeItem,
   scene,selItem,SET,setPadFocus,setPartner,SFX,SHEETS,SHOP,spriteMesh,stat,syncPartners,T,tileAt,tiles,
   travelTo,upx,W,walls,
-  guideEv,
+  guideEv,town,TOWN,townLevel,townShop,
 } from './game.js';
 
 // ================= UI =================
@@ -69,7 +69,7 @@ function sideHTML(){const k=side.kind;
       if(!b)return `<div class="bst lock"><img src="${bestSketch(t)}" alt=""><div><b>???</b><span>${where}</span></div></div>`;
       const d=EN[t],known=d.drops.filter(([id])=>b.d[id]),unk=d.drops.length-known.length;
       return `<div class="bst"><img src="${bestSketch(t)}" alt=""><div><b>${name}</b><span>${where}</span><span>Defeated ${b.k}${b.e?` · ${b.e} elite`:''} · ${d.hp} HP</span>${d.weak||d.res?`<span>${[d.weak&&'Weak to '+ELEM[d.weak].name,d.res&&'Resists '+ELEM[d.res].name].filter(Boolean).join(' · ')}</span>`:''}<span class="bdrops">${known.map(([id])=>`<i title="${ITEMS[id].name}"><img src="${icon(id)}" alt="">${ITEMS[id].name}</i>`).join('')}${unk?`<i class="q">${known.length?'+ ':''}${unk} unknown drop${unk>1?'s':''}</i>`:''}${!d.drops.length?'<i class="q">Drops coins only</i>':''}</span></div></div>`;}).join('');}
-  if(k==='town'){return NPCORDER.map(t=>{const n=npcs.find(n=>n.type===t&&n.home);const d=NPCDEF[t];return `<div class="npcRow ${n?'home':''}"><img src="${portrait(t)}" alt=""><div><b>${d.name}</b><span>${n?'<span class="ok">Has a home</span>':d.ok()?'Ready to move in. Stand in an empty house and press Check this room.':d.need}</span></div></div>`;}).join('')+`<p class="hint">A house needs walls behind it, a door, a light, a table and a chair, and must not contain your bed.</p>`;}
+  if(k==='town'){return NPCORDER.map(t=>{const n=npcs.find(n=>n.type===t&&n.home);const d=NPCDEF[t];return `<div class="npcRow ${n?'home':''}"><img src="${portrait(t)}" alt=""><div><b>${d.name}</b><span>${n?'<span class="ok">Has a home</span>':d.ok()?'Ready to move in. Stand in an empty house and press Check this room.':d.need}</span></div></div>`;}).join('')+`<p class="hint">A house needs walls behind it, a door, a light, a table and a chair, and must not contain your bed.</p><h3 style="margin-top:10px">${townLevel()} · upgrades</h3>`+TOWN.map(u=>`<div class="npcRow tup ${town.f[u.id]?'home':''}"><div><b>${town.f[u.id]?'✓ ':''}${u.n}</b><span>${town.f[u.id]?'<span class="ok">Built</span>':u.need}</span></div></div>`).join('')+`<p class="hint">The town green beside your cabin grows as townsfolk move in and quests are finished.</p>`;}
   return '';}
 const bestCache={};
 function bestSketch(t){if(bestCache[t])return bestCache[t];const d=EN[t],src=SHEETS[d.sheet],c=mk(64,64),g=c.getContext('2d'),s=Math.min(60/d.fw,60/d.fh);g.drawImage(src,0,0,d.fw,d.fh,32-d.fw*s/2,32-d.fh*s/2,d.fw*s,d.fh*s);return bestCache[t]=c.toDataURL();}
@@ -90,7 +90,7 @@ export function openSide(kind,key,list,title){side={kind,key,list};$('sideSheet'
   if(kind==='chest'){$('sideTitle').textContent='Chest';$('sideBody').innerHTML='<div class="grid"></div><p class="hint">Shift-click to move stacks between chest and backpack.</p>';const g=$('sideBody').querySelector('.grid');sideEls=[];for(let i=0;i<20;i++){const el=mkSlot('chest',i,g);el.dataset.k='x';sideEls.push(el);}}
   else{$('sideTitle').textContent=title||(kind==='town'?'Town':'Merchant');renderSide();}if(!invOpen)setInv(true);}
 export function talkTo(n){const d=NPCDEF[n.type];SFX.pick();
-  if(n.type==='merchant')openSide('shop',null,SHOP,'Merchant');else if(n.type==='painter')openSide('shop',null,SHOPS.painter,'Painter');else if(n.type==='nurse')openSide('nurse',null,null,'Nurse');else if(n.type==='guide')openSide('guide',null,null,'Guide');else if(n.type==='angler')openSide('angler',null,SHOPS.angler,'Angler');else openSide('tinker',null,SHOPS.tinkerer,'Tinkerer');
+  if(n.type==='merchant')openSide('shop',null,townShop(SHOP),'Merchant');else if(n.type==='painter')openSide('shop',null,SHOPS.painter,'Painter');else if(n.type==='nurse')openSide('nurse',null,null,'Nurse');else if(n.type==='guide')openSide('guide',null,null,'Guide');else if(n.type==='angler')openSide('angler',null,SHOPS.angler,'Angler');else openSide('tinker',null,SHOPS.tinkerer,'Tinkerer');
   if(n.bub){n.bub.remove();n.bub=null;}n.bub=document.createElement('div');n.bub.className='bubble';n.bub.textContent=pick(d.lines);$('nums').appendChild(n.bub);n.bubLife=3;n.bubT=10;}
 export function setInv(o){if(!o){if(padFocus)padFocus.classList.remove('padfocus');setPadFocus(null);$('padHint').hidden=true;}if(!o&&side&&!$('sideSheet').hidden){}invOpen=o;$('help').hidden=o;$('panel').hidden=!o;$('hotwrap').style.visibility=o?'hidden':'visible';if(!o){side=null;$('sideSheet').hidden=true;$('panel').classList.remove('withSide');if(cursor){const l=addItem(cursor.id,cursor.n);if(l)dropItem(cursor.id,l,player.x,player.y+1);cursor=null;}$('tip').hidden=true;}
   gridEls.concat(armorEls,accEls).forEach(el=>el.dataset.k='x');craftKey='';invDirty=true;}

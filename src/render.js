@@ -1,7 +1,7 @@
 // three.js renderer, scene and camera, chunk meshes, procedural sprite sheets and particles.
 import * as THREE from 'three';
 import {
-  $,atlas,blk,C,cellXY,circ,computeLight,CS,fi,grain,H,idx,INK,ink,isOpaque,ITEMS,LB,lightAt,meta,mk,
+  $,atlas,blk,C,canopyCell,cellXY,circ,computeLight,CS,fi,grain,H,idx,INK,ink,isOpaque,ITEMS,LB,lightAt,meta,mk,
   mulberry32,N,OPAQUE,pick,player,poly,rand,rr,seed,SET,sh,sky,stamp,surfAvg,T,tileAt,tiles,TP,W,
   WALLCELL,walls,
 } from './game.js';
@@ -81,7 +81,7 @@ export function buildChunk(cx,cy){const P=[],UV=[],L=[],I=[];let vc=0;const LP={
     if(t===T.DOOR){const m=meta[i];cell=(m&1)?((m&2)?C.doorOT:C.doorOB):((m&2)?C.doorT:C.doorB);}
     if(t===T.TRUNK)z=-.2;
     const l4=c4();quad([x,y,z,x+1,y,z,x+1,y+1,z,x,y+1,z],cellUV(cell),l4,1);
-    if(t===T.TRUNK&&meta[i]){const r=C.canopy[meta[i]-1];const f=flat(x,y);quad([x-1.5,y+.2,-.25,x+2.5,y+.2,-.25,x+2.5,y+4.2,-.25,x-1.5,y+4.2,-.25],regionUV(r[0],r[1],256,256),[f,f,f,f],1);}
+    if(t===T.TRUNK&&meta[i]){const r=canopyCell(meta[i]);const f=flat(x,y);quad([x-1.5,y+.2,-.25,x+2.5,y+.2,-.25,x+2.5,y+4.2,-.25,x-1.5,y+4.2,-.25],regionUV(r[0],r[1],256,256),[f,f,f,f],1);}
   }
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(UV,2));g.setAttribute('aL',new THREE.Float32BufferAttribute(L,3));g.setIndex(I);
   const k=cy*CW+cx;if(chunks[k]){chunks[k].geometry.dispose();chunks[k].geometry=g;}else{chunks[k]=new THREE.Mesh(g,worldMat);scene.add(chunks[k]);}
