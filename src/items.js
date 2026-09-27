@@ -103,7 +103,7 @@ item('crown',{name:'Gel Crown',cell:C.crown,use:'boss',summon:'king',max:5,value
 item('shuriken',{name:'Paper Star',cell:C.shuri,use:'throw',dmg:12,max:250,desc:'Thrown weapon. Hold to keep throwing.'});
 item('copperpick',{name:'Copper Pickaxe',cell:C.pickCu,pick:1,mine:1,max:1,value:10,desc:'Mines up to iron.'});
 item('ironpick',{name:'Iron Pickaxe',cell:C.pickFe,pick:2,mine:1.45,max:1,value:30,desc:'Mines gold. Faster.'});
-item('goldpick',{name:'Gold Pickaxe',cell:C.pickAu,pick:3,mine:2,max:1,value:60,desc:'Mines everything, quickly.'});
+item('goldpick',{name:'Gold Pickaxe',cell:C.pickAu,pick:3,mine:2,max:1,value:60,desc:'Mines Frostsilver Ore. Faster.'});
 item('hammer',{name:'Wooden Hammer',cell:C.hammer,hammer:1,max:1,value:4,desc:'Knocks out background walls.'});
 item('woodsword',{name:'Wooden Sword',cell:C.swWood,dmg:8,kb:5,dur:.36,max:1,value:4});
 item('coppersword',{name:'Copper Sword',cell:C.swCu,dmg:12,kb:5.5,dur:.34,max:1,value:12});
