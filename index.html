@@ -45,7 +45,10 @@
     <div class="card">
       <h1 class="logo" id="logo">Folded Frontier</h1>
       <p class="tag">A papercraft sandbox. Dig, build, loot, and make a home.</p>
-      <div class="menu"><button id="contBtn" type="button" hidden>Continue</button><button id="code2Btn" class="ghost" type="button">Load save code</button><button id="newBtn" type="button">New World</button><button id="sndBtn" class="ghost" type="button">Sound: On</button><button id="setBtn" class="ghost" type="button">Settings</button><button id="achBtn" class="ghost" type="button">Achievements</button></div>
+      <div class="menu"><button id="contBtn" type="button" hidden>Continue</button><button id="code2Btn" class="ghost" type="button">Load save code</button><button id="newBtn" type="button">New World</button><button id="helpBtn" class="ghost" type="button">How to play</button><button id="setBtn" class="ghost" type="button">Settings</button><button id="achBtn" class="ghost" type="button">Achievements</button></div>
+    </div>
+  </div>
+  <div id="howto" class="over" hidden><div class="card">
       <div class="sheet">
         <h3>How to play</h3>
         <dl class="ctrl">
@@ -67,12 +70,12 @@
           <dt>NICE!</dt><dd>Stomp enemies by landing on them and tap <kbd>Space</kbd> on impact. With a sword, click again when the blade flashes gold near the end of a swing for a bonus hit worth 1.8× damage. Clicking too early spoils that swing's chance.</dd>
         </dl>
         <p class="note">Your world saves in this browser automatically every minute and when you pause.</p>
+        <div class="menu" style="margin:12px 0 0"><button id="helpClose" type="button">Back</button></div>
       </div>
-    </div>
-  </div>
+  </div></div>
   <div id="pause" class="over" hidden>
     <div class="card"><h1 class="logo">Paused</h1><p class="tag" id="seedTxt"></p>
-      <div class="menu"><button id="resBtn" type="button">Resume</button><button id="saveBtn" class="ghost" type="button">Save now</button><button id="snd2Btn" class="ghost" type="button">Sound: On</button><button id="set2Btn" class="ghost" type="button">Settings</button><button id="ach2Btn" class="ghost" type="button">Achievements</button><button id="codeBtn" class="ghost" type="button">Save code</button><button id="quitBtn" class="ghost" type="button">Title screen</button></div>
+      <div class="menu"><button id="resBtn" type="button">Resume</button><button id="saveBtn" class="ghost" type="button">Save now</button><button id="set2Btn" class="ghost" type="button">Settings</button><button id="ach2Btn" class="ghost" type="button">Achievements</button><button id="codeBtn" class="ghost" type="button">Save code</button><button id="quitBtn" class="ghost" type="button">Title screen</button></div>
     </div>
   </div>
   <div id="newWorld" class="over" hidden><div class="card"><div class="sheet"><h3>Create a world</h3>
@@ -87,6 +90,7 @@
   <div id="settings" class="over" hidden><div class="card"><div class="sheet">
     <h3>Settings</h3>
     <div class="set">
+      <label for="sndC">Sound</label><input type="checkbox" id="sndC">
       <label for="volMaster">Master volume</label><input type="range" id="volMaster" min="0" max="100">
       <label for="volMusic">Music</label><input type="range" id="volMusic" min="0" max="100">
       <label for="volSfx">Sound effects</label><input type="range" id="volSfx" min="0" max="100">

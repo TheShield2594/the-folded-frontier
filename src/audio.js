@@ -5,7 +5,7 @@ import {
 } from './game.js';
 
 // ================= audio =================
-export let AC=null,master=null,musicG=null,sfxG=null,ambG=null,ambBus=null,noiseBuf=null,ambBuf=null,soundOn=true;
+export let AC=null,master=null,musicG=null,sfxG=null,ambG=null,ambBus=null,noiseBuf=null,ambBuf=null,soundOn=SET.snd!==false;
 export function applyVolumes(){if(!AC)return;master.gain.value=soundOn?SET.vol/100*.7:0;musicG.gain.value=SET.music/100*.9;sfxG.gain.value=SET.sfx/100;ambG.gain.value=SET.amb/100;}
 export function initAudio(){if(AC)return;try{AC=new(window.AudioContext||window.webkitAudioContext)();master=AC.createGain();master.gain.value=soundOn?.55:0;master.connect(AC.destination);musicG=AC.createGain();musicG.connect(master);sfxG=AC.createGain();sfxG.connect(master);ambG=AC.createGain();ambG.connect(master);ambBus=AC.createGain();ambBus.gain.value=0;ambBus.connect(ambG);applyVolumes();
   noiseBuf=AC.createBuffer(1,AC.sampleRate,AC.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;

@@ -10,12 +10,12 @@ src/style.css     all CSS
 src/main.js       entry point and boot (main frame loop)
 src/game.js       hub that re-exports every module in boot order (see "Modules" below)
 src/*.js          the game, split into ES modules (table below)
-public/assets/    title.webp: title screen background (painted art with the logo baked in)
+public/assets/    title.webp: title screen background (painted art with the logo baked in, 3816×1620)
 vite.config.js    Vite config (relative base so dist/ works from any path)
 .github/workflows/pages.yml  builds with Vite and deploys dist/ to GitHub Pages
 ```
 
-The project is built with Vite. The only runtime dependency is three.js, pinned to r128 (`three@0.128.0` from npm) and bundled into the build. There are no audio assets and the only image asset is `public/assets/title.webp`, the title screen background; it's loaded with `new Image()` and the `#title` overlay only gets its `bg` class (image, cream card behind the menu, HTML logo hidden on landscape screens) once it loads, so a missing file falls back to the plain overlay. All game art is drawn in code onto canvases, and all sound is synthesized with Web Audio.
+The project is built with Vite. The only runtime dependency is three.js, pinned to r128 (`three@0.128.0` from npm) and bundled into the build. There are no audio assets and the only image asset is `public/assets/title.webp`, the title screen background; it's loaded with `new Image()` and the `#title` overlay only gets its `bg` class (image, cream card behind the menu, HTML logo hidden on landscape screens) once it loads, so a missing file falls back to the plain overlay. The title screen must fit without scrolling: it holds only the tagline and menu buttons, and the controls list lives in the `#howto` overlay behind the How to play button. All game art is drawn in code onto canvases, and all sound is synthesized with Web Audio.
 
 ## Running locally
 
@@ -68,7 +68,7 @@ How the modules fit together:
 
 - World save: `localStorage['folded-frontier-save-v1']` (the key name predates versioning; don't rename it). JSON with `v: SAVE_VER` (currently 3); `tiles`/`walls`/`meta`/`explored` are base64-encoded `Uint8Array`s. v2 added the per-world `bestiary` (`{type: {k: kills, e: elite kills, d: {itemId: count}}}`). v3 fills in fields builds older than the repo could leave out (biome ranges, `bio.camps`/`treasure`/`shown`, `p.world`) and adds `p.world.day` (season day counter) and `town` (`{f: {upgradeId: 1}, used: [columns]}`).
 - `cleanSave()` runs on every load after `migrateSave()`: it drops inventory/chest items, NPCs, partners and badges this build doesn't know, so a save never crashes on a removed id. If a save still can't load, `loadFailed()` copies it to `folded-frontier-save-v1-backup-<timestamp>` (one key per different failed save; the same save failing twice is kept once) and the title screen stays up.
-- Settings: `localStorage['folded-frontier-settings']`. Achievements/stats: `localStorage['folded-frontier-meta']`.
+- Settings: `localStorage['folded-frontier-settings']` (includes `snd`, the Sound on/off toggle at the top of the Settings panel). Achievements/stats: `localStorage['folded-frontier-meta']`.
 - Autosave runs every 60 seconds and when pausing or quitting.
 - Save codes: `FF1:` + base64(gzip(JSON `{save, meta}`)) via `CompressionStream`; `FF0:` is the uncompressed fallback. The Save code button is in the pause menu, and "Load save code" is on the title screen.
 - The world save also holds `angler` (fishing progress: fish caught, Angler requests done, day counter, today's request); older saves get defaults in `loadWorld()`.
