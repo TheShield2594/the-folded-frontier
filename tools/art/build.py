@@ -38,6 +38,7 @@ def restyle(im, ppt, border=True):
         sel = ring == d; ratio.append(dark[sel].mean() if sel.any() else 0)
     ratio = np.array(ratio); on = np.argmax(ratio >= .5); off = on + np.argmax(ratio[on:] < .5)
     B = on; K = off - on  # ratio[i] is distance i+1, so B = pixels before the ink and K = ink pixels
+    if K > 2.5 * kt: K = kt  # that deep it's dark fill (an ink-black blade), not outline: leave it as it is
     core = din > B + max(0, K - kt)
     dout = ndimage.distance_transform_edt(~core)
     add = max(0., kt - K)  # extra ink ring when the render's ink is thinner than the standard
@@ -168,8 +169,37 @@ def armor(img, m):
     out.save(f'assets/armor_{m}.webp', quality=92, method=6)
     print(f"{m}:{{" + ','.join(rows) + '}')
 
+# item icon sheets (tools/art/weapon-prompts.txt): grid of rows x cols, ids in reading order; each icon is also the held weapon
+ICON_SHEETS = {
+    'swords': ('weapons-swords.png', 2, 4, ['woodsword', 'coppersword', 'ironsword', 'goldsword', 'frostblade', 'inkcutlass', 'embersword', 'foldblade']),
+    'tools': ('weapons-tools.png', 2, 4, ['copperpick', 'ironpick', 'goldpick', 'frostpick', 'inkpick', 'emberpick', 'hammer', 'shuriken']),
+    'ranged': ('weapons-ranged.png', 2, 3, ['woodbow', 'goldbow', 'featherbow', 'moonbow', 'launcher', 'swallowtail']),
+    'magic': ('weapons-magic.png', 2, 3, ['inktome', 'cranetome', 'tidetome', 'moontome', 'starstaff', 'emberstaff']),
+    'shields': ('weapons-shields.png', 1, 4, ['shwood', 'buckler', 'quilt', 'beacon']),
+}
+ICON_PPT = 128 / 1.25  # icons are 64 px atlas cells (128 in the file) and drawn 1.25 tiles wide in the hand
+
+def icons(img, name, rows, cols, ids):
+    """icons_<name>.webp: one 128x128 icon per id, left to right. Each grid cell's inked shapes are merged into one icon
+    (so loose bits like ink drips stay with their item), restyled to the house outline and fitted to the cell."""
+    a = np.asarray(img.convert('RGB')).astype(int); H, W = a.shape[:2]; ink = a.max(axis=2) < 90
+    core = ndimage.binary_fill_holes(ndimage.binary_closing(ink, iterations=2))
+    lab, n = ndimage.label(core); cms = ndimage.center_of_mass(core, lab, range(1, n + 1)); sz = ndimage.sum(core, lab, range(1, n + 1))
+    out = Image.new('RGBA', (128 * len(ids), 128), (0, 0, 0, 0))
+    for i, id in enumerate(ids):
+        r, c = divmod(i, cols); y0, y1, x0, x1 = r * H / rows, (r + 1) * H / rows, c * W / cols, (c + 1) * W / cols
+        keep = [k + 1 for k, (cy, cx) in enumerate(cms) if y0 <= cy < y1 and x0 <= cx < x1 and sz[k] > 150]
+        mask = ndimage.binary_dilation(np.isin(lab, keep), iterations=2); ys, xs = np.where(mask)
+        sl = (slice(ys.min(), ys.max() + 1), slice(xs.min(), xs.max() + 1))
+        im = Image.fromarray(np.dstack([a.astype(np.uint8), (mask * 255).astype(np.uint8)])[sl], 'RGBA')
+        s = 116 / max(im.size); im, _ = restyle(im, ICON_PPT / s); im, _ = fit(im, 124, 124)
+        out.alpha_composite(im, (i * 128 + 64 - im.width // 2, 64 - im.height // 2))
+    out.save(f'assets/icons_{name}.webp', quality=92, method=6)
+
 if __name__ == '__main__':
     d = sys.argv[1]; src = {k: Image.open(os.path.join(d, f)) for k, f in RENDERS.items()}
     trees(src); fox(src); trunk(src); parts(src)
     for m, f in ARMOR.items():
         if os.path.exists(os.path.join(d, f)): armor(Image.open(os.path.join(d, f)), m)
+    for name, (f, r, c, ids) in ICON_SHEETS.items():
+        if os.path.exists(os.path.join(d, f)): icons(Image.open(os.path.join(d, f)), name, r, c, ids)

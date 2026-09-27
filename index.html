@@ -2509,6 +2509,10 @@ function paintArt(src,f){const im=new Image();im.onload=()=>{try{const c=mk(1,1)
 paintArt('trees.webp',im=>{for(let k=0;k<2;k++){const[x,y]=C.canopy[k];A.clearRect(x,y,256,256);A.drawImage(im,k*512,0,512,512,x,y,256,256);}atlasTex.needsUpdate=true;PAINT.canopy=true;for(const k in chunks)dirty.add(+k);});
 paintArt('trunk.webp',im=>{A.clearRect(0,768,128,192);A.drawImage(im,0,0,256,128,0,768,128,64);A.drawImage(im,0,0,256,256,0,832,128,128);atlasTex.needsUpdate=true;PAINT.trunk=true;for(const k in chunks)dirty.add(+k);}); // into the free corner left of the canopies; the bark tile twice so filtering doesn't bleed other cells into it
 paintArt('foldfox.webp',im=>{const c=SHEETS.foldfox,g=c.getContext('2d');g.clearRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);SHEETS.foldfoxT.needsUpdate=true;delete bestCache.foldfox;});
+// painted item icons (icons_<sheet>.webp, 128 px per icon, in this order); an icon is also the weapon drawn in the hand
+const ICON_PAINT={swords:['woodsword','coppersword','ironsword','goldsword','frostblade','inkcutlass','embersword','foldblade']};
+for(const k in ICON_PAINT)paintArt('icons_'+k+'.webp',im=>{ICON_PAINT[k].forEach((id,i)=>{const[x,y]=cellXY(ITEMS[id].cell);A.clearRect(x,y,64,64);A.drawImage(im,i*128,0,128,128,x,y,64,64);delete iconCache[id];delete iconTexCache[id];});
+  atlasTex.needsUpdate=true;invDirty=true;toolId=null;});
 for(const m in ARMOR_RIG)paintArt('armor_'+m+'.webp',im=>{PAINT.armor[m]=im;player.sheetDirty=true;});
 paintArt('player_parts.webp',img=>paintArt('player_parts_mask.webp',mask=>{PAINT.player={img,mask};player.sheetDirty=true;}));
 markMat.map=canvasTex(makeSheet(1,64,64,t=>{rr(t,23,5,18,36,9);fi(t,'#d4483b',3);circ(t,32,52,7);fi(t,'#d4483b',3);},3));markMat.needsUpdate=true;
