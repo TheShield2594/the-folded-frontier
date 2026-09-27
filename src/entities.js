@@ -1,6 +1,7 @@
 // Player, enemy defs, NPCs, boss, quests and inventory helpers.
 import * as THREE from 'three';
 import {
+  bossIntro,
   $,BADGES,BIO,blk,burst,clamp,H,heal,hurtPlayer,iconTex,inkMoon,isNight,isSolid,ITEMS,pad,rand,
   renderQuests,scene,setInvDirty,SFX,shake,SHEETS,sky,spriteMat,spriteMesh,stat,T,tileAt,toast,U,
   updateCoins,W,
@@ -90,7 +91,7 @@ export function spawnEnemy(type,x,y){const d=EN[type];const e={type,d,x,y,w:d.w,
   e.sw=d.fw/60;e.sh=d.fh/60;e.mesh=spriteMesh(SHEETS[d.sheet+'T'],2,e.sw,e.sh,!d.fly&&!d.center);e.mesh.position.z=.1+enemies.length%8*.006;enemies.push(e);if(inkMoon&&isNight()&&!d.boss&&!d.worm){e.inked=true;e.hp=e.max=Math.round(e.hp*1.7);}
   // an awakened world (awaken.js) makes every foe tougher; the Leviathan's segments share its life, so they are skipped
   if(BIO.awake&&(!d.worm||type==='lev')){e.awake=true;e.hp=e.max=Math.round(e.max*(d.boss?1.5:1.8));}
-  if(d.boss){boss=e;$('boss').hidden=false;$('boss').classList.remove('p1','p2');$('boss').querySelector('.bn').textContent=d.name;}
+  if(d.boss){boss=e;$('boss').hidden=false;$('boss').classList.remove('p1','p2');$('boss').querySelector('.bn').textContent=d.name;bossIntro(e);}
   if(d.worm&&type==='lev'){e.segs=[];e.ang=0;for(let k=0;k<12;k++){const sg=spawnEnemy(k===11?'levtail':'levseg',x-(k+1)*1.2,y);sg.parent=e;e.segs.push(sg);}}return e;}
 // elites: tougher, bigger, gold-starred, better loot. Only rolled for natural spawns.
 export const ELITE_TINT=new THREE.Vector3(1.22,1.06,.72),ELITE_LOOT=['potion','potion','manapotion','potswift','potiron','potregen','fstar'];
@@ -122,7 +123,7 @@ export const hasBadge=k=>player.badgesOn&&player.badgesOn.includes(k);// timing 
 export const niceW=()=>(hasBadge('nice')?1.7:1)*(pad.active?1.3:1);
 export const NICE_WIN=.12,NICE_LATE=.09;export const inNiceWin=s=>s&&s.sword&&!s.early&&s.dur-s.t<NICE_WIN*niceW()&&s.dur-s.t>0;
 const accHas=(it,k)=>Array.isArray(it.acc)?it.acc.includes(k):it.acc===k;
-export function defense(){let d=0;for(const s of player.armor)if(s)d+=ITEMS[s.id].def;for(const s of player.acc)if(s&&accHas(ITEMS[s.id],'def'))d+=ITEMS[s.id].v;if(hasBadge('defend'))d+=3;if(hasBuff('iron'))d+=8;if(hasBuff('fed'))d+=2;if(player.st&&player.st.soak>0)d-=4;return Math.max(0,d);}
+export function defense(){let d=0;for(const s of player.armor)if(s)d+=ITEMS[s.id].def;for(const s of player.acc)if(s&&accHas(ITEMS[s.id],'def'))d+=ITEMS[s.id].v;if(hasBadge('defend'))d+=3;if(hasBuff('iron'))d+=8;if(hasBuff('ghost'))d+=6;if(hasBuff('fed'))d+=2;if(player.st&&player.st.soak>0)d-=4;return Math.max(0,d);}
 export const hasAcc=k=>player.acc.some(s=>s&&accHas(ITEMS[s.id],k));
 export function shieldItem(){let b=null;for(const s of player.acc)if(s){const it=ITEMS[s.id];if(it.block&&(!b||it.block>b.block))b=it;}return b;}
 export function selItem(){const s=player.inv[player.sel];return s?ITEMS[s.id]:null;}

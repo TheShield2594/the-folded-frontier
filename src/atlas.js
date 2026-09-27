@@ -236,9 +236,33 @@ C.crops=HERBCOL.map((col,ty)=>[0,1,2].map(st=>sticker(t=>{const h=[16,30,44][st]
 const herbIcon=(ty)=>sticker(t=>{t.drawImage(atlas,...cellXY(C.crops[ty][2]),64,64,0,0,64,64);},0);
 C.herbs=[0,1,2,3,4].map(herbIcon);
 C.seeds=HERBCOL.map(col=>sticker(t=>{rr(t,14,10,36,46,3);fi(t,'#e9dcc0');poly(t,[14,10,50,10,46,18,18,18]);fi(t,'#d6c4a0',2);circ(t,32,36,10);fi(t,col,2);for(const[x,y]of[[22,50],[40,48],[30,52]]){t.beginPath();t.ellipse(x,y,2,3,0,0,6.28);t.fillStyle='#8a5a33';t.fill();}}));
+// rare crops (moon lily, thunderroot, sunfruit, ghost mushroom): three growth stages each, drawn on the T.RARE tile
+export const RARECOL=['#efe6ff','#ffd84a','#ff9a2d','#bfe6ef'];
+C.rare=RARECOL.map((col,ty)=>[0,1,2].map(st=>sticker(t=>{const h=[14,28,42][st];
+  if(ty===3){const caps=[[32,st===0?10:st===1?20:30,st===0?7:st===1?11:14]].concat(st?[[18,st===1?9:14,st===1?6:8]]:[]).concat(st===2?[[47,11,7]]:[]);
+    for(const[x,hh,r]of caps){rr(t,x-r*.28,62-hh,r*.56,hh,2);fi(t,'#e6f4f6',2);t.beginPath();t.ellipse(x,62-hh,r,r*.62,0,Math.PI,0);t.closePath();fi(t,col,2);
+      if(st===2){circ(t,x-r*.35,62-hh-r*.25,1.8);t.fillStyle='#fbffff';t.fill();circ(t,x+r*.3,62-hh-r*.35,1.4);t.fill();}}
+    if(st===2)for(const[x,y]of[[12,22],[52,26],[26,12]]){circ(t,x,y,2.2);t.fillStyle='rgba(214,248,255,.85)';t.fill();}return;}
+  if(ty===1){t.beginPath();t.moveTo(32,62);for(let k=1;k<=4;k++)t.lineTo(32+(k%2?5:-5),62-h*k/4);ink(t,3,'#5b6b2e');
+    for(let k=0;k<st+1;k++){const y=56-k*11;poly(t,[32,y,44,y-6,38,y-4,46,y-11,34,y-3]);fi(t,'#8fb04a',1.5);}
+    t.beginPath();t.ellipse(32,60,st===2?9:6,5,0,0,6.28);fi(t,'#7a4a8a',2);
+    if(st===2){const y=62-h;poly(t,[36,y-14,26,y+1,32,y+1,27,y+13,40,y-3,34,y-3]);fi(t,col,2);}return;}
+  t.beginPath();t.moveTo(32,62);t.lineTo(32,62-h);ink(t,3,ty===0?'#4f7a6b':'#3f7a2b');
+  for(let k=0;k<st+1;k++){const y=58-k*12;for(const s2 of[-1,1]){t.beginPath();t.ellipse(32+s2*(ty===0?9:7),y,ty===0?10:7,ty===0?2.6:3.5,s2*.4,0,6.28);fi(t,ty===0?'#6fa89a':'#5aa83c',1.5);}}
+  const y=62-h;
+  if(ty===0){if(st<2){t.beginPath();t.ellipse(32,y-3,3.5,7,0,0,6.28);fi(t,'#d8d0f0',1.5);}
+    else{for(let i=0;i<5;i++){t.save();t.translate(32,y);t.rotate(-1.2+i*.6);t.beginPath();t.ellipse(0,-9,4.2,10,0,0,6.28);fi(t,col,1.5);t.restore();}circ(t,32,y,3.5);fi(t,'#b9a6f0',1.2);circ(t,32,y-1,1.4);t.fillStyle='#fffbe0';t.fill();}}
+  else{if(st>=1)for(const[dx,dy]of st===1?[[-7,6]]:[[-9,4],[8,8],[0,-2]]){circ(t,32+dx,y+dy,st===1?3.5:6);fi(t,st===1?'#b9d36a':col,1.5);if(st===2){circ(t,30+dx,y+dy-2,1.6);t.fillStyle='rgba(255,255,255,.8)';t.fill();}}}},2)));
+const rareIcon=ty=>sticker(t=>{t.drawImage(atlas,...cellXY(C.rare[ty][2]),64,64,0,0,64,64);},0);
+C.rareHerbs=[0,1,2,3].map(rareIcon);
+C.rareSeeds=RARECOL.map((col,ty)=>sticker(t=>{rr(t,14,10,36,46,3);fi(t,ty===3?'#cfd8dc':'#d9cfe8');poly(t,[14,10,50,10,46,18,18,18]);fi(t,ty===3?'#aab6bb':'#b9aacb',2);
+  poly(t,starPts(32,36,11,5));fi(t,col,2);for(const[x,y]of[[22,50],[40,48],[30,52]]){t.beginPath();t.ellipse(x,y,2,3,0,0,6.28);t.fillStyle=ty===3?'#8fa3aa':'#6b4a7a';t.fill();}}));
 C.alchemy=sticker(t=>{rr(t,4,32,56,8,3);fi(t,'#8a5a33');rr(t,8,40,6,20,2);fi(t,'#6b4430');rr(t,50,40,6,20,2);fi(t,'#6b4430');rr(t,12,14,12,18,5);fi(t,'#bfe6f0',2);t.fillStyle='#9fd4a0';t.fillRect(14,22,8,8);t.beginPath();t.moveTo(40,8);t.lineTo(36,20);t.quadraticCurveTo(28,32,40,32);t.quadraticCurveTo(52,32,44,20);t.lineTo(40,8);fi(t,'#dfeef2',2);circ(t,40,26,5);t.fillStyle='#e8636a';t.fill();circ(t,30,6,2);t.fillStyle='rgba(255,255,255,.7)';t.fill();circ(t,34,2,1.5);t.fill();});
 const potCell=(col)=>sticker(t=>{rr(t,26,8,12,8,2);fi(t,'#c98f4f',2);rr(t,27,14,10,10,2);fi(t,'#dfeef2',2);t.beginPath();t.moveTo(27,22);t.lineTo(37,22);t.lineTo(50,44);t.quadraticCurveTo(52,56,40,56);t.lineTo(24,56);t.quadraticCurveTo(12,56,14,44);t.closePath();fi(t,'#dfeef2');t.beginPath();t.moveTo(18,40);t.lineTo(46,40);t.lineTo(49,46);t.quadraticCurveTo(50,54,40,54);t.lineTo(24,54);t.quadraticCurveTo(14,54,15,46);t.closePath();t.fillStyle=col;t.fill();t.fillStyle='rgba(255,255,255,.7)';t.fillRect(20,30,4,8);});
 C.potSwift=potCell('#6cc57a');C.potNight=potCell('#5a8fe0');C.potFire=potCell('#ff7a2d');C.potIron=potCell('#a9adb8');C.potRegen=potCell('#e8636a');
+C.potLunar=potCell('#c9b8ff');C.potThunder=potCell('#ffe14a');C.potGhost=potCell('#9fdbe8');
+C.sunTart=sticker(t=>{t.beginPath();t.moveTo(8,36);t.lineTo(56,36);t.lineTo(50,52);t.lineTo(14,52);t.closePath();fi(t,'#d9a05a');t.beginPath();t.ellipse(32,36,24,8,0,0,6.28);fi(t,'#ff9a2d',2);
+  for(const[x,y]of[[22,35],[32,33],[42,36],[28,39],[38,39]]){circ(t,x,y,3.4);fi(t,'#ffd84a',1.2);}for(let x=16;x<50;x+=6){t.beginPath();t.moveTo(x,44);t.lineTo(x+3,50);ink(t,1.5,'#a8743a');}});
 C.bread=sticker(t=>{t.beginPath();t.ellipse(32,38,24,14,0,0,6.28);fi(t,'#d9a05a');t.beginPath();t.ellipse(32,34,20,9,0,Math.PI,0);t.fillStyle='rgba(255,240,200,.35)';t.fill();for(const x of[22,32,42]){t.beginPath();t.moveTo(x-4,30);t.lineTo(x+4,38);ink(t,2,'#8a5a33');}});
 C.bucket=sticker(t=>{t.beginPath();t.arc(32,22,16,Math.PI,0);ink(t,3,'#6c6e79');poly(t,[14,24,50,24,44,56,20,56]);fi(t,'#a9adb8');t.fillStyle='rgba(255,255,255,.3)';t.fillRect(20,28,4,24);});
 const fullBucket=col=>sticker(t=>{t.beginPath();t.arc(32,22,16,Math.PI,0);ink(t,3,'#6c6e79');poly(t,[14,24,50,24,44,56,20,56]);fi(t,'#a9adb8');t.beginPath();t.ellipse(32,25,17,4,0,0,6.28);t.fillStyle=col;t.fill();t.fillStyle='rgba(255,255,255,.3)';t.fillRect(20,30,4,22);});

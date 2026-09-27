@@ -1,6 +1,7 @@
 // Player physics, combat, mining/placing, enemy AI, spawning, bosses and events.
 import * as THREE from 'three';
 import {
+  bossDefeatFx,bossHeld,bossLook,bossPhaseFx,crops,DEFEAT_T,markChunk,RARE,RARECOL,RAREHOW,reduceMotion,RSEEDS,RSOIL,teleOutline,wev,
   $,AC,addItem,ambBus,ARMF,BADGES,bestDrop,bestKill,BIO,biomeAt,boss,boxHits,BUFFS,burst,camera,camT,chests,
   clamp,collide,consumeSel,countItem,crackerBoom,cursor,DASH_V,defense,dormant,dropItem,dummy,edmg,ELEM,
   ELITE_LOOT,ELITE_TINT,EN,enemies,floatText,H,hasAcc,hasBadge,hasBuff,held,HERBCOL,HERBS,iconTex,idx,
@@ -19,6 +20,7 @@ import {
 export function reachOK(tx,ty,r=6){r+=hasAcc('reach')?2:0;return Math.hypot(tx+.5-player.x,ty+.5-(player.y+.9))<=r;}
 export function breakTile(x,y,drop=true){const i=idx(x,y),t=tiles[i];if(t===T.AIR)return;const d=TP[t];
   if(t===T.CROP){const m=meta[i],ty=Math.min(4,m>>2),st=m&3;setTile(x,y,T.AIR);if(drop){if(st>=2){dropItem(HERBS[ty][0],randi(1,2),x+.5,y+.5);dropItem(SEEDIDS[ty],randi(1,3),x+.5,y+.5);stat('harvests');fcount('harvest');}else dropItem(SEEDIDS[ty],1,x+.5,y+.5);}burst(x+.5,y+.5,['#5aa83c','#86d15f'],6,3);SFX.dig();return true;}
+  if(t===T.RARE){const m=meta[i],ty=Math.min(3,m>>2),st=m&3;setTile(x,y,T.AIR);if(drop){if(st>=2){dropItem(RARE[ty][0],1,x+.5,y+.5);dropItem(RSEEDS[ty],randi(1,2),x+.5,y+.5);stat('harvests');fcount('harvest');}else dropItem(RSEEDS[ty],1,x+.5,y+.5);}burst(x+.5,y+.5,[RARECOL[ty],'#86d15f'],6,3);SFX.dig();return true;}
   if(drop&&t===T.TUFT&&Math.random()<.07)dropItem('seed_sun',1,x+.5,y+.5);if(drop&&t===T.BLOOM&&Math.random()<.12)dropItem('seed_frost',1,x+.5,y+.5);
   if(t===T.CHEST){const box=chests.get(i);if(box&&box.some(Boolean)){toast('Empty the chest before breaking it.','bad');return false;}chests.delete(i);}
   if(t===T.TRUNK){let by=y;while(tileAt(x,by-1)===T.TRUNK)by--;let ty=by,n=0;while(tileAt(x,ty)===T.TRUNK){setTile(x,ty,T.AIR);burst(x+.5,ty+.5,['#7b5234','#5a3a22'],4,3);n++;ty++;}
@@ -31,6 +33,7 @@ function supportCheck(x,y){const dn=tileAt(x,y-1);if(dn!==T.AIR&&TP[dn]&&TP[dn].
 function torchSupported(x,y){return walls[idx(x,y)]>0||isOpaque(x,y-1)||isOpaque(x-1,y)||isOpaque(x+1,y);}
 function entityIn(x,y){const hit=e=>e.x+e.w/2>x&&e.x-e.w/2<x+1&&e.y+e.h>y&&e.y<y+1;return hit(player)||enemies.some(hit)||npcs.some(hit);}
 function tryPlace(it,tx,ty){if(!reachOK(tx,ty))return false;const i=idx(tx,ty);if(tx<1||ty<1||tx>=W-1||ty>=H-6)return false;
+  if(it.rare!=null){const cur=tiles[i];if(cur!==T.AIR&&!(TP[cur].repl&&!TP[cur].liq))return false;if(!RSOIL[it.rare].includes(tileAt(tx,ty-1)))return false;setTile(tx,ty,T.RARE,it.rare*4);return true;}
   if(it.seed!=null){const cur=tiles[i];if(cur!==T.AIR&&!(TP[cur].repl&&!TP[cur].liq))return false;if(!SOIL[it.seed].includes(tileAt(tx,ty-1)))return false;setTile(tx,ty,T.CROP,it.seed*4);return true;}
   if(it.wall){if(walls[i]||OPAQUE[tiles[i]])return false;const nb=[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>walls[idx(tx+dx,ty+dy)]||isSolid(tx+dx,ty+dy));if(!nb)return false;walls[i]=it.wall;markDirty(tx,ty);return true;}
   const t=it.place,cur=tiles[i];
@@ -46,15 +49,16 @@ function tryPlace(it,tx,ty){if(!reachOK(tx,ty))return false;const i=idx(tx,ty);i
   if(t===T.PLATFORM){const nb=[[1,0],[-1,0],[0,-1]].some(([dx,dy])=>isSolid(tx+dx,ty+dy)||tileAt(tx+dx,ty+dy)===T.PLATFORM)||walls[i];if(!nb)return false;}
   setTile(tx,ty,t,0);if(t===T.CHEST)chests.set(i,new Array(20).fill(null));return true;}
 export function hurtEnemy(e,dmg,dir,kb=5,crit=false,elem=null){if(e.dying)return;if(e.folded){floatText(e.x,e.y+e.h,'Folded!','crit');return;}if(e.parent){e.flash=.12;return hurtEnemy(e.parent,dmg,dir,0,crit,elem);}
-  if(e.act==='phase'){if(!(e.tagT>0)){e.tagT=.5;floatText(e.x,e.y+e.h,'refolding','miss');}return;}
+  if(e.act==='phase'){if(!(e.tagT>0)){e.tagT=.5;floatText(e.x,e.y+e.h,'refolding','miss');}return;}if(bossHeld(e))return;
   if(e.burrow){floatText(e.x,e.y+.6,'dug in','miss');burst(e.x,e.y+.2,['#e3c77d','#c9a574'],5,3,{up:1});return;}
   if(e.type==='scarab'&&e.act!=='open'&&dir===-e.face&&player.y<e.y+e.h-.3){dmg*=.15;kb*=.3;floatText(e.x,e.y+e.h+.4,'clink!','miss');tone(1400,1100,.07,'square',.06);}
   let tag=null;if(elem){if(e.d.weak===elem){dmg*=1.5;tag='weak';stat('weakhits');}else if(e.d.res===elem){dmg*=.5;tag='res';}}if(e.st&&e.st.soak>0)dmg*=1.25;
-  if(e.elite)kb*=.5;if(hasBadge('power'))dmg*=1.15;if(hasBuff('fed'))dmg*=1.05;const real=Math.max(1,Math.round(dmg-e.d.def/2));e.hp-=real;e.flash=.12;e.vx=dir*kb*(e.d.boss?.25:1);if(!e.d.fly||true)e.vy=Math.max(e.vy,e.d.boss?2:5);
+  if(e.elite)kb*=.5;if(hasBadge('power'))dmg*=1.15;if(hasBuff('fed'))dmg*=1.05;if(hasBuff('charged')||(hasBuff('lunar')&&isNight()))dmg*=1.1;const real=Math.max(1,Math.round(dmg-e.d.def/2));e.hp-=real;e.flash=.12;e.vx=dir*kb*(e.d.boss?.25:1);if(!e.d.fly||true)e.vy=Math.max(e.vy,e.d.boss?2:5);
   floatText(e.x,e.y+e.h,crit?real+'!':real,crit?'crit':tag==='weak'?'weak':'');if(tag&&!(e.tagT>0)){e.tagT=1.2;floatText(e.x,e.y+e.h+.6,tag==='weak'?'weak!':'resist',tag==='weak'?'tag '+elem:'miss');}burst(e.x,e.y+e.h/2,e.d.col,5,4);burst(e.x-dir*e.w*.3,e.y+e.h/2,['#fffaf0','#ffe58a'],crit?9:5,7,{grav:0,life:.25,up:0});SFX.hit();shake(crit?.25:.1);hitPause(crit?.09:.04);e.hpShow=3;
   if(e.hp<=0)killEnemy(e);else if(elem&&tag!=='res')applyStatus(e,elem,real);}
-function killEnemy(e){e.dying=.3;stat('kills');bestKill(e);evKill(e);palEv('kill',e);hitPause(e.d.boss?.35:.07);SFX.brk();burst(e.x,e.y+e.h/2,e.d.col.concat(['#fbf8f0']),e.d.boss?80:22,e.d.boss?9:6,{grav:9,life:1.3});
-  const[c0,c1]=e.d.coins;const coins=Math.round(randi(c0,c1)*(hasBadge('money')?1.5:1)*(e.elite?3:1)*(e.awake?1.5:1));if(!e.parent&&!e.d.boss){if(hasBadge('heartf')&&Math.random()<.22)dropItem('hpheart',1,e.x,e.y+e.h/2);if(hasBadge('flowerf')&&Math.random()<.22)dropItem('mpstar',1,e.x,e.y+e.h/2);}dropItem('coin',e.inked?coins*2:coins,e.x,e.y+e.h/2);if(e.inked||e.type==='wraith'){if(Math.random()<.5)dropItem('moonink',randi(1,e.type==='wraith'?3:2),e.x,e.y+e.h/2);}else if(isNight()&&!e.d.boss&&!e.parent&&Math.random()<.04)dropItem('moonink',1,e.x,e.y+e.h/2);for(const[id,a,b,p]of e.d.drops)if(Math.random()<(e.elite?Math.min(1,p*2):p)){const n=randi(a,b)+(e.elite?1:0);dropItem(id,n,e.x,e.y+e.h/2);bestDrop(e,id,n);}
+// a boss's last hit starts its defeat sequence (updateEnemies holds it for DEFEAT_T, then kills it for real and the loot drops)
+function killEnemy(e){if(e.d.boss&&!e.parent){if(!e.defeat){e.defeat=true;e.act='defeat';e.at=DEFEAT_T;e.hp=0;e.st=null;hitPause(.35);bossDefeatFx(e);return;}if(e.act==='defeat')return;}e.dying=.3;stat('kills');bestKill(e);evKill(e);palEv('kill',e);hitPause(e.d.boss?.35:.07);SFX.brk();burst(e.x,e.y+e.h/2,e.d.col.concat(['#fbf8f0']),e.d.boss?80:22,e.d.boss?9:6,{grav:9,life:1.3});
+  const[c0,c1]=e.d.coins;const coins=Math.round(randi(c0,c1)*(hasBadge('money')?1.5:1)*(e.elite?3:1)*(e.awake?1.5:1));if(!e.parent&&!e.d.boss){if(hasBadge('heartf')&&Math.random()<.22)dropItem('hpheart',1,e.x,e.y+e.h/2);if(hasBadge('flowerf')&&Math.random()<.22)dropItem('mpstar',1,e.x,e.y+e.h/2);}dropItem('coin',e.inked?coins*2:coins,e.x,e.y+e.h/2);if(e.inked||e.type==='wraith'){if(Math.random()<.5)dropItem('moonink',randi(1,e.type==='wraith'?3:2),e.x,e.y+e.h/2);if(e.inked&&Math.random()<.05)dropItem('seed_moon',1,e.x,e.y+e.h/2);}else if(isNight()&&!e.d.boss&&!e.parent&&Math.random()<.04)dropItem('moonink',1,e.x,e.y+e.h/2);for(const[id,a,b,p]of e.d.drops)if(Math.random()<(e.elite?Math.min(1,p*2):p)){const n=randi(a,b)+(e.elite?1:0);dropItem(id,n,e.x,e.y+e.h/2);bestDrop(e,id,n);}
   if(e.elite){dropItem(pick(ELITE_LOOT),1,e.x,e.y+e.h/2);stat('elites');if(e.awake&&Math.random()<.02)dropItem('pet_crease',1,e.x,e.y+e.h/2);}
   if(e.d.split)for(let k=0,n=e.elite?3:2;k<n;k++){const s=spawnEnemy(e.d.split,e.x+(k-(n-1)/2)*.5,e.y+.2);s.vx=(k-(n-1)/2)*5||rand(-2,2);s.vy=9;s.timer=rand(.5,1);}
   if(e.segs)e.segs.forEach(sg=>{if(!sg.dying){sg.dying=.35;burst(sg.x,sg.y+sg.h/2,e.d.col,14,6,{grav:6});}});
@@ -95,11 +99,11 @@ export function hurtPlayer(dmg,from,src,elem){if(player.dead)return;if(player.da
   else{SFX.hurt();shake(.25);hitPause(.06);$('vig').classList.add('hurt');setTimeout(()=>$('vig').classList.remove('hurt'),180);burst(player.x,player.y+1,['#d4483b','#fbf8f0'],6,4);if(elem)playerStatus(elem);}
   if(player.hp<=0){player.hp=0;die();}}
 function die(){dismount(true);player.dead=true;player.deadT=4;const lost=Math.floor(player.coins*.25);player.coins-=lost;updateCoins();burst(player.x,player.y+1,['#2f7f86','#d4483b','#f1cfa6','#fbf8f0'],50,7,{grav:8,life:1.5});player.mesh.visible=false;SFX.die();stat('deaths');$('dead').hidden=false;if(lost)toast(`Dropped ${lost} coins in the tumble.`,'bad');}
-function respawn(){player.dead=false;player.dashT=player.dashCD=player.dashI=0;player.st={};player.draw=null;player.blocking=false;player.hp=player.max;player.x=player.spawn.x;player.y=player.spawn.y;player.vx=player.vy=0;player.mesh.visible=true;$('dead').hidden=true;player.inv_t=2;}
+function respawn(){player.dead=false;player.dashT=player.dashCD=player.dashI=0;player.st={};player.draw=null;player.blocking=player.blockOn=false;player.hp=player.max;player.x=player.spawn.x;player.y=player.spawn.y;player.vx=player.vy=0;player.mesh.visible=true;$('dead').hidden=true;player.inv_t=2;}
 export function quickHeal(){if(player.potT>0){toast(`Potion sickness: wait ${Math.ceil(player.potT)}s.`,'bad');return;}const k=player.inv.findIndex(s=>s&&s.id==='potion');if(k<0){toast('No healing potions.','bad');return;}const s=player.inv[k];s.n--;if(!s.n)player.inv[k]=null;setInvDirty(true);heal(60*(hasBadge('dip')?1.5:1));player.potT=30;SFX.potion();}
 export function heal(n){const h=Math.min(n,player.max-player.hp);player.hp+=h;floatText(player.x,player.y+2,'+'+Math.round(h),'heal');burst(player.x,player.y+1,['#9be27d','#fbf8f0'],10,3,{grav:-2});}
 export let shakeT=0;export let hitStop=0;function hitPause(t){if(SET.hitstop)hitStop=Math.max(hitStop,t);}
-export function shake(a){if(!SET.shake||matchMedia('(prefers-reduced-motion: reduce)').matches)return;shakeT=Math.max(shakeT,a);}
+export function shake(a){if(!SET.shake||reduceMotion())return;shakeT=Math.max(shakeT,a);}
 function useItem(it,dt){const tx=Math.floor(mouse.wx),ty=Math.floor(mouse.wy);const p=player;
   if(it.pet||it.mount){if(mouse.lp){if(it.pet)togglePet(it.pet);else toggleMount(it.mount);}return;}
   if(it.rod){if(mouse.lp)fishClick(it);return;}
@@ -262,8 +266,23 @@ const RAINN=260;const rainMesh=new THREE.InstancedMesh(new THREE.PlaneGeometry(.
 const drops=[];for(let i=0;i<RAINN;i++)drops.push({x:0,y:-999});
 let rainSrc=null,rainGain=null;
 function rainAudio(v){if(!AC)return;if(!rainSrc){try{rainSrc=AC.createBufferSource();rainSrc.buffer=noiseBuf;rainSrc.loop=true;const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=1400;rainGain=AC.createGain();rainGain.gain.value=0;rainSrc.connect(f).connect(rainGain).connect(ambBus);rainSrc.start();}catch(e){return;}}rainGain.gain.value=v*.16;}
+// lightning: rain and the Paper Storm send a strike near the player every so often, often at a thunderroot that still has
+// growing to do. Each strike grows thunderroot within reach a stage and can leave Thunderroot Seeds on natural ground.
+// boltF is the sky flash, read by updateSky() (dimmer with reduced motion).
+export let boltF=0;let boltT=rand(8,16);
+function strikeY(x){for(let y=H-2;y>2;y--)if(tiles[idx(x,y)]!==T.AIR)return y;return -1;}
+export function lightningStrike(x,near){x=clamp(Math.round(x),2,W-3);const y=strikeY(x);if(y<0)return;const top=y+1;
+  if(near){let bx=x+.5;for(let yy=top+24;yy>top;yy-=.5){bx+=rand(-.3,.3);burst(bx,yy,['#fffbe0','#ffe14a','#fbf8f0'],1,.15,{grav:0,life:.3,bright:1,s:1.3});}
+    burst(x+.5,top,['#fffbe0','#ffe14a','#c9a574'],22,6,{up:2,bright:1});boltF=reduceMotion()?.3:1;shake(.3);setTimeout(()=>SFX.boom(),150+Math.abs(player.x-x)*20);}
+  let grew=0;for(let dx=-8;dx<=8;dx++)for(let dy=-12;dy<=4;dy++){const tx=x+dx,ty=top+dy;if(tx<0||tx>=W||ty<0||ty>=H)continue;const i=idx(tx,ty);
+    if(tiles[i]!==T.RARE||(meta[i]>>2)!==1||(meta[i]&3)>=2)continue;meta[i]++;markChunk(tx,ty);burst(tx+.5,ty+.6,['#ffe14a','#fffbe0'],8,3,{bright:1});grew++;}
+  const g=tiles[idx(x,y)];if(!grew&&(g===T.GRASS||g===T.DIRT||g===T.SAND)&&Math.random()<.15)dropItem('seed_thunder',1,x+.5,top+.3);
+  if(grew&&near)toast(grew>1?`Lightning charges ${grew} Thunderroots!`:'Lightning charges a Thunderroot!','good');}
+function updateLightning(dt,surfaceView){boltF=Math.max(0,boltF-dt*3);if(weather!=='rain'&&wev.k!=='storm')return;boltT-=dt;if(boltT>0)return;boltT=rand(12,26);
+  let x=player.x+rand(-26,26);if(Math.random()<.6){const tr=[];for(const i of crops)if(tiles[i]===T.RARE&&(meta[i]>>2)===1&&(meta[i]&3)<2&&Math.abs(i%W-player.x)<40)tr.push(i);if(tr.length)x=pick(tr)%W+rand(-3,3);}
+  lightningStrike(x,surfaceView&&Math.abs(x-player.x)<34);}
 export function updateWeather(dt){weatherT-=dt;if(weatherT<=0){const r=weather!=='clear'?'clear':rollWeather();if(r==='clear'){weather='clear';wind=0;weatherT=rand(120,240);}else if(r==='rain'){weather='rain';wind=rand(-.4,.4);weatherT=rand(70,150);toast('It starts to rain. Crops grow faster.');}else if(r==='snow'){weather='snow';wind=rand(-.3,.3);weatherT=rand(80,160);toast('Snow starts to fall.');}else{weather='wind';wind=(Math.random()<.5?-1:1)*rand(.7,1.3);weatherT=rand(60,120);toast(`A strong wind blows ${wind>0?'east':'west'}.`);}}
-  const cam=camera.position,surfaceView=cam.y>surfAvg-18&&biomeAt(cam.x,cam.y)!=='under';const target=weather==='rain'&&surfaceView?1:0;rainF+=(target-rainF)*Math.min(1,dt*.8);rainAudio(rainF);
+  const cam=camera.position,surfaceView=cam.y>surfAvg-18&&biomeAt(cam.x,cam.y)!=='under';const target=weather==='rain'&&surfaceView?1:0;rainF+=(target-rainF)*Math.min(1,dt*.8);rainAudio(rainF);updateLightning(dt,surfaceView);
   const vis=rainF>.02;rainMesh.visible=vis;if(vis){const ang=Math.atan2(-18,wind*8);for(let i=0;i<RAINN;i++){const d=drops[i];d.y-=dt*20;d.x+=dt*wind*8;if(d.y<cam.y-16||d.x<cam.x-30||d.x>cam.x+30||Math.random()<.002){d.x=cam.x+rand(-28,28);d.y=cam.y+rand(4,18);}
       dummy.position.set(d.x,d.y,.9);dummy.rotation.set(0,0,ang+Math.PI/2);const sc=i<RAINN*rainF?1:0;dummy.scale.set(sc,sc,sc);dummy.updateMatrix();rainMesh.setMatrixAt(i,dummy.matrix);}rainMesh.instanceMatrix.needsUpdate=true;}
   if(weather==='wind'&&surfaceView&&Math.random()<dt*10)burst(cam.x-Math.sign(wind)*26,cam.y+rand(-8,10),['#6dbb4a','#c9a574','#fbf8f0'],1,.5,{grav:.4,life:4,up:0,bright:0,s:1.1});
@@ -298,6 +317,7 @@ function interact(){const tx=Math.floor(mouse.wx),ty=Math.floor(mouse.wy);
   if(t===T.DOOR){const top=meta[i]&2;const oy=top?ty-1:ty+1;const open=!(meta[i]&1);if(!open&&(entityIn(tx,ty)||entityIn(tx,oy))){return;}const nm=open?1:0;setTile(tx,ty,T.DOOR,(meta[i]&2)|nm);if(tileAt(tx,oy)===T.DOOR)setTile(tx,oy,T.DOOR,(meta[idx(tx,oy)]&2)|nm);SFX.door();return;}
   if(t===T.CHEST){if(!chests.has(i))chests.set(i,new Array(20).fill(null));if(!(meta[i]&4)){meta[i]|=4;if(chests.get(i).some(Boolean))stat('chests');}openSide('chest',i);SFX.door();return;}
   if(t===T.CROP){const m=meta[i],ct=Math.min(4,m>>2);if((m&3)>=2){dropItem(HERBS[ct][0],randi(1,2)*(isFest('fall')?2:1),tx+.5,ty+.5);if(Math.random()<.6)dropItem(SEEDIDS[ct],randi(1,2),tx+.5,ty+.5);setTile(tx,ty,T.CROP,ct*4);stat('harvests');SFX.pick();burst(tx+.5,ty+.5,[HERBCOL[ct],'#86d15f'],8,3);}else toast(dormant(i,ct)?`${HERBS[ct][1]} rests outdoors in winter. Grow it under placed background walls.`:`${HERBS[ct][1]} is still growing.`);return;}
+  if(t===T.RARE){const m=meta[i],ct=Math.min(3,m>>2);if((m&3)>=2){dropItem(RARE[ct][0],randi(1,2)*(isFest('fall')?2:1),tx+.5,ty+.5);if(Math.random()<.5)dropItem(RSEEDS[ct],1,tx+.5,ty+.5);setTile(tx,ty,T.RARE,ct*4);stat('harvests');fcount('harvest');SFX.pick();burst(tx+.5,ty+.5,[RARECOL[ct],'#fbf8f0'],10,3,{bright:1});}else toast(`${RARE[ct][1]} is still growing. ${RAREHOW[ct]}`);return;}
   if(t===T.CLOCK){const h=Math.floor(worldTime),m=Math.floor((worldTime-h)*60);toast(`The clock reads ${(h%12)||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}.`);SFX.pick();return;}
   if(t===T.BED){player.spawn={x:tx+.5,y:ty};toast('Spawn point set.','good');SFX.pick();return;}}
 
@@ -310,11 +330,13 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateDashHud(d
   const upH=!!(keys.w||keys.arrowup||pad.held.up||touch.held.up),dnH=held('down');
   if(onRope&&(upH||dnH)&&!hooked)p.climb=true;if(!onRope||hooked)p.climb=false;
   // block: hold right-click, the Block key, or the gamepad Interact button with a shield equipped
-  const shield=shieldItem(),wantBlock=!!shield&&(held('block')||mouse.r||(pad.active&&!!pad.held.interact))&&!hooked&&!p.climb&&!p.flat&&p.dashT<=0&&!cursor&&!invOpen;
+  // (Settings > Block: Toggle raises the shield on one press and lowers it on the next)
+  const shield=shieldItem(),blkIn=held('block')||mouse.r||(pad.active&&!!pad.held.interact);if(SET.blockTog&&blkIn&&!p.blkWas)p.blockOn=!p.blockOn;if(!shield)p.blockOn=false;p.blkWas=blkIn;
+  const wantBlock=!!shield&&(SET.blockTog?!!p.blockOn:blkIn)&&!hooked&&!p.climb&&!p.flat&&p.dashT<=0&&!cursor&&!invOpen;
   if(wantBlock&&!p.blocking){p.blocking=true;p.blockT=0;p.parryOK=!(p.blockCD>0);SFX.raise();}else if(!wantBlock&&p.blocking){p.blocking=false;p.blockCD=.3;}
   p.blockCD=(p.blockCD||0)-dt;if(p.blocking){p.blockT+=dt;p.face=mouse.wx>=p.x?1:-1;}
   const heavyWind=p.swing&&p.swing.heavy&&p.swing.t<p.swing.dur*.6,st=p.st||{};
-  const left=held('left'),right=held('right');const spd=6.2*(hasAcc('speed')?1.2:1)*(hasBuff('swift')?1.25:1)*(hasBuff('fed')?1.05:1)*(p.inLiq?.62:1)*(p.climb?.35:1)*(p.blocking?.45:1)*(p.draw?.6:1)*(heavyWind?.5:1)*(st.ink>0?.7:1)*(p.mount?MOUNTS[p.mount].spd:1);const acc=(p.onGround?55:30)*(p.mount?1.4:1);
+  const left=held('left'),right=held('right');const spd=6.2*(hasAcc('speed')?1.2:1)*(hasBuff('swift')?1.25:1)*(hasBuff('charged')?1.2:1)*(hasBuff('fed')?1.05:1)*(p.inLiq?.62:1)*(p.climb?.35:1)*(p.blocking?.45:1)*(p.draw?.6:1)*(heavyWind?.5:1)*(st.ink>0?.7:1)*(p.mount?MOUNTS[p.mount].spd:1);const acc=(p.onGround?55:30)*(p.mount?1.4:1);
   if(!hooked){if(left&&!right){p.vx=Math.max(p.vx-acc*dt,-spd);if(!p.swing&&!p.blocking)p.face=-1;}else if(right&&!left){p.vx=Math.min(p.vx+acc*dt,spd);if(!p.swing&&!p.blocking)p.face=1;}else p.vx*=Math.pow(p.onGround?.0004:.25,dt);
     if(Math.abs(p.vx)>spd)p.vx*=Math.pow(.05,dt);}
   const wantFlat=held('flat')||(pad.active&&pad.held.down&&p.onGround&&(p.downT=(p.downT||0)+dt)>.3);if(!(pad.active&&pad.held.down))p.downT=0;
@@ -342,7 +364,7 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateDashHud(d
   p.squash=Math.max(0,(p.squash||0)-dt);
   if(p.y<-5){p.hp=0;die();}
   p.manaT=(p.manaT||0)+dt;if(p.manaT>.8&&p.mana<p.maxMana)p.mana=Math.min(p.maxMana,p.mana+dt*(3+p.maxMana*.05)*(Math.abs(p.vx)<.5?1.6:1));
-  p.inv_t-=dt;p.potT=Math.max(0,p.potT-dt);p.stompWin-=dt;p.regenT+=dt;if(p.regenT>5&&p.hp<p.max){p.hp=Math.min(p.max,p.hp+dt*(p.regenT>12?3:1));}if(hasBadge('happy')&&p.hp<p.max)p.hp=Math.min(p.max,p.hp+dt);const rg=(hasBuff('regen')?2:0)+(hasBuff('fed')?.5:0)+(hasAcc('nightregen')&&isNight()?1:0);if(rg&&p.hp<p.max)p.hp=Math.min(p.max,p.hp+rg*dt);
+  p.inv_t-=dt;p.potT=Math.max(0,p.potT-dt);p.stompWin-=dt;p.regenT+=dt;if(p.regenT>5&&p.hp<p.max){p.hp=Math.min(p.max,p.hp+dt*(p.regenT>12?3:1));}if(hasBadge('happy')&&p.hp<p.max)p.hp=Math.min(p.max,p.hp+dt);const rg=(hasBuff('regen')?2:0)+(hasBuff('lunar')&&isNight()?3:0)+(hasBuff('fed')?.5:0)+(hasAcc('nightregen')&&isNight()?1:0);if(rg&&p.hp<p.max)p.hp=Math.min(p.max,p.hp+rg*dt);
   for(const k in p.buffs){p.buffs[k]-=dt;if(p.buffs[k]<=0){delete p.buffs[k];toast(`${BUFFS[k][0]} wore off.`);}}
   updatePlayerStatus(dt);if(p.dead){updateTool(null,1);return;}
   if(wind&&!p.onGround&&hook.state!==2&&!p.inLiq)p.vx+=wind*dt*3;
@@ -352,7 +374,10 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateDashHud(d
   if(mouse.lp&&it&&it.dmg&&!it.use&&!it.ranged&&!it.magic&&!cursor&&!p.blocking){const since=worldClock-p.lastSwingEnd,s=p.swing;
     if(s&&s.sword){if(inNiceWin(s))p.niceNext=true;else if(!s.early&&s.t>.05&&s.dur-s.t>0){s.early=true;floatText(p.x+p.face,p.y+2.3,'early','miss');}}
     else if(!s&&since<NICE_LATE*niceW()&&!p.lastEarly){startSwing(it,true);}}
-  const useHeld=mouse.l||(pad.active&&!!pad.held.use);if(useHeld&&!cursor&&!p.blocking){if(it)useItem(it,dt);}else{if(p.draw)releaseBow();if(p.mineTile!==-2)p.mineP=Math.max(0,p.mineP-dt*2);if(p.mineTile===-2)p.mineTile=-1;p.placeT=0;}
+  // Settings > Bow draw: Toggle keeps drawing after the button is let go and looses on the next press (drawLock waits for that press to end)
+  const useIn=mouse.l||(pad.active&&!!pad.held.use),usePr=useIn&&!p.useWas;p.useWas=useIn;let useHeld=useIn;
+  if(SET.drawTog){if(p.draw){useHeld=!(usePr&&p.draw.t>0);if(!useHeld)p.drawLock=true;}else if(p.drawLock){if(useIn)useHeld=false;else p.drawLock=false;}}
+  if(useHeld&&!cursor&&!p.blocking){if(it)useItem(it,dt);}else{if(p.draw)releaseBow();if(p.mineTile!==-2)p.mineP=Math.max(0,p.mineP-dt*2);if(p.mineTile===-2)p.mineTile=-1;p.placeT=0;}
   if(mouse.rp)interact();
   if(p.swing){const s=p.swing;s.t+=dt;if(s.sword){const k=s.t/s.dur;const[tipX,tipY]=swingTip(s,Math.min(1,k));if(!s.heavy)swingStep(s,k);if(s.heavy&&!s.slam&&k>=HAM_HIT)hammerImpact(s,tipX,tipY);if(inNiceWin(s)){if(!s.cued){s.cued=true;SFX.cue();burst(tipX,tipY,['#fff3c0','#f1c04f','#fbf8f0'],7,3,{grav:0,life:.3,bright:1});}burst(tipX,tipY,['#fff3c0','#ffe58a'],1,1,{grav:0,life:.3,bright:1});}
       if(s.heavy?k>.46&&k<.8:k>=SWKEYS[s.combo][0][0]*.5)for(const e of enemies){if(e.dying||s.hit.has(e))continue;const cx=e.x,cy=e.y+e.h/2;const dx=cx-p.x,dy=cy-(p.y+1);if((dx*p.face>-.6)&&Math.hypot(dx,dy)<2.1+e.w/2){s.hit.add(e);hurtEnemy(e,s.dmg*(s.nice?1.8:1)*rand(.9,1.1),p.face,s.kb,s.nice,s.elem);if(s.heavy)stagger(e);}}}
@@ -398,7 +423,7 @@ function hammerImpact(s,tx,ty){const p=player;s.slam=true;SFX.slam();shake(.3);c
 const PHASE_MSG={king:['The King Slime swells with rage!','The King Slime splits at the seams!'],crane:['The Great Crane refolds its wings!','The Great Crane tears into a paper storm!'],
   lev:['The Inkwell Leviathan churns the ink!','The Leviathan comes unbound!'],folio:['The Charred Folio turns to a new chapter!','The Folio\'s last pages catch fire!'],unfolded:['The Unfolded creases sharply!','The Unfolded tears itself open!']};
 function bossPhase(e,ph){e.phase=ph;e.act='phase';e.at=1.3;e.stun=0;SFX.tear();shake(.45);hitPause(.15);burst(e.x,e.y+e.h/2,e.d.col.concat(['#fbf8f0','#e9dcc0']),40,8,{grav:6,life:1.2});
-  const m=PHASE_MSG[e.type];if(m)toast(m[ph-1],'bad');const bb=$('boss');bb.classList.remove('p1','p2');bb.classList.add('p'+ph);}
+  bossPhaseFx(e,ph);const m=PHASE_MSG[e.type];if(m)toast(m[ph-1],'bad');const bb=$('boss');bb.classList.remove('p1','p2');bb.classList.add('p'+ph);}
 function bossRefold(e){const p=player,ph=e.phase;e.act=null;e.cd=.6;e.at=0;SFX.refold();shake(.3);const cy=e.y+e.h/2;for(let k=0;k<24;k++){const a=k/24*Math.PI*2;burst(e.x+Math.cos(a)*e.w*.6,cy+Math.sin(a)*e.h*.6,['#fbf8f0','#fff3c0'],1,2,{grav:0,life:.5,bright:1});}
   const dx=p.x-e.x;if(!p.dead&&Math.abs(dx)<e.w/2+3&&Math.abs(p.y+.9-cy)<e.h/2+3){p.vx=(dx>=0?1:-1)*12;p.vy=9;}
   if(e.type==='king')for(let k=0,n=ph>=2?5:3;k<n;k++){const s=spawnEnemy('bslime',e.x+rand(-1,1),e.y+1);s.vy=10;s.vx=rand(-6,6);}}
@@ -465,13 +490,15 @@ export function spawnLogic(dt){spawnT-=dt;if(spawnT>0)return;spawnT=.9;const p=p
   for(let a=0;a<14;a++){const y=Math.floor(p.y+rand(-12,12));if(y<6||y>=H-3)continue;if(!isSolid(x,y)&&!isSolid(x,y+1)&&isSolid(x,y-1)&&walls[idx(x,y)]<2){sp(type,x+.5,y);return;}}}
 let spawnT=2;
 export function updateEnemies(dt){const p=player;for(let i=enemies.length-1;i>=0;i--){const e=enemies[i],d=e.d;
-  e.tele=e.warn=false;if(e.dying){if(e.bar)e.bar.forEach(b=>b.visible=false);if(e.mark)e.mark.visible=false;if(e.star)e.star.visible=false;if(e.thread)e.thread.visible=false;e.dying-=dt;e.mesh.rotation.z+=dt*14;e.mesh.scale.multiplyScalar(Math.pow(.02,dt));if(e.dying<=0){removeEnemy(e);enemies.splice(i,1);}continue;}
+  e.tele=e.warn=false;if(e.dying){teleOutline(e.mesh,false);if(e.bar)e.bar.forEach(b=>b.visible=false);if(e.mark)e.mark.visible=false;if(e.star)e.star.visible=false;if(e.thread)e.thread.visible=false;e.dying-=dt;e.mesh.rotation.z+=dt*14;e.mesh.scale.multiplyScalar(Math.pow(.02,dt));if(e.dying<=0){removeEnemy(e);enemies.splice(i,1);}continue;}
   e.t+=dt;e.flash=Math.max(0,e.flash-dt);e.hitCD-=dt;e.tagT=(e.tagT||0)-dt;if(e.st){tickStatus(e,dt);if(e.dying)continue;}const dx=p.x-e.x,dy=(p.y+.9)-(e.y+e.h/2),dist=Math.hypot(dx,dy);const toward=dx>0?1:-1;const night=isNight();
   if(d.boss&&!e.parent&&dist>60&&d.fly){e.x=p.x+rand(-10,10);e.y=p.y+12;e.vx=e.vy=0;if(e.segs)e.segs.forEach(sg=>{sg.x=e.x;sg.y=e.y;});}
   if(dist>75&&!d.boss&&!e.parent){removeEnemy(e);enemies.splice(i,1);continue;}
   const chase=!p.dead;
-  if(d.boss&&!e.parent){const ph=e.hp<=e.max*.25?2:e.hp<=e.max*.5?1:0;if(ph>(e.phase||0))bossPhase(e,ph);}
-  if(e.act==='phase'){e.at-=dt;e.tele=e.warn=true;e.vx*=Math.pow(.02,dt);if(d.fly||d.noclip)e.vy*=Math.pow(.02,dt);else e.vy-=40*dt;if(Math.random()<dt*30)burst(e.x+rand(-e.w/2,e.w/2),e.y+rand(0,e.h),d.col.concat(['#fbf8f0']),1,4,{grav:6,life:.8});if(e.at<=0)bossRefold(e);}
+  if(d.boss&&!e.parent){const ph=e.hp<=e.max*.25?2:e.hp<=e.max*.5?1:0;if(ph>(e.phase||0)&&!bossHeld(e))bossPhase(e,ph);}
+  // arrival and defeat: the boss holds still; at the end of its defeat it is killed for real
+  if(e.act==='intro'||e.act==='defeat'){e.at-=dt;e.vx*=Math.pow(.02,dt);if(d.fly||d.noclip)e.vy*=Math.pow(.05,dt);else e.vy-=40*dt;if(e.at<=0){if(e.act==='defeat'){e.act=null;killEnemy(e);}else{e.act=null;e.cd=.8;}}}
+  else if(e.act==='phase'){e.at-=dt;e.tele=e.warn=true;e.vx*=Math.pow(.02,dt);if(d.fly||d.noclip)e.vy*=Math.pow(.02,dt);else e.vy-=40*dt;if(Math.random()<dt*30)burst(e.x+rand(-e.w/2,e.w/2),e.y+rand(0,e.h),d.col.concat(['#fbf8f0']),1,4,{grav:6,life:.8});if(e.at<=0)bossRefold(e);}
   else if(e.stun>0){e.stun-=dt;e.vx*=Math.pow(.02,dt);if(d.fly||d.noclip)e.vy*=Math.pow(.02,dt);else e.vy-=40*dt;if(Math.random()<dt*6)burst(e.x,e.y+e.h+.2,['#fff3c0','#ffe58a'],1,1,{grav:0,life:.5,bright:1});}
   else if(d.slimy){e.vy-=(d.boss?40:40)*dt;if(e.onGround){e.vx*=Math.pow(.001,dt);e.timer-=dt;if(e.timer<=0){const dir=chase?toward:(Math.random()<.5?-1:1);e.face=dir;if(d.boss){const ph=e.phase||0;e.hops=(e.hops||0)+1;if(ph>=2&&e.hops%3===0){e.big=true;e.vx=clamp(dx/1.3,-16,16);e.vy=26;SFX.jump();}else{e.vx=dir*rand(5,8)*(ph?1.25:1);e.vy=rand(14,20);}e.timer=ph?rand(.6,1.1):rand(.9,1.6);}else{e.vx=dir*rand(2.5,4.5);e.vy=rand(10,14);e.timer=rand(.8,2);}}}
       if(d.boss){if(dist>45&&e.onGround){e.x=p.x+rand(-6,6);e.y=Math.min(H-8,p.y+18);e.vy=0;burst(e.x,e.y,d.col,20,5);}if((e.phase||0)>=2&&(e.hops+1)%3===0&&e.onGround&&e.timer<1){e.tele=e.warn=true;if(Math.random()<dt*20)burst(e.x+rand(-2,2),e.y,d.col,1,3,{up:2});}
@@ -574,7 +601,7 @@ export function updateEnemies(dt){const p=player;for(let i=enemies.length-1;i>=0
   const ovx=e.vx,ovy=e.vy,mdt=e.st&&e.st.ink>0?dt*.5:dt;if(d.noclip){if(!e.parent){e.x+=e.vx*mdt;e.y+=e.vy*mdt;}}else collide(e,mdt);if(d.fly){if(e.hitWall)e.vx=-ovx*.8;if(e.onGround||e.hitCeil)e.vy=-ovy*.8;}
   if(e.y<-4){removeEnemy(e);enemies.splice(i,1);continue;}
   // contact
-  if(!p.dead&&!e.dying&&!e.burrow&&!(e.stun>0)&&Math.abs(p.x-e.x)<(p.w+e.w)/2&&p.y<e.y+e.h&&p.y+p.h>e.y){
+  if(!p.dead&&!e.dying&&!e.burrow&&!(e.stun>0)&&!bossHeld(e)&&Math.abs(p.x-e.x)<(p.w+e.w)/2&&p.y<e.y+e.h&&p.y+p.h>e.y){
     const fromAbove=p.vy<0&&p.prevY>=e.y+e.h-.35&&(e.type!=='knight'||hasBadge('spike'));
     if(fromAbove&&e.hitCD<=0){e.hitCD=.25;const nice=p.jumpAge<.14*niceW();hurtEnemy(e,(nice?20:10)*(hasBadge('stomp')?2:1),p.face,2,nice);p.vy=nice?18:13;p.y=e.y+e.h+.02;SFX.stomp();stat('stomps');if(nice)stat('nices');burst(p.x,p.y,['#fbf8f0','#f1c04f'],8,4);
       if(nice){floatText(e.x,e.y+e.h+.6,'NICE!','nice');SFX.nice();}else{p.stompWin=.14*niceW();p.stompTarget=e;}}
@@ -596,7 +623,8 @@ export function updateEnemies(dt){const p=player;for(let i=enemies.length-1;i>=0
     if(hang&&!e.thread){e.thread=new THREE.Mesh(threadGeo,new THREE.MeshBasicMaterial({color:0xd8cfc0}));e.thread.renderOrder=2;scene.add(e.thread);}
     if(e.thread){const len=(e.hangY??e.y+e.h)-(e.y+e.h);e.thread.visible=hang&&len>.05;e.thread.position.set(e.x,e.y+e.h,.09);e.thread.scale.y=Math.max(.01,len);}}
   if(e.elite)m.scale.multiplyScalar(1.2);
-  setTint(m.material,e.x,e.y+e.h/2);if(e.inked)m.material.uniforms.uTint.value.multiply(INKTINT);if(e.elite){m.material.uniforms.uTint.value.multiply(ELITE_TINT);if(Math.random()<dt*4)burst(e.x+rand(-e.w/2,e.w/2),e.y+rand(0,e.h),['#f1c04f','#fff3c0'],1,.6,{grav:-1,life:.6,bright:1});}if(e.st)statusFx(e,m,dt);m.material.uniforms.uFlash.value=e.flash>0?.8:(e.warn?.15+.12*Math.sin(e.t*28):0);updateEnemyFx(e,dt);}
+  if(d.boss||e.parent)bossLook(e,m,dt);
+  setTint(m.material,e.x,e.y+e.h/2);if(e.inked)m.material.uniforms.uTint.value.multiply(INKTINT);if(e.elite){m.material.uniforms.uTint.value.multiply(ELITE_TINT);if(Math.random()<dt*4)burst(e.x+rand(-e.w/2,e.w/2),e.y+rand(0,e.h),['#f1c04f','#fff3c0'],1,.6,{grav:-1,life:.6,bright:1});}if(e.st)statusFx(e,m,dt);m.material.uniforms.uFlash.value=e.flash>0?.8:(e.warn?.15+.12*Math.sin(e.t*28):0);teleOutline(m,SET.tele&&(e.tele||e.warn)&&!e.burrow,e.t);updateEnemyFx(e,dt);}
   if(boss){$('boss').querySelector('i').style.width=clamp(boss.hp/boss.max*100,0,100)+'%';}}
 export function updateNPC(dt){for(const n of npcs){n.t+=dt;n.timer-=dt;const h=n.home||n.roam;if(n.timer<=0){n.timer=rand(1.5,4);const r=Math.random();n.want=r<.45?0:(r<.72?-1:1);}
   const near=Math.abs(player.x-n.x)<3&&Math.abs(player.y-n.y)<2.5&&!player.dead;

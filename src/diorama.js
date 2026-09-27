@@ -1,6 +1,7 @@
 // Diorama depth: paper parallax layers per biome behind the world, and foreground cutouts in front of it.
 import * as THREE from 'three';
 import {
+  reduceMotion,
   BIO,biomeAt,camera,canvasTex,circ,CS,fi,grain,H,ink,mk,mouse,mulberry32,player,poly,rr,scene,season,SET,seed,
   skyU,state,surf,surfAvg,T,tiles,W,walls,wind,worldClock,
 } from './game.js';
@@ -10,7 +11,7 @@ import {
 // art for each layer, drawn in code on a 2048×512 strip that repeats along x. Biome segments stand a little in
 // front of the forest ones and end in a torn paper edge, so walking into a biome looks like a new set piece.
 // Seasons recolor the same shapes (the RNG is reseeded per layer), and swap one texture per frame.
-const TW=2048,TH=512,RM=matchMedia('(prefers-reduced-motion: reduce)');
+const TW=2048,TH=512;
 // z depth, h height in world units (bottom of the strip at the segment's ground), tw world units per repeat,
 // fog: how much of the horizon color it takes, wob: paper sway, tear: torn edge width, dy: offset from the ground,
 // ro: render order (clouds sit at -15, between hills and foliage), grow: how far biome pieces reach past their biome
@@ -181,7 +182,7 @@ export function buildDiorama(){segs.forEach(s=>{scene.remove(s.m);s.m.geometry.d
   if(!fgTex)FU.map.value=fgTex=fgArt();fgBands.forEach(m=>{if(m){fgGroup.remove(m);m.geometry.dispose();}});fgBands=new Array(Math.ceil(W/CS)).fill(null);fgDirty.clear();for(let b=0;b<fgBands.length;b++)buildFgBand(b);}
 // light from updateSky: day/night tint, horizon fog color, fade out underground
 export function dioLight(r,g,b,under){DU.uTint.value.setRGB(r,g,b);DU.uFog.value.copy(skyU.uBot.value);DU.uAlpha.value=1-under;FU.uTint.value.setRGB(r*.94,g*.94,b*.94);}
-export function updateDiorama(){DU.uTime.value=worldClock;DU.uWob.value=RM.matches?0:1;FU.uWind.value=wind;fgGroup.visible=SET.fg!==false;
+export function updateDiorama(){DU.uTime.value=worldClock;DU.uWob.value=reduceMotion()?0:1;FU.uWind.value=wind;fgGroup.visible=SET.fg!==false;
   FU.uP.value.set(player.x,player.y+1.1,state==='play'&&!player.dead?1:0);FU.uM.value.set(mouse.wx,mouse.wy,state==='play'?1:0);
   const k=season().k;if(k!==dioKey){dioKey=k;for(let b=0;b<fgBands.length;b++)fgDirty.add(b);}
   // textures are drawn as the camera nears a segment and redrawn when the season changes, one per frame, nearest

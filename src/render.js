@@ -23,9 +23,22 @@ export const worldMat=new THREE.ShaderMaterial({uniforms:U,side:THREE.DoubleSide
   L=clamp(L,vec3(.035,.03,.05),vec3(1.25));gl_FragColor=vec4(t.rgb*L*vL.z,1.);}`});
 const liquidMat=new THREE.ShaderMaterial({uniforms:U,side:THREE.DoubleSide,transparent:true,depthWrite:false,vertexShader:worldMat.vertexShader,
   fragmentShader:worldMat.fragmentShader.replace('if(t.a<.5)discard;','if(t.a<.1)discard;if(vL.z>1.5){gl_FragColor=vec4(t.rgb*1.1,.93);return;}').replace('gl_FragColor=vec4(t.rgb*L*vL.z,1.);','gl_FragColor=vec4(t.rgb*L*vL.z,.8);')});
-export function spriteMat(tex,frames=1){return new THREE.ShaderMaterial({side:THREE.DoubleSide,uniforms:{map:{value:tex},uFrame:{value:0},uFrames:{value:frames},uTint:{value:new THREE.Vector3(1,1,1)},uFlash:{value:0}},
+export function spriteMat(tex,frames=1){return new THREE.ShaderMaterial({side:THREE.DoubleSide,uniforms:{map:{value:tex},uFrame:{value:0},uFrames:{value:frames},uTint:{value:new THREE.Vector3(1,1,1)},uFlash:{value:0},uOut:{value:new THREE.Vector4(0,0,0,0)},uPx:{value:new THREE.Vector2()},uCr:{value:new THREE.Vector3()}},
   vertexShader:`uniform float uFrame;uniform float uFrames;varying vec2 vUv;void main(){vUv=vec2((uv.x+uFrame)/uFrames,uv.y);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
-  fragmentShader:`uniform sampler2D map;uniform vec3 uTint;uniform float uFlash;varying vec2 vUv;void main(){vec4 t=texture2D(map,vUv);if(t.a<.5)discard;gl_FragColor=vec4(mix(t.rgb*uTint,vec3(1.),uFlash),1.);}`});}
+  // uOut (rgb, on) draws a solid outline uPx texels wide around the sprite, kept inside the current frame (Settings > Outline enemies about to attack)
+  // uCr (creases 0-2, ink 0-1, tear width) folds ink lines across a boss and tears them open into gaps with paper-white edges (boss.js)
+  fragmentShader:`uniform sampler2D map;uniform vec3 uTint;uniform float uFlash;uniform vec4 uOut;uniform vec2 uPx;uniform float uFrame;uniform float uFrames;uniform vec3 uCr;varying vec2 vUv;void main(){vec4 t=texture2D(map,vUv);
+    float cd=9.,cw=0.;if(uCr.x>0.&&t.a>=.5){vec2 q=vec2(vUv.x*uFrames-uFrame,vUv.y);cd=abs(q.x*.9+q.y-1.05+.035*sin(q.y*47.));if(uCr.x>1.5)cd=min(cd,abs(q.x-q.y*.7-.12+.03*sin(q.x*53.+1.)));
+      cw=uCr.z*(.03+.02*sin(q.x*91.+q.y*67.));if(cd<cw)discard;}
+    if(t.a<.5){if(uOut.a<=0.)discard;float x0=uFrame/uFrames+uPx.x*.5,x1=(uFrame+1.)/uFrames-uPx.x*.5,a=0.;
+      for(int i=0;i<8;i++){float an=float(i)*.785398;a=max(a,texture2D(map,vec2(clamp(vUv.x+cos(an)*uPx.x,x0,x1),vUv.y+sin(an)*uPx.y)).a);}
+      if(a<.5)discard;gl_FragColor=vec4(uOut.rgb,1.);return;}
+    vec3 c=t.rgb*uTint;if(cw>0.&&cd<cw+.018)c=vec3(.98,.95,.88)*uTint;else if(cd<.011)c=mix(c,vec3(.16,.13,.19),uCr.y);
+    gl_FragColor=vec4(mix(c,vec3(1.),uFlash),1.);}`});}
+// outline color for a winding-up enemy: red, or the warning mark's color in color-vision modes
+const TELECOL={off:new THREE.Color('#ff3b2a'),deut:new THREE.Color('#ffd23f'),prot:new THREE.Color('#ffd23f'),trit:new THREE.Color('#ff5a8a')};
+export function teleOutline(m,on,t){const u=m.material.uniforms;if(!u.uOut)return;if(!on){u.uOut.value.w=0;return;}const c=TELECOL[SET.cb]||TELECOL.off,k=.8+.2*Math.sin(t*18),img=u.map.value&&u.map.value.image;
+  u.uOut.value.set(c.r*k,c.g*k,c.b*k,1);if(img)u.uPx.value.set(6/img.width,6/img.height);}
 export function canvasTex(c){const t=new THREE.CanvasTexture(c);t.minFilter=THREE.LinearFilter;t.generateMipmaps=false;return t;}
 
 // sky
@@ -68,7 +81,7 @@ export function buildChunk(cx,cy){markFg(cx);const P=[],UV=[],L=[],I=[];let vc=0
     const w=walls[i];if(w){quad([x,y,-.5,x+1,y,-.5,x+1,y+1,-.5,x,y+1,-.5],cellUV(WALLCELL[w]),c4(),.52);}
     if(t===T.AIR)continue;
     if(TP[t].liq){const top=tileAt(x,y+1)!==t;const lava=t===T.LAVA;lquad([x,y,.42,x+1,y,.42,x+1,y+1,.42,x,y+1,.42],cellUV(lava?(top?C.lavaT:C.lavaF):(top?C.inkT:C.inkF)),c4(),lava?2:1);continue;}
-    let cell=TP[t].cell,z=0;if(t===T.SKETCH)cell=meta[i]===2?C.sketchS:C.sketchB;if(t===T.SIGN)cell=meta[i]?C.sign1:C.sign0;if(t===T.CROP){const m=meta[i];cell=C.crops[Math.min(4,m>>2)][Math.min(2,m&3)];}
+    let cell=TP[t].cell,z=0;if(t===T.SKETCH)cell=meta[i]===2?C.sketchS:C.sketchB;if(t===T.SIGN)cell=meta[i]?C.sign1:C.sign0;if(t===T.CROP){const m=meta[i];cell=C.crops[Math.min(4,m>>2)][Math.min(2,m&3)];}if(t===T.RARE){const m=meta[i];cell=C.rare[Math.min(3,m>>2)][Math.min(2,m&3)];}
     if(t===T.DOOR){const m=meta[i];cell=(m&1)?((m&2)?C.doorOT:C.doorOB):((m&2)?C.doorT:C.doorB);}
     if(t===T.TRUNK)z=-.2;
     const l4=c4();quad([x,y,z,x+1,y,z,x+1,y+1,z,x,y+1,z],cellUV(cell),l4,1);
@@ -78,7 +91,7 @@ export function buildChunk(cx,cy){markFg(cx);const P=[],UV=[],L=[],I=[];let vc=0
   const k=cy*CW+cx;if(chunks[k]){chunks[k].geometry.dispose();chunks[k].geometry=g;}else{chunks[k]=new THREE.Mesh(g,worldMat);scene.add(chunks[k]);}
   const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.Float32BufferAttribute(LP.P,3));lg.setAttribute('uv',new THREE.Float32BufferAttribute(LP.UV,2));lg.setAttribute('aL',new THREE.Float32BufferAttribute(LP.L,3));lg.setIndex(LP.I);
   if(liqChunks[k]){liqChunks[k].geometry.dispose();liqChunks[k].geometry=lg;}else{liqChunks[k]=new THREE.Mesh(lg,liquidMat);liqChunks[k].renderOrder=3;scene.add(liqChunks[k]);}}
-export function rebuildAll(){crops=new Set();for(let i=0;i<N;i++)if(tiles[i]===T.CROP)crops.add(i);computeLight();for(let cy=0;cy<CHH;cy++)for(let cx=0;cx<CW;cx++)buildChunk(cx,cy);dirty.clear();}
+export function rebuildAll(){crops=new Set();for(let i=0;i<N;i++)if(tiles[i]===T.CROP||tiles[i]===T.RARE)crops.add(i);computeLight();for(let cy=0;cy<CHH;cy++)for(let cx=0;cx<CW;cx++)buildChunk(cx,cy);dirty.clear();}
 export let lightDirty=false,lx0=1e9,lx1=-1;
 export function markChunk(x,y){for(const[dx,dy]of[[0,0],[-1,0],[1,0],[0,-1],[0,1]]){const cx=Math.floor((x+dx)/CS),cy=Math.floor((y+dy)/CS);if(cx>=0&&cy>=0&&cx<CW&&cy<CHH)dirty.add(cy*CW+cx);}}
 export function markDirty(x,y){lightDirty=true;lx0=Math.min(lx0,x);lx1=Math.max(lx1,x);const c0=Math.max(0,Math.floor((x-16)/CS)),c1=Math.min(CW-1,Math.floor((x+16)/CS)),r1=Math.min(CHH-1,Math.floor((y+16)/CS));for(let cx=c0;cx<=c1;cx++)for(let cy=0;cy<=r1;cy++)dirty.add(cy*CW+cx);}
@@ -90,7 +103,7 @@ export function simLiquids(){const p=player;liqTick++;const x0=Math.max(1,Math.f
     if(tiles[i-W]===T.AIR||(TP[tiles[i-W]].repl&&!TP[tiles[i-W]].liq&&tiles[i-W]!==T.AIR)){if(tiles[i-W]!==T.AIR)tiles[i-W]=T.AIR;move(i,i-W,x,y);continue;}
     const d=Math.random()<.5?-1:1;for(const dd of[d,-d]){const n=i+dd;if(tiles[n]===T.AIR&&(tiles[n-W]===T.AIR||tiles[i+W]===t)){move(i,n,x,y);break;}}}}
 export let crops=new Set();
-export function setTile(x,y,t,m=0){if(x<0||y<0||x>=W||y>=H)return;const i=idx(x,y);tiles[i]=t;meta[i]=m;if(t===T.CROP)crops.add(i);else crops.delete(i);markDirty(x,y);}
+export function setTile(x,y,t,m=0){if(x<0||y<0||x>=W||y>=H)return;const i=idx(x,y);tiles[i]=t;meta[i]=m;if(t===T.CROP||t===T.RARE)crops.add(i);else crops.delete(i);markDirty(x,y);}
 
 // ================= sprites & sheets =================
 export function makeSheet(n,fw,fh,draw,b=4){const out=mk(n*fw,fh),o=out.getContext('2d');for(let f=0;f<n;f++){const tmp=mk(fw,fh),t=tmp.getContext('2d');draw(t,f);grain(t,0,0,fw,fh,12);const sil=mk(fw,fh),s=sil.getContext('2d');s.drawImage(tmp,0,0);s.globalCompositeOperation='source-in';s.fillStyle='#fbf5e6';s.fillRect(0,0,fw,fh);
@@ -205,7 +218,7 @@ const barBgMat=new THREE.MeshBasicMaterial({color:0x2a2130,depthTest:false}),bar
 export const eliteMat=new THREE.MeshBasicMaterial({transparent:true,alphaTest:.5,depthTest:false}),threadGeo=new THREE.PlaneGeometry(.05,1);threadGeo.translate(0,.5,0);
 export function updateEnemyFx(e,dt){const top=e.y+e.h+(e.d.fly?.15:.3);e.hpShow=(e.hpShow||0)-dt;
   if(e.elite){if(!e.star){e.star=new THREE.Mesh(markGeo,eliteMat);e.star.renderOrder=8;scene.add(e.star);}e.star.visible=!e.burrow;e.star.position.set(e.x,top+.25+Math.sin(e.t*3)*.08,.69);e.star.rotation.z=Math.sin(e.t*2)*.2;}
-  if(e.warn){if(!e.mark){e.mark=new THREE.Mesh(markGeo,markMat);e.mark.renderOrder=8;scene.add(e.mark);}e.mark.visible=true;const k=(SET.cb&&SET.cb!=='off'?1.3:1)*(1+.18*Math.sin(e.t*20));e.mark.scale.set(k,k,1);e.mark.position.set(e.x,top+(e.elite?1.05:.6),.7);}else if(e.mark)e.mark.visible=false;
+  if(e.warn){if(!e.mark){e.mark=new THREE.Mesh(markGeo,markMat);e.mark.renderOrder=8;scene.add(e.mark);}e.mark.visible=true;const k=(SET.cb&&SET.cb!=='off'?1.3:1)*(SET.tele?1.35:1)*(1+.18*Math.sin(e.t*20));e.mark.scale.set(k,k,1);e.mark.position.set(e.x,top+(e.elite?1.05:.6),.7);}else if(e.mark)e.mark.visible=false;
   const show=!e.d.boss&&e.hpShow>0&&e.hp<e.max;if(show&&!e.bar){const bg=new THREE.Mesh(barBgGeo,barBgMat),fg=new THREE.Mesh(barFgGeo,e.elite?barFgEliteMat:barFgMat);bg.renderOrder=6;fg.renderOrder=7;scene.add(bg,fg);e.bar=[bg,fg];}
   if(e.bar){e.bar[0].visible=e.bar[1].visible=show;if(show){const bw=Math.max(.9,e.w+.2);e.bar[0].scale.x=bw;e.bar[0].position.set(e.x,top+.12,.66);e.bar[1].scale.x=Math.max(.001,(bw-.08)*e.hp/e.max);e.bar[1].position.set(e.x-bw/2+.04,top+.12,.67);}}}
 function batDraw(t,f,c1,c2,eye){const up=f?-16:14;for(const s of[-1,1]){t.beginPath();t.moveTo(48,32);t.quadraticCurveTo(48+s*20,32+up-8,48+s*42,26+up);t.quadraticCurveTo(48+s*32,40+up*.3,48+s*26,34+up*.2);t.quadraticCurveTo(48+s*18,44,48,38);t.closePath();fi(t,c2,2.5);}

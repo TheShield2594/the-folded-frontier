@@ -119,6 +119,11 @@
       <label for="cbS">Color vision</label><select id="cbS"><option value="off">Standard colors</option><option value="deut">Deuteranopia (green-weak)</option><option value="prot">Protanopia (red-weak)</option><option value="trit">Tritanopia (blue-weak)</option></select>
       <label for="introC">Story intro on new worlds</label><input type="checkbox" id="introC">
       <label for="hintsC">Tutorial hints</label><input type="checkbox" id="hintsC">
+      <label for="motionS">Motion</label><select id="motionS"><option value="auto">Match system setting</option><option value="reduce">Reduced (no page turns or sway)</option><option value="full">Full</option></select>
+      <label for="teleC">Outline enemies about to attack</label><input type="checkbox" id="teleC">
+      <label for="tspdS">Dialogue text speed</label><select id="tspdS"><option value="slow">Slow</option><option value="normal">Normal</option><option value="fast">Fast</option><option value="instant">Instant</option></select>
+      <label for="blockS">Block (shield)</label><select id="blockS"><option value="hold">Hold</option><option value="tog">Toggle</option></select>
+      <label for="drawS">Bow draw</label><select id="drawS"><option value="hold">Hold</option><option value="tog">Toggle (press again to loose)</option></select>
     </div>
     <h3>Keys</h3><div id="binds" class="binds"></div>
     <h3>Gamepad buttons</h3><div id="padBinds" class="binds"></div>
@@ -134,6 +139,7 @@
     <p class="note" id="codeMsg"></p></div></div></div>
   <div id="dashCd" hidden></div><div id="drawCd" hidden></div>
   <div id="padHint" hidden>A select · X split or ×5 · RB quick move · LB next page · B or Y close</div>
+  <div id="bossCard" hidden><div class="bc-page"><small id="bcKick"></small><b id="bcName"></b><span id="bcSub"></span></div></div>
   <div id="chapter" hidden><div class="ch-page"><small id="chKick">A new page</small><b id="chName"></b><span id="chSub"></span></div></div>
   <div id="intro" hidden>
     <div class="bookWrap"><div class="book">

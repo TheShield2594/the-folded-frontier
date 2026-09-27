@@ -3,20 +3,20 @@ import {
   $,applyUI,applyVolumes,blk,BUFFS,clamp,countItem,dayF,DEF_BIND,DEF_PAD,DEF_SET,ELEM,enemies,explored,
   atlasTex,clearIcons,drawOres,drawWarnMark,H,hexRgb,hintT,icon,initAudio,inkMoon,isNight,lerp,META,npcs,wev,
   ORECOL,player,PSTAT,renderHearts,saveMeta,saveSettings,SET,setCamDist,setHintT,setInvDirty,setSoundOn,SFX,sky,soundOn,
-  seasonIdx,seasonInfo,SEASONS,state,surf,T,tiles,TP,W,WALLCOL,walls,weather,worldTime,
+  fullMoon,seasonIdx,seasonInfo,SEASONS,state,surf,T,tiles,TP,W,WALLCOL,walls,weather,worldTime,
 } from './game.js';
 
 // ================= settings & achievements UI =================
 export const KEYNAME=k=>({' ':'Space',arrowleft:'←',arrowright:'→',arrowup:'↑',arrowdown:'↓',escape:'Esc',tab:'Tab',shift:'Shift',control:'Ctrl',alt:'Alt',enter:'Enter',backspace:'Backspace'}[k]||k.toUpperCase());
 const BINDLAB={left:'Move left',right:'Move right',jump:'Jump',down:'Drop down',inv:'Backpack',heal:'Quick heal',map:'World map',hook:'Grappling hook',partner:'Switch partner',ability:'Partner move',flat:'Flatten',dash:'Dash',block:'Block (shield)',mount:'Mount / dismount'};
-const PADLAB={jump:'Jump',use:'Use item',interact:'Interact / hold to block',dash:'Dash',inv:'Backpack',hook:'Grappling hook',ability:'Partner move',partner:'Switch partner',pl:'Previous slot',pr:'Next slot',map:'World map',mount:'Mount / dismount'};
+const PADLAB={jump:'Jump',use:'Use item',interact:'Interact / block (shield)',dash:'Dash',inv:'Backpack',hook:'Grappling hook',ability:'Partner move',partner:'Switch partner',pl:'Previous slot',pr:'Next slot',map:'World map',mount:'Mount / dismount'};
 export const PADNAME=i=>i<0?'Unbound':['A','B','X','Y','LB','RB','LT','RT','Back','Start','L3','R3','D-pad ↑','D-pad ↓','D-pad ←','D-pad →','Home'][i]||'Button '+i;
 export let rebinding=null,padRebinding=null;
 export function renderBinds(){$('binds').innerHTML=Object.keys(BINDLAB).map(a=>`<div class="bind"><span>${BINDLAB[a]}</span><button type="button" data-a="${a}" class="${rebinding===a?'wait':''}">${rebinding===a?'Press a key…':KEYNAME(SET.bind[a])}</button></div>`).join('');
   $('padBinds').innerHTML=Object.keys(PADLAB).map(a=>`<div class="bind"><span>${PADLAB[a]}</span><button type="button" data-a="${a}" class="${padRebinding===a?'wait':''}">${padRebinding===a?'Press a button…':PADNAME(SET.pad[a])}</button></div>`).join('');}
 $('binds').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;padRebinding=null;rebinding=b.dataset.a;renderBinds();});
 $('padBinds').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;rebinding=null;padRebinding=b.dataset.a;renderBinds();});
-function openSettings(){$('sndC').checked=soundOn;$('volMaster').value=SET.vol;$('volMusic').value=SET.music;$('volSfx').value=SET.sfx;$('volAmb').value=SET.amb;$('zoomR').value=SET.zoom;$('uiR').value=SET.ui;$('txtR').value=SET.text;uiLabels();$('shakeC').checked=SET.shake;$('hitC').checked=SET.hitstop;$('numsC').checked=SET.nums;$('fgC').checked=SET.fg;$('cbS').value=SET.cb;$('introC').checked=SET.intro;$('hintsC').checked=SET.hints;rebinding=null;renderBinds();$('settings').hidden=false;}
+function openSettings(){$('sndC').checked=soundOn;$('volMaster').value=SET.vol;$('volMusic').value=SET.music;$('volSfx').value=SET.sfx;$('volAmb').value=SET.amb;$('zoomR').value=SET.zoom;$('uiR').value=SET.ui;$('txtR').value=SET.text;uiLabels();$('shakeC').checked=SET.shake;$('hitC').checked=SET.hitstop;$('numsC').checked=SET.nums;$('fgC').checked=SET.fg;$('cbS').value=SET.cb;$('introC').checked=SET.intro;$('hintsC').checked=SET.hints;$('motionS').value=SET.motion;$('teleC').checked=SET.tele;$('tspdS').value=SET.tspd;$('blockS').value=SET.blockTog?'tog':'hold';$('drawS').value=SET.drawTog?'tog':'hold';rebinding=null;renderBinds();$('settings').hidden=false;}
 export function closeSettings(){$('settings').hidden=true;rebinding=padRebinding=null;saveSettings();}
 $('sndC').addEventListener('change',e=>{SET.snd=e.target.checked;setSoundOn(SET.snd);initAudio();applyVolumes();});
 $('volMaster').addEventListener('input',e=>{SET.vol=+e.target.value;initAudio();applyVolumes();});
@@ -35,6 +35,11 @@ $('fgC').addEventListener('change',e=>{SET.fg=e.target.checked;});
 $('cbS').addEventListener('change',e=>{SET.cb=e.target.value;applyCB();saveSettings();});
 $('introC').addEventListener('change',e=>{SET.intro=e.target.checked;});
 $('hintsC').addEventListener('change',e=>{SET.hints=e.target.checked;});
+$('motionS').addEventListener('change',e=>{SET.motion=e.target.value;applyUI();saveSettings();});
+$('teleC').addEventListener('change',e=>{SET.tele=e.target.checked;});
+$('tspdS').addEventListener('change',e=>{SET.tspd=e.target.value;});
+$('blockS').addEventListener('change',e=>{SET.blockTog=e.target.value==='tog';});
+$('drawS').addEventListener('change',e=>{SET.drawTog=e.target.value==='tog';});
 $('setClose').addEventListener('click',closeSettings);
 $('setReset').addEventListener('click',()=>{Object.assign(SET,DEF_SET);SET.bind=Object.assign({},DEF_BIND);SET.pad=Object.assign({},DEF_PAD);setCamDist(SET.zoom);setSoundOn(SET.snd);applyVolumes();applyUI();applyCB();saveSettings();openSettings();});
 const ACH=[
@@ -120,7 +125,7 @@ function drawMini(){const p=player,x0=Math.floor(p.x)-70,y0=Math.floor(p.y)+40,d
   mctx.putImageData(mimg,0,0);const dot=(x,y,col,s=2)=>{mctx.fillStyle=col;mctx.fillRect(Math.round(x-x0)-s/2,Math.round(y0-y)-s,s,s);};
   for(const e of enemies)dot(e.x,e.y+e.h/2,e.d.boss?'#7fd3f0':'#ff5a4a',e.d.boss?4:2);npcs.forEach(n=>dot(n.x,n.y+1,'#6cf07a',3));dot(p.x,p.y+1,'#fff',3);}
 let buffKey='';
-export function updateHUD(dt){renderHearts();const h=Math.floor(worldTime),m=Math.floor((worldTime-h)*60/10)*10;$('clock').textContent=`${(h%12)||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}${inkMoon&&isNight()?' · Ink Moon':wev.k==='storm'?' · Paper Storm':weather==='rain'?' · Rain':weather==='wind'?' · Windy':weather==='snow'?' · Snow':''}`;{const si=seasonInfo(),k=si.k+si.day+(si.fest||'');if($('season').dataset.k!==k){$('season').dataset.k=k;$('season').className='chip season '+si.k;$('season').textContent=si.fest?`${si.n} ${si.day} · ${si.fest}`:`${si.n} · Day ${si.day}`;$('season').title=si.fest?'Festival day!':si.festIn?`${SEASONS[seasonIdx()].fest} in ${si.festIn} day${si.festIn>1?'s':''}`:`Year ${si.year}`;}}
+export function updateHUD(dt){renderHearts();const h=Math.floor(worldTime),m=Math.floor((worldTime-h)*60/10)*10;$('clock').textContent=`${(h%12)||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}${inkMoon&&isNight()?' · Ink Moon':fullMoon()&&isNight()?' · Full Moon':wev.k==='storm'?' · Paper Storm':weather==='rain'?' · Rain':weather==='wind'?' · Windy':weather==='snow'?' · Snow':''}`;{const si=seasonInfo(),k=si.k+si.day+(si.fest||'');if($('season').dataset.k!==k){$('season').dataset.k=k;$('season').className='chip season '+si.k;$('season').textContent=si.fest?`${si.n} ${si.day} · ${si.fest}`:`${si.n} · Day ${si.day}`;$('season').title=si.fest?'Festival day!':si.festIn?`${SEASONS[seasonIdx()].fest} in ${si.festIn} day${si.festIn>1?'s':''}`:`Year ${si.year}`;}}
   const sts=Object.keys(player.st||{}).filter(k=>player.st[k]>0);
   const bk=Object.keys(player.buffs).map(k=>k+Math.ceil(player.buffs[k])).join()+'|'+sts.map(k=>k+Math.ceil(player.st[k])).join();if(bk!==buffKey){buffKey=bk;$('buffs').innerHTML=Object.keys(player.buffs).map(k=>{const s2=Math.ceil(player.buffs[k]);return `<span class="buff" title="${BUFFS[k][2]}"><img src="${icon(BUFFS[k][1])}" alt="">${BUFFS[k][0]} ${Math.floor(s2/60)}:${String(s2%60).padStart(2,'0')}</span>`;}).join('')
     +sts.map(k=>{const E=ELEM[PSTAT[k][0]];return `<span class="buff bad" title="${PSTAT[k][1]}"><img src="${icon(E.icon)}" alt="">${E.st} ${Math.ceil(player.st[k])}s</span>`;}).join('');}

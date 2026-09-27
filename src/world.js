@@ -1,5 +1,5 @@
 // World state, world generation, secrets and structures, and tile lighting.
-import {BADGES,H,LB,LIGHT,makeNoise,mulberry32,N,OPAQUE,pick,randi,SEEDIDS,SOLID,SPAWNX,T,TP,W} from './game.js';
+import {BADGES,H,LB,LIGHT,makeNoise,mulberry32,N,OPAQUE,pick,randi,RSEEDS,SEEDIDS,SOLID,SPAWNX,T,TP,W} from './game.js';
 
 // ================= world state =================
 export let tiles=new Uint8Array(N),walls=new Uint8Array(N),meta=new Uint8Array(N),stamp=new Uint32Array(N);export let BIO={uw:0};
@@ -11,7 +11,7 @@ export function isOpaque(x,y){return OPAQUE[tileAt(x,y)]===1;}
 
 function ruinLoot(secret){const s=[];const add=(id,n)=>s.push({id,n});add('coin',randi(40,120)*(secret?2:1));add('tmap',1);add(pick(['goldbar','ironbar','frostore']),randi(4,10));if(Math.random()<(secret?.8:.35))add(pick(Object.keys(BADGES).map(k=>'b_'+k)),1);if(secret&&Math.random()<.5)add('bpup',1);if(Math.random()<.5)add(pick(['potiron','potregen','potnight','potswift']),randi(1,3));if(secret)add('candle',randi(1,3));while(s.length<20)s.push(null);return s;}
 function treasureLoot(){const s=[];const add=(id,n)=>s.push({id,n});add('coin',randi(200,400));add('bpup',1);add(pick(Object.keys(BADGES).map(k=>'b_'+k)),1);add(pick(['goldbar','frostbar','moonink']),randi(6,12));add(pick(['kite','beacon','quilt','toolbelt','magnet','glider']),1);while(s.length<20)s.push(null);return s;}
-function lootRoll(){const s=[];const add=(id,n)=>s.push({id,n});if(Math.random()<.15)add('tmap',1);if(Math.random()<.5)add(pick(['potswift','potnight','potiron','potregen','potfire']),randi(1,3));if(Math.random()<.35)add(pick(SEEDIDS.slice(0,4)),randi(2,5));
+function lootRoll(){const s=[];const add=(id,n)=>s.push({id,n});if(Math.random()<.15)add('tmap',1);if(Math.random()<.5)add(pick(['potswift','potnight','potiron','potregen','potfire']),randi(1,3));if(Math.random()<.35)add(pick(SEEDIDS.slice(0,4)),randi(2,5));if(Math.random()<.2)add(pick(RSEEDS),randi(1,2));
   add('potion',randi(1,3));add('torch',randi(8,20));if(Math.random()<.6)add(pick(['copperbar','ironbar','goldbar']),randi(3,8));if(Math.random()<.5)add('shuriken',randi(20,45));
   add('coin',randi(20,90));if(Math.random()<.55)add(pick(['glider','lantern','buckler','patch','glider']),1);if(Math.random()<.35)add('crown',1);
   if(Math.random()<.4)add(pick(['ironpick','ironsword']),1);if(Math.random()<.35)add(pick(['inktome','woodbow','manacrystal','launcher']),1);if(Math.random()<.4)add(pick(['arrow','firearrow','paper']),randi(25,60));if(Math.random()<.3)add('fstar',randi(2,5));if(Math.random()<.25)add('hook',1);if(Math.random()<.25)add(pick(['b_money','b_flowerf','b_close','b_spike','b_heartf','b_stomp']),1);if(Math.random()<.2)add('bpup',1);if(Math.random()<.2)add(pick(['toolbelt','magnet','paint1','paint3']),1);if(Math.random()<.2)add(pick(['fly','fly','glowlure']),randi(4,10));if(Math.random()<.4)add('rope',randi(20,50));while(s.length<20)s.push(null);return s;}
@@ -100,6 +100,9 @@ export function generate(sd){
     for(let x=sx-9;x<=sx+9;x++)for(let y=sy-1;y<=sy+8;y++){const edge=x===sx-9||x===sx+9||y===sy-1||y===sy+8;setT(x,y,edge?T.BRICK:T.AIR);walls[idx(x,y)]=3;}
     setT(sx,sy,T.ALTAR);for(const dx of[-7,-4,-1,2,5]){const px=sx+dx+(dx>0?1:0);setT(px,sy,T.PEDESTAL);}setT(sx-8,sy+5,T.TORCH);setT(sx+8,sy+5,T.TORCH);
     for(let y=sy;y<=sy+3;y++)setT(sx+9,y,T.PEEL,1);BIO.shrine=[sx,sy];break;}
+  // wild rare plants: ghost mushrooms in deep caves, sunfruit on the dunes (after the structures, so older seeds keep their layout)
+  for(let k=0;k<Math.round(W*.06);k++){const x=Math.floor(4+rng()*(W-8)),y=Math.floor(UW+10+rng()*Math.max(1,surf[x]-UW-40));const i=idx(x,y);if(tiles[i]!==T.AIR||!walls[i])continue;const b=tiles[i-W];if(b===T.STONE||b===T.DIRT){tiles[i]=T.RARE;meta[i]=3*4+2;}}
+  for(let x=BIO.desert[0]+3;x<=BIO.desert[1]-3;x++){const s2=surf[x],i=idx(x,s2+1);if(tiles[idx(x,s2)]===T.SAND&&tiles[i]===T.AIR&&rng()<.04){tiles[i]=T.RARE;meta[i]=2*4+2;}}
   const L=surf[SPAWNX],x0=SPAWNX+2;
   for(let x=x0-2;x<=x0+13;x++)for(let y=L+1;y<=L+10;y++){const i=idx(x,y);tiles[i]=T.AIR;walls[i]=0;}
   for(let x=x0-2;x<=x0+13;x++){tiles[idx(x,L)]=(x>=x0&&x<=x0+11)?T.PLANK:T.GRASS;for(let y=L-1;y>L-4;y--)if(tiles[idx(x,y)]===T.AIR)tiles[idx(x,y)]=T.DIRT;}

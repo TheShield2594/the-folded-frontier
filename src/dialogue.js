@@ -1,6 +1,6 @@
 // Staged dialogue: a speech bubble over the speaker with a portrait, typed-out text and a voice blip per character.
 import {
-  $,camera,circ,facePic,fi,ink,invOpen,mapOpen,mk,NPCDEF,PARTNERS,player,poly,pt,pv,rr,setInv,
+  $,camera,circ,facePic,fi,ink,invOpen,mapOpen,mk,NPCDEF,PARTNERS,player,poly,pt,pv,rr,SET,setInv,
   setState,SHEETS,state,tone,upx,
 } from './game.js';
 
@@ -54,19 +54,21 @@ function line(){const txt=D.c.lines[D.i],el=$('dlgTxt');el.innerHTML='';D.chars=
     // emphasized words keep their letters together (nowrap), since inline-block letters would allow a break between them
     let host=el;if(mode){if(!word){word=document.createElement('span');word.className='w';el.appendChild(word);}host=word;}
     for(const ch of m[4]){const s=document.createElement('span');s.className='c'+(mode==='*'?' em':mode==='~'?' sh':'');s.textContent=ch;s.style.setProperty('--i',D.chars.length);host.appendChild(s);D.chars.push({s,ch,em:!!mode});}}
-  setExpr(expr);$('dlgNext').hidden=true;$('dlg').classList.toggle('last',D.i===D.c.lines.length-1);}
+  setExpr(expr);$('dlgNext').hidden=true;$('dlg').classList.toggle('last',D.i===D.c.lines.length-1);if(SET.tspd==='instant')finish();}
 function setExpr(e){D.expr=e;const c=$('dlgPic'),p=portrait(D.sp.k,e);const t=c.getContext('2d');t.clearRect(0,0,96,96);t.drawImage(p,0,0);c.classList.remove('pop');void c.offsetWidth;c.classList.add('pop');}
 function reveal(){const q=D.chars[D.n];if(D.exprAt[D.n])setExpr(D.exprAt[D.n]);q.s.classList.add('on');D.n++;
   if(/[a-z0-9]/i.test(q.ch)&&(q.em||D.blipN++%2===0))blip(VOICE[D.sp.k]||VOICE.player,q.ch,q.em);
   // a beat after punctuation, as if the speaker breathes
   return /[.!?]/.test(q.ch)&&D.chars[D.n]&&D.chars[D.n].ch===' '?.28:q.ch===','?.14:q.em?.05:.028;}
+// Settings > Dialogue text speed: how fast letters type out ('instant' shows the whole line at once)
+const TSPD={slow:.55,normal:1,fast:2};
 function finish(){while(D.n<D.chars.length){if(D.exprAt[D.n])setExpr(D.exprAt[D.n]);D.chars[D.n++].s.classList.add('on');}D.done=true;$('dlgNext').hidden=false;}
 // dlgNext(all): finish typing, else the next line; all=true closes the conversation
 export function dlgNext(all){if(!D)return;if(all){close();return;}if(!D.done){finish();return;}if(++D.i<D.c.lines.length)line();else close();}
 function close(){const c=D.c;D=null;$('dlg').hidden=true;$('ui').classList.remove('talking');restoreFocus();if(state==='talk')setState('play');tone(420,300,.08,'triangle',.05);if(c.done)c.done();}
 export function updateDlg(dt){
   if(!D){if(!queue.length||state!=='play'||invOpen||mapOpen||player.dead)return;if((queue[0].wait-=dt)>0)return;open(queue.shift());}
-  if(!D.done){D.t-=dt;while(D.t<=0&&D.n<D.chars.length)D.t+=reveal();if(D.n>=D.chars.length){D.done=true;$('dlgNext').hidden=false;}}
+  if(!D.done){D.t-=dt*(TSPD[SET.tspd]||1);while(D.t<=0&&D.n<D.chars.length)D.t+=reveal();if(D.n>=D.chars.length){D.done=true;$('dlgNext').hidden=false;}}
   // keep the bubble over the speaker: above their head, clamped to the screen, the tail pointing at them
   const el=$('dlg'),at=D.sp.at&&D.sp.at(),W=el.offsetWidth,Hh=el.offsetHeight,vw=parseFloat(upx(innerWidth)),vh=parseFloat(upx(innerHeight));
   let sx=vw/2,sy=vh*.62;if(at){pv.set(at.x,at.y,.5).project(camera);sx=(pv.x+1)/2*vw;sy=(1-pv.y)/2*vh;}

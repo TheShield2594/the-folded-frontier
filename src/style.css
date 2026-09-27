@@ -41,7 +41,21 @@ button.ghost{background:var(--paper2);}
 #chapter.out .ch-page{animation:chOut .5s ease-in both;}
 @keyframes chIn{0%{transform:rotateX(-95deg) scaleY(.4);opacity:0}60%{opacity:1}100%{transform:none}}
 @keyframes chOut{to{transform:rotateX(90deg) scaleY(.4);opacity:0}}
-@media (prefers-reduced-motion:reduce){#chapter.in .ch-page,#chapter.out .ch-page{animation:none}}
+/* boss title card (boss.js): a dark torn strip that rips in, and tears away */
+#bossCard{position:absolute;left:0;right:0;top:24%;display:flex;justify-content:center;pointer-events:none;padding:0 16px;}
+.bc-page{background:#2a2130;color:var(--paper);border:3px solid var(--ink);padding:14px 44px 18px;text-align:center;box-shadow:6px 8px 0 rgba(20,14,26,.5);max-width:620px;position:relative;
+  clip-path:polygon(0 6%,4% 0,11% 5%,19% 1%,28% 6%,37% 0,46% 5%,55% 1%,64% 6%,73% 0,82% 5%,91% 1%,100% 5%,100% 95%,95% 100%,86% 95%,77% 100%,68% 94%,59% 100%,50% 95%,41% 100%,32% 94%,23% 100%,14% 95%,5% 100%,0 94%);
+  background-image:repeating-linear-gradient(90deg,transparent 0 22px,rgba(251,248,240,.04) 22px 23px);}
+.bc-page small{display:block;font-size:calc(12px*var(--ts));font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:#f1c04f;}
+.bc-page b{display:block;font-family:'Bagel Fat One','Arial Black',sans-serif;font-weight:400;font-size:clamp(32px,calc(5.4vw / var(--ui)),54px);line-height:1.05;margin:4px 0 6px;color:#fbf3e0;text-shadow:3px 3px 0 #b33a2f;text-wrap:balance;}
+.bc-page span{font-size:calc(14px*var(--ts));font-weight:700;color:#d8cbe0;font-style:italic;}
+#bossCard.in .bc-page{animation:bcIn .55s cubic-bezier(.2,1.1,.3,1) both;}
+#bossCard.out .bc-page{animation:bcOut .45s ease-in both;}
+@keyframes bcIn{0%{transform:scaleX(0) rotate(-4deg);opacity:0}60%{opacity:1;transform:scaleX(1.06) rotate(1deg)}100%{transform:none}}
+@keyframes bcOut{to{transform:translateY(-14px) rotate(3deg) scaleY(.2);opacity:0}}
+/* reduced motion (body.rm, from Settings or the system): */
+body.rm #bossCard.in .bc-page,body.rm #bossCard.out .bc-page{animation:none}
+body.rm #chapter.in .ch-page,body.rm #chapter.out .ch-page{animation:none}
 #panel .padfocus,#sideSheet .padfocus{outline:3px solid var(--teal);outline-offset:2px;box-shadow:0 0 0 6px rgba(47,127,134,.25);}
 #padHint{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:rgba(42,33,48,.85);color:var(--paper);border-radius:999px;padding:4px 14px;font-size:calc(12px*var(--ts));font-weight:700;pointer-events:none;white-space:nowrap;}
 #buffs{display:flex;gap:5px;flex-wrap:wrap;max-width:300px;}
@@ -223,7 +237,7 @@ button.ghost{background:var(--paper2);}
 .mapLeg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:calc(12.5px*var(--ts));font-weight:700;margin-top:8px;color:var(--ink2);}
 .mapLeg i{display:inline-block;width:11px;height:11px;border-radius:50%;border:2px solid var(--ink);margin-right:5px;vertical-align:-1px;}
 @media (max-width:900px){#craft{width:260px}#recipes{max-height:200px}.grid{grid-template-columns:repeat(10,36px)}.slot{width:36px;height:36px}.slot img{width:28px;height:28px}#help{display:none}}
-@media (prefers-reduced-motion:reduce){#panel>*,.logo span,.toast,#achPop,#sideSheet.turn,#craft.turn{animation:none}}
+body.rm #panel>*,body.rm .logo span,body.rm .toast,body.rm #achPop,body.rm #sideSheet.turn,body.rm #craft.turn,body.rm #guide{animation:none}
 /* settings select */
 .set select{font:inherit;font-weight:700;font-size:calc(13px*var(--ts));color:var(--ink);background:#fffaf0;border:2px solid var(--ink);border-radius:8px;padding:4px 8px;justify-self:start;max-width:100%;}
 /* tutorial card */
@@ -260,7 +274,7 @@ button.ghost{background:var(--paper2);}
 .cb{transform:rotateY(180deg);border-radius:12px 2px 2px 12px;background:linear-gradient(270deg,rgba(42,33,48,.14),transparent 12%),var(--paper);display:flex;align-items:center;justify-content:center;overflow:hidden;}
 .cb canvas{width:86%;height:auto;max-height:92%;object-fit:contain;}
 #introSkip{position:absolute;right:20px;bottom:20px;}
-@media (prefers-reduced-motion:reduce){.book,.cover,#intro.dive .book{transition:opacity .4s ease;}#intro.dive .book{transform:none;}}
+body.rm .book,body.rm .cover,body.rm #intro.dive .book{transition:opacity .4s ease;}body.rm #intro.dive .book{transform:none;}
 
 /* staged dialogue (dialogue.js): bubble over the speaker, portrait, typed text */
 #ui.talking #nums{opacity:0;}
@@ -284,7 +298,7 @@ button.ghost{background:var(--paper2);}
 #dlgTail{position:absolute;bottom:-15px;width:22px;height:15px;margin-left:-11px;background:var(--ink);clip-path:polygon(0 0,100% 0,50% 100%);}
 #dlgTail::after{content:"";position:absolute;left:3.5px;top:-1px;width:15px;height:11px;background:var(--paper);clip-path:polygon(0 0,100% 0,50% 100%);}
 #dlg.below #dlgTail{bottom:auto;top:-15px;transform:scaleY(-1);}
-@media (prefers-reduced-motion:reduce){#dlgTxt .em,#dlgTxt .sh,#dlgNext,#dlgPic.pop{animation:none;}#dlgTxt .em{text-decoration:underline wavy;}}
+body.rm #dlgTxt .em,body.rm #dlgTxt .sh,body.rm #dlgNext,body.rm #dlgPic.pop{animation:none;}body.rm #dlgTxt .em{text-decoration:underline wavy;}
 
 /* paper UI: hand-drawn frames with tape, pins and a sticker (panels in #panel and the side page) */
 #panel .sheet,#sideSheet{border-radius:12px 9px 14px 8px/9px 13px 8px 12px;}

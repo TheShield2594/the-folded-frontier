@@ -1,8 +1,8 @@
 // Seasons: a spring/summer/fall/winter cycle counted in in-game days. Seasons change crop growth,
 // weather odds, tree canopies, sky tint and drifting particles, and each has a festival day.
 import {
-  addItem,biomeAt,burst,C,camera,CHH,CW,dirty,dropItem,H,idx,isNight,npcs,NPCDEF,player,rand,
-  setWeather,setWind,SFX,surf,surfAvg,T,tiles,toast,townSpots,W,walls,weather,
+  addItem,biomeAt,blk,burst,C,camera,CHH,CW,dayF,dirty,dropItem,H,idx,inkMoon,isNight,npcs,NPCDEF,player,rand,
+  setWeather,setWind,SFX,sky,surf,surfAvg,T,tiles,toast,townSpots,W,walls,weather,worldTime,
 } from './game.js';
 
 // ================= seasons =================
@@ -24,6 +24,15 @@ export function seasonInfo(){const s=season(),d=seasonDay();return{k:s.k,n:s.n,d
 // crops under a placed background wall, or deep underground, are sheltered and ignore the season
 export const sheltered=i=>walls[i]>=2||(i/W|0)<surf[i%W]-8;
 export function cropGrowChance(i,ty){const base=weather==='rain'?.16:.08;if(sheltered(i))return base;return base*season().grow[ty]*(isFest('spring')?2:1);}
+// the moon is full every 4th night (the night that ends a day where worldDay%4===3)
+export const fullMoon=()=>worldDay%4===3;
+// rare crops (T.RARE, type in meta>>2): moon lily needs a full or Ink Moon night and open sky; thunderroot grows only
+// from lightning (lightningStrike in gameplay.js); sunfruit needs daylight on open sky with no background wall;
+// ghost mushrooms need the dark, deep underground. Seasons and shelter don't apply.
+export function rareGrowChance(i,ty){const y=i/W|0,deep=y<surf[i%W]-8;
+  if(ty===0)return !deep&&sky[i]>=12&&isNight()&&(fullMoon()||inkMoon)?.05:0;
+  if(ty===2){if(deep||sky[i]<15||walls[i]||dayF(worldTime)<.5)return 0;const k=season().k;return .06*(k==='summer'?1.5:k==='winter'?.3:1)*(weather==='rain'?.5:1);}
+  if(ty===3)return y<surf[i%W]-20&&!sky[i]&&blk[i]<6?.05:0;return 0;}
 export function dormant(i,ty){return !sheltered(i)&&season().grow[ty]===0;}
 // forest trees change canopy with the season; snow biome pines stay as they are
 export function canopyCell(m){const k=season().k;if(m<3){if(k==='fall')return C.canopyFall[m-1];if(k==='winter')return C.canopyWinter;if(k==='spring'&&m===1)return C.canopySpring;}return C.canopy[m-1];}

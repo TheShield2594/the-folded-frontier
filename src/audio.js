@@ -90,11 +90,14 @@ function musicNote(M,r,dl,st,night){const s=r.step%64,bar=s>>3,b=s&7,ch=M.ch[bar
   if(M.bp[b]!=='.'){const f=mhz(mdeg(M,ch)-24);tone(f,f,st*1.8,'triangle',.07,dl,r.g);}
   if(b===0)for(const k of[0,2,4]){const f=mhz(mdeg(M,ch+k)-12);tone(f,f,st*8,'sine',.016*soft,dl,r.g);}
   if(M.arp){const f=mhz(mdeg(M,ch+[0,2,4,7][b%4]));tone(f,f,st*1.6,'sine',.018*soft,dl,r.g);}
+  // the boss track adds layers as the boss changes phase: an arpeggio at 50% life, then a driving bass and off-beat hats at 25%
+  const L=r.k==='boss'&&boss&&!boss.dying?boss.phase||0:0;if(L>=1){const f=mhz(mdeg(M,ch+[0,2,4,7,4,2,4,7][b]));tone(f*2,f*2,st*.9,'triangle',.014,dl,r.g);}
+  if(L>=2){noise(.03,.05,'highpass',8000,dl+st/2,1,r.g);if(!(b&1)){const f=mhz(mdeg(M,ch)-12);tone(f,f*.98,st*1.8,'sawtooth',.018,dl,r.g);}}
   const d=M.dr[b];if(soft===1){if(d==='k')tone(120,45,.18,'sine',.16,dl,r.g);else if(d==='s')noise(.12,.1,'bandpass',1800,dl,.8,r.g);else if(d==='h')noise(.03,.05,'highpass',7000,dl,1,r.g);}}
 export function music(dt,night){if(!AC)return;const now=AC.currentTime;
   for(let i=mTr.length-1;i>=0;i--){const r=mTr[i];if(r.out&&now>r.end){r.g.disconnect();mTr.splice(i,1);continue;}
     const M=MUS[r.k],st=30/M.bpm;if(r.next<now)r.next=now+.02;while(r.next<now+.2){musicNote(M,r,r.next-now,st,night);r.next+=st;r.step++;}}}
-export function pickMusic(){if(state==='title'||state==='intro')return 'title';if(boss&&!boss.dying&&enemies.includes(boss)||wev.k==='army')return 'boss';return MUS[curBio]?curBio:'forest';}
+export function pickMusic(){if(state==='title'||state==='intro')return 'title';if(boss&&boss.act==='defeat')return null;if(boss&&!boss.dying&&enemies.includes(boss)||wev.k==='army')return 'boss';return MUS[curBio]?curBio:'forest';}
 // ambience: looping noise beds (wind, water, rumble, cave air) plus one-shots (birds, crickets, drips, embers, bubbles).
 // Each layer's weight follows the biome, depth, nearby liquid and time of day, and eases toward its target so changes crossfade.
 const AMB={},AMBW={wind:0,water:0,rumble:0,cave:0,birds:0,crickets:0,drips:0,embers:0,bubbles:0},AMBT={birds:2,crickets:1,drips:3,embers:.5,bubbles:2};let ambLiq=[0,0],ambLiqT=0;

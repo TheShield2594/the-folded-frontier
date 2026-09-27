@@ -2,7 +2,7 @@
 import {C,METAL} from './game.js';
 
 // ================= tiles =================
-export const T={FOIL:61,PEEL:55,SKETCH:56,SIGN:57,PEDESTAL:58,RUBBLE:59,ALTAR:60,CROP:52,ALCHEMY:53,PAINT5:54,PAINT1:39,PAINT2:40,PAINT3:41,PAINT4:42,BANR:43,BANB:44,BANG:45,LANTERNP:46,SHELF:47,CANDLE:48,POT:49,CLOCK:50,ARMCHAIR:51,SNOW:28,ICE:29,FROST:30,INKSTONE:31,INKORE:32,ASH:33,EMBERORE:34,ROPE:35,INK:36,LAVA:37,BLOOM:38,AIR:0,GRASS:1,DIRT:2,STONE:3,PLANK:4,TRUNK:5,COPPER:6,IRON:7,GOLD:8,SAND:9,TORCH:10,DOOR:11,TABLE:12,CHAIR:13,CHEST:14,BENCH:15,BRICK:16,GLASS:17,PLATFORM:18,FURNACE:19,ANVIL:20,BED:21,HEART:22,TUFT:23,FLOWER:24,MUSH:25,CORE:26,FLOWER2:27};
+export const T={RARE:62,FOIL:61,PEEL:55,SKETCH:56,SIGN:57,PEDESTAL:58,RUBBLE:59,ALTAR:60,CROP:52,ALCHEMY:53,PAINT5:54,PAINT1:39,PAINT2:40,PAINT3:41,PAINT4:42,BANR:43,BANB:44,BANG:45,LANTERNP:46,SHELF:47,CANDLE:48,POT:49,CLOCK:50,ARMCHAIR:51,SNOW:28,ICE:29,FROST:30,INKSTONE:31,INKORE:32,ASH:33,EMBERORE:34,ROPE:35,INK:36,LAVA:37,BLOOM:38,AIR:0,GRASS:1,DIRT:2,STONE:3,PLANK:4,TRUNK:5,COPPER:6,IRON:7,GOLD:8,SAND:9,TORCH:10,DOOR:11,TABLE:12,CHAIR:13,CHEST:14,BENCH:15,BRICK:16,GLASS:17,PLATFORM:18,FURNACE:19,ANVIL:20,BED:21,HEART:22,TUFT:23,FLOWER:24,MUSH:25,CORE:26,FLOWER2:27};
 export const TP=[];export const SOLID=new Uint8Array(64),OPAQUE=new Uint8Array(64),LB=new Uint8Array(64),LIGHT=new Uint8Array(64);
 function def(id,o){TP[id]=Object.assign({hard:.5,pick:0,drop:null,light:0,solid:false,col:'#888'},o);SOLID[id]=o.solid?1:0;OPAQUE[id]=o.solid&&id!==T.DOOR?1:0;LB[id]=OPAQUE[id]&&id!==T.GLASS?1:0;LIGHT[id]=o.light||0;}
 def(T.AIR,{hard:0,col:'#000'});
@@ -51,6 +51,7 @@ def(T.POT,{hard:.3,drop:'pot',cell:C.pot,col:'#c0633a',floor:1});
 def(T.CLOCK,{hard:.5,drop:'clock',cell:C.clock,col:'#8a5a33',floor:1});
 def(T.ARMCHAIR,{hard:.4,drop:'armchair',cell:C.armchair,col:'#b33a2f',floor:1});
 def(T.CROP,{hard:.01,cell:C.crops[0][0],col:'#5aa83c',floor:1});
+def(T.RARE,{hard:.01,cell:C.rare[0][0],col:'#b8a0e0',floor:1});
 def(T.ALCHEMY,{hard:.5,drop:'alchemy',cell:C.alchemy,col:'#8a5a33',floor:1,light:5});
 def(T.PAINT5,{hard:.3,drop:'paint5',cell:C.paint5,col:'#5a2a6a',wallmount:1});
 def(T.PEEL,{solid:1,hard:4,drop:null,cell:C.peelS,col:'#8d8f9a'});
@@ -183,13 +184,24 @@ export const HERBS=[['sunpetal','Sunpetal'],['frostleaf','Frostleaf'],['inkreed'
 export const SOIL=[[T.GRASS,T.DIRT],[T.SNOW],[T.INKSTONE],[T.ASH],[T.GRASS,T.DIRT]];
 export const SEEDIDS=['seed_sun','seed_frost','seed_ink','seed_ember','seed_wheat'];
 HERBS.forEach(([id,n],ty)=>{item(id,{name:n,cell:C.herbs[ty],value:4});item(SEEDIDS[ty],{name:n+' Seeds',cell:C.seeds[ty],seed:ty,value:2,desc:`Plant on ${['grass or dirt','snow','inkstone','ash','grass or dirt'][ty]}. ${['Thrives in spring and summer; rests outdoors in winter.','Thrives in winter; slow in summer.','Grows best in fall.','Grows the same all year.','Thrives in summer and fall; rests outdoors in winter.'][ty]} Right-click a grown plant to harvest it.`});});
+// rare crops on the T.RARE tile (meta = type*4 + stage), each grown only under its own conditions (rareGrowChance in seasons.js)
+export const RARE=[['moonlily','Moon Lily'],['thunderroot','Thunderroot'],['sunfruit','Sunfruit'],['ghostcap','Ghost Mushroom']];
+export const RSOIL=[[T.GRASS,T.DIRT,T.SNOW],[T.GRASS,T.DIRT,T.SAND],[T.GRASS,T.DIRT,T.SAND],[T.STONE,T.DIRT,T.INKSTONE,T.ASH]];
+export const RSEEDS=['seed_moon','seed_thunder','seed_sunf','spore_ghost'];
+export const RAREHOW=['Grows only at night under a full moon or the Ink Moon, with open sky above.','Grows only when lightning strikes nearby during a rainstorm.','Needs open sky (no background wall) and daylight. Slow in rain and winter.','Grows only deep underground, in the dark.'];
+RARE.forEach(([id,n],ty)=>{item(id,{name:n,cell:C.rareHerbs[ty],value:18,desc:'A rare plant. '+['Brewed into Moonlit Tonic.','Brewed into Thunder Tonic.','Baked into Sunfruit Tart.','Brewed into Ghostcap Draught.'][ty]});
+  item(RSEEDS[ty],{name:ty===3?'Ghost Mushroom Spores':ty===0?'Moon Lily Bulb':n+' Seeds',cell:C.rareSeeds[ty],rare:ty,value:8,desc:`Plant on ${['grass, dirt or snow','grass, dirt or sand','grass, dirt or sand','stone, dirt, inkstone or ash'][ty]}. ${RAREHOW[ty]} Right-click a grown plant to harvest it.`});});
 item('alchemy',{name:'Alchemy Desk',cell:C.alchemy,place:T.ALCHEMY,max:99,value:30,desc:'Brews potions. Counts as a table.'});
-export const BUFFS={swift:['Swiftness','potswift','+25% run speed.'],night:['Night Vision','potnight','See much farther in the dark.'],fire:['Fire Resistance','potfire','Immune to lava, half damage from fireballs.'],iron:['Ironskin','potiron','+8 defense.'],regen:['Regeneration','potregen','Regain 2 life per second.'],fed:['Well Fed','bread','+2 defense, +5% damage, speed and slow healing.'],fishing:['Fishing','potfish','+15 fishing power.']};
+export const BUFFS={swift:['Swiftness','potswift','+25% run speed.'],night:['Night Vision','potnight','See much farther in the dark.'],fire:['Fire Resistance','potfire','Immune to lava, half damage from fireballs.'],iron:['Ironskin','potiron','+8 defense.'],regen:['Regeneration','potregen','Regain 2 life per second.'],fed:['Well Fed','bread','+2 defense, +5% damage, speed and slow healing.'],fishing:['Fishing','potfish','+15 fishing power.'],lunar:['Moonlit','potlunar','At night: +3 life per second and +10% damage.'],charged:['Charged','potthunder','+20% run speed and +10% damage.'],ghost:['Ghostly','potghost','+6 defense and see farther in the dark.']};
 item('potswift',{name:'Swiftness Potion',cell:C.potSwift,use:'buff',buff:'swift',dur:240,max:30,value:12,desc:'+25% run speed for 4 minutes.'});
 item('potnight',{name:'Night Vision Potion',cell:C.potNight,use:'buff',buff:'night',dur:240,max:30,value:12,desc:'See much farther in the dark for 4 minutes.'});
 item('potfire',{name:'Fire Resistance Potion',cell:C.potFire,use:'buff',buff:'fire',dur:240,max:30,value:15,desc:'Immune to lava for 4 minutes. Essential in the underworld.'});
 item('potiron',{name:'Ironskin Potion',cell:C.potIron,use:'buff',buff:'iron',dur:240,max:30,value:15,desc:'+8 defense for 4 minutes.'});
 item('potregen',{name:'Regeneration Potion',cell:C.potRegen,use:'buff',buff:'regen',dur:240,max:30,value:12,desc:'Regain 2 life per second for 4 minutes.'});
+item('potlunar',{name:'Moonlit Tonic',cell:C.potLunar,use:'buff',buff:'lunar',dur:300,max:30,value:30,desc:'At night: +3 life per second and +10% damage. Lasts 5 minutes.'});
+item('potthunder',{name:'Thunder Tonic',cell:C.potThunder,use:'buff',buff:'charged',dur:240,max:30,value:30,desc:'+20% run speed and +10% damage for 4 minutes.'});
+item('potghost',{name:'Ghostcap Draught',cell:C.potGhost,use:'buff',buff:'ghost',dur:300,max:30,value:30,desc:'+6 defense and see farther in the dark for 5 minutes.'});
+item('suntart',{name:'Sunfruit Tart',cell:C.sunTart,use:'buff',buff:'fed',dur:900,max:30,value:24,desc:'Well Fed for 15 minutes.'});
 item('bread',{name:'Paper Bread',cell:C.bread,use:'buff',buff:'fed',dur:360,max:30,value:6,desc:'Well Fed for 6 minutes.'});
 item('bucket',{name:'Bucket',cell:C.bucket,bucket:'empty',max:10,value:10,desc:'Click ink or lava to scoop it up.'});
 item('bucketink',{name:'Ink Bucket',cell:C.bucketInk,bucket:'ink',max:10,value:10,desc:'Click an empty spot to pour.'});
@@ -272,7 +284,8 @@ export const RECIPES=[
  ['moonbow',1,[['goldbar',10],['moonink',8],['batwing',4]],'anvil'],['moontome',1,[['goldbar',8],['moonink',10],['fstar',5]],'anvil'],['swallowtail',1,[['launcher',1],['goldbar',8],['moonink',6]],'anvil'],
  ['potswift',1,[['sunpetal',2],['gel',1],['glass',1]],'alchemy'],['potnight',1,[['frostleaf',2],['lens',1],['glass',1]],'alchemy'],['potfire',1,[['emberbloom',2],['ash',2],['glass',1]],'alchemy'],
  ['potiron',1,[['inkreed',2],['ironbar',1],['glass',1]],'alchemy'],['potregen',1,[['sunpetal',1],['mushroom',2],['glass',1]],'alchemy'],['potion',2,[['sunpetal',1],['gel',2],['glass',1]],'alchemy'],
- ['bread',1,[['wheat',3]],'furnace'],['bucket',1,[['ironbar',3]],'anvil'],
+ ['potlunar',1,[['moonlily',1],['frostleaf',1],['glass',1]],'alchemy'],['potthunder',1,[['thunderroot',1],['sunpetal',1],['glass',1]],'alchemy'],['potghost',1,[['ghostcap',2],['glass',1]],'alchemy'],
+ ['suntart',1,[['sunfruit',2],['wheat',2]],'furnace'], ['bread',1,[['wheat',3]],'furnace'],['bucket',1,[['ironbar',3]],'anvil'],
  ['pendant',1,[['moonink',12],['goldbar',2],['lens',1]],'anvil'],['paint5',1,[['moonink',3],['paper',1]],'bench'],
  ['woodbow',1,[['wood',10]],'bench'],['arrow',5,[['wood',1],['stone',1]],null],['firearrow',5,[['arrow',5],['torch',1]],null],['paper',10,[['wood',2]],'bench'],
  ['goldbow',1,[['goldbar',10]],'anvil'],['launcher',1,[['ironbar',12],['lens',3]],'anvil'],
