@@ -1058,8 +1058,9 @@ function buildChunk(cx,cy){const P=[],UV=[],L=[],I=[];let vc=0;const LP={P:[],UV
     let cell=TP[t].cell,z=0;if(t===T.SKETCH)cell=meta[i]===2?C.sketchS:C.sketchB;if(t===T.SIGN)cell=meta[i]?C.sign1:C.sign0;if(t===T.CROP){const m=meta[i];cell=C.crops[Math.min(4,m>>2)][Math.min(2,m&3)];}
     if(t===T.DOOR){const m=meta[i];cell=(m&1)?((m&2)?C.doorOT:C.doorOB):((m&2)?C.doorT:C.doorB);}
     if(t===T.TRUNK)z=-.2;
-    const l4=c4();quad([x,y,z,x+1,y,z,x+1,y+1,z,x,y+1,z],cellUV(cell),l4,1);
-    if(t===T.TRUNK&&meta[i]){const r=C.canopy[meta[i]-1];const f=flat(x,y);quad([x-1.5,y+.2,-.25,x+2.5,y+.2,-.25,x+2.5,y+4.2,-.25,x-1.5,y+4.2,-.25],regionUV(r[0],r[1],256,256),[f,f,f,f],1);}
+    const l4=c4();if(t===T.TRUNK&&PAINT.trunk)quad([x-.5,y,-.3,x+1.5,y,-.3,x+1.5,y+1,-.3,x-.5,y+1,-.3],regionUV(0,tileAt(x,y-1)===T.TRUNK?832:896,128,64),l4,1); // painted trunk: 2 tiles wide, behind the canopy
+    else quad([x,y,z,x+1,y,z,x+1,y+1,z,x,y+1,z],cellUV(cell),l4,1);
+    if(t===T.TRUNK&&meta[i]){const r=C.canopy[meta[i]-1];const f=flat(x,y);const g=meta[i]<3&&PAINT.canopy?.5:0;quad([x-1.5-g,y+.2-g,-.25,x+2.5+g,y+.2-g,-.25,x+2.5+g,y+4.2+g,-.25,x-1.5-g,y+4.2+g,-.25],regionUV(r[0],r[1],256,256),[f,f,f,f],1);} // painted crowns drawn a size up
   }
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(UV,2));g.setAttribute('aL',new THREE.Float32BufferAttribute(L,3));g.setIndex(I);
   const k=cy*CW+cx;if(chunks[k]){chunks[k].geometry.dispose();chunks[k].geometry=g;}else{chunks[k]=new THREE.Mesh(g,worldMat);scene.add(chunks[k]);}
@@ -1113,10 +1114,19 @@ function playerSheet(){const eq={};const a=player.armor;if(a[0])eq.helm=ITEMS[a[
     back:tt=>{tt.beginPath();tt.moveTo(38,74);tt.lineTo(58,104);ink(tt,3.5,'#6b4430');rr(tt,24,92,16,16,4);fi(tt,'#b9874f',2);}},eq,POSES[f])));}
 // painted art: generated images in assets/ drawn over the code-drawn versions once they load (see paintArt at boot)
 const PAINT={};
-// player.webp holds the same 9 poses; player_mask.webp marks hair (R), tunic (G) and legs (B) so armour recolours them
-function paintedPlayer(eq){const P=PAINT.player,c=mk(P.img.width,P.img.height),g=c.getContext('2d');g.drawImage(P.img,0,0);
-  ['helm','mail','greaves'].forEach((k,i)=>{if(!eq[k])return;const t=mk(c.width,c.height),h=t.getContext('2d');h.drawImage(P.mask[i],0,0);h.globalCompositeOperation='source-in';h.fillStyle=eq[k];h.fillRect(0,0,c.width,c.height);
-    g.globalCompositeOperation='color';g.drawImage(t,0,0);g.globalCompositeOperation='source-over';});return c;}
+// player_parts.webp: side-view head, torso, arm, leg and helmet, posed with the same POSES angles as drawHuman; [x,y,w,h,pivotX,pivotY] in the image
+// player_parts_mask.webp marks what armour recolours (tunic, trousers and boots, helmet metal). Frames are 2x the 96x144 code frames.
+const RIG={head:[0,0,95,94,46.2,86.8],torso:[97,0,88,85,55.7,9.4],arm:[187,0,30,77,13.3,6.3],leg:[219,0,35,90,15.7,7.8],helm:[256,0,60,68,0,0]};
+function paintedPlayer(eq){const P=PAINT.player,c=mk(192*9,288),g=c.getContext('2d');
+  const piece=(k,col,dark)=>{const[x,y,w,h]=RIG[k],p=mk(w,h),q=p.getContext('2d');q.drawImage(P.img,x,y,w,h,0,0,w,h);
+    if(col){const t=mk(w,h),u=t.getContext('2d');u.drawImage(P.mask,x,y,w,h,0,0,w,h);u.globalCompositeOperation='source-in';u.fillStyle=col;u.fillRect(0,0,w,h);q.globalCompositeOperation='color';q.drawImage(t,0,0);}
+    if(dark){q.globalCompositeOperation='source-atop';q.fillStyle='rgba(42,33,48,.28)';q.fillRect(0,0,w,h);}return p;};
+  const head=piece('head'),torso=piece('torso',eq.mail),armA=piece('arm',eq.mail),armB=piece('arm',eq.mail,1),legA=piece('leg',eq.greaves),legB=piece('leg',eq.greaves,1),helm=eq.helm&&piece('helm',eq.helm);
+  const put=(p,k,x,y,a)=>{g.save();g.translate(x,y);g.rotate(a||0);g.drawImage(p,-RIG[k][4],-RIG[k][5]);g.restore();};
+  for(let f=0;f<9;f++){const o=POSES[f];g.save();g.beginPath();g.rect(f*192,0,192,288);g.clip();g.translate(f*192,(o.bob||0)*2);
+    put(legB,'leg',89,194,o.legB);put(armB,'arm',90,159,o.armB);put(torso,'torso',93,137);put(legA,'leg',103,194,o.legA);put(head,'head',93,140);
+    if(helm)g.drawImage(helm,57,48,82,90);put(armA,'arm',98,159,o.armA);g.restore();}
+  return c;}
 const SHEETS={};
 function slimeDraw(col,crown){return(t,f,w,h)=>{const cx=w/2,by=h-7,sq=f?1:0;const sw=w*.78*(1+sq*.16),sh_=h*.66*(1-sq*.22);
   t.beginPath();t.moveTo(cx-sw/2,by);t.bezierCurveTo(cx-sw/2-4,by-sh_*1.25,cx+sw/2+4,by-sh_*1.25,cx+sw/2,by);t.closePath();fi(t,col,crown?5:3);
@@ -2481,11 +2491,10 @@ $('logo').innerHTML='Folded Frontier'.split(' ').map((w,wi)=>`<span style="displ
 buildSheets();buildBiomeSheets();buildMoreSheets();buildPartnerSheets();
 // painted art: skipped when the file is missing or the page is opened from file:// (WebGL can't use those images there)
 function paintArt(src,f){const im=new Image();im.onload=()=>{try{const c=mk(1,1),g=c.getContext('2d');g.drawImage(im,0,0,1,1);g.getImageData(0,0,1,1);}catch(e){return;}f(im);};im.src='assets/'+src;}
-paintArt('trees.webp',im=>{for(let k=0;k<2;k++){const[x,y]=C.canopy[k];A.clearRect(x,y,256,256);A.drawImage(im,k*512,0,512,512,x,y,256,256);}atlasTex.needsUpdate=true;});
+paintArt('trees.webp',im=>{for(let k=0;k<2;k++){const[x,y]=C.canopy[k];A.clearRect(x,y,256,256);A.drawImage(im,k*512,0,512,512,x,y,256,256);}atlasTex.needsUpdate=true;PAINT.canopy=true;for(const k in chunks)dirty.add(+k);});
+paintArt('trunk.webp',im=>{A.clearRect(0,768,128,192);A.drawImage(im,0,0,256,128,0,768,128,64);A.drawImage(im,0,0,256,256,0,832,128,128);atlasTex.needsUpdate=true;PAINT.trunk=true;for(const k in chunks)dirty.add(+k);}); // into the free corner left of the canopies; the bark tile twice so filtering doesn't bleed other cells into it
 paintArt('foldfox.webp',im=>{const c=SHEETS.foldfox,g=c.getContext('2d');g.clearRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);SHEETS.foldfoxT.needsUpdate=true;delete bestCache.foldfox;});
-paintArt('player.webp',img=>paintArt('player_mask.webp',mi=>{const w=mi.width,h=mi.height,c=mk(w,h),g=c.getContext('2d');g.drawImage(mi,0,0);const src=g.getImageData(0,0,w,h).data;
-  const mask=[0,1,2].map(ch=>{const m=mk(w,h),mg=m.getContext('2d'),d=mg.createImageData(w,h);for(let i=0;i<src.length;i+=4){d.data[i]=d.data[i+1]=d.data[i+2]=255;d.data[i+3]=src[i+ch]*src[i+3]/255;}mg.putImageData(d,0,0);return m;});
-  PAINT.player={img,mask};player.sheetDirty=true;}));
+paintArt('player_parts.webp',img=>paintArt('player_parts_mask.webp',mask=>{PAINT.player={img,mask};player.sheetDirty=true;}));
 markMat.map=canvasTex(makeSheet(1,64,64,t=>{rr(t,23,5,18,36,9);fi(t,'#d4483b',3);circ(t,32,52,7);fi(t,'#d4483b',3);},3));markMat.needsUpdate=true;
 eliteMat.map=canvasTex(makeSheet(1,64,64,t=>{const s=[];for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,r=k%2?11:26;s.push(32+Math.cos(a)*r,34+Math.sin(a)*r);}poly(t,s);fi(t,'#f1c04f',3.5);circ(t,27,28,3);t.fillStyle='#fff8e4';t.fill();},3));eliteMat.needsUpdate=true;
 player.mat=spriteMat(canvasTex(mk(8,8)),9);player.mesh=new THREE.Mesh((()=>{const g=new THREE.PlaneGeometry(1.6,2.4);g.translate(0,1.2,0);return g;})(),player.mat);scene.add(player.mesh);

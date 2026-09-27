@@ -7,13 +7,13 @@ Guide for working on The Folded Frontier: a papercraft 2D sandbox adventure (Pap
 ```
 index.html   the whole game: CSS, HTML UI, and all JavaScript (~2,170 lines)
 README.md    player-facing overview and controls
-assets/      painted art: title.webp (title background, logo baked in), player.webp + player_mask.webp,
-             foldfox.webp, trees.webp (see "Generated art" below)
-tools/art/   Python (Pillow, numpy, scipy) scripts that turned the Higgsfield renders into those sheets
+STYLE.md     the art style: look, palette, sprite sizes and frames, how to prompt for painted art
+assets/      painted art (see "Art: painted vs code-drawn" below)
+tools/art/   Python (Pillow, numpy, scipy) scripts that turned the Higgsfield renders into those files
 .nojekyll    lets GitHub Pages serve files as-is
 ```
 
-There is no build step, no package.json and no audio assets. `assets/title.webp` is the title screen background; it's loaded with `new Image()` and the `#title` overlay only gets its `bg` class (image, cream card behind the menu, HTML logo hidden on landscape screens) once it loads, so a missing file falls back to the plain overlay. All other game art is drawn in code onto canvases; a few sprites (player, Fold Fox, the two leafy tree canopies) are then painted over from `assets/` once their images load (see "Generated art" below). All sound is synthesized with Web Audio. The only external dependency is three.js r128, loaded from cdnjs in a `<script>` tag.
+There is no build step, no package.json and no audio assets. `assets/title.webp` is the title screen background; it's loaded with `new Image()` and the `#title` overlay only gets its `bg` class (image, cream card behind the menu, HTML logo hidden on landscape screens) once it loads, so a missing file falls back to the plain overlay. All other game art is drawn in code onto canvases; a growing set (see "Art: painted vs code-drawn") is then painted over from `assets/` once their images load (see "Generated art" below). All sound is synthesized with Web Audio. The only external dependency is three.js r128, loaded from cdnjs in a `<script>` tag.
 
 ## Running locally
 
@@ -84,23 +84,48 @@ Browser-only saves are why the game will be self-hosted with server-side saves (
 
 - **Tile IDs are saved as raw bytes.** Never renumber or reuse a value in `T`. Add new tiles with new IDs. The lookup arrays are sized 64 and the highest ID is currently 60, so going past 63 means resizing them.
 - **Atlas cells are allocated in order** (`cellN++`). Adding cells in the middle shifts later cells. That's fine at runtime, since nothing saves cell indices, but keep new art grouped with its section.
-- **Art style:** cream paper, dark ink outlines (`INK = '#2a2130'`), rounded shapes, paper grain. Reuse the drawing helpers so new art matches.
+- **Art style:** follow `STYLE.md`: cream paper stickers, dark ink outlines (`INK = '#2a2130'`), rounded shapes, paper grain, side view facing right.
 - **Code style is dense:** short names, many statements per line. Match the surrounding code rather than reformatting it; a big reformat makes diffs unreadable.
 - Everything is in one closure, so there are no modules or globals to import. `function` declarations are hoisted and can be called from anywhere, but `const`/`let` values can't be used before their line has run during boot.
 - **Combat hooks:** `hurtEnemy(e,dmg,dir,kb,crit,elem)` and `hurtPlayer(dmg,from,src,elem)`. Pass the attacking enemy or projectile as `src` so shields can block and parry it (`hurtPlayer` returns `'parry'` on a parry); leave it out for damage that can't be blocked, like lava. Damage types are `'fire'`, `'ink'` and `'water'` (`ELEM`); each enemy's weakness, resistance and the type its own hits carry are set in the table right after `EN`, and projectile kinds take a type from `elem` in `PK`. Statuses live in `e.st` / `player.st` and are not saved.
 - Keep new input actions rebindable: keyboard in `DEF_BIND`/`ALT` (plus a `BINDLAB` label), gamepad in `DEF_PAD` (plus a `PADLAB` label). Start and the d-pad/sticks are fixed, and backpack menus use a fixed gamepad layout (`fx` in `handlePad`).
 
+## Art: painted vs code-drawn
+
+The game is moving characters, creatures and objects from code-drawn art to painted art (generated with Higgsfield, style in `STYLE.md`), tracked in issue #48. Procedural art stays where it works well: terrain blocks and walls, particles, background hills. Every piece of art is drawn in code first; painted art is drawn over it once its image loads.
+
+**Rule for new content: every new enemy, boss, NPC, partner, item icon, badge, tree or decoration needs a painted asset.** New terrain blocks, walls and particles stay code-drawn unless the owner decides otherwise. Still write the code-drawn version first: it's the fallback, and it fixes the frame layout the painted file has to match. Then generate the painted version, add it to the table below, and ask the owner before spending credits (see "Generated art"). If credits aren't available, add it to the "still code-drawn" list so it gets painted later.
+
+| Painted (in `assets/`) | File | Replaces |
+|---|---|---|
+| Title screen | `title.webp` | plain title overlay |
+| Player | `player_parts.webp`, `player_parts_mask.webp` | `drawHuman` player in `playerSheet()` |
+| Fold Fox | `foldfox.webp` (2 frames) | `SHEETS.foldfox` |
+| Leafy tree canopies (bright and dark) | `trees.webp` | `C.canopy[0]`, `C.canopy[1]` |
+| Tree trunk (bark tile and root base) | `trunk.webp` | `C.trunk` cell (drawn wider, see below) |
+
+Still code-drawn, to be painted:
+
+- **Enemies:** Green Slime, Blue Slime, Paper Zombie, Watcher Eye, Cave Bat, Cardboard Knight, Crumple, Toadstool Lobber, Dune Fin, Shell Scarab, Sun Kite, Flurry, Snow Roller, Snowlet, Frost Puff, Ink Blot, Ink Squid, Ink Wisp, Quillfish, Cinder Bat, Ash Imp, Firecracker Imp, Ash Spider, Ink Wraith.
+- **Bosses:** King Slime, Great Crane, Inkwell Leviathan (head, body segment, tail), Charred Folio, The Unfolded (ink shrine).
+- **NPCs:** Guide, Painter, Nurse, Tinkerer, Merchant.
+- **Partners:** Lumi, Snip, Smudge, Ember.
+- **World:** the snowy pine canopy (`C.canopy[2]`), furniture, crafting stations, plants and decorations (the non-block tiles), projectiles.
+- **Items:** all ~140 item icons and badges (atlas cells in `C`).
+
+Staying code-drawn by design: terrain blocks and walls, liquids, particles, background hills, and the HTML/CSS HUD and menus.
+
 ## Generated art (Higgsfield)
 
-The owner has a Higgsfield Pro account connected as an MCP server (`mcp__Higgsfield__*`). When a task needs painted art (characters, items, key art, like `assets/title.webp`), generate it there instead of hand-drawing it in code:
+The owner has a Higgsfield Pro account connected as an MCP server (`mcp__Higgsfield__*`). Use it for painted art; `STYLE.md` has the prompt template and what has worked.
 
-- Default to the plan's unlimited image models, preferably Seedream 4.5 (`seedream_v4_5`). `models_explore` with `unlim: true` lists the others (Seedream 5.0, Nano Banana, FLUX.2, ...). Paid credits are limited, so don't spend them without asking.
-- Through MCP, `use_unlim: true` is refused for these models ("Unlimited generations aren't supported"), even on the Pro plan; the plan's unlimited seems to apply only on the Higgsfield website. MCP generations cost credits (Seedream 4.5: 1 credit per image), so check `get_cost` and ask the owner before generating.
-- Prompt for the house style: cream paper cut-outs, dark ink outlines, rounded shapes, paper grain, flat background (or run `remove_background`) for sprites.
-- Save results under `assets/` as compressed `.webp`. In the game, `paintArt(file, fn)` (right after `buildSheets()` at boot) loads an image and, once loaded, draws it over the code-drawn version: into the `SHEETS` canvas (then `SHEETS[k+'T'].needsUpdate=true`) for sprites, or into the atlas (`A`, then `atlasTex.needsUpdate=true`) for atlas cells. Keep the code-drawn art: it's the fallback when a file is missing, and `paintArt` skips images it can't read back (opening `index.html` from `file://` taints them for WebGL). Match the sheet layout the code expects (frame count, frame size ratio); files can be 2x the canvas size.
-- The player is one render cut into pieces by `tools/art/pframes.py`: the legs are swung for the walk and the whole cut-out tilts and bobs for the other poses, giving the 9 frames `playerSheet()` expects. `player_mask.webp` marks hair, tunic and legs so equipped armour recolours them (`paintedPlayer`, canvas `color` blend) instead of drawing the code armour.
-- `tools/art/cut.py` removes the flat grey background from a render (flood fill from the edges) and trims it. The Higgsfield project "The Folded Frontier art" holds the source renders.
-- Image downloads come from `d8j0ntlcm91z4.cloudfront.net`, which the cloud environment's network policy has to allow.
+- Through MCP, generations cost credits: `use_unlim: true` is refused ("Unlimited generations aren't supported"), even on the Pro plan; the plan's unlimited seems to apply only on the Higgsfield website. Nano Banana Pro costs 2 credits per image, Seedream 4.5 costs 1. Check `get_cost` and ask the owner before generating. The owner can also generate on the website for free and commit the image.
+- The Higgsfield project "The Folded Frontier art" holds all the source renders; pass one as a reference image to keep new art consistent with it.
+- Image downloads come from `d8j0ntlcm91z4.cloudfront.net`, which the cloud environment's network policy has to allow. In headless Chromium, three.js from cdnjs can fail through the proxy (`ERR_TOO_MANY_RETRIES`): route it to a local copy with `page.route`.
+- **Getting it in the game:** save under `assets/` as `.webp`. `paintArt(file, fn)` (right after `buildSheets()` at boot) loads an image and, once loaded, draws it over the code-drawn version: into the `SHEETS` canvas (then `SHEETS[k+'T'].needsUpdate=true`) for sprites, or into the atlas (`A`, then `atlasTex.needsUpdate=true`, and add every chunk to `dirty` if the mesh changes) for atlas cells. Match the frame layout the code expects (`STYLE.md` has the sizes); files can be 2x. `paintArt` skips images it can't read back, which is what happens when `index.html` is opened from `file://` (WebGL can't use them there), so that falls back to code art. `PAINT` holds flags and images for painted art that changes how things are drawn.
+- **Player:** `player_parts.webp` has side-view head, torso, arm, leg and helmet pieces; `paintedPlayer()` poses them with the same `POSES` angles as `drawHuman`, with the back arm and leg darkened. `RIG` holds each piece's rect and joint point. `player_parts_mask.webp` marks what armour recolours (tunic and sleeves for mail, trousers and boots for greaves, the helmet metal), using the canvas `color` blend; the helmet piece is only drawn when a helmet is equipped.
+- **Trees:** the painted trunk is drawn two tiles wide and behind the canopy (`PAINT.trunk` in the chunk mesh builder), from a free 128×192 corner of the atlas at (0, 768): the bark tile twice (the first copy is padding so filtering doesn't bleed other cells in), then the root base. Painted canopies are drawn a size up (5×5 tiles) when `PAINT.canopy` is set; the snowy pine keeps its code size.
+- **Scripts in `tools/art/`** (run from the repo root with the renders downloaded next to them): `cut.py` removes the flat grey background and trims; `parts_cut.py` + `rig.py` build the player parts and mask and print the `RIG` table; `trunk.py` builds the trunk. The coordinates in them fit their particular renders. The fox and canopy files were made with a one-off cut, scale and pack.
 
 ## Testing
 
