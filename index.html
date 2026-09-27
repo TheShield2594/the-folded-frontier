@@ -2510,7 +2510,9 @@ paintArt('trees.webp',im=>{for(let k=0;k<2;k++){const[x,y]=C.canopy[k];A.clearRe
 paintArt('trunk.webp',im=>{A.clearRect(0,768,128,192);A.drawImage(im,0,0,256,128,0,768,128,64);A.drawImage(im,0,0,256,256,0,832,128,128);atlasTex.needsUpdate=true;PAINT.trunk=true;for(const k in chunks)dirty.add(+k);}); // into the free corner left of the canopies; the bark tile twice so filtering doesn't bleed other cells into it
 paintArt('foldfox.webp',im=>{const c=SHEETS.foldfox,g=c.getContext('2d');g.clearRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);SHEETS.foldfoxT.needsUpdate=true;delete bestCache.foldfox;});
 // painted item icons (icons_<sheet>.webp, 128 px per icon, in this order); an icon is also the weapon drawn in the hand
-const ICON_PAINT={swords:['woodsword','coppersword','ironsword','goldsword','frostblade','inkcutlass','embersword','foldblade']};
+const ICON_PAINT={swords:['woodsword','coppersword','ironsword','goldsword','frostblade','inkcutlass','embersword','foldblade'],
+  tools:['copperpick','ironpick','goldpick','frostpick','inkpick','emberpick','hammer','shuriken'],ranged:['woodbow','goldbow','featherbow','moonbow','launcher','swallowtail'],
+  magic:['inktome','cranetome','tidetome','moontome','starstaff','emberstaff'],shields:['shwood','buckler','quilt','beacon']};
 for(const k in ICON_PAINT)paintArt('icons_'+k+'.webp',im=>{ICON_PAINT[k].forEach((id,i)=>{const[x,y]=cellXY(ITEMS[id].cell);A.clearRect(x,y,64,64);A.drawImage(im,i*128,0,128,128,x,y,64,64);delete iconCache[id];delete iconTexCache[id];});
   atlasTex.needsUpdate=true;invDirty=true;toolId=null;});
 for(const m in ARMOR_RIG)paintArt('armor_'+m+'.webp',im=>{PAINT.armor[m]=im;player.sheetDirty=true;});

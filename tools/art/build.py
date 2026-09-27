@@ -23,9 +23,10 @@ def cut(im, tol=16):
     out = Image.fromarray(np.dstack([a.astype(np.uint8), np.where(m, 0, 255).astype(np.uint8)]), 'RGBA')
     return out.crop(out.getbbox())
 
-def restyle(im, ppt, border=True):
+def restyle(im, ppt, border=True, typ=None):
     """Replace the render's own outline and border with ones of the house thickness. ppt = image pixels per tile in game.
     border=False leaves the cream border off (player parts: the game adds one around the whole figure).
+    typ = the usual outline width on this sheet, in image px: a measured outline much thicker than that is dark fill.
     Returns the new image and the offset (padding) added on each side."""
     kt, bt = INK_W * ppt, (BORDER_W * ppt if border else 0); pad = math.ceil(kt + bt) + 4
     a = np.asarray(im.convert('RGBA')).astype(float); a = np.pad(a, ((pad, pad), (pad, pad), (0, 0)))
@@ -38,7 +39,9 @@ def restyle(im, ppt, border=True):
         sel = ring == d; ratio.append(dark[sel].mean() if sel.any() else 0)
     ratio = np.array(ratio); on = np.argmax(ratio >= .5); off = on + np.argmax(ratio[on:] < .5)
     B = on; K = off - on  # ratio[i] is distance i+1, so B = pixels before the ink and K = ink pixels
-    if K > 2.5 * kt: K = kt  # that deep it's dark fill (an ink-black blade), not outline: leave it as it is
+    if typ is not None and K > 1.6 * typ: K = typ  # that deep it's dark fill (an ink-black blade), not outline
+    elif K > 2.5 * kt: K = kt
+    restyle.K = K
     core = din > B + max(0, K - kt)
     dout = ndimage.distance_transform_edt(~core)
     add = max(0., kt - K)  # extra ink ring when the render's ink is thinner than the standard
@@ -173,11 +176,14 @@ def armor(img, m):
 ICON_SHEETS = {
     'swords': ('weapons-swords.png', 2, 4, ['woodsword', 'coppersword', 'ironsword', 'goldsword', 'frostblade', 'inkcutlass', 'embersword', 'foldblade']),
     'tools': ('weapons-tools.png', 2, 4, ['copperpick', 'ironpick', 'goldpick', 'frostpick', 'inkpick', 'emberpick', 'hammer', 'shuriken']),
-    'ranged': ('weapons-ranged.png', 2, 3, ['woodbow', 'goldbow', 'featherbow', 'moonbow', 'launcher', 'swallowtail']),
+    'ranged': ('weapons-ranged.png', 2, 3, [  # native: the bow strings have no ink outline, so keep the render's own outline
+       'woodbow', 'goldbow', 'featherbow', 'moonbow', 'launcher', 'swallowtail']),
     'magic': ('weapons-magic.png', 2, 3, ['inktome', 'cranetome', 'tidetome', 'moontome', 'starstaff', 'emberstaff']),
     'shields': ('weapons-shields.png', 1, 4, ['shwood', 'buckler', 'quilt', 'beacon']),
 }
 ICON_PPT = 128 / 1.25  # icons are 64 px atlas cells (128 in the file) and drawn 1.25 tiles wide in the hand
+
+NATIVE = {'ranged'}
 
 def icons(img, name, rows, cols, ids):
     """icons_<name>.webp: one 128x128 icon per id, left to right. Each grid cell's inked shapes are merged into one icon
@@ -185,14 +191,27 @@ def icons(img, name, rows, cols, ids):
     a = np.asarray(img.convert('RGB')).astype(int); H, W = a.shape[:2]; ink = a.max(axis=2) < 90
     core = ndimage.binary_fill_holes(ndimage.binary_closing(ink, iterations=2))
     lab, n = ndimage.label(core); cms = ndimage.center_of_mass(core, lab, range(1, n + 1)); sz = ndimage.sum(core, lab, range(1, n + 1))
-    out = Image.new('RGBA', (128 * len(ids), 128), (0, 0, 0, 0))
+    out = Image.new('RGBA', (128 * len(ids), 128), (0, 0, 0, 0)); items = []
     for i, id in enumerate(ids):
         r, c = divmod(i, cols); y0, y1, x0, x1 = r * H / rows, (r + 1) * H / rows, c * W / cols, (c + 1) * W / cols
-        keep = [k + 1 for k, (cy, cx) in enumerate(cms) if y0 <= cy < y1 and x0 <= cx < x1 and sz[k] > 150]
-        mask = ndimage.binary_dilation(np.isin(lab, keep), iterations=2); ys, xs = np.where(mask)
+        if name in NATIVE:  # the whole sticker (outline, border and anything unoutlined) as the render drew it
+            bg = np.median(np.concatenate([a[0], a[-1], a[:, 0], a[:, -1]]), axis=0); cell = np.zeros(core.shape, bool)
+            cell[int(y0):int(y1), int(x0):int(x1)] = True; fg = (np.abs(a - bg).max(axis=2) >= 16) & cell
+            fl, fn = ndimage.label(fg); fs = ndimage.sum(fg, fl, range(1, fn + 1))
+            mask = ndimage.binary_fill_holes(np.isin(fl, [k + 1 for k in range(fn) if fs[k] > 2000]))
+        else:
+            keep = [k + 1 for k, (cy, cx) in enumerate(cms) if y0 <= cy < y1 and x0 <= cx < x1 and sz[k] > 150]
+            mask = ndimage.binary_dilation(np.isin(lab, keep), iterations=2)
+        ys, xs = np.where(mask)
         sl = (slice(ys.min(), ys.max() + 1), slice(xs.min(), xs.max() + 1))
         im = Image.fromarray(np.dstack([a.astype(np.uint8), (mask * 255).astype(np.uint8)])[sl], 'RGBA')
-        s = 116 / max(im.size); im, _ = restyle(im, ICON_PPT / s); im, _ = fit(im, 124, 124)
+        items.append(im)
+    if name not in NATIVE:  # measure every item's outline, then restyle each knowing the sheet's usual width
+        ks = []
+        for im in items: restyle(im, ICON_PPT * max(im.size) / 116); ks.append(restyle.K)
+        typ = float(np.median(ks)); items = [restyle(im, ICON_PPT * max(im.size) / 116, typ=typ)[0] for im in items]
+    for i, im in enumerate(items):
+        im, _ = fit(im, 124, 124)
         out.alpha_composite(im, (i * 128 + 64 - im.width // 2, 64 - im.height // 2))
     out.save(f'assets/icons_{name}.webp', quality=92, method=6)
 
