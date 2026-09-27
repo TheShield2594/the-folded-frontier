@@ -1,7 +1,7 @@
 // Main story thread: lore pages (landmarks, Wren's letters, murals, keepers, partners, epilogue), the Journal page and the landmarks.
 import * as THREE from 'three';
 import {
-  $,BIO,biomeAt,canvasTex,chapterCard,circ,DU,enemies,fi,grain,H,idx,ink,isAwake,meta,mk,mulberry32,PARTNERS,partnerSpeaker,
+  $,BIO,biomeAt,N,canvasTex,chapterCard,circ,DU,enemies,fi,grain,H,idx,ink,isAwake,meta,mk,mulberry32,PARTNERS,partnerSpeaker,
   OPAQUE,player,poly,quests,rr,say,scene,seed,setInvDirty,setTab,SFX,SPAWNX,surf,T,tiles,toast,W,walls,
 } from './game.js';
 
@@ -81,19 +81,24 @@ export function loreHTML(){let h=`<div class="sideTip"><b>The Unfolding</b>The F
 
 // ================= murals =================
 // Painted once per world into ruin rooms and the shrine (new worlds right after generation, older saves on their next
-// load): a free spot on a brick back wall two tiles above the floor, at most one per room. BIO.murals = number placed.
-export function placeMurals(){if(!BIO||!BIO.uw||BIO.murals!=null)return;const rng=mulberry32(seed+6161),cand=[];
+// load): a free spot on a brick back wall two tiles above the floor, one per room where there are enough (see the fallbacks below). BIO.murals = murals painted; under 4 retries on the next load.
+export function placeMurals(){if(!BIO||!BIO.uw||BIO.murals>=4)return;const rng=mulberry32(seed+6161),cand=[],deep=(x,y)=>y<=surf[x]-20&&Math.abs(x-SPAWNX)>=30;
+  // murals already painted (a world that came up short is topped up on its next load, keeping the numbers it has)
+  const out=[],have=new Set();for(let i=0;i<N;i++)if(tiles[i]===T.MURAL){out.push([i%W,(i/W)|0]);have.add(meta[i]&3);}
+  const miss=[0,1,2,3].filter(n=>!have.has(n));
   for(let y=3;y<H-2;y++)for(let x=2;x<W-2;x++){const i=y*W+x;if(walls[i]!==3||tiles[i]!==T.AIR||walls[i-1]!==3||walls[i+1]!==3)continue;
     // ruins and the shrine sit deep and away from home, which keeps murals out of rooms a player walled with brick
-    if(y>surf[x]-20||Math.abs(x-SPAWNX)<30)continue;
+    if(!deep(x,y))continue;
     if(tiles[i-W]===T.AIR&&tiles[i-1]===T.AIR&&tiles[i+1]===T.AIR&&(tiles[i-2*W]===T.BRICK||tiles[i-2*W]===T.STONE))cand.push([x,y]);}
   for(let i=cand.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[cand[i],cand[j]]=[cand[j],cand[i]];}
-  const out=[],far=(c,dx,dy)=>out.every(o=>Math.abs(o[0]-c[0])>dx||Math.abs(o[1]-c[1])>dy);
-  for(const c of cand)if(out.length<4&&far(c,14,10))out.push(c);
-  // too few rooms (small worlds): share a room, then fall back to a deep natural cave wall
-  for(const c of cand)if(out.length<4&&far(c,2,2))out.push(c);
-  if(out.length<4)for(let a=0;a<4000&&out.length<4;a++){const x=2+Math.floor(rng()*(W-4)),y=3+Math.floor(rng()*(H-6)),i=y*W+x;if(y>surf[x]-20||Math.abs(x-SPAWNX)<30||walls[i]!==1||tiles[i]!==T.AIR||tiles[i-W]!==T.AIR||!OPAQUE[tiles[i-2*W]]||!far([x,y],6,6))continue;out.push([x,y]);}
-  out.forEach(([x,y],n)=>{const i=idx(x,y);tiles[i]=T.MURAL;meta[i]=n;});BIO.murals=out.length;}
+  const add=[],far=(c,dx,dy)=>out.concat(add).every(o=>Math.abs(o[0]-c[0])>dx||Math.abs(o[1]-c[1])>dy),need=()=>add.length<miss.length;
+  for(const c of cand)if(need()&&far(c,14,10))add.push(c);
+  // too few rooms (small worlds): share a room, then a deep natural cave wall, then any deep open spot with a floor,
+  // each a full scan of the world rather than random tries
+  for(const c of cand)if(need()&&far(c,2,2))add.push(c);
+  const scan=ok=>{for(let y=3;y<H-2&&need();y++)for(let x=2;x<W-2&&need();x++){const i=y*W+x;if(deep(x,y)&&tiles[i]===T.AIR&&tiles[i-W]===T.AIR&&OPAQUE[tiles[i-2*W]]&&ok(i)&&far([x,y],6,6))add.push([x,y]);}};
+  scan(i=>walls[i]===1);scan(()=>1);
+  add.forEach(([x,y],k)=>{const i=idx(x,y);tiles[i]=T.MURAL;meta[i]=miss[k];});BIO.murals=have.size+add.length;}
 
 // ================= landmarks =================
 // Three anchors of the story that stand far behind the tiles (z -24, between the hills and the back foliage), big
