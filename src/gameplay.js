@@ -9,6 +9,7 @@ import {
   popUp,projs,pt,pv,questDone,quests,rand,randi,removeEnemy,removeItem,rollWeather,scene,SEEDIDS,selItem,SET,
   setBoss,setInv,shoulderAt,setInvDirty,setTile,setTint,SFX,sh,shieldItem,SOIL,SOLID,spawnEnemy,spawnGhost,
   spriteMat,stat,state,surf,surfAvg,syncPartners,T,talkTo,threadGeo,tileAt,tiles,toast,tone,TP,U,
+  palEv,partnerCheer,
   updateCoins,updateDashHud,updateDrawHud,updateEnemyFx,updateGhosts,upx,W,WALLCOL,WALLDROP,walls,
   worldClock,worldTime,digFossil,evKill,fcount,npcLine,plain,
   guideEv,
@@ -52,12 +53,12 @@ export function hurtEnemy(e,dmg,dir,kb=5,crit=false,elem=null){if(e.dying)return
   if(e.elite)kb*=.5;if(hasBadge('power'))dmg*=1.15;if(hasBuff('fed'))dmg*=1.05;const real=Math.max(1,Math.round(dmg-e.d.def/2));e.hp-=real;e.flash=.12;e.vx=dir*kb*(e.d.boss?.25:1);if(!e.d.fly||true)e.vy=Math.max(e.vy,e.d.boss?2:5);
   floatText(e.x,e.y+e.h,crit?real+'!':real,crit?'crit':tag==='weak'?'weak':'');if(tag&&!(e.tagT>0)){e.tagT=1.2;floatText(e.x,e.y+e.h+.6,tag==='weak'?'weak!':'resist',tag==='weak'?'tag '+elem:'miss');}burst(e.x,e.y+e.h/2,e.d.col,5,4);burst(e.x-dir*e.w*.3,e.y+e.h/2,['#fffaf0','#ffe58a'],crit?9:5,7,{grav:0,life:.25,up:0});SFX.hit();shake(crit?.25:.1);hitPause(crit?.09:.04);e.hpShow=3;
   if(e.hp<=0)killEnemy(e);else if(elem&&tag!=='res')applyStatus(e,elem,real);}
-function killEnemy(e){e.dying=.3;stat('kills');bestKill(e);evKill(e);hitPause(e.d.boss?.35:.07);SFX.brk();burst(e.x,e.y+e.h/2,e.d.col.concat(['#fbf8f0']),e.d.boss?80:22,e.d.boss?9:6,{grav:9,life:1.3});
+function killEnemy(e){e.dying=.3;stat('kills');bestKill(e);evKill(e);palEv('kill',e);hitPause(e.d.boss?.35:.07);SFX.brk();burst(e.x,e.y+e.h/2,e.d.col.concat(['#fbf8f0']),e.d.boss?80:22,e.d.boss?9:6,{grav:9,life:1.3});
   const[c0,c1]=e.d.coins;const coins=Math.round(randi(c0,c1)*(hasBadge('money')?1.5:1)*(e.elite?3:1));if(!e.parent&&!e.d.boss){if(hasBadge('heartf')&&Math.random()<.22)dropItem('hpheart',1,e.x,e.y+e.h/2);if(hasBadge('flowerf')&&Math.random()<.22)dropItem('mpstar',1,e.x,e.y+e.h/2);}dropItem('coin',e.inked?coins*2:coins,e.x,e.y+e.h/2);if(e.inked||e.type==='wraith'){if(Math.random()<.5)dropItem('moonink',randi(1,e.type==='wraith'?3:2),e.x,e.y+e.h/2);}else if(isNight()&&!e.d.boss&&!e.parent&&Math.random()<.04)dropItem('moonink',1,e.x,e.y+e.h/2);for(const[id,a,b,p]of e.d.drops)if(Math.random()<(e.elite?Math.min(1,p*2):p)){const n=randi(a,b)+(e.elite?1:0);dropItem(id,n,e.x,e.y+e.h/2);bestDrop(e,id,n);}
   if(e.elite){dropItem(pick(ELITE_LOOT),1,e.x,e.y+e.h/2);stat('elites');}
   if(e.d.split)for(let k=0,n=e.elite?3:2;k<n;k++){const s=spawnEnemy(e.d.split,e.x+(k-(n-1)/2)*.5,e.y+.2);s.vx=(k-(n-1)/2)*5||rand(-2,2);s.vy=9;s.timer=rand(.5,1);}
   if(e.segs)e.segs.forEach(sg=>{if(!sg.dying){sg.dying=.35;burst(sg.x,sg.y+sg.h/2,e.d.col,14,6,{grav:6});}});
-  if(e.d.boss){questDone(e.d.quest);setTimeout(()=>syncPartners(),1200);if(e.type==='king')stat('kings');else stat('k_'+e.type);setBoss(null);$('boss').hidden=true;toast(`${e.d.name} has been defeated!`,'gold');SFX.boom();shake(.6);}}
+  if(e.d.boss){questDone(e.d.quest);partnerCheer(2);setTimeout(()=>syncPartners(),1200);if(e.type==='king')stat('kings');else stat('k_'+e.type);setBoss(null);$('boss').hidden=true;toast(`${e.d.name} has been defeated!`,'gold');SFX.boom();shake(.6);}}
 export function stompNice(){const e=player.stompTarget;player.stompWin=0;player.stompTarget=null;if(!e||e.dying)return;hurtEnemy(e,14*(hasBadge('stomp')?2:1),player.face,3,true);stat('nices');floatText(e.x,e.y+e.h+.6,'NICE!','nice');SFX.nice();player.vy=Math.max(player.vy,17);}
 function steam(x,y){burst(x,y,['#fbf8f0','#dfe6ea','#c9d4da'],10,2.5,{grav:-3,life:.8});SFX.sizzle();}
 // statuses from typed damage. Enemies keep them in e.st, the player in player.st (seconds left). Bosses shrug them off twice as fast.

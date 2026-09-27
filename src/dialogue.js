@@ -36,6 +36,8 @@ export const partnerSpeaker=k=>({k,name:PARTNERS[k].name,at:()=>pt.type===k?{x:p
 
 const queue=[];let D=null,prevFocus=null;
 export const talking=()=>!!D;
+// a conversation is open or waiting to open
+export const dlgBusy=()=>!!D||queue.length>0;
 // the dialogue takes focus while open and hands it back when it closes
 function restoreFocus(){const el=prevFocus;prevFocus=null;if(el&&el.isConnected&&typeof el.focus==='function')el.focus();}
 // drop queued and open conversations (starting or loading a world), without running their done() callbacks
