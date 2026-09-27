@@ -14,6 +14,8 @@ src/*.js          the game, split into ES modules (table below)
 public/assets/    title.webp: title screen background (painted art with the logo baked in, 3816×1620)
 vite.config.js    Vite config (relative base so dist/ works from any path)
 .github/workflows/pages.yml  builds with Vite and deploys dist/ to GitHub Pages
+.github/workflows/test.yml   builds and runs the Playwright smoke tests on pushes to main and on pull requests
+tests/            Playwright smoke tests (playwright.config.js starts the dev server)
 ```
 
 The project is built with Vite. The only runtime dependency is three.js, pinned to r186 (`three@0.186.1` from npm) and bundled into the build, so nothing loads from a CDN at runtime. three.js needs WebGL 2 since r163. There are no audio assets and the only image asset is `public/assets/title.webp`, the title screen background; it's loaded with `new Image()` and the `#title` overlay only gets its `bg` class (image, cream card behind the menu, HTML logo hidden on landscape screens) once it loads, so a missing file falls back to the plain overlay. The title screen must fit without scrolling: it holds only the tagline and menu buttons, and the controls list lives in the `#howto` overlay behind the How to play button. All game art is drawn in code onto canvases, and all sound is synthesized with Web Audio.
@@ -25,6 +27,7 @@ npm install
 npm run dev       # dev server with reload, prints the local URL
 npm run build     # static build in dist/
 npm run preview   # serves dist/ to check the build
+npm test          # Playwright smoke tests (first run `npx playwright install chromium`)
 ```
 
 `dist/` is plain static files, deployable to GitHub Pages or any static host. Opening `index.html` straight from disk no longer works; use the dev server. Save codes use `CompressionStream`, which requires a secure context (localhost or HTTPS).
@@ -131,7 +134,9 @@ Browser-only saves are why the game will be self-hosted with server-side saves (
 
 ## Testing
 
-There are no automated tests yet (Playwright smoke tests are planned in #50). To check a change:
+`npm test` runs the Playwright smoke tests in `tests/smoke.spec.js` against the dev server (the config starts it on port 5199, or reuses one already running there outside CI): boot with no console errors, creating a small world, save/Continue through `localStorage`, and a save code round trip. They read game state through `import('/src/game.js')`; `window.__snap` (installed by the tests) summarizes the world, and a test clicks Continue and takes the snapshot in the same task so no frame runs in between. Console errors fail a test, except Google Fonts and the missing favicon. CI (`test.yml`) runs `npm run build` and `npm test`, and uploads the report and traces when a test fails. A run takes a few minutes, since software WebGL is slow. When a change touches the title screen, new world dialog, pause menu or save format, update the tests with it.
+
+The smoke tests don't cover play itself. To check a change by hand:
 
 1. Run `npm run dev` and load it with the dev console open; confirm there are no errors. Run `npm run build` too, and check the build with `npm run preview` if the change touches boot order or imports.
 2. Create a new small world and play briefly.
