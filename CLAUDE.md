@@ -107,7 +107,6 @@ The game is moving characters, creatures and objects from code-drawn art to pain
 
 Still code-drawn, to be painted:
 
-- **Armour:** the emberite greaves (its render's boot had no outline; prompts in `tools/art/armor-prompts.txt`). Until painted, a missing piece tints the plain part.
 - **Enemies:** Green Slime, Blue Slime, Paper Zombie, Watcher Eye, Cave Bat, Cardboard Knight, Crumple, Toadstool Lobber, Dune Fin, Shell Scarab, Sun Kite, Flurry, Snow Roller, Snowlet, Frost Puff, Ink Blot, Ink Squid, Ink Wisp, Quillfish, Cinder Bat, Ash Imp, Firecracker Imp, Ash Spider, Ink Wraith.
 - **Bosses:** King Slime, Great Crane, Inkwell Leviathan (head, body segment, tail), Charred Folio, The Unfolded (ink shrine).
 - **NPCs:** Guide, Painter, Nurse, Tinkerer, Merchant.

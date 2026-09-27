@@ -145,7 +145,7 @@ ARMOR_PIV = {'cu': {'head': (331, 749), 'torso': (954, 371), 'arm': (1313, 368),
              'fe': {'head': (290, 760), 'torso': (945, 335), 'arm': (1378, 350), 'leg': (1680, 345)},
              'fr': {'head': (375, 780), 'torso': (1000, 353), 'arm': (1440, 365), 'leg': (1678, 322)},
              'ik': {'head': (350, 760), 'torso': (985, 360), 'arm': (1380, 375), 'leg': (1698, 360)},
-             'em': {'head': (372, 760), 'torso': (985, 350), 'arm': (1365, 350)}}  # emberite leg: the render's boot has no outline; regenerate it
+             'em': {'head': (368, 830), 'torso': (1045, 375), 'arm': (1445, 370), 'leg': (1733, 370)}}
 HEAD_FIX = {'fe': 1.15}  # renders that drew the head small for the torso
 BASE_H = {'head': 625, 'torso': 563, 'arm': 509, 'leg': 598}  # base part heights inside their ink outline in parts.png, so armour pieces match their size
 

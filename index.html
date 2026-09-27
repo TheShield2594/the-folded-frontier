@@ -1125,7 +1125,7 @@ const ARMOR_RIG={cu:{head:[0,0,101,102,48.1,91.3],torso:[103,0,95,92,63.1,14.3],
   fe:{head:[0,0,94,110,42.1,99.6],torso:[96,0,95,92,61.4,13.6],arm:[193,0,37,84,23.6,11.9],leg:[232,0,47,97,22.4,12.7]},
   fr:{head:[0,0,90,119,44.7,110.4],torso:[92,0,98,92,59.5,13.1],arm:[192,0,42,84,31.4,12.2],leg:[236,0,45,97,20.0,12.3]},
   ik:{head:[0,0,90,102,44.5,92.2],torso:[92,0,97,92,63.5,12.7],arm:[191,0,41,85,22.4,12.0],leg:[234,0,46,97,22.6,12.6]},
-  em:{head:[0,0,88,118,42.1,108.1],torso:[90,0,80,92,48.1,13.6],arm:[172,0,42,85,24.9,12.0]}}; // no emberite leg yet
+  em:{head:[0,0,95,125,48.4,116.1],torso:[97,0,100,92,62.0,13.4],arm:[199,0,44,84,23.9,12.3],leg:[245,0,45,97,20.3,12.3]}};
 function paintedPlayer(eq,met){const P=PAINT.player,c=mk(192*9,288),g=c.getContext('2d');
   const piece=(k,slot,dark)=>{const m=slot&&met[slot],R=m&&PAINT.armor[m]&&ARMOR_RIG[m][k],A=R&&PAINT.armor[m],r=R||RIG[k],[x,y,w,h]=r,p=mk(w,h),q=p.getContext('2d');q.drawImage(A||P.img,x,y,w,h,0,0,w,h);
     const col=!A&&slot&&eq[slot];
