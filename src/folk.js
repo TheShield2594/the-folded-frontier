@@ -2,7 +2,7 @@
 // newer townsfolk, and the Curator's museum. All of it is saved per world in `folk`.
 import {
   addItem,angler,BIO,BIONAME,checkAch,countItem,dropItem,icon,ITEMS,NPCDEF,npcs,pick,player,quests,
-  removeItem,renderQuests,setInvDirty,SFX,stat,surf,T,toast,townLevel,visited,W,
+  removeItem,renderQuests,setInvDirty,SFX,stat,surf,T,toast,townLevel,visited,W,palEv,
 } from './game.js';
 
 // ================= folk =================
@@ -109,6 +109,6 @@ export function donate(id){if(folk.mus[id]||!ITEMS[id]||countItem(id)<1)return;r
   setInvDirty(true);checkAch();}
 // fossils: a small chance in dirt, sand, stone and ash dug well below the surface; skulls only deep down
 export function digFossil(x,y,t){if(t!==T.STONE&&t!==T.DIRT&&t!==T.SAND&&t!==T.ASH)return;const depth=surf[Math.min(W-1,Math.max(0,x))]-y;if(depth<10||Math.random()>.012)return;
-  const id=depth>45&&Math.random()<.3?'fos_skull':pick(['fos_amm','fos_amm','fos_tri','fos_tri','fos_fern','fos_fern']);dropItem(id,1,x+.5,y+.5);fcount('fossil');if((folk.n.fossil||0)===1)toast('You found a fossil! A museum would treasure it.','gold');}
+  const id=depth>45&&Math.random()<.3?'fos_skull':pick(['fos_amm','fos_amm','fos_tri','fos_tri','fos_fern','fos_fern']);dropItem(id,1,x+.5,y+.5);fcount('fossil');palEv('fossil');if((folk.n.fossil||0)===1)toast('You found a fossil! A museum would treasure it.','gold');}
 // Imported bindings are read-only, so other modules assign these through setters.
 export function setFolk(v){return folk=v;}
