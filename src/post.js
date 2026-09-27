@@ -3,17 +3,15 @@ import * as THREE from 'three';
 import {arenaF,biomeAt,camera,clamp,dayF,inkMoon,renderer,scene,season,SET,surfAvg,U,worldTime} from './game.js';
 
 // ================= post-processing =================
-// With Settings > Post-processing on, the scene renders into a half-float target (multisampled on WebGL2) and
+// With Settings > Post-processing on, the scene renders into a half-float target (multisampled) and
 // U.uHdr is 1, so torches, lava, glowing ores, the sun and glowing particles can go brighter than white. What
 // passes the threshold is blurred at quarter size and added back as bloom; the composite then grades the color
 // toward the current biome and season (GRADE, SGRADE), cools it at night and darkens the corners. Off, or where
 // float targets are unsupported (postOK), the scene renders straight to the screen as it always did.
-const ext=renderer.extensions,gl2=renderer.capabilities.isWebGL2;
-export const postOK=gl2?ext.has('EXT_color_buffer_float'):ext.has('OES_texture_half_float')&&ext.has('EXT_color_buffer_half_float');
-const RT=gl2?THREE.WebGLMultisampleRenderTarget:THREE.WebGLRenderTarget;
+export const postOK=renderer.extensions.has('EXT_color_buffer_float')||renderer.extensions.has('EXT_color_buffer_half_float');
 const rtOpt={type:THREE.HalfFloatType,format:THREE.RGBAFormat,minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,depthBuffer:false,stencilBuffer:false};
 let rtS=null,rtA=null,rtB=null;const sz=new THREE.Vector2();
-function makeTargets(){sz.set(0,0);[rtS,rtA,rtB].forEach(t=>t&&t.dispose());rtS=new RT(4,4,Object.assign({},rtOpt,{depthBuffer:true}));rtA=new THREE.WebGLRenderTarget(4,4,rtOpt);rtB=new THREE.WebGLRenderTarget(4,4,rtOpt);}
+function makeTargets(){sz.set(0,0);[rtS,rtA,rtB].forEach(t=>t&&t.dispose());rtS=new THREE.WebGLRenderTarget(4,4,Object.assign({},rtOpt,{depthBuffer:true,samples:4}));rtA=new THREE.WebGLRenderTarget(4,4,rtOpt);rtB=new THREE.WebGLRenderTarget(4,4,rtOpt);}
 function sizeTargets(){const v=renderer.getDrawingBufferSize(new THREE.Vector2());if(v.equals(sz))return;sz.copy(v);rtS.setSize(v.x,v.y);const qx=Math.max(1,v.x>>2),qy=Math.max(1,v.y>>2);rtA.setSize(qx,qy);rtB.setSize(qx,qy);
   const px=new THREE.Vector2(1/qx,1/qy);MB.uniforms.uPx.value.set(1/v.x,1/v.y);MH.uniforms.uPx.value.copy(px);MC.uniforms.uAsp.value=v.x/v.y;}
 const VS=`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}`;
