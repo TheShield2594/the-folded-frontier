@@ -7,8 +7,11 @@ import {
 } from './game.js';
 
 // ================= three setup =================
+// All art is drawn in sRGB and the shaders mix colors as-is, so keep three.js out of color management
+// (on by default since r152): no sRGB-to-linear conversion of colors, no sRGB encode on output.
+THREE.ColorManagement.enabled=false;
 export const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.setClearColor(0x1b1a26);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.setClearColor(0x1b1a26);renderer.outputColorSpace=THREE.LinearSRGBColorSpace;
 $('view').appendChild(renderer.domElement);
 export const scene=new THREE.Scene();
 export const camera=new THREE.PerspectiveCamera(32,innerWidth/innerHeight,1,400);
