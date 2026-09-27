@@ -1913,8 +1913,8 @@ function bobLand(t){const rod=ITEMS[bob.rod],lava=t===T.LAVA;bob.liq=t;bob.vx=bo
   if(lava&&!rod.lava){burst(bob.x,bob.y+.5,['#ff8a3d','#ffd66b'],10,3,{grav:-4,bright:1});SFX.sizzle();reelIn('Your line burns up in the lava! Only an Emberite Rod can fish there.');return;}
   bob.small=flood(Math.floor(bob.x),Math.floor(bob.y),tt=>tt===t,25).length<25;if(bob.small)toast('This pool is too small for fish. Find one with at least 25 tiles of liquid.','bad');
   bob.state=2;bob.wait=biteWait(fishPower(rod));}
-function landFish(it){const p=player,id=rollCatch(fishPower(it)),bi=bestBait();
-  if(bi>=0&&!(hasAcc('tackle')&&Math.random()<.3)){const s=p.inv[bi];s.n--;if(!s.n)p.inv[bi]=null;invDirty=true;}
+function landFish(it){const p=player,bi=bestBait();if(bi<0){reelIn('Out of bait.');return;}const id=rollCatch(fishPower(it));
+  if(!(hasAcc('tackle')&&Math.random()<.3)){const s=p.inv[bi];s.n--;if(!s.n)p.inv[bi]=null;invDirty=true;}
   const left=addItem(id,1);if(left)dropItem(id,left,p.x,p.y+1);SFX.catch();burst(bob.x,bob.y+.2,bob.liq===T.LAVA?['#ff7a2d','#ffd66b']:['#3a2a5a','#a894d0','#fbf8f0'],14,5,{up:3});floatText(bob.x,bob.y+1,ITEMS[id].name,'crit');
   if(ITEMS[id].fish){stat('fish');angler.caught++;if(!angler.seen[id]){angler.seen[id]=1;toast(`New catch: ${ITEMS[id].name}!`,'gold');}}reelIn();}
 function updateFishing(dt){const p=player,it=selItem();
