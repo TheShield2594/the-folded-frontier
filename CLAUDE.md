@@ -67,7 +67,7 @@ How the modules fit together:
 ## Saves
 
 - World save: `localStorage['folded-frontier-save-v1']` (the key name predates versioning; don't rename it). JSON with `v: SAVE_VER` (currently 3); `tiles`/`walls`/`meta`/`explored` are base64-encoded `Uint8Array`s. v2 added the per-world `bestiary` (`{type: {k: kills, e: elite kills, d: {itemId: count}}}`). v3 fills in fields builds older than the repo could leave out (biome ranges, `bio.camps`/`treasure`/`shown`, `p.world`) and adds `p.world.day` (season day counter) and `town` (`{f: {upgradeId: 1}, used: [columns]}`).
-- `cleanSave()` runs on every load after `migrateSave()`: it drops inventory/chest items, NPCs, partners and badges this build doesn't know, so a save never crashes on a removed id. If a save still can't load, `loadFailed()` copies it to `folded-frontier-save-v1-backup` (once) and the title screen stays up.
+- `cleanSave()` runs on every load after `migrateSave()`: it drops inventory/chest items, NPCs, partners and badges this build doesn't know, so a save never crashes on a removed id. If a save still can't load, `loadFailed()` copies it to `folded-frontier-save-v1-backup-<timestamp>` (one key per different failed save; the same save failing twice is kept once) and the title screen stays up.
 - Settings: `localStorage['folded-frontier-settings']`. Achievements/stats: `localStorage['folded-frontier-meta']`.
 - Autosave runs every 60 seconds and when pausing or quitting.
 - Save codes: `FF1:` + base64(gzip(JSON `{save, meta}`)) via `CompressionStream`; `FF0:` is the uncompressed fallback. The Save code button is in the pause menu, and "Load save code" is on the title screen.

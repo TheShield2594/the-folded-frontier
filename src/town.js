@@ -26,16 +26,19 @@ export function townLevel(){const n=TOWN.filter(u=>town.f[u.id]).length;let lv=T
 // columns of the town green, nearest the cabin first: westward from the cabin, then eastward past it
 export function townSpots(){const out=[],c=SPAWNX;for(let x=c-1;x>=Math.max(2,c-45);x--)out.push(x);for(let x=c+14;x<=Math.min(W-3,c+45);x++)out.push(x);return out;}
 function freeCol(x){const s=Math.floor(player.spawn.x);if(x===s||x===SPAWNX-4)return -1;const y=groundY(x);if(y<0)return -1;const up=tiles[idx(x,y+1)];return up===T.AIR||up===T.TUFT?y:-1;}
-function placeProps(u){let first=null;const cols=townSpots(),used=town.used;let ci=0;
-  for(const pr of u.props){let y=-1,x=0;while(ci<cols.length){x=cols[ci++];y=freeCol(x);if(y>=0&&(first||!used.some(c=>Math.abs(c-x)<=1)))break;y=-1;}if(y<0)break;used.push(x);if(!pr)continue;
+// all or nothing: plans every column first and returns null, changing nothing, if any prop doesn't fit
+function placeProps(u){let first=null;const cols=townSpots(),used=town.used,plan=[];let ci=0;
+  for(const pr of u.props){let y=-1,x=0;while(ci<cols.length){x=cols[ci++];y=freeCol(x);if(y>=0&&(plan.length||!used.some(c=>Math.abs(c-x)<=1)))break;y=-1;}if(y<0)return null;plan.push([x,y,pr]);}
+  for(const[x,y,pr]of plan){used.push(x);if(!pr)continue;
     if(pr.stack){setTile(x,y,pr.stack[0]);setTile(x,y+1,pr.stack[1]);}else if(Array.isArray(pr))setTile(x,y,pr[0],pr[1]);else setTile(x,y,pr);
     if(pr===T.CHEST&&u.chest){const st=u.chest.map(([id,n])=>({id,n}));while(st.length<20)st.push(null);chests.set(idx(x,y),st);}
     if(!first)first=[x,y];}
   return first;}
 function repairBridges(){for(let i=0;i<tiles.length;i++)if(tiles[i]===T.SKETCH&&meta[i]===1){setTile(i%W,(i/W)|0,T.PLATFORM);}return null;}
-// checked every few seconds while playing; unlocks at most one upgrade per call so the toasts don't pile up
-export function updateTown(){const u=TOWN.find(u=>!town.f[u.id]&&u.when());if(!u)return;const lv=townLevel();town.f[u.id]=1;
-  const at=u.run?u.run():u.props?placeProps(u):null;toast(u.msg,'gold');SFX.nice();if(at)burst(at[0]+.5,at[1]+.5,['#f1c04f','#fbf8f0','#3f7a3b'],18,4);
+// checked every few seconds while playing; unlocks at most one upgrade per call so the toasts don't pile up.
+// An upgrade whose props don't fit yet is skipped and tried again later.
+export function updateTown(){const lv=townLevel();let u=null,at=null;for(const c of TOWN){if(town.f[c.id]||!c.when())continue;at=c.run?c.run():c.props?placeProps(c):null;if(c.props&&!at)continue;u=c;break;}if(!u)return;town.f[u.id]=1;
+  toast(u.msg,'gold');SFX.nice();if(at)burst(at[0]+.5,at[1]+.5,['#f1c04f','#fbf8f0','#3f7a3b'],18,4);
   const nl=townLevel();if(nl!==lv)setTimeout(()=>toast(`Your settlement has grown into a ${nl}!`,'gold'),2500);checkAch();}
 export const townShop=list=>town.f.bazaar?list.concat(BAZAAR):list;
 // Imported bindings are read-only, so other modules assign these through setters.

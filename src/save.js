@@ -50,8 +50,10 @@ function cleanSave(d){const p=d.p;p.inv=arr(p.inv,40).map(okItem);p.armor=arr(p.
   if(!Array.isArray(d.houses))d.houses=[];if(!Array.isArray(d.visited))d.visited=[];
   if(!d.town||typeof d.town!=='object')d.town={};d.town={f:Object.assign({},d.town.f),used:Array.isArray(d.town.used)?d.town.used:[]};
   return d;}
-// If a save can't be loaded, keep a copy of it so a later new world can't overwrite the only one.
-export function loadFailed(e){console.error('Could not load the save:',e);try{const s=localStorage.getItem(SAVE_KEY);if(s&&!localStorage.getItem(SAVE_KEY+'-backup'))localStorage.setItem(SAVE_KEY+'-backup',s);}catch(_){}}
+// If a save can't be loaded, keep a copy of it so a later new world can't overwrite the only one. Each different
+// failed save gets its own timestamped key; the same save failing again (boot, then Continue) is stored once.
+export function loadFailed(e){console.error('Could not load the save:',e);try{const s=localStorage.getItem(SAVE_KEY);if(!s)return;const pre=SAVE_KEY+'-backup';
+  for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(pre)&&localStorage.getItem(k)===s)return;}localStorage.setItem(pre+'-'+Date.now(),s);}catch(_){}}
 export function loadSave(){try{const s=localStorage.getItem(SAVE_KEY);return s?JSON.parse(s):null;}catch(e){return null;}}
 function hasSave(){try{return !!localStorage.getItem(SAVE_KEY);}catch(e){return false;}}
 
