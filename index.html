@@ -27,13 +27,14 @@
   <div id="evbar" hidden><div class="en"></div><div class="eb"><i></i></div></div>
   <div id="hotwrap"><div id="itemName"></div><div id="hotbar" class="grid"></div></div>
   <div id="panel" hidden>
-    <div class="sheet" id="sideSheet" hidden><h3 id="sideTitle">Chest</h3><div id="sideBody"></div></div>
+    <div id="tabs" role="tablist" aria-label="Backpack pages"><button type="button" role="tab" data-tab="inv"><img alt="">Backpack</button><button type="button" role="tab" data-tab="craft"><img alt="">Crafting</button><button id="partyBtn" type="button" role="tab" data-tab="party"><img alt="">Party</button><button id="bestBtn" type="button" role="tab" data-tab="bestiary"><img alt="">Bestiary</button><button id="musBtn" type="button" role="tab" data-tab="museum"><img alt="">Museum</button><button id="townBtn" type="button" role="tab" data-tab="town"><img alt="">Town</button></div>
+    <div class="sheet pinned" id="sideSheet" hidden><h3 id="sideTitle">Chest</h3><div id="sideBody"></div></div>
     <div id="leftCol">
-      <div class="sheet"><h3>Backpack</h3><div id="grid" class="grid"></div>
-        <div class="row"><button id="houseBtn" type="button">Check this room</button><button id="townBtn" type="button">Town</button><button id="partyBtn" type="button">Party</button><button id="bestBtn" type="button">Bestiary</button><button id="sortBtn" class="ghost" type="button">Sort</button></div></div>
+      <div class="sheet taped tl"><h3 class="stk">Backpack</h3><div id="grid" class="grid"></div>
+        <div class="row"><button id="houseBtn" type="button">Check this room</button><button id="sortBtn" class="ghost" type="button">Sort</button></div></div>
     </div>
-    <div class="sheet"><h3>Gear</h3><div id="equip"></div><div id="defTxt"></div></div>
-    <div class="sheet" id="craft"><h3>Crafting</h3><div id="stations"></div><div id="recipes"></div></div>
+    <div class="sheet pinned"><h3>Gear</h3><div id="equip"></div><div id="defTxt"></div></div>
+    <div class="sheet taped tr" id="craft"><h3>Crafting</h3><div id="stations"></div><div id="recipes"></div></div>
   </div>
   <div id="toasts"></div>
   <div id="nums"></div>
@@ -58,7 +59,7 @@
           <dt><kbd>Left click</kbd></dt><dd>Use the held item: mine, swing, place blocks</dd>
           <dt><kbd>Right click</kbd></dt><dd>Open doors and chests, talk to the Merchant, set spawn at a bed</dd>
           <dt><kbd>1</kbd>–<kbd>0</kbd> / wheel</dt><dd>Pick a hotbar slot</dd>
-          <dt><kbd>E</kbd></dt><dd>Backpack, gear and crafting. Shift-click moves items fast. The Bestiary button lists every enemy you've defeated and what they dropped</dd>
+          <dt><kbd>E</kbd></dt><dd>Backpack, gear and crafting. Shift-click moves items fast. The tabs on top turn to your Party, the Bestiary (every enemy you've defeated and what they dropped), the Museum and the Town</dd>
           <dt><kbd>Q</kbd> · <kbd>R</kbd></dt><dd>Switch partner · Use your partner's special move</dd>
           <dt><kbd>C</kbd></dt><dd>Hold to flatten: crawl through one-tile gaps and dodge hits</dd>
           <dt><kbd>Shift</kbd></dt><dd>Dash. You can't be hit mid-dash, and you get one dash in the air per jump. The ring at your feet shows the cooldown</dd>
@@ -110,7 +111,7 @@
     </div>
     <h3>Keys</h3><div id="binds" class="binds"></div>
     <h3>Gamepad buttons</h3><div id="padBinds" class="binds"></div>
-    <p class="note">Click a key or button, then press the new one. Esc cancels. Arrow keys always work for moving.<br>Gamepad: left stick or d-pad moves, right stick aims, Start pauses, and holding down flattens. Interact reaches the nearest door, chest, bed or townsperson. In the backpack, A selects, X splits and B or Y closes.</p>
+    <p class="note">Click a key or button, then press the new one. Esc cancels. Arrow keys always work for moving.<br>Gamepad: left stick or d-pad moves, right stick aims, Start pauses, and holding down flattens. Interact reaches the nearest door, chest, bed or townsperson. In the backpack, A selects, X splits, LB turns to the next page and B or Y closes.</p>
     <div class="menu" style="margin:12px 0 0"><button id="setClose" type="button">Done</button><button id="setReset" class="ghost" type="button">Reset to defaults</button></div>
   </div></div></div>
   <div id="ach" class="over" hidden><div class="card"><div class="sheet"><h3 id="achHead">Achievements</h3><div class="achs" id="achList"></div><div class="menu" style="margin:14px 0 0"><button id="achClose" type="button">Done</button></div></div></div></div>
@@ -121,7 +122,7 @@
     <div class="menu" style="margin:12px 0 0"><button id="codeMake" type="button">Make code from my world</button><button id="codeCopy" class="ghost" type="button">Copy</button><button id="codeLoad" class="ghost" type="button">Load this code</button><button id="codeClose" class="ghost" type="button">Close</button></div>
     <p class="note" id="codeMsg"></p></div></div></div>
   <div id="dashCd" hidden></div><div id="drawCd" hidden></div>
-  <div id="padHint" hidden>A select · X split or ×5 · RB quick move · B or Y close</div>
+  <div id="padHint" hidden>A select · X split or ×5 · RB quick move · LB next page · B or Y close</div>
   <div id="chapter" hidden><div class="ch-page"><small id="chKick">A new page</small><b id="chName"></b><span id="chSub"></span></div></div>
   <div id="intro" hidden>
     <div class="bookWrap"><div class="book">

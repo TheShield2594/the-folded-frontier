@@ -27,5 +27,6 @@ export * from './seasons.js';
 export * from './town.js';
 export * from './folk.js';
 export * from './events.js';
+export * from './pals.js';
 export * from './awaken.js';
 export * from './save.js';
