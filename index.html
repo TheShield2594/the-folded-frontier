@@ -37,6 +37,7 @@
   <div id="toasts"></div>
   <div id="nums"></div>
   <div id="help">WASD move · Space jump · Left click use · Right click interact<br>E backpack &amp; crafting · H heal · M map · Esc pause</div>
+  <div id="guide" hidden><small id="gdK"></small><b id="gdT"></b><p id="gdX"></p><div class="gdB"><button id="gdSkip" class="ghost" type="button">Skip</button><button id="gdOff" class="ghost" type="button">Turn off hints</button></div></div>
   <div id="tip" hidden></div>
   <div id="cursorItem" hidden></div>
 
@@ -96,6 +97,9 @@
       <label for="shakeC">Screen shake</label><input type="checkbox" id="shakeC">
       <label for="hitC">Hit pause</label><input type="checkbox" id="hitC">
       <label for="numsC">Damage and pickup numbers</label><input type="checkbox" id="numsC">
+      <label for="cbS">Color vision</label><select id="cbS"><option value="off">Standard colors</option><option value="deut">Deuteranopia (green-weak)</option><option value="prot">Protanopia (red-weak)</option><option value="trit">Tritanopia (blue-weak)</option></select>
+      <label for="introC">Story intro on new worlds</label><input type="checkbox" id="introC">
+      <label for="hintsC">Tutorial hints</label><input type="checkbox" id="hintsC">
     </div>
     <h3>Keys</h3><div id="binds" class="binds"></div>
     <h3>Gamepad buttons</h3><div id="padBinds" class="binds"></div>
@@ -112,6 +116,13 @@
   <div id="dashCd" hidden></div><div id="drawCd" hidden></div>
   <div id="padHint" hidden>A select · X split or ×5 · RB quick move · B or Y close</div>
   <div id="chapter" hidden><div class="ch-page"><small id="chKick">A new page</small><b id="chName"></b><span id="chSub"></span></div></div>
+  <div id="intro" hidden>
+    <div class="bookWrap"><div class="book">
+      <div class="pg pgR"><p>Once upon a page, the world was only a sketch.</p><p>Then someone picked up a pencil…</p><p>…and the whole frontier began to unfold.</p></div>
+      <div class="cover"><div class="cf"><span>The</span><b>Folded Frontier</b><i></i></div><div class="cb"><canvas id="introArt" width="360" height="440"></canvas></div></div>
+    </div></div>
+    <button id="introSkip" class="ghost" type="button">Skip ›</button>
+  </div>
   <div id="dead" class="over" hidden>
     <div class="card"><h1 class="logo">You got crumpled!</h1><p class="tag" id="deadTxt">Refolding in 4…</p></div>
   </div>

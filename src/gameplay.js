@@ -11,6 +11,7 @@ import {
   spriteMat,stat,state,surf,surfAvg,syncPartners,T,talkTo,threadGeo,tileAt,tiles,toast,tone,TP,U,
   updateCoins,updateDashHud,updateDrawHud,updateEnemyFx,updateGhosts,upx,W,WALLCOL,WALLDROP,walls,
   worldClock,worldTime,
+  guideEv,
 } from './game.js';
 
 // ================= gameplay =================
@@ -271,9 +272,9 @@ export function checkRitual(){const sh=BIO&&BIO.shrine;if(!sh||boss||!inkMoon||!
   let lit=0;for(let x=sx-9;x<=sx+9;x++)if(tileAt(x,sy)===T.PEDESTAL&&tileAt(x,sy+1)===T.CANDLE)lit++;if(lit>=5){toast('The pages tremble… something unfolds!','bad');SFX.boom();shake(.6);spawnEnemy('unfolded',sx+(player.x<sx?6:-6),sy+1);stat('ritual');}}
 function flood(x,y,match,limit=80,diag=false){const out=[],seen=new Set([idx(x,y)]),st=[[x,y]];while(st.length&&out.length<limit){const[cx,cy]=st.pop();out.push([cx,cy]);const nb=[[1,0],[-1,0],[0,1],[0,-1]];if(diag)nb.push([1,1],[-1,-1],[1,-1],[-1,1]);for(const[dx,dy]of nb){const nx=cx+dx,ny=cy+dy,k=idx(nx,ny);if(!seen.has(k)&&match(tileAt(nx,ny),k)){seen.add(k);st.push([nx,ny]);}}}return out;}
 function peelAt(x,y){const cells=flood(x,y,t=>t===T.PEEL,60);cells.sort((a,b)=>(a[1]-b[1])||(a[0]-b[0]));cells.forEach(([cx,cy],n)=>setTimeout(()=>{if(tileAt(cx,cy)!==T.PEEL)return;setTile(cx,cy,T.AIR);if(n%3===1)SFX.rustle(.15,.5);burst(cx+.5,cy+.5,['#e6e1d6','#fbf8f0','#8d8f9a'],7,4,{grav:3,life:1.2,s:1.4});},n*45));
-  SFX.peel();toast('The wall peels away like old wallpaper!','gold');stat('peels');}
+  SFX.peel();toast('The wall peels away like old wallpaper!','gold');stat('peels');guideEv('peel');}
 function popSketch(x,y){const m=meta[idx(x,y)];const cells=flood(x,y,(t,k)=>t===T.SKETCH&&meta[k]===m,50,true);cells.forEach(([cx,cy],n)=>setTimeout(()=>{if(tileAt(cx,cy)!==T.SKETCH)return;setTile(cx,cy,m===2?T.PLANK:T.PLATFORM);burst(cx+.5,cy+.5,['#c98f4f','#fbf8f0','#6a6070'],6,4,{grav:2});tone(400+n*40,600+n*40,.1,'triangle',.06);},n*60));
-  toast(m===2?'The sketched stairs pop out of the page!':'The sketched bridge folds up into a real one!','gold');stat('popouts');}
+  toast(m===2?'The sketched stairs pop out of the page!':'The sketched bridge folds up into a real one!','gold');stat('popouts');guideEv('pop');}
 const CAMPCOST=[['wood',30],['stone',15],['torch',3]];
 function signAt(x,y){const i=idx(x,y);if(meta[i]===1){openSide('travel',null,null,'Signposts');return;}const c=BIO.camps&&BIO.camps.find(c=>c.sx===x&&c.sy===y);if(!c)return;
   if(!CAMPCOST.every(([id,n])=>countItem(id)>=n)){toast(`Rebuild this camp with ${CAMPCOST.map(([id,n])=>n+' '+ITEMS[id].name).join(', ')}.`);return;}
@@ -314,7 +315,7 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateDashHud(d
   if(!hooked){if(left&&!right){p.vx=Math.max(p.vx-acc*dt,-spd);if(!p.swing&&!p.blocking)p.face=-1;}else if(right&&!left){p.vx=Math.min(p.vx+acc*dt,spd);if(!p.swing&&!p.blocking)p.face=1;}else p.vx*=Math.pow(p.onGround?.0004:.25,dt);
     if(Math.abs(p.vx)>spd)p.vx*=Math.pow(.05,dt);}
   const wantFlat=held('flat')||(pad.active&&pad.held.down&&p.onGround&&(p.downT=(p.downT||0)+dt)>.3);if(!(pad.active&&pad.held.down))p.downT=0;
-  if(wantFlat&&!p.flat&&!hooked&&!p.climb){p.flat=true;p.h=.85;if((p.flatCD||0)<=0){p.inv_t=Math.max(p.inv_t,.35);p.flatCD=1.2;burst(p.x,p.y+.4,['#fbf8f0','#e9dcc0'],10,3,{grav:2});SFX.crunch();stat('flats');}else SFX.rustle(.12,.4);}
+  if(wantFlat&&!p.flat&&!hooked&&!p.climb){p.flat=true;p.h=.85;if((p.flatCD||0)<=0){p.inv_t=Math.max(p.inv_t,.35);p.flatCD=1.2;burst(p.x,p.y+.4,['#fbf8f0','#e9dcc0'],10,3,{grav:2});SFX.crunch();stat('flats');guideEv('flat');}else SFX.rustle(.12,.4);}
   else if(!wantFlat&&p.flat){if(!boxHits(p.x,p.y,p.w,1.82)){p.flat=false;p.h=1.82;SFX.unfold();}}
   p.flatCD=(p.flatCD||0)-dt;if(p.flat){p.vx=clamp(p.vx,-spd*.7,spd*.7);}
   p.drop=held('down');

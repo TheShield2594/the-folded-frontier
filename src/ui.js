@@ -7,6 +7,7 @@ import {
   placeTip,player,PORDER,pPortrait,questDone,quests,QUESTS,rand,RECIPES,registerHouseAt,removeItem,
   scene,selItem,SET,setPadFocus,setPartner,SFX,SHEETS,SHOP,spriteMesh,stat,syncPartners,T,tileAt,tiles,
   travelTo,upx,W,walls,
+  guideEv,
 } from './game.js';
 
 // ================= UI =================
@@ -33,7 +34,7 @@ function renderCraft(){const st=stationsNear();const avail=RECIPES.map((r,i)=>{c
   $('stations').innerHTML=['bench','furnace','anvil','alchemy'].map(k=>`<span class="${st[k]?'on':''}">${st[k]?'●':'○'} ${ITEMS[k].name}</span>`).join('');
   avail.sort((a,b)=>(b.ok-a.ok)||(b.stOK-a.stOK)||a.i-b.i);
   $('recipes').innerHTML=avail.map(({r,i,ok,stOK})=>`<div class="rec ${ok?'can':'no'}" data-r="${i}"><img src="${icon(r[0])}" alt=""><div><div class="nm">${ITEMS[r[0]].name}${r[1]>1?' ×'+r[1]:''}</div><div class="ing">${r[2].map(([id,n])=>`<span class="${countItem(id)>=n?'':'miss'}"><img src="${icon(id)}" alt="">${n} ${ITEMS[id].name}</span>`).join('')}${r[3]?`<span class="${stOK?'':'miss'}">at ${ITEMS[r[3]].name}</span>`:''}</div></div></div>`).join('');}
-export function craft(i,times=1){const r=RECIPES[i];for(let k=0;k<times;k++){const st=stationsNear();if(r[3]&&!st[r[3]])return;if(!r[2].every(([id,n])=>countItem(id)>=n))return;r[2].forEach(([id,n])=>removeItem(id,n));const left=addItem(r[0],r[1]);if(left)dropItem(r[0],left,player.x,player.y+1,0,3);
+export function craft(i,times=1){const r=RECIPES[i];for(let k=0;k<times;k++){const st=stationsNear();if(r[3]&&!st[r[3]])return;if(!r[2].every(([id,n])=>countItem(id)>=n))return;r[2].forEach(([id,n])=>removeItem(id,n));const left=addItem(r[0],r[1]);guideEv('craft');if(left)dropItem(r[0],left,player.x,player.y+1,0,3);
   SFX.craft();burst(player.x,player.y+1.2,['#f1c04f','#fbf8f0'],8,3);if(['copperbar','ironbar','goldbar'].includes(r[0]))questDone('bar');if(ITEMS[r[0]].use==='buff'||r[0]==='potion')stat('brews');if(['ironsword','ironpick','helmfe','mailfe','legsfe'].includes(r[0]))questDone('iron');}craftKey='';invDirty=true;}
 $('recipes').addEventListener('mousedown',e=>{const el=e.target.closest('.rec');if(!el||e.button!==0)return;craft(+el.dataset.r,e.shiftKey?5:1);});
 function shopHTML(list){return list.map(([id,p],i)=>`<div class="shopi ${player.coins<p?'poor':''}" data-s="${i}"><img src="${icon(id)}" alt=""><span>${ITEMS[id].name}</span><span class="pr"><img src="${icon('coin')}" alt="">${p}</span></div>`).join('');}

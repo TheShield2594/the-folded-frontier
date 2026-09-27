@@ -50,6 +50,7 @@ Each file in `src/` is one or more of the old script's sections, in the same ord
 | `map.js` | pop-up book, world map | Page-turn effect when entering a new biome; full map view |
 | `gamepad.js` | gamepad | Gamepad polling and menu navigation |
 | `hud.js` | settings & achievements UI, minimap/HUD | Settings panel, rebinding, achievements; minimap and HUD |
+| `guide.js` | intro, tutorial | Storybook intro for new worlds (`playIntro`, `skipIntro`, `state==='intro'`); first-night tutorial steps and paper-trick hints (`tut`, `updateGuide`, `guideEv(ev)` called from gameplay for `'craft'`, `'dawn'`, `'peel'`, `'pop'`, `'flat'`) |
 | `save.js` | save/load, lifecycle | `save()`, `loadSave()`, `SAVE_KEY`, `SAVE_VER`, `migrateSave()`; `allocWorld`, `newWorld`, `loadWorld`, pause/title flow, save-code pack/unpack |
 | `main.js` | boot | Builds sprite sheets, loads or creates a world, main `frame()` loop |
 
@@ -68,6 +69,7 @@ How the modules fit together:
 - Autosave runs every 60 seconds and when pausing or quitting.
 - Save codes: `FF1:` + base64(gzip(JSON `{save, meta}`)) via `CompressionStream`; `FF0:` is the uncompressed fallback. The Save code button is in the pause menu, and "Load save code" is on the title screen.
 - The world save also holds `angler` (fishing progress: fish caught, Angler requests done, day counter, today's request); older saves get defaults in `loadWorld()`.
+- The world save also holds `tut` (tutorial progress: next step `s`, paper hints already shown in `seen`). Saves without it load with the tutorial finished.
 - Every load goes through `migrateSave()` inside `loadWorld()`. When a save needs a structural change, bump `SAVE_VER` and add a `if(d.v<N){...;d.v=N;}` step there. For a plain new field, filling a default in `loadWorld()` is enough: older saves won't have it.
 
 Browser-only saves are why the game will be self-hosted with server-side saves (issue #7). GitHub Pages is a test build only.
@@ -83,6 +85,7 @@ Browser-only saves are why the game will be self-hosted with server-side saves (
 - **Combat hooks:** `hurtEnemy(e,dmg,dir,kb,crit,elem)` and `hurtPlayer(dmg,from,src,elem)`. Pass the attacking enemy or projectile as `src` so shields can block and parry it (`hurtPlayer` returns `'parry'` on a parry); leave it out for damage that can't be blocked, like lava. Damage types are `'fire'`, `'ink'` and `'water'` (`ELEM`); each enemy's weakness, resistance and the type its own hits carry are set in the table right after `EN`, and projectile kinds take a type from `elem` in `PK`. Statuses live in `e.st` / `player.st` and are not saved.
 - **Music** is a step sequencer, not audio files: each `MUS` track is 8 bars of 8th notes (`mel` is one hex scale degree per step, `-` holds, `.` rests). `pickMusic()` chooses title, boss or the current biome, and `setMusic()` crossfades. To add a track, add a `MUS` entry and return its key from `pickMusic()`.
 - **UI scale:** `--ui` zooms all of `#ui` and `--ts` multiplies every CSS `font-size` (write new ones as `calc(Npx*var(--ts))`). Inside `#ui`, divide viewport units by `var(--ui)`, and set screen-space `left`/`top` from JS with `upx()`, or they land in the wrong place when zoomed.
+- **Color vision:** `SET.cb` is `'off'`, `'deut'`, `'prot'` or `'trit'`. Ores always have their own nugget shape (`nug` in `atlas.js`) and take their colors from `ORECOL[SET.cb]`; `applyCB()` redraws the ore cells, icons, map colors and the enemy warning mark. Anything else that relies on color alone should get a shape cue too.
 - Keep new input actions rebindable: keyboard in `DEF_BIND`/`ALT` (plus a `BINDLAB` label), gamepad in `DEF_PAD` (plus a `PADLAB` label). Start and the d-pad/sticks are fixed, and backpack menus use a fixed gamepad layout (`fx` in `handlePad`).
 
 ## Testing

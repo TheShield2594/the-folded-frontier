@@ -1,10 +1,10 @@
 // The texture atlas, drawn in code. C maps names to atlas cells.
-import {circ,fi,fibers,grain,INK,ink,mk,pick,poly,rand,rr,sh} from './game.js';
+import {circ,fi,fibers,grain,INK,ink,mk,pick,poly,rand,rr,SET,sh} from './game.js';
 
 // ================= atlas =================
 export const atlas=mk(1024,2048),A=atlas.getContext('2d');
 let cellN=0;export const cellXY=c=>{let row=Math.floor(c/16);if(row>=12)row+=4;return[(c%16)*64,row*64];};
-function blockCell(base,deco,outline=true){const c=cellN++;const[x,y]=cellXY(c);A.save();A.beginPath();A.rect(x,y,64,64);A.clip();A.translate(x,y);
+function blockCell(base,deco,outline=true,c=cellN++){const[x,y]=cellXY(c);A.save();A.beginPath();A.rect(x,y,64,64);A.clip();A.translate(x,y);
   A.fillStyle=sh(base,.6);A.fillRect(0,0,64,64);rr(A,1.5,1.5,61,61,8);A.fillStyle=base;A.fill();
   A.save();rr(A,1.5,1.5,61,61,8);A.clip();const g=A.createLinearGradient(0,0,0,64);g.addColorStop(0,'rgba(255,255,255,.16)');g.addColorStop(1,'rgba(0,0,0,.14)');A.fillStyle=g;A.fillRect(0,0,64,64);
   if(deco)deco(A);fibers(A,64,64,'#fff',16);A.restore();
@@ -21,14 +21,11 @@ const speck=(cols,n,rmin=1,rmax=2.6)=>c=>{for(let i=0;i<n;i++){c.fillStyle=pick(
 const dirtDeco=c=>{speck(['#7d5431','#b07c4c','#6a4526'],26)(c);for(let i=0;i<3;i++){const x=rand(10,54),y=rand(14,54);c.beginPath();c.ellipse(x,y,rand(3,5),rand(2,3.5),rand(0,3),0,6.28);fi(c,'#a39a8e',1.5);}};
 const stoneDeco=c=>{c.lineWidth=2;for(let i=0;i<22;i++){const x=rand(0,64),y=rand(0,64);c.strokeStyle=Math.random()<.5?'rgba(255,255,255,.18)':'rgba(40,30,50,.16)';c.beginPath();c.moveTo(x,y);c.lineTo(x+7,y-5);c.stroke();}
   c.strokeStyle='rgba(42,33,48,.45)';c.lineWidth=1.6;c.beginPath();const x=rand(14,40),y=rand(16,44);c.moveTo(x,y);c.lineTo(x+6,y+5);c.lineTo(x+4,y+11);c.moveTo(x+6,y+5);c.lineTo(x+13,y+6);c.stroke();};
-const oreDeco=(col)=>c=>{stoneDeco(c);for(let i=0;i<5;i++){const x=rand(10,54),y=rand(10,54),r=rand(4,7);const pts=[];for(let k=0;k<5;k++){const a=k/5*6.28+rand(-.3,.3);pts.push(x+Math.cos(a)*r*rand(.7,1.2),y+Math.sin(a)*r*rand(.7,1.2));}poly(c,pts);fi(c,col,1.8);c.fillStyle='rgba(255,255,255,.55)';circ(c,x-1.5,y-1.5,1.4);c.fill();}};
 C.dirt=blockCell('#9a6a3f',dirtDeco);
 C.grassF=blockCell('#9a6a3f',c=>{dirtDeco(c);c.beginPath();c.moveTo(0,0);c.lineTo(64,0);c.lineTo(64,15);for(let x=64;x>=0;x-=8){c.lineTo(x-4,15+((x/8)%2?7:2));c.lineTo(x-8,14);}c.closePath();c.fillStyle='#6dbb4a';c.fill();ink(c,2.2,'#3f7a2b');c.fillStyle='rgba(255,255,255,.25)';c.fillRect(0,2,64,4);});
 C.grassT=blockCell('#6dbb4a',c=>{c.lineWidth=2;for(let i=0;i<26;i++){const x=rand(2,62),y=rand(2,62);c.strokeStyle=Math.random()<.5?'#86d15f':'#4f9a36';c.beginPath();c.moveTo(x,y);c.lineTo(x+rand(-2,2),y-6);c.stroke();}});
 C.stone=blockCell('#8d8f9a',stoneDeco);
-C.copper=blockCell('#8d8f9a',oreDeco('#e0823d'));
-C.iron=blockCell('#8d8f9a',oreDeco('#d7c0a8'));
-C.gold=blockCell('#8d8f9a',oreDeco('#f2c14e'));
+C.copper=cellN++;C.iron=cellN++;C.gold=cellN++;
 C.sand=blockCell('#e8cf8a',speck(['#d4b56a','#f5e2ad','#c9a95f'],40,.8,1.8));
 C.plank=blockCell('#c98f4f',c=>{c.strokeStyle='#8a5a2e';c.lineWidth=2.4;for(const y of[21,42]){c.beginPath();c.moveTo(0,y);c.lineTo(64,y);c.stroke();}c.lineWidth=1.2;c.strokeStyle='rgba(120,70,30,.45)';for(let i=0;i<7;i++){const y=rand(5,60);c.beginPath();c.moveTo(rand(0,20),y);c.bezierCurveTo(24,y-3,40,y+3,rand(44,64),y);c.stroke();}c.fillStyle='#6b4a2f';for(const[x,y]of[[8,11],[56,11],[8,32],[56,32],[8,53],[56,53]]){circ(c,x,y,1.8);c.fill();}});
 C.brick=blockCell('#d9c8b5',c=>{for(let r=0;r<4;r++){const off=r%2?-16:0;for(let k=-1;k<3;k++){rr(c,off+k*32+3,r*16+2,27,12,3);fi(c,Math.random()<.5?'#b6564a':'#a84d42',1.4);}}});
@@ -127,10 +124,26 @@ C.snowF=blockCell('#9a6a3f',c=>{dirtDeco(c);c.beginPath();c.moveTo(0,0);c.lineTo
 C.ice=blockCell('#bfe6f5',c=>{c.strokeStyle='rgba(255,255,255,.75)';c.lineWidth=3;c.beginPath();c.moveTo(12,50);c.lineTo(30,14);c.moveTo(30,52);c.lineTo(46,22);c.stroke();c.strokeStyle='rgba(90,150,190,.4)';c.lineWidth=1.5;c.beginPath();c.moveTo(8,30);c.lineTo(24,36);c.lineTo(40,28);c.stroke();});
 C.ash=blockCell('#5a4a4f',c=>{speck(['#3e3236','#6e5c60','#2e2528'],30,1,2.6)(c);c.strokeStyle='rgba(255,138,61,.35)';c.lineWidth=1.5;c.beginPath();c.moveTo(10,44);c.lineTo(22,38);c.lineTo(30,46);c.stroke();});
 C.inkst=blockCell('#3d3350',c=>{c.lineWidth=2;for(let i=0;i<18;i++){const x=rand(0,64),y=rand(0,64);c.strokeStyle=Math.random()<.5?'rgba(160,130,220,.18)':'rgba(10,5,20,.2)';c.beginPath();c.moveTo(x,y);c.lineTo(x+6,y+4);c.stroke();}});
-const oreOn=(deco,col)=>c=>{deco(c);for(let i=0;i<5;i++){const x=rand(10,54),y=rand(10,54),r=rand(4,7);const pts=[];for(let k=0;k<5;k++){const a=k/5*6.28+rand(-.3,.3);pts.push(x+Math.cos(a)*r*rand(.7,1.2),y+Math.sin(a)*r*rand(.7,1.2));}poly(c,pts);fi(c,col,1.8);c.fillStyle='rgba(255,255,255,.6)';circ(c,x-1.5,y-1.5,1.4);c.fill();}};
-C.frostOre=blockCell('#8d8f9a',oreOn(stoneDeco,'#aee0f2'));
-C.inkOre=blockCell('#3d3350',oreOn(c=>{},'#a784e0'));
-C.emberOre=blockCell('#5a4a4f',oreOn(speck(['#3e3236','#6e5c60'],20),'#ff8a3d'));
+C.frostOre=cellN++;C.inkOre=cellN++;C.emberOre=cellN++;
+// ores: every ore has its own nugget shape so they read without color; ORECOL holds one palette per color-vision mode (SET.cb)
+const nug={
+  round:(c,x,y,r)=>{c.beginPath();c.ellipse(x,y,r,r*.85,rand(0,3),0,6.28);},
+  square:(c,x,y,r)=>{c.save();c.translate(x,y);c.rotate(rand(-.4,.4));rr(c,-r*.85,-r*.85,r*1.7,r*1.7,1.5);c.restore();},
+  star:(c,x,y,r)=>{r*=1.25;const s=[];for(let k=0;k<8;k++){const a=k*Math.PI/4,q=k%2?r*.38:r;s.push(x+Math.cos(a)*q,y+Math.sin(a)*q);}poly(c,s);},
+  shard:(c,x,y,r)=>{const a=rand(-.5,.5);c.save();c.translate(x,y);c.rotate(a);poly(c,[0,-r*1.5,r*.5,0,0,r*1.5,-r*.5,0]);c.restore();},
+  drop:(c,x,y,r)=>{c.beginPath();c.moveTo(x,y-r*1.4);c.quadraticCurveTo(x+r*1.1,y+r*.1,x,y+r);c.quadraticCurveTo(x-r*1.1,y+r*.1,x,y-r*1.4);c.closePath();},
+  tri:(c,x,y,r)=>{r*=1.15;poly(c,[x,y-r,x+r*.95,y+r*.7,x-r*.95,y+r*.7]);},
+};
+export const ORECOL={
+  off: {copper:'#e0823d',iron:'#d7c0a8',gold:'#f2c14e',frostOre:'#aee0f2',inkOre:'#a784e0',emberOre:'#ff8a3d'},
+  deut:{copper:'#d55e00',iron:'#f4f1ea',gold:'#f0e442',frostOre:'#56b4e9',inkOre:'#cc79a7',emberOre:'#e69f00'},
+  prot:{copper:'#c85a1a',iron:'#f4f1ea',gold:'#f0e442',frostOre:'#56b4e9',inkOre:'#d58cc0',emberOre:'#ffb000'},
+  trit:{copper:'#d4483b',iron:'#f4f1ea',gold:'#ff9fbf',frostOre:'#009e8a',inkOre:'#a784e0',emberOre:'#ff5a3d'},
+};
+const ORES=[['copper','#8d8f9a',stoneDeco,'round'],['iron','#8d8f9a',stoneDeco,'square'],['gold','#8d8f9a',stoneDeco,'star'],
+  ['frostOre','#8d8f9a',stoneDeco,'shard'],['inkOre','#3d3350',()=>{},'drop'],['emberOre','#5a4a4f',speck(['#3e3236','#6e5c60'],20),'tri']];
+export function drawOres(){const pal=ORECOL[SET.cb]||ORECOL.off;for(const[k,base,deco,shape]of ORES){const col=pal[k];blockCell(base,c=>{deco(c);for(let i=0;i<5;i++){const x=10+(i%3)*20+rand(-3,5),y=i<3?rand(10,26):rand(36,52),r=rand(4.5,6.5);nug[shape](c,x,y,r);fi(c,col,2);c.fillStyle='rgba(255,255,255,.6)';circ(c,x-1.5,y-1.5,1.4);c.fill();}},true,C[k]);}}
+drawOres();
 const liqCell=(col,col2,top)=>sticker(t=>{t.fillStyle=col;if(top){t.beginPath();t.moveTo(0,64);t.lineTo(0,14);for(let x=0;x<=64;x+=16)t.quadraticCurveTo(x+8,6,x+16,14);t.lineTo(64,64);t.closePath();t.fill();t.beginPath();t.moveTo(0,14);for(let x=0;x<=64;x+=16)t.quadraticCurveTo(x+8,6,x+16,14);ink(t,2.5,col2);}else t.fillRect(0,0,64,64);
   t.strokeStyle=col2;t.globalAlpha=.4;t.lineWidth=2;for(let y=top?30:10;y<64;y+=18){t.beginPath();t.moveTo(6,y);t.quadraticCurveTo(20,y-4,32,y);t.quadraticCurveTo(44,y+4,58,y);t.stroke();}t.globalAlpha=1;},0);
 C.inkF=liqCell('#3a2a5a','#8a78b0',false);C.inkT=liqCell('#3a2a5a','#a894d0',true);C.lavaF=liqCell('#ff7a2d','#ffd66b',false);C.lavaT=liqCell('#ff7a2d','#ffe9a0',true);
