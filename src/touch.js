@@ -31,7 +31,7 @@ $('tStick').addEventListener('touchstart',e=>{e.preventDefault();const b=$('tSti
 // Use: hold to use the held item; drag off the button to aim, like a second stick
 $('tUse').addEventListener('touchstart',e=>{e.preventDefault();track(e,{
   move:(dx,dy)=>{const d=Math.hypot(dx,dy),m=Math.min(1,d/60);const k=d>0?Math.min(d,30)/d:0;knob($('tUseK'),dx*k,dy*k);touch.aim=d>12?[dx/d*m,-dy/d*m]:null;if(touch.aim)touch.aimT=1.2;},
-  up:()=>{mouse.l=false;knob($('tUseK'),0,0);touch.aim=null;$('tUse').classList.remove('on');}});$('tUse').classList.add('on');mouse.l=true;mouse.lp=true;},{passive:false});
+  up:()=>{mouse.l=touch.world;knob($('tUseK'),0,0);touch.aim=null;$('tUse').classList.remove('on');}});$('tUse').classList.add('on');mouse.l=true;mouse.lp=true;},{passive:false});
 
 // the other buttons: data-hold names a held action, data-act a one-shot press
 const ACT={jump:jumpPress,interact:padInteract,dash:dashPress,hook:fireHook,heal:quickHeal,ability:partnerAbility,partner:cyclePartner,mount:()=>toggleMount(),
@@ -50,7 +50,7 @@ renderer.domElement.addEventListener('touchstart',e=>{e.preventDefault();const t
   mouse.x=t.clientX;mouse.y=t.clientY;[mouse.wx,mouse.wy]=screenToWorld(mouse.x,mouse.y);
   if(tapTarget(mouse.wx,mouse.wy)){initAudio();pad.active=false;mouse.rp=true;return;}
   touch.world=true;mouse.l=true;mouse.lp=true;
-  track(e,{move:(dx,dy,t)=>{mouse.x=t.clientX;mouse.y=t.clientY;},up:()=>{mouse.l=false;touch.world=[...fingers.values()].some(f=>f.world&&f.id!==t.identifier);},world:true,id:t.identifier});},{passive:false});
+  track(e,{move:(dx,dy,t)=>{mouse.x=t.clientX;mouse.y=t.clientY;},up:()=>{touch.world=[...fingers.values()].some(f=>f.world&&f.id!==t.identifier);mouse.l=touch.world||$('tUse').classList.contains('on');},world:true,id:t.identifier});},{passive:false});
 $('map').addEventListener('click',()=>{if(touch.on)toggleMap(false);});
 
 // backpack by touch: tap = click, long-press = right-click (split / drop one), Quick move makes taps shift-clicks
@@ -58,6 +58,7 @@ let sl=null;
 document.addEventListener('touchstart',e=>{const el=e.target.closest&&e.target.closest('.slot,.rec');if(sl)clearTimeout(sl.timer);sl=null;if(!el||e.touches.length>1)return;const t=e.changedTouches[0];initAudio();
   sl={el,x:t.clientX,y:t.clientY,timer:setTimeout(()=>{if(!sl||sl.el!==el)return;sl.long=true;if(el.classList.contains('slot'))slotClick(el,2,false);else craft(+el.dataset.r,5);setInvDirty(true);if(navigator.vibrate)navigator.vibrate(12);},450)};},{passive:true});
 document.addEventListener('touchmove',e=>{if(!sl)return;const t=e.changedTouches[0];if(Math.hypot(t.clientX-sl.x,t.clientY-sl.y)>10){clearTimeout(sl.timer);sl=null;}},{passive:true});
+document.addEventListener('touchcancel',()=>{if(!sl)return;clearTimeout(sl.timer);sl=null;},{passive:true});
 document.addEventListener('touchend',e=>{if(!sl)return;const{el,x,y,long}=sl;clearTimeout(sl.timer);sl=null;e.preventDefault(); // no emulated mousedown after this
   if(!long){if(el.classList.contains('slot'))slotClick(el,0,touch.quick);else craft(+el.dataset.r,touch.quick?5:1);}setInvDirty(true);
   if(invOpen){el.dispatchEvent(new MouseEvent('mouseover',{bubbles:true,clientX:x,clientY:y}));const c=$('cursorItem');c.style.left=upx(x);c.style.top=upx(y-40);}},{passive:false});

@@ -355,4 +355,4 @@ body.touch{-webkit-touch-callout:none;touch-action:manipulation;}
 .touch #guide{animation-name:gdInT;}
 @keyframes gdInT{from{transform:translate(-50%,-20px) rotate(-6deg);opacity:0}}
 @media (max-height:420px){#tStick{width:112px;height:112px;}#touch .tBig{width:62px;height:62px;}#touch button{min-width:40px;height:40px;font-size:12px;}#tAct{gap:5px;}}
-@media (orientation:portrait){.touch #hotwrap{bottom:200px;}}
+@media (orientation:portrait){.touch #hotwrap{bottom:200px;}#tAct .tRow{flex-wrap:wrap;justify-content:flex-end;max-width:calc(100vw - 186px);}}
