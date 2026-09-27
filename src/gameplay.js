@@ -340,7 +340,7 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateDashHud(d
   p.manaT=(p.manaT||0)+dt;if(p.manaT>.8&&p.mana<p.maxMana)p.mana=Math.min(p.maxMana,p.mana+dt*(3+p.maxMana*.05)*(Math.abs(p.vx)<.5?1.6:1));
   p.inv_t-=dt;p.potT=Math.max(0,p.potT-dt);p.stompWin-=dt;p.regenT+=dt;if(p.regenT>5&&p.hp<p.max){p.hp=Math.min(p.max,p.hp+dt*(p.regenT>12?3:1));}if(hasBadge('happy')&&p.hp<p.max)p.hp=Math.min(p.max,p.hp+dt);const rg=(hasBuff('regen')?2:0)+(hasBuff('fed')?.5:0)+(hasAcc('nightregen')&&isNight()?1:0);if(rg&&p.hp<p.max)p.hp=Math.min(p.max,p.hp+rg*dt);
   for(const k in p.buffs){p.buffs[k]-=dt;if(p.buffs[k]<=0){delete p.buffs[k];toast(`${BUFFS[k][0]} wore off.`);}}
-  updatePlayerStatus(dt);if(p.dead)return;
+  updatePlayerStatus(dt);if(p.dead){updateTool(null,1);return;}
   if(wind&&!p.onGround&&hook.state!==2&&!p.inLiq)p.vx+=wind*dt*3;
   // items
   const it=selItem();p.mineP=p.mineP||0;
@@ -420,7 +420,7 @@ export function updateTrail(dt){const p=player,s=p.swing;
     const dx=p.face*Math.cos(sp.blade),dy=Math.sin(sp.blade),a=u**1.4*clamp((Math.abs(sp.v)-4)/16,0,1)*(s.combo===2?.95:.8);if(a>.02)any=1;
     trailPos.set([hx+dx*.35*ts,hy+dy*.35*ts,.3,hx+dx*1.6*ts,hy+dy*1.6*ts,.3],i*6);trailA[i*2]=a*.1;trailA[i*2+1]=a;}
   trailMesh.visible=!!any;trailGeo.attributes.position.needsUpdate=true;trailGeo.attributes.aA.needsUpdate=true;}
-const toolPivot=new THREE.Group();scene.add(toolPivot);let toolMesh=null,toolId=null,armMesh=null;
+const toolPivot=new THREE.Group();scene.add(toolPivot);let toolMesh=null,toolId=null,armMesh=null,aimHand=[0,0];
 // while swinging, the body frame has no front arm; this mesh (the sheet's last frame) draws it from the shoulder to the weapon's grip
 function updateArm(sp,sq){const p=player;if(!sp||p.dead||p.flat||!p.mesh.visible){if(armMesh)armMesh.visible=false;return;}
   if(!armMesh){armMesh=new THREE.Mesh(new THREE.PlaneGeometry(1.6,2.4),spriteMat(p.mat.uniforms.map.value,ARMF+1));armMesh.material.uniforms.uFrame.value=ARMF;scene.add(armMesh);}
@@ -428,12 +428,12 @@ function updateArm(sp,sq){const p=player;if(!sp||p.dead||p.flat||!p.mesh.visible
   armMesh.visible=true;armMesh.position.set(p.x+p.face*sx,p.y-.08+sy*sq,.185);armMesh.scale.set(p.face,sp.sc,1);armMesh.rotation.z=(sp.arm+Math.PI/2)*p.face;}
 function updateTool(sp,sq){const p=player,s=p.swing;updateArm(sp,sq);if(!s||!s.tool||p.dead){toolPivot.visible=false;return;}if(toolId!==s.tool){if(toolMesh){toolPivot.remove(toolMesh);toolMesh.material.dispose();}const g=new THREE.PlaneGeometry(1.25,1.25);g.translate(.5,.5,0);toolMesh=new THREE.Mesh(g,spriteMat(iconTex(s.tool)));toolPivot.add(toolMesh);toolId=s.tool;}
   toolPivot.visible=true;const k=clamp(s.t/s.dur,0,1),ang=sp?sp.blade:s.aim!=null?(p.face>0?s.aim:Math.PI-s.aim):lerp(1.9,-.5,Math.sin(k*Math.PI*.5));
-  if(s.aim!=null){const r=.55+.2*(1-k);toolPivot.position.set(p.x+p.face*.25-Math.cos(s.aim)*r,p.y+1.1-Math.sin(s.aim)*r,.18);}else if(sp){const[hx,hy]=swingHand(sp,sq);toolPivot.position.set(hx,hy,.18);}else toolPivot.position.set(p.x+p.face*.2,p.y+1.05,.18);const ts=s.heavy?1.2:1;toolPivot.scale.set(p.face*ts,ts,1);toolPivot.rotation.z=(ang-Math.PI/4)*p.face;setTint(toolMesh.material,p.x,p.y+1);toolMesh.material.uniforms.uFlash.value=inNiceWin(s)||s.draw>=1?.55+.2*Math.sin(worldClock*30):s.nice?.35:s.draw?s.draw*.25:0;}
+  if(s.aim!=null){const r=.55+.2*(1-k),[hx,hy]=aimHand=sp?swingHand(sp,sq):[p.x+p.face*.25,p.y+1.1];toolPivot.position.set(hx-Math.cos(s.aim)*r,hy-Math.sin(s.aim)*r,.18);}else if(sp){const[hx,hy]=swingHand(sp,sq);toolPivot.position.set(hx,hy,.18);}else toolPivot.position.set(p.x+p.face*.2,p.y+1.05,.18);const ts=s.heavy?1.2:1;toolPivot.scale.set(p.face*ts,ts,1);toolPivot.rotation.z=(ang-Math.PI/4)*p.face;setTint(toolMesh.material,p.x,p.y+1);toolMesh.material.uniforms.uFlash.value=inNiceWin(s)||s.draw>=1?.55+.2*Math.sin(worldClock*30):s.nice?.35:s.draw?s.draw*.25:0;}
 // a nocked arrow slides back along the bow while drawing
 let nockMesh=null,nockId=null,shieldMesh=null,shieldId=null;
 function updateNock(){const p=player,s=p.swing;if(!s||s.draw==null||p.dead){if(nockMesh)nockMesh.visible=false;return;}const ai=findAmmo('arrow'),id=ai>=0?p.inv[ai].id:'arrow';
   if(nockId!==id){if(nockMesh){scene.remove(nockMesh);nockMesh.material.dispose();nockMesh.geometry.dispose();}nockMesh=new THREE.Mesh(new THREE.PlaneGeometry(.8,.8),spriteMat(iconTex(id)));nockMesh.renderOrder=5;scene.add(nockMesh);nockId=id;}
-  const a=s.aim,r=.25-.42*s.draw;nockMesh.visible=true;nockMesh.position.set(p.x+p.face*.25+Math.cos(a)*r,p.y+1.15+Math.sin(a)*r,.19);nockMesh.rotation.z=a-Math.PI/4;setTint(nockMesh.material,p.x,p.y+1);nockMesh.material.uniforms.uFlash.value=s.draw>=1?.5:0;}
+  const a=s.aim,r=.25-.42*s.draw;nockMesh.visible=true;nockMesh.position.set(aimHand[0]+Math.cos(a)*r,aimHand[1]+.05+Math.sin(a)*r,.19);nockMesh.rotation.z=a-Math.PI/4;setTint(nockMesh.material,p.x,p.y+1);nockMesh.material.uniforms.uFlash.value=s.draw>=1?.5:0;}
 // the raised shield sits in front of the player; it glows while a parry would still land
 function updateShield(dt){const p=player;p.shieldFlash=Math.max(0,(p.shieldFlash||0)-dt);updateNock();if(!p.blocking||p.dead){if(shieldMesh)shieldMesh.visible=false;return;}const id=shieldItem().id;
   if(shieldId!==id){if(shieldMesh){scene.remove(shieldMesh);shieldMesh.material.dispose();shieldMesh.geometry.dispose();}shieldMesh=new THREE.Mesh(new THREE.PlaneGeometry(1,1),spriteMat(iconTex(id)));shieldMesh.renderOrder=5;scene.add(shieldMesh);shieldId=id;}
