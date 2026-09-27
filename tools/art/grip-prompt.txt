@@ -1,0 +1,22 @@
+The Folded Frontier: gripping arms, so the player visibly holds weapons and tools.
+
+How to run it:
+- Model: Nano Banana Pro, 21:9 (or 16:9) at 2K.
+- Attach as references: player-parts-reference.png (the plain arm) and the armour sheets (armor-cu, fe, au, fr, ik, em), so each sleeve matches its set.
+- Paste the result here in its own message, or upload it as renders/grip-arms.png.
+
+======================================================================
+GRIPPING ARMS  (save as renders/grip-arms.png)
+======================================================================
+Sheet of 7 separate arm pieces for 2D cut-out (paper doll) animation, for the exact character in the reference images, same art style, same thick dark plum-black ink outlines (#2a2130), same white paper border, same scale as the arm in the reference. Each arm hangs STRAIGHT DOWN, rounded shoulder at the top, in strict side view, and ends in a CLOSED FIST gripping a round handle that is NOT drawn: the fingers curl around an empty round hole running through the fist from front to back, knuckles facing right, thumb on top.
+
+Lay out the 7 arms in a single row left to right in this order, all the same size, with generous empty space between them, none touching or overlapping:
+1. plain teal tunic sleeve (as in the reference arm)
+2. copper armour sleeve: copper ring mail and brown leather bracer
+3. iron armour sleeve: iron chainmail and plain iron vambrace
+4. gold armour sleeve: gold scales and engraved gold vambrace
+5. frostsilver armour sleeve: frostsilver chainmail and vambrace with a small ice crystal
+6. inkstone armour sleeve: dark inkstone plate with ink drips and a glowing purple line
+7. emberite armour sleeve: charcoal plate with glowing ember cracks and a small flame at the wrist
+
+Peach hand and fist on every arm. Each piece is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no weapon, no handle, no text, no labels, no shadow.
