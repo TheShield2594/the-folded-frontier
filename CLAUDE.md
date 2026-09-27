@@ -7,11 +7,13 @@ Guide for working on The Folded Frontier: a papercraft 2D sandbox adventure (Pap
 ```
 index.html   the whole game: CSS, HTML UI, and all JavaScript (~2,170 lines)
 README.md    player-facing overview and controls
-assets/      title.webp: title screen background (painted art with the logo baked in)
+assets/      painted art: title.webp (title background, logo baked in), player.webp + player_mask.webp,
+             foldfox.webp, trees.webp (see "Generated art" below)
+tools/art/   Python (Pillow, numpy, scipy) scripts that turned the Higgsfield renders into those sheets
 .nojekyll    lets GitHub Pages serve files as-is
 ```
 
-There is no build step, no package.json and no audio assets. The only image asset is `assets/title.webp`, the title screen background; it's loaded with `new Image()` and the `#title` overlay only gets its `bg` class (image, cream card behind the menu, HTML logo hidden on landscape screens) once it loads, so a missing file falls back to the plain overlay. All game art is drawn in code onto canvases, and all sound is synthesized with Web Audio. The only external dependency is three.js r128, loaded from cdnjs in a `<script>` tag.
+There is no build step, no package.json and no audio assets. `assets/title.webp` is the title screen background; it's loaded with `new Image()` and the `#title` overlay only gets its `bg` class (image, cream card behind the menu, HTML logo hidden on landscape screens) once it loads, so a missing file falls back to the plain overlay. All other game art is drawn in code onto canvases; a few sprites (player, Fold Fox, the two leafy tree canopies) are then painted over from `assets/` once their images load (see "Generated art" below). All sound is synthesized with Web Audio. The only external dependency is three.js r128, loaded from cdnjs in a `<script>` tag.
 
 ## Running locally
 
@@ -95,7 +97,10 @@ The owner has a Higgsfield Pro account connected as an MCP server (`mcp__Higgsfi
 - Default to the plan's unlimited image models, preferably Seedream 4.5 (`seedream_v4_5`). `models_explore` with `unlim: true` lists the others (Seedream 5.0, Nano Banana, FLUX.2, ...). Paid credits are limited, so don't spend them without asking.
 - Through MCP, `use_unlim: true` is refused for these models ("Unlimited generations aren't supported"), even on the Pro plan; the plan's unlimited seems to apply only on the Higgsfield website. MCP generations cost credits (Seedream 4.5: 1 credit per image), so check `get_cost` and ask the owner before generating.
 - Prompt for the house style: cream paper cut-outs, dark ink outlines, rounded shapes, paper grain, flat background (or run `remove_background`) for sprites.
-- Save results under `assets/` as compressed `.webp` and load them like the title image, with a fallback to the code-drawn art if the file is missing. Update the repo layout above when adding assets.
+- Save results under `assets/` as compressed `.webp`. In the game, `paintArt(file, fn)` (right after `buildSheets()` at boot) loads an image and, once loaded, draws it over the code-drawn version: into the `SHEETS` canvas (then `SHEETS[k+'T'].needsUpdate=true`) for sprites, or into the atlas (`A`, then `atlasTex.needsUpdate=true`) for atlas cells. Keep the code-drawn art: it's the fallback when a file is missing, and `paintArt` skips images it can't read back (opening `index.html` from `file://` taints them for WebGL). Match the sheet layout the code expects (frame count, frame size ratio); files can be 2x the canvas size.
+- The player is one render cut into pieces by `tools/art/pframes.py`: the legs are swung for the walk and the whole cut-out tilts and bobs for the other poses, giving the 9 frames `playerSheet()` expects. `player_mask.webp` marks hair, tunic and legs so equipped armour recolours them (`paintedPlayer`, canvas `color` blend) instead of drawing the code armour.
+- `tools/art/cut.py` removes the flat grey background from a render (flood fill from the edges) and trims it. The Higgsfield project "The Folded Frontier art" holds the source renders.
+- Image downloads come from `d8j0ntlcm91z4.cloudfront.net`, which the cloud environment's network policy has to allow.
 
 ## Testing
 

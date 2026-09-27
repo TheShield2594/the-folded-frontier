@@ -1108,8 +1108,15 @@ const POSES=[{legA:.03,legB:-.03,armA:.12,armB:-.12},{legA:.03,legB:-.03,armA:.1
 for(let k=0;k<4;k++){const ph=k/4*Math.PI*2,s=Math.sin(ph);POSES.push({legA:s*.6,legB:-s*.6,armA:-s*.65,armB:s*.65,bob:-Math.abs(Math.cos(ph))*2.5+1,wave:s*3});}
 POSES.push({legA:-.7,legB:.4,armA:-2.5,armB:-.5,wave:-4},{legA:.3,legB:-.3,armA:-2.9,armB:-2.5,wave:5},{legA:.25,legB:-.25,armA:-1.6,armB:.25});
 function playerSheet(){const eq={};const a=player.armor;if(a[0])eq.helm=ITEMS[a[0].id].color;if(a[1])eq.mail=ITEMS[a[1].id].color;if(a[2])eq.greaves=ITEMS[a[2].id].color;
+  if(PAINT.player)return paintedPlayer(eq);
   return makeSheet(9,96,144,(t,f)=>drawHuman(t,Object.assign({skin:'#f1cfa6',hair:'#5a3526',tunic:'#2f7f86',pants:'#3b3552',boots:'#6b4430',scarf:'#d4483b',
     back:tt=>{tt.beginPath();tt.moveTo(38,74);tt.lineTo(58,104);ink(tt,3.5,'#6b4430');rr(tt,24,92,16,16,4);fi(tt,'#b9874f',2);}},eq,POSES[f])));}
+// painted art: generated images in assets/ drawn over the code-drawn versions once they load (see paintArt at boot)
+const PAINT={};
+// player.webp holds the same 9 poses; player_mask.webp marks hair (R), tunic (G) and legs (B) so armour recolours them
+function paintedPlayer(eq){const P=PAINT.player,c=mk(P.img.width,P.img.height),g=c.getContext('2d');g.drawImage(P.img,0,0);
+  ['helm','mail','greaves'].forEach((k,i)=>{if(!eq[k])return;const t=mk(c.width,c.height),h=t.getContext('2d');h.drawImage(P.mask[i],0,0);h.globalCompositeOperation='source-in';h.fillStyle=eq[k];h.fillRect(0,0,c.width,c.height);
+    g.globalCompositeOperation='color';g.drawImage(t,0,0);g.globalCompositeOperation='source-over';});return c;}
 const SHEETS={};
 function slimeDraw(col,crown){return(t,f,w,h)=>{const cx=w/2,by=h-7,sq=f?1:0;const sw=w*.78*(1+sq*.16),sh_=h*.66*(1-sq*.22);
   t.beginPath();t.moveTo(cx-sw/2,by);t.bezierCurveTo(cx-sw/2-4,by-sh_*1.25,cx+sw/2+4,by-sh_*1.25,cx+sw/2,by);t.closePath();fi(t,col,crown?5:3);
@@ -2472,6 +2479,13 @@ $('logo').innerHTML='Folded Frontier'.split(' ').map((w,wi)=>`<span style="displ
 
 // ================= boot =================
 buildSheets();buildBiomeSheets();buildMoreSheets();buildPartnerSheets();
+// painted art: skipped when the file is missing or the page is opened from file:// (WebGL can't use those images there)
+function paintArt(src,f){const im=new Image();im.onload=()=>{try{const c=mk(1,1),g=c.getContext('2d');g.drawImage(im,0,0,1,1);g.getImageData(0,0,1,1);}catch(e){return;}f(im);};im.src='assets/'+src;}
+paintArt('trees.webp',im=>{for(let k=0;k<2;k++){const[x,y]=C.canopy[k];A.clearRect(x,y,256,256);A.drawImage(im,k*512,0,512,512,x,y,256,256);}atlasTex.needsUpdate=true;});
+paintArt('foldfox.webp',im=>{const c=SHEETS.foldfox,g=c.getContext('2d');g.clearRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);SHEETS.foldfoxT.needsUpdate=true;delete bestCache.foldfox;});
+paintArt('player.webp',img=>paintArt('player_mask.webp',mi=>{const w=mi.width,h=mi.height,c=mk(w,h),g=c.getContext('2d');g.drawImage(mi,0,0);const src=g.getImageData(0,0,w,h).data;
+  const mask=[0,1,2].map(ch=>{const m=mk(w,h),mg=m.getContext('2d'),d=mg.createImageData(w,h);for(let i=0;i<src.length;i+=4){d.data[i]=d.data[i+1]=d.data[i+2]=255;d.data[i+3]=src[i+ch]*src[i+3]/255;}mg.putImageData(d,0,0);return m;});
+  PAINT.player={img,mask};player.sheetDirty=true;}));
 markMat.map=canvasTex(makeSheet(1,64,64,t=>{rr(t,23,5,18,36,9);fi(t,'#d4483b',3);circ(t,32,52,7);fi(t,'#d4483b',3);},3));markMat.needsUpdate=true;
 eliteMat.map=canvasTex(makeSheet(1,64,64,t=>{const s=[];for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,r=k%2?11:26;s.push(32+Math.cos(a)*r,34+Math.sin(a)*r);}poly(t,s);fi(t,'#f1c04f',3.5);circ(t,27,28,3);t.fillStyle='#fff8e4';t.fill();},3));eliteMat.needsUpdate=true;
 player.mat=spriteMat(canvasTex(mk(8,8)),9);player.mesh=new THREE.Mesh((()=>{const g=new THREE.PlaneGeometry(1.6,2.4);g.translate(0,1.2,0);return g;})(),player.mat);scene.add(player.mesh);
