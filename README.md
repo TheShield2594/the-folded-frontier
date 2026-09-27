@@ -27,4 +27,5 @@ To run locally, open `index.html` in a browser.
 - Enemies with their own attack patterns in every biome, plus rare gold-starred elite variants that hit harder and drop better loot
 - NPC townsfolk and housing, partners, badges, farming, potions, weather and the Ink Moon
 - Paper mechanics: peelable walls, pop-out sketched bridges, flattening, rebuildable camps with fast travel, ruins with secret rooms, treasure maps
+- A Bestiary (Backpack → Bestiary) that fills in as you defeat enemies, with each one's biome, kill count and the drops you've seen
 - Autosave to the browser, plus **save codes** to move a world between browsers or share it with friends

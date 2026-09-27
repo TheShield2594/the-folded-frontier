@@ -58,6 +58,10 @@ button.ghost{background:var(--paper2);}
 #partnerHud i{display:block;height:5px;border-radius:3px;background:rgba(42,33,48,.15);margin-top:3px;overflow:hidden;} #partnerHud i u{display:block;height:100%;background:var(--teal);}
 .pcard{display:flex;gap:10px;align-items:center;padding:5px 8px;border:2px solid rgba(42,33,48,.25);border-radius:8px;background:#fbf5e8;margin-bottom:5px;cursor:pointer;}
 .pcard.on{border-color:var(--ink);background:#fff0bf;} .pcard.lock{opacity:.5;cursor:default;} .pcard img{width:44px;height:44px;}
+.bst{display:flex;gap:10px;align-items:flex-start;padding:5px 8px;border:2px solid rgba(42,33,48,.25);border-radius:8px;background:#fbf5e8;margin-bottom:5px;}
+.bst>img{width:52px;height:52px;flex:none;} .bst.lock>img{filter:brightness(0);opacity:.28;} .bst.lock{background:transparent;border-style:dashed;}
+.bst b{display:block;font-size:13.5px;} .bst span{display:block;font-size:11.5px;color:var(--ink2);}
+.bdrops{display:flex!important;flex-wrap:wrap;gap:3px 8px;margin-top:2px;} .bdrops i{font-style:normal;display:inline-flex;align-items:center;gap:3px;} .bdrops img{width:18px;height:18px;} .bdrops .q{opacity:.75;}
 .pcard b{display:block;font-size:13.5px;} .pcard span{font-size:11.5px;color:var(--ink2);}
 .bdg{display:flex;gap:8px;align-items:center;padding:4px 8px;border:2px solid rgba(42,33,48,.25);border-radius:8px;background:#fbf5e8;margin-bottom:4px;cursor:pointer;}
 .bdg.on{border-color:var(--ink);background:#e3f3d5;} .bdg img{width:30px;height:30px;} .bdg b{font-size:13px;} .bdg span{display:block;font-size:11px;color:var(--ink2);} .bdg em{margin-left:auto;font-style:normal;font-weight:800;font-size:12px;white-space:nowrap;}
@@ -223,7 +227,7 @@ button.ghost{background:var(--paper2);}
     <div class="sheet" id="sideSheet" hidden><h3 id="sideTitle">Chest</h3><div id="sideBody"></div></div>
     <div id="leftCol">
       <div class="sheet"><h3>Backpack</h3><div id="grid" class="grid"></div>
-        <div class="row"><button id="houseBtn" type="button">Check this room</button><button id="townBtn" type="button">Town</button><button id="partyBtn" type="button">Party</button><button id="sortBtn" class="ghost" type="button">Sort</button></div></div>
+        <div class="row"><button id="houseBtn" type="button">Check this room</button><button id="townBtn" type="button">Town</button><button id="partyBtn" type="button">Party</button><button id="bestBtn" type="button">Bestiary</button><button id="sortBtn" class="ghost" type="button">Sort</button></div></div>
     </div>
     <div class="sheet"><h3>Gear</h3><div id="equip"></div><div id="defTxt"></div></div>
     <div class="sheet" id="craft"><h3>Crafting</h3><div id="stations"></div><div id="recipes"></div></div>
@@ -246,7 +250,7 @@ button.ghost{background:var(--paper2);}
           <dt><kbd>Left click</kbd></dt><dd>Use the held item: mine, swing, place blocks</dd>
           <dt><kbd>Right click</kbd></dt><dd>Open doors and chests, talk to the Merchant, set spawn at a bed</dd>
           <dt><kbd>1</kbd>–<kbd>0</kbd> / wheel</dt><dd>Pick a hotbar slot</dd>
-          <dt><kbd>E</kbd></dt><dd>Backpack, gear and crafting. Shift-click moves items fast</dd>
+          <dt><kbd>E</kbd></dt><dd>Backpack, gear and crafting. Shift-click moves items fast. The Bestiary button lists every enemy you've defeated and what they dropped</dd>
           <dt><kbd>Q</kbd> · <kbd>R</kbd></dt><dd>Switch partner · Use your partner's special move</dd>
           <dt><kbd>C</kbd></dt><dd>Hold to flatten: crawl through one-tile gaps and dodge hits</dd>
           <dt><kbd>Shift</kbd></dt><dd>Dash. You can't be hit mid-dash, and you get one dash in the air per jump. The ring at your feet shows the cooldown</dd>
@@ -1305,6 +1309,17 @@ const EN={
   ashspider:{w:1.1,h:.7,hp:95,dmg:32,def:12,sheet:'ashspider',fw:112,fh:72,coins:[14,28],drops:[['ash',1,2,.5],['rope',2,5,.4]],col:['#3a2a24','#ff8a3d'],name:'Ash Spider',step:1},
   king:{w:4.4,h:3.3,hp:750,dmg:26,def:6,sheet:'king',fw:340,fh:280,boss:1,name:'King Slime',quest:'king',slimy:1,coins:[250,320],drops:[['b_nice',1,1,1],['ribbon',1,1,1],['gel',20,35,1],['goldbar',5,10,1],['starstaff',1,1,.6],['fstar',5,10,1]],col:['#5aa7e0','#8fcaf0','#f1c04f']},
 };
+// bestiary: order, display names and where each enemy lives (segments of the Leviathan are part of it)
+const BEST=[['slime','Green Slime','Forest, by day'],['bslime','Blue Slime','Caves'],['zombie','Paper Zombie','Surface, at night'],['eye','Watcher Eye','Surface, at night'],['crumple','Crumple','Forest'],['toadstool','Toadstool Lobber','Forest, by day'],
+  ['bat','Cave Bat','Caves'],['knight','Cardboard Knight','Deep caves'],['dunefin','Dune Fin','Desert'],['scarab','Shell Scarab','Desert and desert caves'],['sunkite','Sun Kite','Desert'],
+  ['foldfox','Fold Fox','Origami Snowfield'],['flurry','Flurry','Origami Snowfield'],['snowroll','Snow Roller','Origami Snowfield'],['snowlet','Snowlet','Origami Snowfield, from Snow Rollers'],['frostpuff','Frost Puff','Origami Snowfield'],
+  ['blot','Ink Blot','Ink Lake'],['inksquid','Ink Squid','Ink Lake, in the ink'],['inkwisp','Ink Wisp','Ink Lake'],['quillfish','Quillfish','Ink Lake, in the ink'],
+  ['cinderbat','Cinder Bat','Burnt Underworld'],['ashimp','Ash Imp','Burnt Underworld'],['cracker','Firecracker Imp','Burnt Underworld'],['ashspider','Ash Spider','Burnt Underworld ceilings'],['wraith','Ink Wraith','Surface, under the Ink Moon'],
+  ['king','King Slime','Boss · summoned on the surface'],['crane','Great Crane','Boss · Origami Snowfield'],['lev','Inkwell Leviathan','Boss · Ink Lake'],['folio','Charred Folio','Boss · Burnt Underworld'],['unfolded','The Unfolded','Secret boss · the ink shrine']];
+let bestiary={};
+function bestKill(e){const b=bestiary[e.type]||(bestiary[e.type]={k:0,d:{}});b.k++;if(e.elite)b.e=(b.e||0)+1;
+  if(b.k===1){const row=BEST.find(r=>r[0]===e.type);toast(`New bestiary entry: ${row?row[1]:e.type}!`,'gold');stat('bestiary');}}
+const bestDrop=(e,id,n)=>{const b=bestiary[e.type];if(b)b.d[id]=(b.d[id]||0)+n;};
 function spawnEnemy(type,x,y){const d=EN[type];const e={type,d,x,y,w:d.w,h:d.h,vx:0,vy:0,hp:d.hp,max:d.hp,face:1,rot:0,t:rand(0,2),timer:rand(.5,2),flash:0,dying:0,onGround:false,step:d.step,kb:0,hitCD:0};
   e.sw=d.fw/60;e.sh=d.fh/60;e.mesh=spriteMesh(SHEETS[d.sheet+'T'],2,e.sw,e.sh,!d.fly&&!d.center);e.mesh.position.z=.1+enemies.length%8*.006;enemies.push(e);if(inkMoon&&isNight()&&!d.boss&&!d.worm){e.inked=true;e.hp=e.max=Math.round(e.hp*1.7);}
   if(d.boss){boss=e;$('boss').hidden=false;$('boss').querySelector('.bn').textContent=d.name;}
@@ -1395,8 +1410,14 @@ function sideHTML(){const k=side.kind;
     return list.map((w,j)=>{const d=Math.round((w.x-player.x)*2);return `<div class="shopi" data-w="${j}"><img src="${icon('tmap')}" alt=""><span>${w.n}<br><small style="color:var(--ink2)">${Math.abs(d)} ft ${d<0?'west':'east'}</small></span><span class="pr">Go</span></div>`;}).join('')+'<p class="hint">Rebuild more abandoned camps to add signposts.</p>';}
   if(k==='party'){const p=player;return `<h3>Partners</h3>`+PORDER.map(id=>{const d=PARTNERS[id],has=p.partners.includes(id);return `<div class="pcard ${p.partner===id?'on':''} ${has?'':'lock'}" data-p="${id}"><img src="${pPortrait(id)}" alt="" style="${has?'':'filter:grayscale(1) brightness(.6)'}"><div><b>${has?d.name:'???'}</b><span>${has?`${d.desc} Move: ${d.move}. ${d.moveDesc}`:d.how}</span></div></div>`;}).join('')+
     `<h3 style="margin-top:10px">Badges · BP ${bpUsed()} / ${bpMax()}</h3>`+(p.badges.length?p.badges.map(b=>{const[n,bp,d,cell]=BADGES[b];return `<div class="bdg ${p.badgesOn.includes(b)?'on':''}" data-b="${b}"><img src="${icon('b_'+b)}" alt=""><div><b>${n}</b><span>${d}</span></div><em>${bp} BP</em></div>`;}).join(''):'<p class="hint">No badges yet. Bosses, chests, the Merchant and the Tinkerer all have them.</p>')+`<p class="hint">Click a badge to equip or remove it. Each boss you defeat adds 3 BP.</p>`;}
+  if(k==='bestiary'){const found=BEST.filter(r=>bestiary[r[0]]).length;return `<p class="hint" style="margin-top:0">${found} of ${BEST.length} entries filled in. Defeat an enemy to sketch it here.</p>`+BEST.map(([t,name,where])=>{const b=bestiary[t];
+      if(!b)return `<div class="bst lock"><img src="${bestSketch(t)}" alt=""><div><b>???</b><span>${where}</span></div></div>`;
+      const d=EN[t],known=d.drops.filter(([id])=>b.d[id]),unk=d.drops.length-known.length;
+      return `<div class="bst"><img src="${bestSketch(t)}" alt=""><div><b>${name}</b><span>${where}</span><span>Defeated ${b.k}${b.e?` · ${b.e} elite`:''} · ${d.hp} HP</span><span class="bdrops">${known.map(([id])=>`<i title="${ITEMS[id].name}"><img src="${icon(id)}" alt="">${ITEMS[id].name}</i>`).join('')}${unk?`<i class="q">${known.length?'+ ':''}${unk} unknown drop${unk>1?'s':''}</i>`:''}${!d.drops.length?'<i class="q">Drops coins only</i>':''}</span></div></div>`;}).join('');}
   if(k==='town'){return NPCORDER.map(t=>{const n=npcs.find(n=>n.type===t&&n.home);const d=NPCDEF[t];return `<div class="npcRow ${n?'home':''}"><img src="${portrait(t)}" alt=""><div><b>${d.name}</b><span>${n?'<span class="ok">Has a home</span>':d.ok()?'Ready to move in. Stand in an empty house and press Check this room.':d.need}</span></div></div>`;}).join('')+`<p class="hint">A house needs walls behind it, a door, a light, a table and a chair, and must not contain your bed.</p>`;}
   return '';}
+const bestCache={};
+function bestSketch(t){if(bestCache[t])return bestCache[t];const d=EN[t],src=SHEETS[d.sheet],c=mk(64,64),g=c.getContext('2d'),s=Math.min(60/d.fw,60/d.fh);g.drawImage(src,0,0,d.fw,d.fh,32-d.fw*s/2,32-d.fh*s/2,d.fw*s,d.fh*s);return bestCache[t]=c.toDataURL();}
 function renderSide(){if(!side||side.kind==='chest')return;const html=sideHTML();if($('sideBody').dataset.h!==html){$('sideBody').innerHTML=html;$('sideBody').dataset.h=html;}}
 function renderShop(){renderSide();}
 $('sideBody').addEventListener('mousedown',e=>{if(side&&side.kind==='travel'){const el=e.target.closest('.shopi');if(!el)return;const list=[{x:player.spawn.x-.5,y:player.spawn.y}].concat((BIO.camps||[]).filter(c=>c.done).map(c=>({x:c.sx,y:c.sy})));const w=list[+el.dataset.w];if(w)travelTo(w.x,w.y);return;}
@@ -1572,8 +1593,8 @@ function hurtEnemy(e,dmg,dir,kb=5,crit=false){if(e.dying)return;if(e.folded){flo
   if(e.type==='scarab'&&e.act!=='open'&&dir===-e.face&&player.y<e.y+e.h-.3){dmg*=.15;kb*=.3;floatText(e.x,e.y+e.h+.4,'clink!','miss');tone(1400,1100,.07,'square',.06);}
   if(e.elite)kb*=.5;if(hasBadge('power'))dmg*=1.15;if(hasBuff('fed'))dmg*=1.05;const real=Math.max(1,Math.round(dmg-e.d.def/2));e.hp-=real;e.flash=.12;e.vx=dir*kb*(e.d.boss?.25:1);if(!e.d.fly||true)e.vy=Math.max(e.vy,e.d.boss?2:5);
   floatText(e.x,e.y+e.h,crit?real+'!':real,crit?'crit':'');burst(e.x,e.y+e.h/2,e.d.col,5,4);burst(e.x-dir*e.w*.3,e.y+e.h/2,['#fffaf0','#ffe58a'],crit?9:5,7,{grav:0,life:.25,up:0});SFX.hit();shake(crit?.25:.1);hitPause(crit?.09:.04);e.hpShow=3;
-  if(e.hp<=0){e.dying=.3;stat('kills');hitPause(e.d.boss?.35:.07);SFX.brk();burst(e.x,e.y+e.h/2,e.d.col.concat(['#fbf8f0']),e.d.boss?80:22,e.d.boss?9:6,{grav:9,life:1.3});
-    const[c0,c1]=e.d.coins;const coins=Math.round(randi(c0,c1)*(hasBadge('money')?1.5:1)*(e.elite?3:1));if(!e.parent&&!e.d.boss){if(hasBadge('heartf')&&Math.random()<.22)dropItem('hpheart',1,e.x,e.y+e.h/2);if(hasBadge('flowerf')&&Math.random()<.22)dropItem('mpstar',1,e.x,e.y+e.h/2);}dropItem('coin',e.inked?coins*2:coins,e.x,e.y+e.h/2);if(e.inked||e.type==='wraith'){if(Math.random()<.5)dropItem('moonink',randi(1,e.type==='wraith'?3:2),e.x,e.y+e.h/2);}else if(isNight()&&!e.d.boss&&!e.parent&&Math.random()<.04)dropItem('moonink',1,e.x,e.y+e.h/2);for(const[id,a,b,p]of e.d.drops)if(Math.random()<(e.elite?Math.min(1,p*2):p))dropItem(id,randi(a,b)+(e.elite?1:0),e.x,e.y+e.h/2);
+  if(e.hp<=0){e.dying=.3;stat('kills');bestKill(e);hitPause(e.d.boss?.35:.07);SFX.brk();burst(e.x,e.y+e.h/2,e.d.col.concat(['#fbf8f0']),e.d.boss?80:22,e.d.boss?9:6,{grav:9,life:1.3});
+    const[c0,c1]=e.d.coins;const coins=Math.round(randi(c0,c1)*(hasBadge('money')?1.5:1)*(e.elite?3:1));if(!e.parent&&!e.d.boss){if(hasBadge('heartf')&&Math.random()<.22)dropItem('hpheart',1,e.x,e.y+e.h/2);if(hasBadge('flowerf')&&Math.random()<.22)dropItem('mpstar',1,e.x,e.y+e.h/2);}dropItem('coin',e.inked?coins*2:coins,e.x,e.y+e.h/2);if(e.inked||e.type==='wraith'){if(Math.random()<.5)dropItem('moonink',randi(1,e.type==='wraith'?3:2),e.x,e.y+e.h/2);}else if(isNight()&&!e.d.boss&&!e.parent&&Math.random()<.04)dropItem('moonink',1,e.x,e.y+e.h/2);for(const[id,a,b,p]of e.d.drops)if(Math.random()<(e.elite?Math.min(1,p*2):p)){const n=randi(a,b)+(e.elite?1:0);dropItem(id,n,e.x,e.y+e.h/2);bestDrop(e,id,n);}
     if(e.elite){dropItem(pick(ELITE_LOOT),1,e.x,e.y+e.h/2);stat('elites');}
     if(e.d.split)for(let k=0,n=e.elite?3:2;k<n;k++){const s=spawnEnemy(e.d.split,e.x+(k-(n-1)/2)*.5,e.y+.2);s.vx=(k-(n-1)/2)*5||rand(-2,2);s.vy=9;s.timer=rand(.5,1);}
     if(e.segs)e.segs.forEach(sg=>{if(!sg.dying){sg.dying=.35;burst(sg.x,sg.y+sg.h/2,e.d.col,14,6,{grav:6});}});
@@ -2054,6 +2075,7 @@ function updatePartner(dt){const p=player,k=p.partner;
 const bpMax=()=>3+['king','crane','lev','folio'].filter(q=>quests[q]).length*3+(player.bpUps||0);
 const bpUsed=()=>player.badgesOn.reduce((a,k)=>a+BADGES[k][1],0);
 $('partyBtn').addEventListener('click',()=>openSide('party',null,null,'Party'));
+$('bestBtn').addEventListener('click',()=>openSide('bestiary',null,null,'Bestiary'));
 
 // ================= pop-up book =================
 const houses=[];let visited=new Set(),houseT=0,houseCheckT=0,popAnim=[];
@@ -2257,9 +2279,14 @@ const SAVE_KEY='folded-frontier-save-v1';
 function b64(u8){let s='';for(let i=0;i<u8.length;i+=8192)s+=String.fromCharCode.apply(null,u8.subarray(i,i+8192));return btoa(s);}
 function unb64(s,u8){const b=atob(s);for(let i=0;i<b.length;i++)u8[i]=b.charCodeAt(i);}
 let lastSaveJSON='';
-function save(){try{const data={v:1,seed,tiles:b64(tiles),walls:b64(walls),meta:b64(meta),surf:Array.from(surf),chests:Array.from(chests.entries()),
+function save(){try{const data={v:SAVE_VER,seed,tiles:b64(tiles),walls:b64(walls),meta:b64(meta),surf:Array.from(surf),chests:Array.from(chests.entries()),
   p:{x:player.x,y:player.y,hp:player.hp,max:player.max,mana:player.mana,maxMana:player.maxMana,buffs:player.buffs,world:{weather,weatherT,wind,inkMoon,nightsSeen},partners:player.partners,partner:player.partner,badges:player.badges,badgesOn:player.badgesOn,bpUps:player.bpUps,inv:player.inv,armor:player.armor,acc:player.acc,coins:player.coins,spawn:player.spawn,sel:player.sel},time:worldTime,quests,npcs:npcs.map(n=>({type:n.type,x:n.x,y:n.y,home:n.home}))};
-  data.explored=b64(explored);data.w=W;data.h=H;data.size=worldSize;data.seedText=seedText;data.bio=BIO;data.visited=[...visited];data.houses=houses.map(h=>[h.sx,h.sy]);lastSaveJSON=JSON.stringify(data);localStorage.setItem(SAVE_KEY,lastSaveJSON);saveMeta();return true;}catch(e){return false;}}
+  data.explored=b64(explored);data.w=W;data.h=H;data.size=worldSize;data.seedText=seedText;data.bio=BIO;data.visited=[...visited];data.houses=houses.map(h=>[h.sx,h.sy]);data.bestiary=bestiary;lastSaveJSON=JSON.stringify(data);localStorage.setItem(SAVE_KEY,lastSaveJSON);saveMeta();return true;}catch(e){return false;}}
+// save format history: v1 original; v2 adds the per-world bestiary. Older saves are upgraded on load.
+const SAVE_VER=2;
+function migrateSave(d){d.v=d.v||1;
+  if(d.v<2){d.bestiary={};d.v=2;}
+  return d;}
 function loadSave(){try{const s=localStorage.getItem(SAVE_KEY);return s?JSON.parse(s):null;}catch(e){return null;}}
 function hasSave(){try{return !!localStorage.getItem(SAVE_KEY);}catch(e){return false;}}
 
@@ -2270,9 +2297,9 @@ function allocWorld(w,h){W=w;H=h;N=W*H;SPAWNX=Math.floor(W/2);tiles=new Uint8Arr
 function seedFrom(txt){txt=(txt||'').trim();if(/^\d{1,9}$/.test(txt))return +txt;let h=2166136261;for(const c of txt){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}
 function clearEntities(){enemies.forEach(removeEnemy);enemies=[];pickups.forEach(k=>scene.remove(k.mesh));pickups=[];projs.forEach(q=>scene.remove(q.m));projs=[];npcs.forEach(n=>{scene.remove(n.mesh);if(n.bub)n.bub.remove();});npcs=[];boss=null;$('boss').hidden=true;parts.length=0;}
 function newWorld(sd,size='s',txt){clearHouses();visited=new Set();const S=SIZES[size]||SIZES.s;clearEntities();allocWorld(S.w,S.h);worldSize=size;seedText=txt||String(sd);curBio='';const g=generate(sd);const p=player;p.x=g.spawn.x;p.y=g.spawn.y;p.spawn={x:g.spawn.x,y:g.spawn.y};p.hp=p.max=100;p.mana=p.maxMana=20;p.coins=0;p.buffs={};weather='clear';weatherT=150;wind=0;inkMoon=false;nightsSeen=0;p.partners=[];p.partner=null;p.badges=[];p.badgesOn=[];p.bpUps=0;p.inv=new Array(40).fill(null);p.armor=[null,null,null];p.acc=[null,null,null];p.sel=0;
-  [['copperpick',1],['coppersword',1],['hammer',1],['torch',12],['potion',2],['wood',20]].forEach(([id,n])=>addItem(id,n));worldTime=7.5;quests={};p.sheetDirty=true;explored.fill(0);
+  [['copperpick',1],['coppersword',1],['hammer',1],['torch',12],['potion',2],['wood',20]].forEach(([id,n])=>addItem(id,n));worldTime=7.5;quests={};bestiary={};p.sheetDirty=true;explored.fill(0);
   rebuildAll();buildBackdrop();camT.x=p.x;camT.y=p.y;registerHouseAt(g.bed.x,g.bed.y);}
-function loadWorld(d){if(d.p&&d.p.world){({weather,weatherT,wind,inkMoon,nightsSeen}=Object.assign({weather:'clear',weatherT:150,wind:0,inkMoon:false,nightsSeen:0},d.p.world));}clearEntities();allocWorld(d.w||420,d.h||170);worldSize=d.size||'s';seedText=d.seedText||String(d.seed);BIO=d.bio||{uw:0};curBio='';clearHouses();visited=new Set(d.visited||[]);seed=d.seed;unb64(d.tiles,tiles);unb64(d.walls,walls);unb64(d.meta,meta);surf=Int16Array.from(d.surf);let s=0;for(const v of surf)s+=v;surfAvg=s/W;chests=new Map(d.chests);
+function loadWorld(d){d=migrateSave(d);bestiary=d.bestiary&&typeof d.bestiary==='object'?d.bestiary:{};if(d.p&&d.p.world){({weather,weatherT,wind,inkMoon,nightsSeen}=Object.assign({weather:'clear',weatherT:150,wind:0,inkMoon:false,nightsSeen:0},d.p.world));}clearEntities();allocWorld(d.w||420,d.h||170);worldSize=d.size||'s';seedText=d.seedText||String(d.seed);BIO=d.bio||{uw:0};curBio='';clearHouses();visited=new Set(d.visited||[]);seed=d.seed;unb64(d.tiles,tiles);unb64(d.walls,walls);unb64(d.meta,meta);surf=Int16Array.from(d.surf);let s=0;for(const v of surf)s+=v;surfAvg=s/W;chests=new Map(d.chests);
   const p=player,q=d.p;Object.assign(p,{x:q.x,y:q.y,hp:q.hp,max:q.max,maxMana:q.maxMana||20,mana:q.mana??20,buffs:q.buffs||{},partners:q.partners||[],partner:q.partner||null,badges:q.badges||[],badgesOn:q.badgesOn||[],bpUps:q.bpUps||0,inv:q.inv,armor:q.armor,acc:q.acc,coins:q.coins,spawn:q.spawn,sel:q.sel||0});worldTime=d.time;quests=d.quests||{};if(d.explored)unb64(d.explored,explored);else explored.fill(1);p.sheetDirty=true;
   rebuildAll();buildBackdrop();if(d.houses)setTimeout(()=>d.houses.forEach(([x,y])=>registerHouseAt(x,y)),0);if(d.npcs)d.npcs.forEach(n=>makeNPC(n.type,n.x,n.y,n.home));else if(d.npc)makeNPC('merchant',d.npc.x,d.npc.y,d.npc.home);camT.x=p.x;camT.y=p.y;}
 function startPlay(){syncPartners(true);state='play';mapOpen=false;$('map').hidden=true;$('title').hidden=true;player.dead=false;player.mesh.visible=true;$('dead').hidden=true;invDirty=true;heartsKey='';renderQuests();updateCoins();hintT=0;$('help').style.opacity=1;initAudio();}
