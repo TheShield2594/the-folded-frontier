@@ -50,10 +50,10 @@ Damage to an enemy is `dmg − def/2` and damage to the player is `dmg − defen
 
 | Fight | Sword | Hits to kill | Armor set (defense) | Contact hit taken |
 |---|---|---|---|---|
-| King Slime | Gold Broadsword (25) | 34 | Gold (11) | 21 |
+| King Slime | Gold Broadsword (25) | 35 | Gold (11) | 21 |
 | Great Crane | Frostsilver Blade (32) | 58 | Frostsilver (14) | 23 |
 | Inkwell Leviathan | Frostsilver Blade (32) | 92 | Inkstone (18) | 25 |
-| Charred Folio | Ink Cutlass (41) | 103 | Inkstone (18) | 31 |
+| Charred Folio | Ink Cutlass (41) | 104 | Inkstone (18) | 31 |
 | The Unfolded | Emberite Greatsword (54) | 126 | Emberite (24) | 32 |
 
 Warhammers take about 40% fewer hits at every step. Paper Hearts (17–18 per medium world, +20 life each, capped at 400) keep pace with the rising damage.
