@@ -15,7 +15,7 @@ To run locally, open `index.html` in a browser.
 - **Move / jump:** WASD, Space
 - **Use item:** left click · **Interact:** right click
 - **Backpack & crafting:** E · **Map:** M · **Heal:** H · **Flatten:** C · **Dash:** Shift · **Block:** X or hold right click (needs a shield) · **Pause:** Esc
-- Gamepad supported (standard mapping, X dashes, RT uses items, hold B to block); rebind keys and gamepad buttons in Settings
+- Gamepad supported (standard mapping, X dashes, RT uses items, hold B to block); rebind keys and gamepad buttons in Settings, where you can also set interface size and text size
 - **Bows:** hold to draw, release to shoot; a full draw always crits
 - **NICE! hits:** click again when your sword flashes gold near the end of a swing for 1.8× damage; stomp and tap jump on impact
 - **Fishing:** with bait in your backpack, click with a rod to cast into ink (or lava, with the Emberite Rod); click again when the bobber dips
@@ -31,6 +31,7 @@ To run locally, open `index.html` in a browser.
 - Enemies with their own attack patterns in every biome, plus rare gold-starred elite variants that hit harder and drop better loot
 - NPC townsfolk and housing, partners, badges, farming, potions, weather and the Ink Moon
 - Fishing: four rod tiers, three baits, fish for each biome (plus crates and junk), and an Angler who wants a different fish every day
+- Music composed in code: a theme for each biome, a boss track and a title theme, crossfading as you travel
 - Ambient sound for each biome (wind, lapping ink, birds and crickets, cave drips, underworld embers) that fades with biome, depth and time of day, with its own volume slider
 - Paper mechanics: peelable walls, pop-out sketched bridges, flattening, rebuildable camps with fast travel, ruins with secret rooms, treasure maps
 - A Bestiary (Backpack → Bestiary) that fills in as you defeat enemies, with each one's biome, kill count and the drops you've seen
