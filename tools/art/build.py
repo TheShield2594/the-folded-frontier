@@ -125,33 +125,43 @@ def tintmask(k, im):
     else: m = np.zeros_like(al)
     return m & al
 
-def inked_pieces(img, n=4, bw=30):
-    """Split a parts sheet into its n pieces, left to right, by filling each closed ink outline and adding the border back.
-    Ignores the blurry ghost blobs image models sometimes add, since they have no ink outline."""
-    a = np.asarray(img.convert('RGB')).astype(int)
-    bg = np.median(np.concatenate([a[0], a[-1], a[:, 0], a[:, -1]]), axis=0)
-    fg = np.abs(a - bg).max(axis=2) >= 16; ink = a.max(axis=2) < 90
+def inked_pieces(img, n=4, grow=2):
+    """Split a parts sheet into its n pieces, left to right, each cut out as exactly its filled ink outline (plus a couple of
+    pixels of anti-aliasing), since restyle() replaces everything outside the ink anyway. This ignores the render's border,
+    its soft shadows and the blurry ghost blobs image models sometimes add, and keeps pale fills (chainmail) that are close
+    to the background grey. Returns (piece, (x, y) of its top-left in the render)."""
+    a = np.asarray(img.convert('RGB')).astype(int); ink = a.max(axis=2) < 90
     core = ndimage.binary_fill_holes(ndimage.binary_closing(ink, iterations=2))
     lab, m = ndimage.label(core); sz = ndimage.sum(core, lab, range(1, m + 1)); out = []
     for k in np.argsort(-sz)[:n] + 1:
-        mask = ndimage.binary_fill_holes(ndimage.binary_dilation(lab == k, iterations=bw) & fg)
+        mask = ndimage.binary_dilation(lab == k, iterations=grow)
         ys, xs = np.where(mask); sl = (slice(ys.min(), ys.max() + 1), slice(xs.min(), xs.max() + 1))
-        out.append((xs.min(), Image.fromarray(np.dstack([a.astype(np.uint8), (mask * 255).astype(np.uint8)])[sl], 'RGBA')))
-    return [im for _, im in sorted(out, key=lambda t: t[0])]
+        out.append(((xs.min(), ys.min()), Image.fromarray(np.dstack([a.astype(np.uint8), (mask * 255).astype(np.uint8)])[sl], 'RGBA')))
+    return [(im, o) for o, im in sorted(out, key=lambda t: t[0][0])]
 
-# joint points per armour render, in its piece-local source px (neck base, neck top, shoulder, hip); a new render needs its own
-ARMOR_PIV = {'cu': {'head': (258, 505), 'torso': (356, 60), 'arm': (125, 50), 'leg': (114, 55)},
-             'au': {'head': (335, 585), 'torso': (343, 60), 'arm': (118, 50), 'leg': (117, 55)}}
-BASE_H = {'head': 669, 'torso': 608, 'arm': 553, 'leg': 643}  # base part heights in parts.png, so armour pieces match their size
+# joint points per armour render, in whole-render px (neck base, neck top, shoulder, hip); a new render needs its own
+ARMOR_PIV = {'cu': {'head': (331, 749), 'torso': (954, 371), 'arm': (1313, 368), 'leg': (1604, 354)},
+             'au': {'head': (369, 752), 'torso': (950, 371), 'arm': (1369, 383), 'leg': (1713, 375)},
+             'fe': {'head': (290, 760), 'torso': (945, 335), 'arm': (1378, 350), 'leg': (1680, 345)},
+             'fr': {'head': (375, 780), 'torso': (1000, 353), 'arm': (1440, 365), 'leg': (1678, 322)},
+             'ik': {'head': (350, 760), 'torso': (985, 360), 'arm': (1380, 375), 'leg': (1698, 360)},
+             'em': {'head': (372, 760), 'torso': (985, 350), 'arm': (1365, 350)}}  # emberite leg: the render's boot has no outline; regenerate it
+HEAD_FIX = {'fe': 1.15}  # renders that drew the head small for the torso
+BASE_H = {'head': 625, 'torso': 563, 'arm': 509, 'leg': 598}  # base part heights inside their ink outline in parts.png, so armour pieces match their size
 
 def armor(img, m):
     """armor_<m>.webp: helmeted head, torso, arm, leg (ink only, no tint mask); prints the ARMOR_RIG entry."""
-    x = 0; pieces = []; rows = []; ps = inked_pieces(img); st = PART_S * BASE_H['torso'] / ps[1].height
-    for k, im in zip(('head', 'torso', 'arm', 'leg'), ps):
-        s = st * 1.04 if k == 'head' else PART_S * BASE_H[k] / im.height  # heads by the torso's scale: crests and plumes vary in height
+    ks = [k for k in ('head', 'torso', 'arm', 'leg') if k in ARMOR_PIV[m]]  # a piece left out falls back to the tinted plain part
+    cand = inked_pieces(img, 8)
+    def owner(pt):  # the piece whose box holds this joint point (the leg can be bigger or smaller than a ghost blob)
+        return min(cand, key=lambda c: max(c[1][0] - pt[0], pt[0] - c[1][0] - c[0].width, c[1][1] - pt[1], pt[1] - c[1][1] - c[0].height))
+    ps = [owner(ARMOR_PIV[m][k]) for k in ks]
+    x = 0; pieces = []; rows = []; st = PART_S * BASE_H['torso'] / ps[1][0].height
+    for k, (im, (ox, oy)) in zip(ks, ps):
+        s = st * 1.04 * HEAD_FIX.get(m, 1) if k == 'head' else PART_S * BASE_H[k] / im.height  # heads by the torso's scale: crests and plumes vary in height
         im, pad = restyle(im, 120 / s, border=False)
         w, h = round(im.width * s), round(im.height * s); r = im.resize((w, h), Image.LANCZOS)
-        px, py = ARMOR_PIV[m][k]; pieces.append((r, x))
+        px, py = ARMOR_PIV[m][k]; px -= ox; py -= oy; pieces.append((r, x))
         rows.append(f"{k}:[{x},0,{w},{h},{round((px + pad) * s, 1)},{round((py + pad) * s, 1)}]"); x += w + 2
     out = Image.new('RGBA', (x, max(r.height for r, _ in pieces)), (0, 0, 0, 0))
     for r, x in pieces: out.alpha_composite(r, (x, 0))

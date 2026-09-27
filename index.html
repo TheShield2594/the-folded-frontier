@@ -1119,15 +1119,19 @@ const PAINT={armor:{}};
 // player_parts_mask.webp marks what armour recolours (tunic, trousers and boots, helmet metal). Frames are 2x the 96x144 code frames.
 const RIG={head:[0,0,108,107,52.8,93.4],torso:[110,0,101,98,62.3,16.0],arm:[213,0,43,91,19.9,12.9],leg:[258,0,49,103,22.3,14.4],helm:[309,0,73,81,6.6,6.6]};
 // armor_<metal>.webp: that metal's set drawn on the character (head wearing the helmet, torso, arm, leg), same layout as RIG;
-// a slot whose metal has no painted set tints the plain parts instead
-const ARMOR_RIG={cu:{head:[0,0,107,107,50.9,93.1],torso:[109,0,100,99,65.2,16.6],arm:[211,0,46,91,25.6,14.2],leg:[259,0,48,103,23.9,15.0]},
-  au:{head:[0,0,111,123,65.2,108.7],torso:[113,0,100,99,64.2,16.8],arm:[215,0,45,91,25.4,14.7],leg:[262,0,53,103,25.7,15.6]}};
+// a piece whose metal has no painted version tints the plain part instead
+const ARMOR_RIG={cu:{head:[0,0,101,102,48.1,91.3],torso:[103,0,95,92,63.1,14.3],arm:[200,0,41,85,23.1,12.0],leg:[243,0,43,97,21.2,12.8]},
+  au:{head:[0,0,105,116,62.3,106.2],torso:[107,0,94,92,61.4,14.3],arm:[203,0,40,85,22.7,12.1],leg:[245,0,48,97,22.9,13.1]},
+  fe:{head:[0,0,94,110,42.1,99.6],torso:[96,0,95,92,61.4,13.6],arm:[193,0,37,84,23.6,11.9],leg:[232,0,47,97,22.4,12.7]},
+  fr:{head:[0,0,90,119,44.7,110.4],torso:[92,0,98,92,59.5,13.1],arm:[192,0,42,84,31.4,12.2],leg:[236,0,45,97,20.0,12.3]},
+  ik:{head:[0,0,90,102,44.5,92.2],torso:[92,0,97,92,63.5,12.7],arm:[191,0,41,85,22.4,12.0],leg:[234,0,46,97,22.6,12.6]},
+  em:{head:[0,0,88,118,42.1,108.1],torso:[90,0,80,92,48.1,13.6],arm:[172,0,42,85,24.9,12.0]}}; // no emberite leg yet
 function paintedPlayer(eq,met){const P=PAINT.player,c=mk(192*9,288),g=c.getContext('2d');
-  const piece=(k,slot,dark)=>{const m=slot&&met[slot],A=m&&PAINT.armor[m],r=(A?ARMOR_RIG[m]:RIG)[k],[x,y,w,h]=r,p=mk(w,h),q=p.getContext('2d');q.drawImage(A||P.img,x,y,w,h,0,0,w,h);
+  const piece=(k,slot,dark)=>{const m=slot&&met[slot],R=m&&PAINT.armor[m]&&ARMOR_RIG[m][k],A=R&&PAINT.armor[m],r=R||RIG[k],[x,y,w,h]=r,p=mk(w,h),q=p.getContext('2d');q.drawImage(A||P.img,x,y,w,h,0,0,w,h);
     const col=!A&&slot&&eq[slot];
     if(col){const t=mk(w,h),u=t.getContext('2d');u.drawImage(P.mask,x,y,w,h,0,0,w,h);u.globalCompositeOperation='source-in';u.fillStyle=col;u.fillRect(0,0,w,h);q.globalCompositeOperation='color';q.drawImage(t,0,0);}
     if(dark){q.globalCompositeOperation='source-atop';q.fillStyle='rgba(42,33,48,.28)';q.fillRect(0,0,w,h);}p.px=r[4];p.py=r[5];return p;};
-  const setHelm=met.helm&&PAINT.armor[met.helm];
+  const setHelm=met.helm&&PAINT.armor[met.helm]&&ARMOR_RIG[met.helm].head;
   const head=setHelm?piece('head','helm'):piece('head'),torso=piece('torso','mail'),armA=piece('arm','mail'),armB=piece('arm','mail',1),legA=piece('leg','greaves'),legB=piece('leg','greaves',1),helm=eq.helm&&!setHelm&&piece('helm','helm');
   const put=(t,p,k,x,y,a)=>{t.save();t.translate(x,y);t.rotate(a||0);t.drawImage(p,-p.px,-p.py);t.restore();};
   const fr=mk(192,288),h=fr.getContext('2d'),sil=mk(192,288),s=sil.getContext('2d');
