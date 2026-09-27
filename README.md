@@ -17,6 +17,8 @@ npm run dev       # starts a local server and prints its URL
 
 `npm run build` makes a static build in `dist/` that you can put on GitHub Pages or any static web host (`npm run preview` serves it locally).
 
+`npm test` runs the Playwright smoke tests (boot, new world, saving and loading, save codes). Install the browser once with `npx playwright install chromium`.
+
 ## Controls
 
 - **Move / jump:** WASD, Space
