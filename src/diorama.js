@@ -185,11 +185,12 @@ export function updateDiorama(){DU.uTime.value=worldClock;DU.uWob.value=RM.match
   FU.uP.value.set(player.x,player.y+1.1,state==='play'&&!player.dead?1:0);FU.uM.value.set(mouse.wx,mouse.wy,state==='play'?1:0);
   const k=season().k;if(k!==dioKey){dioKey=k;for(let b=0;b<fgBands.length;b++)fgDirty.add(b);}
   // textures are drawn as the camera nears a segment and redrawn when the season changes, one per frame, nearest
-  // first, so a new world or a new season never stalls a frame for long. Segments left far behind in an old season
+  // first, so a new world or a new season never stalls a frame for long. Segments the camera has left far behind
   // give their texture up.
   const cx=camera.position.x;let best=null,bd=150,drop=false;
-  for(const s of segs){const key=tKey(s.li,s.b);if(s.key===key)continue;const d=Math.max(0,s.x0-cx,cx-s.x1);
+  for(const s of segs){const key=tKey(s.li,s.b),d=Math.max(0,s.x0-cx,cx-s.x1);
     if(d>=150){if(s.key){s.key=null;s.m.visible=false;s.m.material.uniforms.map.value=null;drop=true;}continue;}
+    if(s.key===key)continue;
     if(texC.has(key)){s.m.material.uniforms.map.value=texC.get(key);s.key=key;s.m.visible=true;drop=true;}else if(d<bd||d===bd&&best&&s.li<best.li){best=s;bd=d;}}
   if(best){best.m.material.uniforms.map.value=getTex(best.li,best.b);best.key=tKey(best.li,best.b);best.m.visible=true;}
   if(best||drop){const used=new Set(segs.map(q=>q.key));for(const[kk,tx]of texC)if(!used.has(kk)){tx.dispose();texC.delete(kk);}}
