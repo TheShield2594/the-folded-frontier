@@ -44,7 +44,7 @@ export function generate(sd){
       if(nearLake&&t!==T.CORE&&t!==T.ASH&&y>s-26&&y<s)t=T.INKSTONE;
       if(t!==T.CORE&&t!==T.ASH&&y<s-6&&y>ashTop+3&&!(nearLake&&y>s-40)){const c=nz.fbm(x/26,y/15,4),worm=Math.abs(nz2.fbm(x/48,y/30,3)-.5);if(c>.63||(worm<.026&&y<s-9))t=T.AIR;}
       if(t===T.STONE||t===T.ICE){const dep=s-y;if(sz&&dep>22&&nz.n2(x/4+1500,y/4)>.78)t=T.FROST;else if(t===T.STONE){if(dep>45&&nz.n2(x/4+900,y/4+100)>.83)t=T.GOLD;else if(dep>20&&nz2.n2(x/4.5+700,y/4.5)>.82)t=T.IRON;else if(dep>4&&nz.n2(x/4.2+300,y/4.2+300)>.8)t=T.COPPER;}}
-      if(t===T.INKSTONE&&y<s-3&&nz2.n2(x/4+2100,y/4)>.74)t=T.INKORE;
+      if(t===T.INKSTONE&&y<s-3&&nz2.n2(x/4+2100,y/4)>.64)t=T.INKORE;
       if(t===T.ASH){if(y>=5&&y<=UW-2&&nz.fbm(x/30,y/8+50,3)>.43)t=T.AIR;else if(nz.n2(x/4+3000,y/4)>.79)t=T.EMBERORE;}
       const i=idx(x,y);tiles[i]=t;if(y<s-1&&t!==T.CORE&&y>=ashTop+2)walls[i]=1;}}
   for(let k=0;k<Math.round(W*1.2);k++){const x=Math.floor(4+rng()*(W-8)),y=Math.floor(6+rng()*(UW-8));const i=idx(x,y);if(tiles[i]===T.AIR&&tiles[i-W]===T.ASH&&y>8){tiles[i]=T.CROP;meta[i]=3*4+2;}}
