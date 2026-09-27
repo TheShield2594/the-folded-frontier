@@ -1,7 +1,7 @@
 // Player, enemy defs, NPCs, boss, quests and inventory helpers.
 import * as THREE from 'three';
 import {
-  $,BADGES,blk,burst,clamp,H,heal,hurtPlayer,iconTex,inkMoon,isNight,isSolid,ITEMS,pad,rand,
+  $,BADGES,BIO,blk,burst,clamp,H,heal,hurtPlayer,iconTex,inkMoon,isNight,isSolid,ITEMS,pad,rand,
   renderQuests,scene,setInvDirty,SFX,shake,SHEETS,sky,spriteMat,spriteMesh,stat,T,tileAt,toast,U,
   updateCoins,W,
 } from './game.js';
@@ -35,7 +35,7 @@ export const EN={
   bat:{w:.8,h:.6,hp:18,dmg:10,def:0,fly:1,sheet:'bat',fw:96,fh:64,coins:[2,5],drops:[['batwing',1,1,.4]],col:['#6b4c8f','#5a3f7a']},
   knight:{w:.85,h:1.85,hp:85,dmg:20,def:8,sheet:'knight',fw:96,fh:144,coins:[10,25],drops:[['buckler',1,1,.1],['ironbar',1,3,.35],['goldore',2,5,.25]],col:['#b48a5a','#8e6a40'],step:1},
   blot:{w:.95,h:.75,hp:70,dmg:24,def:6,sheet:'blot',fw:96,fh:80,coins:[6,14],drops:[['gel',2,5,1],['inksac',1,1,.3]],col:['#4a3570','#8a78b0'],slimy:1},
-  foldfox:{w:1.4,h:1,hp:70,dmg:22,def:6,sheet:'foldfox',fw:128,fh:96,coins:[8,18],drops:[['plume',1,1,.08]],col:['#e0823d','#f4f0e6'],step:1},
+  foldfox:{w:1.4,h:1,hp:70,dmg:22,def:6,sheet:'foldfox',fw:128,fh:96,coins:[8,18],drops:[['plume',1,1,.08],['pet_kit',1,1,.03]],col:['#e0823d','#f4f0e6'],step:1},
   flurry:{w:.9,h:.9,hp:45,dmg:18,def:4,fly:1,sheet:'flurry',fw:80,fh:80,coins:[5,12],drops:[['frostore',1,3,.3]],col:['#f6f9fb','#aee0f2']},
   inksquid:{w:1.1,h:.9,hp:85,dmg:26,def:8,fly:1,sheet:'inksquid',fw:96,fh:96,coins:[10,22],drops:[['inksac',1,2,.6]],col:['#6b4c8f','#3a2a5a']},
   cinderbat:{w:.8,h:.6,hp:70,dmg:34,def:10,fly:1,sheet:'cinderbat',fw:96,fh:64,coins:[12,25],drops:[['emberore',1,2,.2]],col:['#ff8a3d','#3a2a24']},
@@ -46,7 +46,7 @@ export const EN={
   levseg:{w:1.8,h:1.8,hp:1,dmg:28,def:14,fly:1,noclip:1,worm:1,sheet:'levseg',fw:140,fh:140,coins:[0,0],drops:[],col:['#4a3570','#8a5fc0']},
   levtail:{w:1.4,h:1.4,hp:1,dmg:24,def:14,fly:1,noclip:1,worm:1,sheet:'levtail',fw:140,fh:140,coins:[0,0],drops:[],col:['#4a3570','#8a5fc0']},
   folio:{w:4.4,h:3.6,hp:3300,dmg:40,def:18,fly:1,noclip:1,sheet:'folio',fw:340,fh:280,boss:1,name:'Charred Folio',quest:'folio',coins:[900,1200],drops:[['b_last',1,1,1],['b_happy',1,1,1],['cinder',3,5,1],['emberstaff',1,1,.5],['emberbar',6,12,1]],col:['#e9dcc0','#ff7a2d','#3a2a24']},
-  unfolded:{w:3,h:4.6,hp:5400,dmg:44,def:22,sheet:'unfolded',fw:300,fh:360,boss:1,name:'The Unfolded',quest:'unfolded',coins:[1500,2000],drops:[['foldblade',1,1,1],['bpup',1,2,1],['moonink',10,20,1]],col:['#f4f0e6','#e9dcc0','#b06ad0'],step:1},
+  unfolded:{w:3,h:4.6,hp:5400,dmg:44,def:22,sheet:'unfolded',fw:300,fh:360,boss:1,name:'The Unfolded',quest:'unfolded',coins:[1500,2000],drops:[['foldblade',1,1,1],['pet_crease',1,1,1],['bpup',1,2,1],['moonink',10,20,1]],col:['#f4f0e6','#e9dcc0','#b06ad0'],step:1},
   // forest
   crumple:{w:.9,h:.9,hp:30,dmg:12,def:2,center:1,sheet:'crumple',fw:80,fh:80,coins:[2,6],drops:[['paper',1,2,.6]],col:['#efe6d2','#cbbd9f'],name:'Crumple'},
   toadstool:{w:.9,h:1.1,hp:36,dmg:10,def:2,sheet:'toadstool',fw:96,fh:96,coins:[3,7],drops:[['mushroom',1,2,.7]],col:['#d4483b','#f4f0e6'],name:'Toadstool Lobber',step:1},
@@ -88,12 +88,14 @@ export function bestKill(e){const b=bestiary[e.type]||(bestiary[e.type]={k:0,d:{
 export const bestDrop=(e,id,n)=>{const b=bestiary[e.type];if(b)b.d[id]=(b.d[id]||0)+n;};
 export function spawnEnemy(type,x,y){const d=EN[type];const e={type,d,x,y,w:d.w,h:d.h,vx:0,vy:0,hp:d.hp,max:d.hp,face:1,rot:0,t:rand(0,2),timer:rand(.5,2),flash:0,dying:0,onGround:false,step:d.step,kb:0,hitCD:0};
   e.sw=d.fw/60;e.sh=d.fh/60;e.mesh=spriteMesh(SHEETS[d.sheet+'T'],2,e.sw,e.sh,!d.fly&&!d.center);e.mesh.position.z=.1+enemies.length%8*.006;enemies.push(e);if(inkMoon&&isNight()&&!d.boss&&!d.worm){e.inked=true;e.hp=e.max=Math.round(e.hp*1.7);}
+  // an awakened world (awaken.js) makes every foe tougher; the Leviathan's segments share its life, so they are skipped
+  if(BIO.awake&&(!d.worm||type==='lev')){e.awake=true;e.hp=e.max=Math.round(e.max*(d.boss?1.5:1.8));}
   if(d.boss){boss=e;$('boss').hidden=false;$('boss').classList.remove('p1','p2');$('boss').querySelector('.bn').textContent=d.name;}
   if(d.worm&&type==='lev'){e.segs=[];e.ang=0;for(let k=0;k<12;k++){const sg=spawnEnemy(k===11?'levtail':'levseg',x-(k+1)*1.2,y);sg.parent=e;e.segs.push(sg);}}return e;}
 // elites: tougher, bigger, gold-starred, better loot. Only rolled for natural spawns.
 export const ELITE_TINT=new THREE.Vector3(1.22,1.06,.72),ELITE_LOOT=['potion','potion','manapotion','potswift','potiron','potregen','fstar'];
 export function makeElite(e){e.elite=true;e.hp=e.max=Math.round(e.max*2.6);e.w*=1.2;e.h*=1.2;return e;}
-export const edmg=e=>e.d.dmg*(e.elite?1.4:1)*(e.inked?1.3:1)*(e.st&&e.st.soak>0?.75:1);
+export const edmg=e=>e.d.dmg*(e.elite?1.4:1)*(e.inked?1.3:1)*(e.awake?1.3:1)*(e.st&&e.st.soak>0?.75:1);
 export function crackerBoom(e){e.dying=.05;e.mesh.visible=false;const cx=e.x,cy=e.y+e.h/2,r=e.elite?4:3.2;burst(cx,cy,['#ff8a3d','#ffd66b','#d4483b','#fbf8f0'],36,8,{bright:1});SFX.boom();shake(.35);
   const p=player;if(!p.dead&&Math.hypot(p.x-cx,p.y+.9-cy)<r)hurtPlayer(edmg(e),cx,e,'fire');
   for(const o of enemies)if(o!==e&&!o.dying&&!o.d.boss&&!o.parent&&Math.hypot(o.x-cx,o.y+o.h/2-cy)<r){o.vx=(o.x>cx?1:-1)*8;o.vy=8;}}

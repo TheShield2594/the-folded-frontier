@@ -8,9 +8,9 @@ import {
 
 // ================= settings & achievements UI =================
 export const KEYNAME=k=>({' ':'Space',arrowleft:'←',arrowright:'→',arrowup:'↑',arrowdown:'↓',escape:'Esc',tab:'Tab',shift:'Shift',control:'Ctrl',alt:'Alt',enter:'Enter',backspace:'Backspace'}[k]||k.toUpperCase());
-const BINDLAB={left:'Move left',right:'Move right',jump:'Jump',down:'Drop down',inv:'Backpack',heal:'Quick heal',map:'World map',hook:'Grappling hook',partner:'Switch partner',ability:'Partner move',flat:'Flatten',dash:'Dash',block:'Block (shield)'};
-const PADLAB={jump:'Jump',use:'Use item',interact:'Interact / hold to block',dash:'Dash',inv:'Backpack',hook:'Grappling hook',ability:'Partner move',partner:'Switch partner',pl:'Previous slot',pr:'Next slot',map:'World map'};
-export const PADNAME=i=>['A','B','X','Y','LB','RB','LT','RT','Back','Start','L3','R3','D-pad ↑','D-pad ↓','D-pad ←','D-pad →','Home'][i]||'Button '+i;
+const BINDLAB={left:'Move left',right:'Move right',jump:'Jump',down:'Drop down',inv:'Backpack',heal:'Quick heal',map:'World map',hook:'Grappling hook',partner:'Switch partner',ability:'Partner move',flat:'Flatten',dash:'Dash',block:'Block (shield)',mount:'Mount / dismount'};
+const PADLAB={jump:'Jump',use:'Use item',interact:'Interact / hold to block',dash:'Dash',inv:'Backpack',hook:'Grappling hook',ability:'Partner move',partner:'Switch partner',pl:'Previous slot',pr:'Next slot',map:'World map',mount:'Mount / dismount'};
+export const PADNAME=i=>i<0?'Unbound':['A','B','X','Y','LB','RB','LT','RT','Back','Start','L3','R3','D-pad ↑','D-pad ↓','D-pad ←','D-pad →','Home'][i]||'Button '+i;
 export let rebinding=null,padRebinding=null;
 export function renderBinds(){$('binds').innerHTML=Object.keys(BINDLAB).map(a=>`<div class="bind"><span>${BINDLAB[a]}</span><button type="button" data-a="${a}" class="${rebinding===a?'wait':''}">${rebinding===a?'Press a key…':KEYNAME(SET.bind[a])}</button></div>`).join('');
   $('padBinds').innerHTML=Object.keys(PADLAB).map(a=>`<div class="bind"><span>${PADLAB[a]}</span><button type="button" data-a="${a}" class="${padRebinding===a?'wait':''}">${padRebinding===a?'Press a button…':PADNAME(SET.pad[a])}</button></div>`).join('');}
@@ -76,6 +76,10 @@ const ACH=[
  {id:'camp',name:'Homesteader',desc:'Rebuild an abandoned camp.',icon:'bench',key:'camps',target:1},
  {id:'flat',name:'Paper Thin',desc:'Flatten yourself 25 times.',icon:'paper',key:'flats',target:25},
  {id:'unfold',name:'Unfolded',desc:'Defeat the secret boss of the shrine.',icon:'foldblade',key:'k_unfolded',target:1},
+ {id:'awake',name:'Wide Awake',desc:'Awaken the world.',icon:'foilore',key:'awakened',target:1},
+ {id:'foil',name:'Tin Foil',desc:'Forge a piece of Foilite gear.',icon:'foilpick',test:p=>['foilpick','foilsaber','helmfo','mailfo','legsfo','hamfo','shfo'].some(id=>countItem(id)>0||p.armor.some(s=>s&&s.id===id)||p.acc.some(s=>s&&s.id===id))},
+ {id:'pet',name:'Paper Pal',desc:'Call a pet to follow you.',icon:'pet_frog',key:'pets',target:1},
+ {id:'ride',name:'Giddy Up',desc:'Ride a mount.',icon:'stag',key:'mounts',target:1},
  {id:'town',name:'Town Planner',desc:'Give all five townsfolk a home.',icon:'door',test:()=>npcs.filter(n=>n.home).length>=5},
  {id:'decor',name:'Interior Designer',desc:'Place 30 pieces of furniture or decor.',icon:'paint1',key:'decor',target:30},
  {id:'parry',name:'Paper Wall',desc:'Parry 10 attacks with a shield.',icon:'shfe',key:'parries',target:10},

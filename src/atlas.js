@@ -1,5 +1,5 @@
 // The texture atlas, drawn in code. C maps names to atlas cells.
-import {circ,fi,fibers,grain,INK,ink,mk,pick,poly,rand,rr,SET,sh} from './game.js';
+import {circ,fi,fibers,grain,INK,ink,mk,pick,poly,rand,rr,SET,sh,drawPet,drawStag} from './game.js';
 
 // ================= atlas =================
 export const atlas=mk(1024,2048),A=atlas.getContext('2d');
@@ -80,7 +80,7 @@ C.shuri=sticker(t=>{poly(t,[32,4,38,26,60,32,38,38,32,60,26,38,4,32,26,26]);fi(t
 const helmIcon=col=>sticker(t=>{t.beginPath();t.moveTo(10,44);t.quadraticCurveTo(10,10,32,10);t.quadraticCurveTo(54,10,54,44);t.lineTo(44,44);t.lineTo(44,30);t.lineTo(20,30);t.lineTo(20,44);t.closePath();fi(t,col);t.fillStyle='rgba(255,255,255,.4)';t.fillRect(18,16,6,10);rr(t,8,42,48,8,3);fi(t,sh(col,.8),2);});
 const mailIcon=col=>sticker(t=>{poly(t,[14,12,24,8,32,14,40,8,50,12,58,26,48,30,46,56,18,56,16,30,6,26]);fi(t,col);for(let y=20;y<54;y+=7)for(let x=22;x<44;x+=7){circ(t,x,y,1.5);t.fillStyle='rgba(42,33,48,.4)';t.fill();}});
 const legIcon=col=>sticker(t=>{rr(t,14,8,36,10,3);fi(t,sh(col,.85));rr(t,15,16,14,36,5);fi(t,col);rr(t,35,16,14,36,5);fi(t,col);rr(t,12,48,18,9,4);fi(t,sh(col,.7),2);rr(t,34,48,18,9,4);fi(t,sh(col,.7),2);});
-export const METAL={cu:'#d9853b',fe:'#a9adb8',au:'#f0c040',fr:'#aee0f2',ik:'#8a6ac0',em:'#ff8a3d'};
+export const METAL={cu:'#d9853b',fe:'#a9adb8',au:'#f0c040',fr:'#aee0f2',ik:'#8a6ac0',em:'#ff8a3d',fo:'#d9dcec'};
 for(const m in METAL){C['helm'+m]=helmIcon(METAL[m]);C['mail'+m]=mailIcon(METAL[m]);C['legs'+m]=legIcon(METAL[m]);}
 const starPts=(cx,cy,R,r)=>{const a=[];for(let i=0;i<10;i++){const g=-Math.PI/2+i*Math.PI/5,d=i%2?r:R;a.push(cx+Math.cos(g)*d,cy+Math.sin(g)*d);}return a;};
 const bowIcon=col=>sticker(t=>{for(const[w,c]of[[8.5,INK],[5,col]]){t.beginPath();t.moveTo(10,14);t.quadraticCurveTo(62,2,50,54);ink(t,w,c);}t.beginPath();t.moveTo(10,14);t.lineTo(50,54);ink(t,1.6,'#f4f0e6');t.save();t.translate(46,18);t.rotate(.785);rr(t,-5,-7,10,14,3);fi(t,'#6b4430',2);t.restore();});
@@ -130,7 +130,7 @@ C.snowF=blockCell('#9a6a3f',c=>{dirtDeco(c);c.beginPath();c.moveTo(0,0);c.lineTo
 C.ice=blockCell('#bfe6f5',c=>{c.strokeStyle='rgba(255,255,255,.75)';c.lineWidth=3;c.beginPath();c.moveTo(12,50);c.lineTo(30,14);c.moveTo(30,52);c.lineTo(46,22);c.stroke();c.strokeStyle='rgba(90,150,190,.4)';c.lineWidth=1.5;c.beginPath();c.moveTo(8,30);c.lineTo(24,36);c.lineTo(40,28);c.stroke();});
 C.ash=blockCell('#5a4a4f',c=>{speck(['#3e3236','#6e5c60','#2e2528'],30,1,2.6)(c);c.strokeStyle='rgba(255,138,61,.35)';c.lineWidth=1.5;c.beginPath();c.moveTo(10,44);c.lineTo(22,38);c.lineTo(30,46);c.stroke();});
 C.inkst=blockCell('#3d3350',c=>{c.lineWidth=2;for(let i=0;i<18;i++){const x=rand(0,64),y=rand(0,64);c.strokeStyle=Math.random()<.5?'rgba(160,130,220,.18)':'rgba(10,5,20,.2)';c.beginPath();c.moveTo(x,y);c.lineTo(x+6,y+4);c.stroke();}});
-C.frostOre=cellN++;C.inkOre=cellN++;C.emberOre=cellN++;
+C.frostOre=cellN++;C.inkOre=cellN++;C.emberOre=cellN++;C.foilOre=cellN++;
 // ores: every ore has its own nugget shape so they read without color; ORECOL holds one palette per color-vision mode (SET.cb)
 const nug={
   round:(c,x,y,r)=>{c.beginPath();c.ellipse(x,y,r,r*.85,rand(0,3),0,6.28);},
@@ -139,15 +139,16 @@ const nug={
   shard:(c,x,y,r)=>{const a=rand(-.5,.5);c.save();c.translate(x,y);c.rotate(a);poly(c,[0,-r*1.5,r*.5,0,0,r*1.5,-r*.5,0]);c.restore();},
   drop:(c,x,y,r)=>{c.beginPath();c.moveTo(x,y-r*1.4);c.quadraticCurveTo(x+r*1.1,y+r*.1,x,y+r);c.quadraticCurveTo(x-r*1.1,y+r*.1,x,y-r*1.4);c.closePath();},
   tri:(c,x,y,r)=>{r*=1.15;poly(c,[x,y-r,x+r*.95,y+r*.7,x-r*.95,y+r*.7]);},
+  hex:(c,x,y,r)=>{const s=[];for(let k=0;k<6;k++){const a=k*Math.PI/3+.5;s.push(x+Math.cos(a)*r*1.1,y+Math.sin(a)*r*1.1);}poly(c,s);c.moveTo(x-r*.6,y);c.lineTo(x+r*.6,y);},
 };
 export const ORECOL={
-  off: {copper:'#e0823d',iron:'#d7c0a8',gold:'#f2c14e',frostOre:'#aee0f2',inkOre:'#a784e0',emberOre:'#ff8a3d'},
-  deut:{copper:'#d55e00',iron:'#f4f1ea',gold:'#f0e442',frostOre:'#56b4e9',inkOre:'#cc79a7',emberOre:'#e69f00'},
-  prot:{copper:'#c85a1a',iron:'#f4f1ea',gold:'#f0e442',frostOre:'#56b4e9',inkOre:'#d58cc0',emberOre:'#ffb000'},
-  trit:{copper:'#d4483b',iron:'#f4f1ea',gold:'#ff9fbf',frostOre:'#009e8a',inkOre:'#a784e0',emberOre:'#ff5a3d'},
+  off: {copper:'#e0823d',iron:'#d7c0a8',gold:'#f2c14e',frostOre:'#aee0f2',inkOre:'#a784e0',emberOre:'#ff8a3d',foilOre:'#f1e4ff'},
+  deut:{copper:'#d55e00',iron:'#f4f1ea',gold:'#f0e442',frostOre:'#56b4e9',inkOre:'#cc79a7',emberOre:'#e69f00',foilOre:'#ffffff'},
+  prot:{copper:'#c85a1a',iron:'#f4f1ea',gold:'#f0e442',frostOre:'#56b4e9',inkOre:'#d58cc0',emberOre:'#ffb000',foilOre:'#ffffff'},
+  trit:{copper:'#d4483b',iron:'#f4f1ea',gold:'#ff9fbf',frostOre:'#009e8a',inkOre:'#a784e0',emberOre:'#ff5a3d',foilOre:'#ffffff'},
 };
 const ORES=[['copper','#8d8f9a',stoneDeco,'round'],['iron','#8d8f9a',stoneDeco,'square'],['gold','#8d8f9a',stoneDeco,'star'],
-  ['frostOre','#8d8f9a',stoneDeco,'shard'],['inkOre','#3d3350',()=>{},'drop'],['emberOre','#5a4a4f',speck(['#3e3236','#6e5c60'],20),'tri']];
+  ['frostOre','#8d8f9a',stoneDeco,'shard'],['inkOre','#3d3350',()=>{},'drop'],['emberOre','#5a4a4f',speck(['#3e3236','#6e5c60'],20),'tri'],['foilOre','#4b4e5c',stoneDeco,'hex']];
 export function drawOres(){const pal=ORECOL[SET.cb]||ORECOL.off;for(const[k,base,deco,shape]of ORES){const col=pal[k];blockCell(base,c=>{deco(c);for(let i=0;i<5;i++){const x=10+(i%3)*20+rand(-3,5),y=i<3?rand(10,26):rand(36,52),r=rand(4.5,6.5);nug[shape](c,x,y,r);fi(c,col,2);c.fillStyle='rgba(255,255,255,.6)';circ(c,x-1.5,y-1.5,1.4);c.fill();}},true,C[k]);}}
 drawOres();
 const liqCell=(col,col2,top)=>sticker(t=>{t.fillStyle=col;if(top){t.beginPath();t.moveTo(0,64);t.lineTo(0,14);for(let x=0;x<=64;x+=16)t.quadraticCurveTo(x+8,6,x+16,14);t.lineTo(64,64);t.closePath();t.fill();t.beginPath();t.moveTo(0,14);for(let x=0;x<=64;x+=16)t.quadraticCurveTo(x+8,6,x+16,14);ink(t,2.5,col2);}else t.fillRect(0,0,64,64);
@@ -158,6 +159,8 @@ C.bloom=sticker(t=>{t.beginPath();t.moveTo(32,62);t.lineTo(32,40);ink(t,3,'#6f8f
 C.pickFr=pickIcon('#aee0f2');C.pickIk=pickIcon('#8a6ac0');C.pickEm=pickIcon('#ff8a3d');
 C.swFr=swordIcon('#cfeefa',1);C.swIk=swordIcon('#8a6ac0',1);C.swEm=swordIcon('#ff9a4a',1);
 C.barFr=barIcon('#bfe6f5');C.barIk=barIcon('#8a6ac0');C.barEm=barIcon('#ff8a3d');
+// world awakening: Foilite, the ore tier that seeds itself after The Unfolded falls
+C.pickFo=pickIcon('#e4e7f4');C.swFo=swordIcon('#eef0fa',1);C.barFo=barIcon('#dfe2ee');
 C.plume=sticker(t=>{t.beginPath();t.moveTo(10,54);t.quadraticCurveTo(20,20,54,8);t.quadraticCurveTo(44,40,10,54);fi(t,'#f4f0e6');t.beginPath();t.moveTo(10,54);t.quadraticCurveTo(28,30,52,10);ink(t,1.8,'#9fb6c6');for(let k=0;k<5;k++){const x=20+k*6,y=42-k*7;t.beginPath();t.moveTo(x,y);t.lineTo(x+6,y+4);ink(t,1.2,'#b9cfe0');}});
 C.inkheart=sticker(t=>{t.beginPath();t.moveTo(32,56);t.bezierCurveTo(6,40,6,14,22,12);t.bezierCurveTo(29,11,32,18,32,22);t.bezierCurveTo(32,18,35,11,42,12);t.bezierCurveTo(58,14,58,40,32,56);fi(t,'#5a3f7a',3);t.beginPath();t.ellipse(22,22,5,3,-.7,0,6.28);t.fillStyle='rgba(200,180,255,.7)';t.fill();circ(t,38,40,4);fi(t,'#3a2a5a',1.5);});
 C.cinder=sticker(t=>{circ(t,32,34,24);t.fillStyle='rgba(255,140,60,.35)';t.fill();poly(t,[18,46,14,30,26,16,42,14,52,28,48,46,32,52]);fi(t,'#3a2a24');t.strokeStyle='#ff8a3d';t.lineWidth=2.5;t.beginPath();t.moveTo(22,40);t.lineTo(30,30);t.lineTo(40,34);t.lineTo(44,22);t.stroke();circ(t,30,30,3);t.fillStyle='#ffd66b';t.fill();});
@@ -289,5 +292,9 @@ C.fosAmm=sticker(t=>{slab(t,'#d8ccb0');t.beginPath();for(let a=0;a<14;a+=.2){con
 C.fosTri=sticker(t=>{slab(t,'#c9c2b6');t.beginPath();t.ellipse(32,35,13,18,0,0,6.28);fi(t,'#9a8e7a',2.5);t.beginPath();t.arc(32,22,13,Math.PI,0);t.closePath();fi(t,'#a89c86',2);for(let y=28;y<52;y+=4){t.beginPath();t.moveTo(21,y);t.lineTo(43,y);ink(t,1.4,'#6e6350');}t.beginPath();t.moveTo(28,24);t.lineTo(28,51);t.moveTo(36,24);t.lineTo(36,51);ink(t,1.4,'#6e6350');for(const x of[26,38]){circ(t,x,17,2);t.fillStyle='#6e6350';t.fill();}});
 C.fosFern=sticker(t=>{slab(t,'#d6cdb8');t.beginPath();t.moveTo(20,54);t.quadraticCurveTo(28,30,44,10);ink(t,2.5,'#5f6e42');for(let k=0;k<7;k++){const f=k/7,x=21+f*21,y=52-f*40;for(const s of[-1,1]){t.beginPath();t.ellipse(x+s*6,y+1,7-f*3.5,2.4,s*.5-.4,0,6.28);t.fillStyle='#7f8f58';t.fill();}}});
 C.fosSkull=sticker(t=>{slab(t,'#cfc3a8');poly(t,[10,32,22,18,44,15,57,24,54,35,38,37,34,46,18,44]);fi(t,'#f0e8d6',2.5);circ(t,41,24,4.5);t.fillStyle='#3a2c22';t.fill();circ(t,26,30,3);t.fillStyle='#8a7a62';t.fill();for(let x=19;x<34;x+=4){poly(t,[x,43,x+2,49,x+4,43]);fi(t,'#fbf8f0',1);}});
+// ---- pets & mounts: icons reuse the sprite drawings from pets.js, scaled into a 64px cell
+const petIcon=(k,sx=.66)=>sticker(t=>{t.save();t.translate(32,34);t.scale(sx,sx);t.translate(-48,-48);drawPet(t,k,0);t.restore();});
+C.petFrog=petIcon('frog');C.petKit=petIcon('kit');C.petMoth=petIcon('moth');C.petCrease=petIcon('crease');
+C.stag=sticker(t=>{t.save();t.translate(2,6);t.scale(.4,.4);drawStag(t,0);t.restore();});
 C.hl=sticker(t=>{rr(t,2,2,60,60,8);t.setLineDash([8,5]);ink(t,3,'#fff');t.setLineDash([]);},0);
 if(cellN>(32-4)*16)console.warn('atlas overflow');

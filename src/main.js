@@ -14,11 +14,11 @@ import {
   updateHUD,updateNPC,updateNums,updateOverlays,updatePartner,updateParts,updatePickups,updatePlayer,
   updatePop,updateProjs,updateSky,updateTrail,updateWeather,visited,W,weather,wind,worldClock,worldTime,
   guideEv,updateGuide,cropGrowChance,isFest,newDay,seasonAmbient,updateTown,loadFailed,
-  evDawn,evDusk,fcount,updateEvents,updateDlg,palEv,updatePals,
+  evDawn,evDusk,fcount,updateEvents,updateDlg,palEv,updatePals,buildPetSheets,hidePets,updatePets,updateAwaken,
 } from './game.js';
 
 // ================= boot =================
-buildSheets();buildBiomeSheets();buildMoreSheets();buildPartnerSheets();
+buildSheets();buildBiomeSheets();buildMoreSheets();buildPartnerSheets();buildPetSheets();
 drawWarnMark();
 eliteMat.map=canvasTex(makeSheet(1,64,64,t=>{const s=[];for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,r=k%2?11:26;s.push(32+Math.cos(a)*r,34+Math.sin(a)*r);}poly(t,s);fi(t,'#f1c04f',3.5);circ(t,27,28,3);t.fillStyle='#fff8e4';t.fill();},3));eliteMat.needsUpdate=true;
 player.mat=spriteMat(canvasTex(mk(8,8)),ARMF+1);player.mesh=new THREE.Mesh((()=>{const g=new THREE.PlaneGeometry(1.6,2.4);g.translate(0,1.2,0);return g;})(),player.mat);scene.add(player.mesh);
@@ -32,17 +32,17 @@ function frame(now){requestAnimationFrame(frame);let dt=(now-lastT)/1000;lastT=n
     if(pt<4.5&&worldTime>=4.5&&inkMoon){setInkMoon(false);toast('The Ink Moon sets. You made it through!','gold');stat('inkmoons');fcount('moon');}
     if(pt<19.5&&worldTime>=19.5){setNightsSeen(nightsSeen+1);if(nightsSeen>=2&&Math.random()<.2){setInkMoon(true);toast('The Ink Moon is rising… stay close to home.','bad');SFX.boom();shake(.3);}evDusk();}
     updateEvents(dt,worldTime);updateWeather(dt);
-    updatePlayer(gdt);updateGuide(dt);updateFishing(gdt);updateEnemies(gdt);updateNPC(gdt);updatePartner(gdt);updatePals(dt);updatePickups(gdt);updateProjs(gdt);spawnLogic(gdt);updateTrail(gdt);
+    updatePlayer(gdt);updateGuide(dt);updateFishing(gdt);updateEnemies(gdt);updateNPC(gdt);updatePartner(gdt);updatePals(dt);updatePets(gdt);updatePickups(gdt);updateProjs(gdt);spawnLogic(gdt);updateTrail(gdt);
     liqT-=gdt;if(liqT<=0){liqT=.09;simLiquids();}ambient(gdt);seasonAmbient(gdt);bioT-=dt;if(bioT<=0){bioT=.6;const b=biomeAt(player.x,player.y);if(b!==curBio){if(!visited.has(b)){visited.add(b);chapterCard(b);if(!matchMedia('(prefers-reduced-motion: reduce)').matches)popUp();}else if(curBio)toast(`Entered the ${BIONAME[b]}`);setCurBio(b);stat('v_'+b);}}
     cropT-=gdt;if(cropT<=0){cropT=1.5;for(const i of crops){if(tiles[i]!==T.CROP){crops.delete(i);continue;}const m=meta[i];if((m&3)<2&&Math.random()<cropGrowChance(i,Math.min(4,m>>2))){meta[i]=m+1;markChunk(i%W,(i/W)|0);}}}
-    ritualT-=gdt;if(ritualT<=0){ritualT=2;checkRitual();}
+    ritualT-=gdt;if(ritualT<=0){ritualT=2;checkRitual();}updateAwaken(gdt);
     townT-=dt;if(townT<=0&&!player.dead){townT=3;updateTown();}
     if(isNight()){starT-=gdt;if(starT<=0){starT=rand(10,22)/(isFest('summer')?4:1);spawnFallingStar();}}
     setRevealT(revealT-(dt));if(revealT<=0){setRevealT(.25);reveal(player.x,player.y+1,15);const px=Math.floor(player.x);if(player.y>surf[clamp(px,0,W-1)]-20)for(let x=Math.max(0,px-26);x<=Math.min(W-1,px+26);x++)for(let y=Math.max(0,surf[x]-3);y<H;y++)explored[y*W+x]=1;}achT-=dt;if(achT<=0){achT=2;checkAch();}
     autosave+=dt;if(autosave>60){autosave=0;save();}
     housingT+=dt;if(housingT>2&&!player.dead){housingT=0;if(NPCORDER.some(t=>!hasNPC(t)&&NPCDEF[t].ok())){const r=checkRoom(Math.floor(player.x),Math.floor(player.y+.5));if(r.ok)tryMoveIn(r,false);}}
     }
-  else if(state==='title'){$('evbar').hidden=true;camT.x+=dt*2.2;if(camT.x>W-30)camT.x=30;player.x=camT.x;player.y=surf[clamp(Math.floor(camT.x),0,W-1)]+1;player.mesh.visible=false;if(pt.mesh)pt.mesh.visible=false;$('partnerHud').hidden=true;setWorldTime((worldTime+dt*.25)%24);}
+  else if(state==='title'){$('evbar').hidden=true;camT.x+=dt*2.2;if(camT.x>W-30)camT.x=30;player.x=camT.x;player.y=surf[clamp(Math.floor(camT.x),0,W-1)]+1;player.mesh.visible=false;if(pt.mesh)pt.mesh.visible=false;hidePets();$('partnerHud').hidden=true;setWorldTime((worldTime+dt*.25)%24);}
   if(AC){setMusic(pickMusic());music(dt,isNight());}updateAmbience(dt);mouse.lp=false;mouse.rp=false;
   if(lightDirty){computeLightStrip(lx0-17,lx1+17);setLightDirty(false);setLx0(1e9);setLx1(-1);}
   updatePop(dt);if(state==='play')updateHouses(dt);updateDlg(dt);

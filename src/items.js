@@ -2,7 +2,7 @@
 import {C,METAL} from './game.js';
 
 // ================= tiles =================
-export const T={PEEL:55,SKETCH:56,SIGN:57,PEDESTAL:58,RUBBLE:59,ALTAR:60,CROP:52,ALCHEMY:53,PAINT5:54,PAINT1:39,PAINT2:40,PAINT3:41,PAINT4:42,BANR:43,BANB:44,BANG:45,LANTERNP:46,SHELF:47,CANDLE:48,POT:49,CLOCK:50,ARMCHAIR:51,SNOW:28,ICE:29,FROST:30,INKSTONE:31,INKORE:32,ASH:33,EMBERORE:34,ROPE:35,INK:36,LAVA:37,BLOOM:38,AIR:0,GRASS:1,DIRT:2,STONE:3,PLANK:4,TRUNK:5,COPPER:6,IRON:7,GOLD:8,SAND:9,TORCH:10,DOOR:11,TABLE:12,CHAIR:13,CHEST:14,BENCH:15,BRICK:16,GLASS:17,PLATFORM:18,FURNACE:19,ANVIL:20,BED:21,HEART:22,TUFT:23,FLOWER:24,MUSH:25,CORE:26,FLOWER2:27};
+export const T={FOIL:61,PEEL:55,SKETCH:56,SIGN:57,PEDESTAL:58,RUBBLE:59,ALTAR:60,CROP:52,ALCHEMY:53,PAINT5:54,PAINT1:39,PAINT2:40,PAINT3:41,PAINT4:42,BANR:43,BANB:44,BANG:45,LANTERNP:46,SHELF:47,CANDLE:48,POT:49,CLOCK:50,ARMCHAIR:51,SNOW:28,ICE:29,FROST:30,INKSTONE:31,INKORE:32,ASH:33,EMBERORE:34,ROPE:35,INK:36,LAVA:37,BLOOM:38,AIR:0,GRASS:1,DIRT:2,STONE:3,PLANK:4,TRUNK:5,COPPER:6,IRON:7,GOLD:8,SAND:9,TORCH:10,DOOR:11,TABLE:12,CHAIR:13,CHEST:14,BENCH:15,BRICK:16,GLASS:17,PLATFORM:18,FURNACE:19,ANVIL:20,BED:21,HEART:22,TUFT:23,FLOWER:24,MUSH:25,CORE:26,FLOWER2:27};
 export const TP=[];export const SOLID=new Uint8Array(64),OPAQUE=new Uint8Array(64),LB=new Uint8Array(64),LIGHT=new Uint8Array(64);
 function def(id,o){TP[id]=Object.assign({hard:.5,pick:0,drop:null,light:0,solid:false,col:'#888'},o);SOLID[id]=o.solid?1:0;OPAQUE[id]=o.solid&&id!==T.DOOR?1:0;LB[id]=OPAQUE[id]&&id!==T.GLASS?1:0;LIGHT[id]=o.light||0;}
 def(T.AIR,{hard:0,col:'#000'});
@@ -59,6 +59,7 @@ def(T.SIGN,{hard:99,pick:99,cell:C.sign0,col:'#a8805a'});
 def(T.PEDESTAL,{solid:1,hard:99,pick:99,cell:C.pedestal,col:'#6c6e79'});
 def(T.RUBBLE,{hard:.2,drop:'stone',cell:C.rubble,col:'#8d8f9a',floor:1,repl:1});
 def(T.ALTAR,{hard:99,pick:99,cell:C.altar,col:'#b06ad0',light:6});
+def(T.FOIL,{solid:1,hard:3.4,pick:6,drop:'foilore',cell:C.foilOre,light:3,col:'#e4dcf0'});
 def(T.PLATFORM,{hard:.25,drop:'platform',cell:C.platform,col:'#c98f4f'});
 export const WALLCELL=[0,C.wDirt,C.wWood,C.wStone,C.wRed,C.wBlue,C.wGreen,C.wYellow],WALLCOL=['#000','#4e3824','#5e4128','#55576a','#6a2e28','#2e4262','#3a583a','#806832'],WALLDROP=[null,null,'woodwall','stonewall','wallred','wallblue','wallgreen','wallyellow'];
 
@@ -106,7 +107,7 @@ item('woodsword',{name:'Wooden Sword',cell:C.swWood,dmg:8,kb:5,dur:.36,max:1,val
 item('coppersword',{name:'Copper Sword',cell:C.swCu,dmg:12,kb:5.5,dur:.34,max:1,value:12});
 item('ironsword',{name:'Iron Sword',cell:C.swFe,dmg:17,kb:6,dur:.32,max:1,value:30});
 item('goldsword',{name:'Gold Broadsword',cell:C.swAu,dmg:25,kb:7,dur:.3,max:1,value:60});
-const MNAME={cu:'Copper',fe:'Iron',au:'Gold',fr:'Frostsilver',ik:'Inkstone',em:'Emberite'},MDEF={cu:[1,2,1],fe:[2,3,2],au:[3,5,3],fr:[4,6,4],ik:[5,8,5],em:[7,10,7]};
+const MNAME={cu:'Copper',fe:'Iron',au:'Gold',fr:'Frostsilver',ik:'Inkstone',em:'Emberite',fo:'Foilite'},MDEF={cu:[1,2,1],fe:[2,3,2],au:[3,5,3],fr:[4,6,4],ik:[5,8,5],em:[7,10,7],fo:[9,13,9]};
 for(const m in METAL){item('helm'+m,{name:MNAME[m]+' Helmet',cell:C['helm'+m],slot:0,def:MDEF[m][0],max:1,value:15,color:METAL[m]});item('mail'+m,{name:MNAME[m]+' Chainmail',cell:C['mail'+m],slot:1,def:MDEF[m][1],max:1,value:20,color:METAL[m]});item('legs'+m,{name:MNAME[m]+' Greaves',cell:C['legs'+m],slot:2,def:MDEF[m][2],max:1,value:15,color:METAL[m]});}
 item('woodbow',{name:'Wooden Bow',cell:C.bowW,ranged:1,ammo:'arrow',dmg:6,ut:.45,spd:21,max:1,value:10,desc:'Fires arrows from your backpack. Hold to keep shooting.'});
 item('goldbow',{name:'Gold Bow',cell:C.bowG,ranged:1,ammo:'arrow',dmg:14,ut:.32,spd:28,max:1,value:60,desc:'Fast, hard-hitting arrows.'});
@@ -202,11 +203,11 @@ item('glider',{name:'Paper Glider',cell:C.glider,acc:'djump',max:1,value:80,desc
 item('lantern',{name:"Miner's Lantern",cell:C.lantern,acc:'light',max:1,value:60,desc:'Lights a wide area around you.'});
 item('ribbon',{name:'Royal Ribbon',cell:C.ribbon,acc:'speed',max:1,value:120,desc:'+20% run speed and higher jumps.'});
 // warhammers: slow overhead slams, big damage and knockback, briefly stagger what they hit
-const HAMS={cu:[19,11,.62,20],fe:[27,12,.6,45],au:[40,13,.58,90],fr:[52,13.5,.56,135,'water'],ik:[66,14,.55,195,'ink'],em:[86,15,.56,270,'fire']};
+const HAMS={cu:[19,11,.62,20],fe:[27,12,.6,45],au:[40,13,.58,90],fr:[52,13.5,.56,135,'water'],ik:[66,14,.55,195,'ink'],em:[86,15,.56,270,'fire'],fo:[108,16,.54,360]};
 for(const m in HAMS){const[dmg,kb,dur,value,elem]=HAMS[m];item('ham'+m,{name:MNAME[m]+' Warhammer',cell:C['ham'+m],dmg,kb,dur,heavy:1,elem,max:1,value,desc:'Slow, heavy slams that knock enemies flying and stagger them.'});}
 // shields go in an accessory slot: hold right-click (or the Block key) to block, raise it just before a hit to parry
 item('shwood',{name:'Wooden Shield',cell:C.shwood,acc:'def',v:1,block:.35,max:1,value:8});
-const SHS={cu:[2,.4,20],fe:[3,.45,40],au:[4,.5,80],fr:[5,.55,120],ik:[6,.6,170],em:[8,.65,240]};
+const SHS={cu:[2,.4,20],fe:[3,.45,40],au:[4,.5,80],fr:[5,.55,120],ik:[6,.6,170],em:[8,.65,240],fo:[10,.7,320]};
 for(const m in SHS){const[v,block,value]=SHS[m];item('sh'+m,{name:MNAME[m]+' Shield',cell:C['sh'+m],acc:'def',v,block,max:1,value});}
 // fishing: a rod casts a bobber into ink (or lava, with the Emberite Rod). Bait in the backpack is required; rod + bait power set how soon fish bite and what comes up.
 item('rodwood',{name:'Wooden Fishing Rod',cell:C.rodW,rod:1,fpow:10,max:1,value:10,desc:'Cast into an ink pool with bait in your backpack. Click again when the bobber dips.'});
@@ -229,6 +230,18 @@ item('bobber',{name:'Bobber',cell:C.bobber});
 const FOSSIL={fos_amm:['Paper Ammonite',C.fosAmm,30,'A spiral shell pressed flat between the pages of the earth.'],fos_tri:['Folded Trilobite',C.fosTri,30,'Folded along every segment, a long time ago.'],
   fos_fern:['Pressed Fern',C.fosFern,20,'Someone left it in a book a few million years ago.'],fos_skull:['Inkosaur Skull',C.fosSkull,90,'Very rare. Only found deep underground.']};
 for(const k in FOSSIL){const[name,cell,value,d]=FOSSIL[k];item(k,{name,cell,fossil:1,value,desc:d+' The Curator would love to display it.'});}
+
+// world awakening: Foilite seeds itself deep underground once The Unfolded falls (see awaken.js)
+item('foilore',{name:'Foilite Ore',cell:C.foilOre,place:T.FOIL,value:36,desc:'Only appears once the world awakens. Needs an Emberite Pickaxe or better.'});
+item('foilbar',{name:'Foilite Bar',cell:C.barFo,value:85});
+item('foilpick',{name:'Foilite Pickaxe',cell:C.pickFo,pick:7,mine:4.4,max:1,value:240,desc:'Folds rock out of the way.'});
+item('foilsaber',{name:'Foilite Saber',cell:C.swFo,dmg:66,kb:8,dur:.26,max:1,value:240,desc:'Light as a sheet, sharp as its edge.'});
+// pets follow you around (use the item to call or send home); mounts are ridden (use the item or the Mount key). See pets.js.
+item('pet_frog',{name:'Paper Frog',cell:C.petFrog,pet:'frog',max:1,value:40,desc:'Pet. A folded frog that hops after you. Use it to call or send it home.'});
+item('pet_kit',{name:'Fox Kit',cell:C.petKit,pet:'kit',max:1,value:120,desc:'Pet. A Fold Fox cub that trots at your heels. Use it to call or send it home.'});
+item('pet_moth',{name:'Lamp Moth',cell:C.petMoth,pet:'moth',max:1,value:150,desc:'Pet. A paper moth with a little light inside. Use it to call or send it home.'});
+item('pet_crease',{name:'Little Crease',cell:C.petCrease,pet:'crease',max:1,value:400,desc:'Pet. A scrap of The Unfolded that followed you home. Use it to call or send it home.'});
+item('stag',{name:'Origami Stag',cell:C.stag,mount:'stag',max:1,value:300,desc:'Mount. Use it (or press the Mount key) to ride: much faster running and higher jumps.'});
 
 export const RECIPES=[
  ['bench',1,[['wood',10]],null],['torch',3,[['wood',1],['gel',1]],null],['platform',2,[['wood',1]],null],
@@ -273,6 +286,10 @@ export const RECIPES=[
  ['grilledfish',1,[['minnow',2]],'furnace'],['grilledfish',1,[['koi',1]],'furnace'],['grilledfish',1,[['inkfish',1]],'furnace'],['grilledfish',1,[['sandsole',1]],'furnace'],['grilledfish',1,[['nightkoi',1]],'furnace'],['grilledfish',2,[['lavafish',1]],'furnace'],
  ['potfish',1,[['minnow',1],['sunpetal',1],['glass',1]],'alchemy'],
  ['manacrystal',1,[['fstar',5]],null],['manapotion',2,[['gel',2],['fstar',1]],'bench'],
+ ['pet_frog',1,[['paper',12],['gel',6]],'bench'],['stag',1,[['paper',40],['goldbar',8],['plume',3]],'anvil'],
+ ['foilbar',1,[['foilore',4]],'furnace'],['foilpick',1,[['foilbar',18],['moonink',6]],'anvil'],['foilsaber',1,[['foilbar',16]],'anvil'],
+ ['helmfo',1,[['foilbar',12]],'anvil'],['mailfo',1,[['foilbar',18]],'anvil'],['legsfo',1,[['foilbar',14]],'anvil'],
+ ['hamfo',1,[['foilbar',18],['wood',4]],'anvil'],['shfo',1,[['foilbar',14]],'anvil'],
  ['inktome',1,[['fstar',5],['gel',8],['mushroom',3]],'bench'],['cranetome',1,[['fstar',10],['goldbar',8],['batwing',4]],'anvil'],['starstaff',1,[['fstar',20],['goldbar',12]],'anvil'],
 ];
 export const SHOP=[['rodwood',40],['fly',3],['tmap',150],['seed_sun',5],['seed_wheat',5],['bucket',60],['b_stomp',60],['b_dip',150],['b_heartf',120],['torch',5],['rope',1],['hook',200],['potion',25],['arrow',1],['paper',1],['manapotion',20],['woodbow',30],['shuriken',3],['glass',4],['bed',60],['crown',180],['lantern',300],['glider',450]];
