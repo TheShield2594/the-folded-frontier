@@ -106,7 +106,7 @@ export function makeSheet(n,fw,fh,draw,b=4){const out=mk(n*fw,fh),o=out.getConte
   o.save();o.beginPath();o.rect(f*fw,0,fw,fh);o.clip();for(let i=0;i<16;i++){const a=i/16*Math.PI*2;o.drawImage(sil,f*fw+Math.cos(a)*b,Math.sin(a)*b);}o.drawImage(tmp,f*fw,0);o.restore();}return out;}
 function leg(t,x,y,a,col,boot){t.save();t.translate(x,y);t.rotate(a);rr(t,-6.5,-4,13,28,6);fi(t,col);if(boot){rr(t,-7,17,17,11,5);fi(t,boot);}t.restore();}
 function arm(t,x,y,a,col,skin){t.save();t.translate(x,y);t.rotate(a);rr(t,-5.5,-3,11,22,5.5);fi(t,col);circ(t,0,22,5.5);fi(t,skin);t.restore();}
-function drawHuman(t,o){t.save();t.translate(0,o.bob||0);const hip=110;
+function drawHuman(t,o){t.save();t.translate(0,o.bob||0);if(o.lean){t.translate(48,138);t.rotate(o.lean);t.translate(-48,-138);}const hip=110;
   leg(t,43,hip,o.legB,sh(o.greaves||o.pants,.8),sh(o.boots,.8));
   arm(t,42,82,o.armB,sh(o.mail||o.tunic,.78),sh(o.skin,.85));
   if(o.back)o.back(t);
@@ -123,15 +123,22 @@ function drawHuman(t,o){t.save();t.translate(0,o.bob||0);const hip=110;
   t.beginPath();t.arc(58,59,3.5,.2,2.6);ink(t,2);
   if(o.scarf){rr(t,32,67,35,9,4);fi(t,o.scarf);t.beginPath();t.moveTo(36,70);t.quadraticCurveTo(24,72+(o.wave||0),16,82+(o.wave||0));t.lineTo(22,84+(o.wave||0));t.quadraticCurveTo(28,78,38,76);t.closePath();fi(t,o.scarf,2);}
   if(o.extra)o.extra(t);
-  arm(t,55,82,o.armA,o.mail||o.tunic,o.skin);
+  if(!o.noArm)arm(t,55,82,o.armA,o.mail||o.tunic,o.skin);
   if(o.front)o.front(t);
   t.restore();}
 const POSES=[{legA:.03,legB:-.03,armA:.12,armB:-.12},{legA:.03,legB:-.03,armA:.18,armB:-.08,bob:1.5,wave:2}];
 for(let k=0;k<4;k++){const ph=k/4*Math.PI*2,s=Math.sin(ph);POSES.push({legA:s*.6,legB:-s*.6,armA:-s*.65,armB:s*.65,bob:-Math.abs(Math.cos(ph))*2.5+1,wave:s*3});}
 POSES.push({legA:-.7,legB:.4,armA:-2.5,armB:-.5,wave:-4},{legA:.3,legB:-.3,armA:-2.9,armB:-2.5,wave:5},{legA:.25,legB:-.25,armA:-1.6,armB:.25});
+// swing bodies (frames 9-12) leave the front arm off: gameplay draws it as its own mesh so it can follow the weapon every frame.
+// 9 hold, 10 coiled back (weight on the back foot), 11 mid-strike, 12 lunged forward into the follow-through; frame 13 is the lone arm, pivot at the frame centre
+export const SWPOSE=[{legA:.25,legB:-.25,armB:.25},{legA:-.35,legB:.5,armB:.9,lean:-.13,bob:1,wave:-3},{legA:.45,legB:-.3,armB:-.6,lean:.07,wave:3},{legA:.7,legB:-.55,armB:-1.1,lean:.17,bob:3.5,wave:5}];
+for(const o of SWPOSE)o.noArm=1;POSES.push(...SWPOSE);export const ARMF=POSES.length;
+// the front shoulder of frame f in world units from the bottom of the player mesh, so the arm mesh lines up with the body
+export function shoulderAt(f){const o=POSES[f]||{},l=o.lean||0,x=7*Math.cos(l)+56*Math.sin(l),y=7*Math.sin(l)-56*Math.cos(l)+138+(o.bob||0);return[x/60,(144-y)/60];}
 export function playerSheet(){const eq={};const a=player.armor;if(a[0])eq.helm=ITEMS[a[0].id].color;if(a[1])eq.mail=ITEMS[a[1].id].color;if(a[2])eq.greaves=ITEMS[a[2].id].color;
-  return makeSheet(9,96,144,(t,f)=>drawHuman(t,Object.assign({skin:'#f1cfa6',hair:'#5a3526',tunic:'#2f7f86',pants:'#3b3552',boots:'#6b4430',scarf:'#d4483b',
-    back:tt=>{tt.beginPath();tt.moveTo(38,74);tt.lineTo(58,104);ink(tt,3.5,'#6b4430');rr(tt,24,92,16,16,4);fi(tt,'#b9874f',2);}},eq,POSES[f])));}
+  const look={skin:'#f1cfa6',tunic:'#2f7f86'};Object.assign(look,eq);
+  return makeSheet(ARMF+1,96,144,(t,f)=>{if(f===ARMF){arm(t,48,72,0,look.mail||look.tunic,look.skin);return;}drawHuman(t,Object.assign({skin:'#f1cfa6',hair:'#5a3526',tunic:'#2f7f86',pants:'#3b3552',boots:'#6b4430',scarf:'#d4483b',
+    back:tt=>{tt.beginPath();tt.moveTo(38,74);tt.lineTo(58,104);ink(tt,3.5,'#6b4430');rr(tt,24,92,16,16,4);fi(tt,'#b9874f',2);}},eq,POSES[f]));});}
 export const SHEETS={};
 function slimeDraw(col,crown){return(t,f,w,h)=>{const cx=w/2,by=h-7,sq=f?1:0;const sw=w*.78*(1+sq*.16),sh_=h*.66*(1-sq*.22);
   t.beginPath();t.moveTo(cx-sw/2,by);t.bezierCurveTo(cx-sw/2-4,by-sh_*1.25,cx+sw/2+4,by-sh_*1.25,cx+sw/2,by);t.closePath();fi(t,col,crown?5:3);

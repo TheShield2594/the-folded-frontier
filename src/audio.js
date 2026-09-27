@@ -19,6 +19,7 @@ export const SFX={
   brk:()=>{const v=vr(.12);noise(.18,.4,'lowpass',900*v);tone(220*v,90*v,.12,'triangle',.15);if(Math.random()<.5)for(let i=0;i<4;i++)noise(.03,.16,'bandpass',rand(1800,3800),.03+i*.03,2.5);},
   place:()=>{const v=vr(.1);pick([()=>{tone(200*v,110*v,.08,'triangle',.25);noise(.05,.2,'bandpass',600*v);},()=>{tone(240*v,130*v,.07,'triangle',.22);noise(.04,.22,'bandpass',900*v,0,1.4);},()=>{tone(170*v,100*v,.09,'sine',.25);noise(.06,.16,'lowpass',800*v);}])();},
   swing:()=>noise(rand(.11,.17),.18,'highpass',rand(1800,2600),0,rand(.5,.9)),
+  finisher:()=>{noise(.24,.22,'highpass',rand(1000,1300),0,.8);tone(420,160,.16,'triangle',.05);},
   hit:()=>{const v=vr(.12);pick([()=>{tone(260*v,120*v,.1,'square',.08);noise(.08,.3,'bandpass',900*v);},()=>{tone(300*v,140*v,.08,'triangle',.12);noise(.06,.32,'highpass',2200*v,0,.8);},()=>{tone(220*v,100*v,.11,'square',.07);for(let i=0;i<3;i++)noise(.03,.22,'bandpass',rand(1500,3200),i*.025,2.5);}])();},
   nice:()=>{[660,880,1320].forEach((f,i)=>tone(f,f,.16,'triangle',.18,i*.06));},
   cue:()=>tone(1760,1760,.04,'sine',.05),
