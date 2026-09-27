@@ -1109,20 +1109,26 @@ const POSES=[{legA:.03,legB:-.03,armA:.12,armB:-.12},{legA:.03,legB:-.03,armA:.1
 for(let k=0;k<4;k++){const ph=k/4*Math.PI*2,s=Math.sin(ph);POSES.push({legA:s*.6,legB:-s*.6,armA:-s*.65,armB:s*.65,bob:-Math.abs(Math.cos(ph))*2.5+1,wave:s*3});}
 POSES.push({legA:-.7,legB:.4,armA:-2.5,armB:-.5,wave:-4},{legA:.3,legB:-.3,armA:-2.9,armB:-2.5,wave:5},{legA:.25,legB:-.25,armA:-1.6,armB:.25});
 function playerSheet(){const eq={};const a=player.armor;if(a[0])eq.helm=ITEMS[a[0].id].color;if(a[1])eq.mail=ITEMS[a[1].id].color;if(a[2])eq.greaves=ITEMS[a[2].id].color;
-  if(PAINT.player)return paintedPlayer(eq);
+  const met={};['helm','mail','greaves'].forEach((k,i)=>{if(a[i])met[k]=a[i].id.slice(4);}); // helmcu, mailcu, legscu -> cu
+  if(PAINT.player)return paintedPlayer(eq,met);
   return makeSheet(9,96,144,(t,f)=>drawHuman(t,Object.assign({skin:'#f1cfa6',hair:'#5a3526',tunic:'#2f7f86',pants:'#3b3552',boots:'#6b4430',scarf:'#d4483b',
     back:tt=>{tt.beginPath();tt.moveTo(38,74);tt.lineTo(58,104);ink(tt,3.5,'#6b4430');rr(tt,24,92,16,16,4);fi(tt,'#b9874f',2);}},eq,POSES[f])));}
 // painted art: generated images in assets/ drawn over the code-drawn versions once they load (see paintArt at boot)
-const PAINT={};
+const PAINT={armor:{}};
 // player_parts.webp: side-view head, torso, arm, leg and helmet, posed with the same POSES angles as drawHuman; [x,y,w,h,pivotX,pivotY] in the image
 // player_parts_mask.webp marks what armour recolours (tunic, trousers and boots, helmet metal). Frames are 2x the 96x144 code frames.
 const RIG={head:[0,0,108,107,52.8,93.4],torso:[110,0,101,98,62.3,16.0],arm:[213,0,43,91,19.9,12.9],leg:[258,0,49,103,22.3,14.4],helm:[309,0,73,81,6.6,6.6]};
-function paintedPlayer(eq){const P=PAINT.player,c=mk(192*9,288),g=c.getContext('2d');
-  const piece=(k,col,dark)=>{const[x,y,w,h]=RIG[k],p=mk(w,h),q=p.getContext('2d');q.drawImage(P.img,x,y,w,h,0,0,w,h);
+// armor_<metal>.webp: that metal's set drawn on the character (head wearing the helmet, torso, arm, leg), same layout as RIG;
+// a slot whose metal has no painted set tints the plain parts instead
+const ARMOR_RIG={cu:{head:[0,0,107,107,50.8,93.0],torso:[109,0,100,99,65.2,16.6],arm:[211,0,46,91,25.6,14.2],leg:[259,0,48,103,23.9,15.0]}};
+function paintedPlayer(eq,met){const P=PAINT.player,c=mk(192*9,288),g=c.getContext('2d');
+  const piece=(k,slot,dark)=>{const m=slot&&met[slot],A=m&&PAINT.armor[m],r=(A?ARMOR_RIG[m]:RIG)[k],[x,y,w,h]=r,p=mk(w,h),q=p.getContext('2d');q.drawImage(A||P.img,x,y,w,h,0,0,w,h);
+    const col=!A&&slot&&eq[slot];
     if(col){const t=mk(w,h),u=t.getContext('2d');u.drawImage(P.mask,x,y,w,h,0,0,w,h);u.globalCompositeOperation='source-in';u.fillStyle=col;u.fillRect(0,0,w,h);q.globalCompositeOperation='color';q.drawImage(t,0,0);}
-    if(dark){q.globalCompositeOperation='source-atop';q.fillStyle='rgba(42,33,48,.28)';q.fillRect(0,0,w,h);}return p;};
-  const head=piece('head'),torso=piece('torso',eq.mail),armA=piece('arm',eq.mail),armB=piece('arm',eq.mail,1),legA=piece('leg',eq.greaves),legB=piece('leg',eq.greaves,1),helm=eq.helm&&piece('helm',eq.helm);
-  const put=(t,p,k,x,y,a)=>{t.save();t.translate(x,y);t.rotate(a||0);t.drawImage(p,-RIG[k][4],-RIG[k][5]);t.restore();};
+    if(dark){q.globalCompositeOperation='source-atop';q.fillStyle='rgba(42,33,48,.28)';q.fillRect(0,0,w,h);}p.px=r[4];p.py=r[5];return p;};
+  const setHelm=met.helm&&PAINT.armor[met.helm];
+  const head=setHelm?piece('head','helm'):piece('head'),torso=piece('torso','mail'),armA=piece('arm','mail'),armB=piece('arm','mail',1),legA=piece('leg','greaves'),legB=piece('leg','greaves',1),helm=eq.helm&&!setHelm&&piece('helm','helm');
+  const put=(t,p,k,x,y,a)=>{t.save();t.translate(x,y);t.rotate(a||0);t.drawImage(p,-p.px,-p.py);t.restore();};
   const fr=mk(192,288),h=fr.getContext('2d'),sil=mk(192,288),s=sil.getContext('2d');
   for(let f=0;f<9;f++){const o=POSES[f];h.clearRect(0,0,192,288);g.save();g.translate(f*192,0);g.beginPath();g.rect(0,0,192,288);g.clip();
     h.save();h.translate(0,(o.bob||0)*2);put(h,legB,'leg',89,194,o.legB);put(h,armB,'arm',90,159,o.armB);put(h,torso,'torso',93,137);put(h,legA,'leg',103,194,o.legA);put(h,head,'head',93,140);
@@ -2498,6 +2504,7 @@ function paintArt(src,f){const im=new Image();im.onload=()=>{try{const c=mk(1,1)
 paintArt('trees.webp',im=>{for(let k=0;k<2;k++){const[x,y]=C.canopy[k];A.clearRect(x,y,256,256);A.drawImage(im,k*512,0,512,512,x,y,256,256);}atlasTex.needsUpdate=true;PAINT.canopy=true;for(const k in chunks)dirty.add(+k);});
 paintArt('trunk.webp',im=>{A.clearRect(0,768,128,192);A.drawImage(im,0,0,256,128,0,768,128,64);A.drawImage(im,0,0,256,256,0,832,128,128);atlasTex.needsUpdate=true;PAINT.trunk=true;for(const k in chunks)dirty.add(+k);}); // into the free corner left of the canopies; the bark tile twice so filtering doesn't bleed other cells into it
 paintArt('foldfox.webp',im=>{const c=SHEETS.foldfox,g=c.getContext('2d');g.clearRect(0,0,c.width,c.height);g.drawImage(im,0,0,c.width,c.height);SHEETS.foldfoxT.needsUpdate=true;delete bestCache.foldfox;});
+for(const m in ARMOR_RIG)paintArt('armor_'+m+'.webp',im=>{PAINT.armor[m]=im;player.sheetDirty=true;});
 paintArt('player_parts.webp',img=>paintArt('player_parts_mask.webp',mask=>{PAINT.player={img,mask};player.sheetDirty=true;}));
 markMat.map=canvasTex(makeSheet(1,64,64,t=>{rr(t,23,5,18,36,9);fi(t,'#d4483b',3);circ(t,32,52,7);fi(t,'#d4483b',3);},3));markMat.needsUpdate=true;
 eliteMat.map=canvasTex(makeSheet(1,64,64,t=>{const s=[];for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,r=k%2?11:26;s.push(32+Math.cos(a)*r,34+Math.sin(a)*r);}poly(t,s);fi(t,'#f1c04f',3.5);circ(t,27,28,3);t.fillStyle='#fff8e4';t.fill();},3));eliteMat.needsUpdate=true;

@@ -8,6 +8,8 @@ from PIL import Image
 from scipy import ndimage
 
 RENDERS = {'tree': 'tree.png', 'fox': 'fox.png', 'fox2': 'fox2.png', 'trunk': 'trunk.png', 'parts': 'parts.png'}
+# armour sets (STYLE.md prompts): head wearing the helmet, torso, arm, leg; build whichever are present
+ARMOR = {m: f'armor-{m}.png' for m in ('cu', 'fe', 'au', 'fr', 'ik', 'em')}
 INK, CREAM = (0x2a, 0x21, 0x30), (0xfb, 0xf5, 0xe6)
 INK_W, BORDER_W = .05, .06  # in tiles, as seen in game (STYLE.md)
 
@@ -28,19 +30,14 @@ def restyle(im, ppt, border=True):
     kt, bt = INK_W * ppt, (BORDER_W * ppt if border else 0); pad = math.ceil(kt + bt) + 4
     a = np.asarray(im.convert('RGBA')).astype(float); a = np.pad(a, ((pad, pad), (pad, pad), (0, 0)))
     solid = a[..., 3] > 127; din = ndimage.distance_transform_edt(solid)
-    rgb = a[..., :3]; mx, mn = rgb.max(axis=2), rgb.min(axis=2)
-    # thickness of the render's border, then its ink: the distance in from the edge where under half the pixels still match
-    ring = np.rint(din).astype(int); light = solid & (mn > 200); dark = solid & (mx < 90)
-    def width(cls, start):  # skips the anti-aliased fringe: waits for the class to reach half, then for it to fall below
-        seen = False
-        for d in range(start + 1, int(.25 * ppt)):
-            sel = ring == d
-            if not sel.any(): continue
-            r = cls[sel].mean()
-            if r >= .5: seen = True
-            elif seen: return d - 1
-        return start
-    B = width(light, 0); K = width(dark, B) - B
+    mx = a[..., :3].max(axis=2)
+    # everything outside the render's ink line (its border, any soft shadow) is replaced: find where the ink starts and ends,
+    # as the distance in from the edge where at least half the pixels are ink, then where they stop being
+    ring = np.rint(din).astype(int); dark = solid & (mx < 90); ratio = []
+    for d in range(1, int(.25 * ppt)):
+        sel = ring == d; ratio.append(dark[sel].mean() if sel.any() else 0)
+    ratio = np.array(ratio); on = np.argmax(ratio >= .5); off = on + np.argmax(ratio[on:] < .5)
+    B = on; K = off - on  # ratio[i] is distance i+1, so B = pixels before the ink and K = ink pixels
     core = din > B + max(0, K - kt)
     dout = ndimage.distance_transform_edt(~core)
     add = max(0., kt - K)  # extra ink ring when the render's ink is thinner than the standard
@@ -128,6 +125,39 @@ def tintmask(k, im):
     else: m = np.zeros_like(al)
     return m & al
 
+def inked_pieces(img, n=4, bw=30):
+    """Split a parts sheet into its n pieces, left to right, by filling each closed ink outline and adding the border back.
+    Ignores the blurry ghost blobs image models sometimes add, since they have no ink outline."""
+    a = np.asarray(img.convert('RGB')).astype(int)
+    bg = np.median(np.concatenate([a[0], a[-1], a[:, 0], a[:, -1]]), axis=0)
+    fg = np.abs(a - bg).max(axis=2) >= 16; ink = a.max(axis=2) < 90
+    core = ndimage.binary_fill_holes(ndimage.binary_closing(ink, iterations=2))
+    lab, m = ndimage.label(core); sz = ndimage.sum(core, lab, range(1, m + 1)); out = []
+    for k in np.argsort(-sz)[:n] + 1:
+        mask = ndimage.binary_fill_holes(ndimage.binary_dilation(lab == k, iterations=bw) & fg)
+        ys, xs = np.where(mask); sl = (slice(ys.min(), ys.max() + 1), slice(xs.min(), xs.max() + 1))
+        out.append((xs.min(), Image.fromarray(np.dstack([a.astype(np.uint8), (mask * 255).astype(np.uint8)])[sl], 'RGBA')))
+    return [im for _, im in sorted(out, key=lambda t: t[0])]
+
+# joint points per armour render, in its piece-local source px (neck base, neck top, shoulder, hip); a new render needs its own
+ARMOR_PIV = {'cu': {'head': (258, 505), 'torso': (356, 60), 'arm': (125, 50), 'leg': (114, 55)}}
+BASE_H = {'head': 669, 'torso': 608, 'arm': 553, 'leg': 643}  # base part heights in parts.png, so armour pieces match their size
+
+def armor(img, m):
+    """armor_<m>.webp: helmeted head, torso, arm, leg (ink only, no tint mask); prints the ARMOR_RIG entry."""
+    x = 0; pieces = []; rows = []
+    for k, im in zip(('head', 'torso', 'arm', 'leg'), inked_pieces(img)):
+        s = PART_S * BASE_H[k] / im.height; im, pad = restyle(im, 120 / s, border=False)
+        w, h = round(im.width * s), round(im.height * s); r = im.resize((w, h), Image.LANCZOS)
+        px, py = ARMOR_PIV[m][k]; pieces.append((r, x))
+        rows.append(f"{k}:[{x},0,{w},{h},{round((px + pad) * s, 1)},{round((py + pad) * s, 1)}]"); x += w + 2
+    out = Image.new('RGBA', (x, max(r.height for r, _ in pieces)), (0, 0, 0, 0))
+    for r, x in pieces: out.alpha_composite(r, (x, 0))
+    out.save(f'assets/armor_{m}.webp', quality=92, method=6)
+    print(f"{m}:{{" + ','.join(rows) + '}')
+
 if __name__ == '__main__':
     d = sys.argv[1]; src = {k: Image.open(os.path.join(d, f)) for k, f in RENDERS.items()}
     trees(src); fox(src); trunk(src); parts(src)
+    for m, f in ARMOR.items():
+        if os.path.exists(os.path.join(d, f)): armor(Image.open(os.path.join(d, f)), m)
