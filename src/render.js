@@ -293,7 +293,22 @@ export const markGeo=new THREE.PlaneGeometry(.6,.6),markMat=new THREE.MeshBasicM
 const barBgGeo=new THREE.PlaneGeometry(1,.17),barFgGeo=new THREE.PlaneGeometry(1,.09);barFgGeo.translate(.5,0,0);
 const barBgMat=new THREE.MeshBasicMaterial({color:0x2a2130,depthTest:false}),barFgMat=new THREE.MeshBasicMaterial({color:0xe0506b,depthTest:false}),barFgEliteMat=new THREE.MeshBasicMaterial({color:0xf1c04f,depthTest:false});
 export const eliteMat=new THREE.MeshBasicMaterial({transparent:true,alphaTest:.5,depthTest:false}),threadGeo=new THREE.PlaneGeometry(.05,1);threadGeo.translate(0,.5,0);
+// elite trait marks: a round paper badge with a glyph of its own shape per trait, so traits read without color (#84)
+const TGLYPH={
+  burning:t=>{t.beginPath();t.moveTo(32,12);t.quadraticCurveTo(48,28,44,40);t.quadraticCurveTo(42,52,32,52);t.quadraticCurveTo(20,52,20,40);t.quadraticCurveTo(22,30,28,26);t.quadraticCurveTo(28,34,32,34);t.quadraticCurveTo(30,22,32,12);fi(t,'#ff8a3d',3);},
+  frosted:t=>{for(let k=0;k<3;k++){const a=k*Math.PI/3;t.beginPath();t.moveTo(32-Math.cos(a)*18,32-Math.sin(a)*18);t.lineTo(32+Math.cos(a)*18,32+Math.sin(a)*18);ink(t,7);ink(t,3.5,'#bfe3f7');}circ(t,32,32,4);fi(t,'#eef6ff',2);},
+  giant:t=>{poly(t,[32,12,50,32,40,32,40,52,24,52,24,32,14,32]);fi(t,'#c9a574',3);},
+  swift:t=>{for(const x of[14,30]){poly(t,[x,16,x+12,16,x+22,32,x+12,48,x,48,x+10,32]);fi(t,'#f4f0e6',3);}},
+  armored:t=>{t.beginPath();t.moveTo(32,12);t.lineTo(50,18);t.quadraticCurveTo(50,44,32,54);t.quadraticCurveTo(14,44,14,18);t.closePath();fi(t,'#a9b0bf',3);t.beginPath();t.moveTo(32,16);t.lineTo(32,50);ink(t,2.5);},
+  vampiric:t=>{for(const x of[22,42]){poly(t,[x-8,16,x+8,16,x,48]);fi(t,'#fbf8f0',3);}t.beginPath();t.moveTo(12,16);t.lineTo(52,16);ink(t,4,'#d4483b');},
+  explosive:t=>{circ(t,30,36,14);fi(t,'#3b3346',3);t.beginPath();t.moveTo(38,24);t.quadraticCurveTo(44,14,50,16);ink(t,3);circ(t,51,14,4);fi(t,'#ffd66b',2);},
+  inky:t=>{t.beginPath();t.moveTo(32,10);t.quadraticCurveTo(48,34,46,40);t.arc(32,40,14,0,Math.PI);t.quadraticCurveTo(16,34,32,10);fi(t,'#6a4a9a',3);circ(t,27,40,3);t.fillStyle='#c8b0f0';t.fill();},
+  golden:t=>{circ(t,32,32,19);fi(t,'#f1c04f',3);circ(t,32,32,12);ink(t,2.5,'#b0801a');t.beginPath();t.moveTo(32,24);t.lineTo(32,40);ink(t,3,'#b0801a');},
+};
+const tmats={},tmarkGeo=new THREE.PlaneGeometry(.46,.46);
+function traitMat(k){if(!tmats[k]){tmats[k]=new THREE.MeshBasicMaterial({transparent:true,alphaTest:.5,depthTest:false,map:canvasTex(makeSheet(1,64,64,t=>{circ(t,32,32,28);fi(t,'#fbf5e6',3);(TGLYPH[k]||TGLYPH.giant)(t);},3))});}return tmats[k];}
 export function updateEnemyFx(e,dt){const top=e.y+e.h+(e.d.fly?.15:.3);e.hpShow=(e.hpShow||0)-dt;
+  if(e.trait){if(!e.tmark){e.tmark=new THREE.Mesh(tmarkGeo,traitMat(e.trait));e.tmark.renderOrder=8;scene.add(e.tmark);}const k=SET.cb&&SET.cb!=='off'?1.3:1;e.tmark.scale.set(k,k,1);e.tmark.visible=!e.burrow;e.tmark.position.set(e.x+.5*k,top+.2+Math.sin(e.t*3+1)*.06,.69);}
   if(e.elite){if(!e.star){e.star=new THREE.Mesh(markGeo,eliteMat);e.star.renderOrder=8;scene.add(e.star);}e.star.visible=!e.burrow;e.star.position.set(e.x,top+.25+Math.sin(e.t*3)*.08,.69);e.star.rotation.z=Math.sin(e.t*2)*.2;}
   if(e.warn){if(!e.mark){e.mark=new THREE.Mesh(markGeo,markMat);e.mark.renderOrder=8;scene.add(e.mark);}e.mark.visible=true;const k=(SET.cb&&SET.cb!=='off'?1.3:1)*(SET.tele?1.35:1)*(1+.18*Math.sin(e.t*20));e.mark.scale.set(k,k,1);e.mark.position.set(e.x,top+(e.elite?1.05:.6),.7);}else if(e.mark)e.mark.visible=false;
   const show=!e.d.boss&&e.hpShow>0&&e.hp<e.max;if(show&&!e.bar){const bg=new THREE.Mesh(barBgGeo,barBgMat),fg=new THREE.Mesh(barFgGeo,e.elite?barFgEliteMat:barFgMat);bg.renderOrder=6;fg.renderOrder=7;scene.add(bg,fg);e.bar=[bg,fg];}

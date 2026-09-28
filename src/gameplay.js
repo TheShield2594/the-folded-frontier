@@ -4,7 +4,7 @@ import {
   bossDefeatFx,bossHeld,bossLook,bossPhaseFx,crops,DEFEAT_T,markChunk,RARE,RARECOL,RAREHOW,reduceMotion,RSEEDS,RSOIL,teleOutline,wev,
   $,AC,addItem,ambBus,BADGES,FCLIP,HUMANFOE,FOLK,rigPlay,rigSet,rigUpdate,rigJoint,bestDrop,bestKill,BIO,biomeAt,boss,boxHits,BUFFS,burst,camera,camT,chests,
   clamp,collide,consumeSel,countItem,crackerBoom,cursor,DASH_V,defense,dormant,dropItem,dummy,edmg,ELEM,
-  ELITE_LOOT,ELITE_TINT,EN,enemies,floatText,H,hasAcc,hasBadge,hasBuff,held,HERBCOL,HERBS,iconTex,idx,
+  ELITE_LOOT,ELITE_TINT,TRAITS,traitOf,eclipseOn,migPick,EN,enemies,floatText,H,hasAcc,hasBadge,hasBuff,held,HERBCOL,HERBS,iconTex,idx,
   INKTINT,inNiceWin,isFest,invOpen,isNight,isOpaque,isSolid,ITEMS,keys,touch,lerp,lightAt,makeElite,markDirty,meta,
   mouse,N,NICE_LATE,niceW,noise,noiseBuf,NPCDEF,npcs,OPAQUE,openSide,pad,parts,pick,pickups,player,
   popUp,projs,pt,pv,questDone,quests,rand,randi,removeEnemy,removeItem,rollWeather,scene,SEEDIDS,selItem,SET,
@@ -53,13 +53,17 @@ export function hurtEnemy(e,dmg,dir,kb=5,crit=false,elem=null){if(e.dying)return
   if(e.act==='phase'){if(!(e.tagT>0)){e.tagT=.5;floatText(e.x,e.y+e.h,'refolding','miss');}return;}if(bossHeld(e))return;
   if(e.burrow){floatText(e.x,e.y+.6,'dug in','miss');burst(e.x,e.y+.2,['#e3c77d','#c9a574'],5,3,{up:1});return;}
   if(e.type==='scarab'&&e.act!=='open'&&dir===-e.face&&player.y<e.y+e.h-.3){dmg*=.15;kb*=.3;floatText(e.x,e.y+e.h+.4,'clink!','miss');tone(1400,1100,.07,'square',.06);}
-  let tag=null;if(elem){if(e.d.weak===elem){dmg*=1.5;tag='weak';stat('weakhits');}else if(e.d.res===elem){dmg*=.5;tag='res';}}if(e.st&&e.st.soak>0)dmg*=1.25;
-  if(e.elite)kb*=.5;if(hasBadge('power'))dmg*=1.15;if(hasBuff('fed'))dmg*=1.05;if(hasBuff('charged')||(hasBuff('lunar')&&isNight()))dmg*=1.1;const real=Math.max(1,Math.round(dmg-e.d.def/2));e.hp-=real;e.flash=.12;e.vx=dir*kb*(e.d.boss?.25:1);if(!e.d.fly||true)e.vy=Math.max(e.vy,e.d.boss?2:5);
+  let tag=null;if(elem){if((e.weak||e.d.weak)===elem){dmg*=1.5;tag='weak';stat('weakhits');}else if((e.res||e.d.res)===elem){dmg*=.5;tag='res';}}if(e.st&&e.st.soak>0)dmg*=1.25;
+  if(e.trait==='armored'&&!crit&&tag!=='weak'){dmg*=.5;kb=0;if(!(e.tagT>0)){e.tagT=.8;floatText(e.x,e.y+e.h+.6,'armored','miss');}tone(1300,1000,.06,'square',.05);}
+  if(e.elite)kb*=e.trait==='giant'?.15:.5;if(hasBadge('power'))dmg*=1.15;if(hasBuff('fed'))dmg*=1.05;if(hasBuff('charged')||(hasBuff('lunar')&&isNight()))dmg*=1.1;const real=Math.max(1,Math.round(dmg-e.d.def/2));e.hp-=real;e.flash=.12;e.vx=dir*kb*(e.d.boss?.25:1);if(!e.d.fly||true)e.vy=Math.max(e.vy,e.d.boss?2:5);
   floatText(e.x,e.y+e.h,crit?real+'!':real,crit?'crit':tag==='weak'?'weak':'');if(tag&&!(e.tagT>0)){e.tagT=1.2;floatText(e.x,e.y+e.h+.6,tag==='weak'?'weak!':'resist',tag==='weak'?'tag '+elem:'miss');}burst(e.x,e.y+e.h/2,e.d.col,5,4);emit('hit',e.x-dir*e.w*.3,e.y+e.h/2,{n:crit?9:5});SFX.hit();shake(crit?.25:.1);hitPause(crit?.09:.04);e.hpShow=3;
   if(e.hp<=0)killEnemy(e);else if(elem&&tag!=='res')applyStatus(e,elem,real);}
 // a boss's last hit starts its defeat sequence (updateEnemies holds it for DEFEAT_T, then kills it for real and the loot drops)
 function killEnemy(e){if(e.d.boss&&!e.parent){if(!e.defeat){e.defeat=true;e.act='defeat';e.at=DEFEAT_T;e.hp=0;e.st=null;hitPause(.35);bossDefeatFx(e);return;}if(e.act==='defeat')return;}e.dying=.3;stat('kills');bestKill(e);evKill(e);palEv('kill',e);hitPause(e.d.boss?.35:.07);SFX.brk();burst(e.x,e.y+e.h/2,e.d.col.concat(['#fbf8f0']),e.d.boss?80:22,e.d.boss?9:6,{grav:9,life:1.3});
   const[c0,c1]=e.d.coins;const coins=Math.round(randi(c0,c1)*(hasBadge('money')?1.5:1)*(e.elite?3:1)*(e.awake?1.5:1));if(!e.parent&&!e.d.boss){if(hasBadge('heartf')&&Math.random()<.22)dropItem('hpheart',1,e.x,e.y+e.h/2);if(hasBadge('flowerf')&&Math.random()<.22)dropItem('mpstar',1,e.x,e.y+e.h/2);}dropItem('coin',e.inked?coins*2:coins,e.x,e.y+e.h/2);if(e.inked||e.type==='wraith'){if(Math.random()<.5)dropItem('moonink',randi(1,e.type==='wraith'?3:2),e.x,e.y+e.h/2);if(e.inked&&Math.random()<.05)dropItem('seed_moon',1,e.x,e.y+e.h/2);}else if(isNight()&&!e.d.boss&&!e.parent&&Math.random()<.04)dropItem('moonink',1,e.x,e.y+e.h/2);for(const[id,a,b,p]of e.d.drops)if(Math.random()<(e.elite?Math.min(1,p*2):p)){const n=randi(a,b)+(e.elite?1:0);dropItem(id,n,e.x,e.y+e.h/2);bestDrop(e,id,n);}
+  if(e.trait==='golden'){dropItem('coin',coins*4+randi(20,60),e.x,e.y+e.h/2);if(Math.random()<.35)dropItem('goldbar',1,e.x,e.y+e.h/2);burst(e.x,e.y+e.h/2,['#f1c04f','#fff3c0','#d4a02a'],30,6,{bright:1});}
+  else if(e.trait==='inky'&&Math.random()<.7)dropItem('moonink',randi(1,3),e.x,e.y+e.h/2);
+  if(e.trait==='explosive')fuses.push({x:e.x,y:e.y+e.h/2,t:.8,dmg:edmg(e)*1.3,src:e});
   if(e.elite){dropItem(pick(ELITE_LOOT),1,e.x,e.y+e.h/2);stat('elites');if(e.awake&&Math.random()<.02)dropItem('pet_crease',1,e.x,e.y+e.h/2);}
   if(e.d.split)for(let k=0,n=e.elite?3:2;k<n;k++){const s=spawnEnemy(e.d.split,e.x+(k-(n-1)/2)*.5,e.y+.2);s.vx=(k-(n-1)/2)*5||rand(-2,2);s.vy=9;s.timer=rand(.5,1);}
   if(e.segs)e.segs.forEach(sg=>{if(!sg.dying){sg.dying=.35;burst(sg.x,sg.y+sg.h/2,e.d.col,14,6,{grav:6});}});
@@ -542,16 +546,18 @@ function updateShield(dt){const p=player;p.shieldFlash=Math.max(0,(p.shieldFlash
   const up=Math.min(1,p.blockT/.08),hot=p.parryOK&&p.blockT<PARRY_W*niceW();shieldMesh.visible=true;shieldMesh.position.set(p.x+p.face*(.3+.25*up),p.y+.75+(p.rideY||0)+.3*up,.2);shieldMesh.rotation.z=p.face*(1-up)*.5;
   setTint(shieldMesh.material,p.x,p.y+1);shieldMesh.material.uniforms.uFlash.value=p.shieldFlash>0?.9:hot?.3:0;}
 
-export function spawnLogic(dt){spawnT-=dt;if(spawnT>0)return;spawnT=.9;const p=player;if(p.dead)return;const surfY=surf[clamp(Math.floor(p.x),0,W-1)];const under=p.y<surfY-12;const night=isNight();
-  const cap=(under||biomeAt(p.x,p.y)==='under'?6:(night?7:4+(weather==='rain'?2:0)))*(inkMoon&&night&&!under?2:1);if(enemies.filter(e=>!e.d.boss&&!e.parent).length>=cap+(BIO.awake?2:0))return;if(Math.random()<(inkMoon&&night?.1:.45))return;
+export function spawnLogic(dt){spawnT-=dt;if(spawnT>0)return;spawnT=.9;const p=player;if(p.dead)return;const surfY=surf[clamp(Math.floor(p.x),0,W-1)];const under=p.y<surfY-12;const ecl=eclipseOn()&&!under,night=isNight()||ecl;
+  const cap=(under||biomeAt(p.x,p.y)==='under'?6:(night?7:4+(weather==='rain'?2:0)))*(inkMoon&&night&&!under?2:1);if(enemies.filter(e=>!e.d.boss&&!e.parent).length>=cap+(BIO.awake?2:0)+(ecl?2:0))return;if(Math.random()<(inkMoon&&night?.1:.45))return;
   const bio=biomeAt(p.x,p.y);let type;
-  const sp=(t,x,y)=>{const e=spawnEnemy(t,x,y);if(Math.random()<(night?.1:.06)*(BIO.awake?1.6:1))makeElite(e);return e;};
+  let mig=null;const sp=(t,x,y)=>{const e=spawnEnemy(t,x,y);if(Math.random()<(night?.1:.06)*(BIO.awake?1.6:1)*(ecl?1.8:1))makeElite(e);if(ecl)e.ecl=true;if(mig&&t===mig)e.mig=true;return e;};
   if(bio==='under')type=pick(['cinderbat','cinderbat','ashimp','cracker','cracker','ashspider']);
   else if(bio==='lake'&&Math.random()<.6){for(let a=0;a<24;a++){const x=Math.floor(p.x+rand(-32,32)),y=Math.floor(p.y+rand(-16,10));if(Math.abs(x-p.x)<12)continue;if(tileAt(x,y)===T.INK&&tileAt(x,y+1)===T.INK){sp(Math.random()<.45?'quillfish':'inksquid',x+.5,y);return;}}type=night?pick(['zombie','blot','eye','inkwisp']):pick(['blot','blot','inkwisp']);}
   else if(under){const deep=p.y<surfY-40;const r=Math.random();if(bio==='snow')type=r<.4?'flurry':r<.65?'frostpuff':'bslime';else if(bio==='desert')type=r<.35?'scarab':r<.6?'bat':'bslime';else type=r<.4?'bat':(r<.75||!deep)?'bslime':'knight';}
   else if(bio==='snow')type=night?pick(['foldfox','foldfox','flurry','zombie','snowroll','frostpuff']):pick(['foldfox','flurry','slime','snowroll','snowroll','frostpuff']);
   else if(bio==='desert')type=night?pick(['zombie','eye','dunefin','scarab','sunkite']):pick(['slime','dunefin','dunefin','scarab','sunkite']);
   else type=night?pick(['zombie','zombie','eye','eye','slime','crumple']):pick(['slime','slime','slime','crumple','toadstool']);
+  // a Monster Migration (events.js) brings another biome's foes into this one
+  mig=migPick(bio,under,night);if(mig)type=mig;
   // awakened worlds: pages bleed together, so foes from other regions turn up anywhere
   if(BIO.awake&&bio!=='under'&&bio!=='lake'&&Math.random()<.25)type=under?pick(['knight','blot','flurry','scarab','cracker']):pick(night?['foldfox','flurry','dunefin','scarab','inkwisp','blot','snowroll']:['foldfox','sunkite','dunefin','crumple','toadstool','snowroll','frostpuff']);
   if(inkMoon&&night&&!under&&Math.random()<.3)type='wraith';
@@ -561,8 +567,23 @@ export function spawnLogic(dt){spawnT-=dt;if(spawnT>0)return;spawnT=.9;const p=p
   if(!under){let y=H-8;while(y>4&&!isSolid(x,y))y--;y++;if(Math.abs(y-p.y)>30||walls[idx(x,y)]>=2)return;if(!isSolid(x,y)&&!isSolid(x,y+1))sp(type,x+.5,y);return;}
   for(let a=0;a<14;a++){const y=Math.floor(p.y+rand(-12,12));if(y<6||y>=H-3)continue;if(!isSolid(x,y)&&!isSolid(x,y+1)&&isSolid(x,y-1)&&walls[idx(x,y)]<2){sp(type,x+.5,y);return;}}}
 let spawnT=2;
-export function updateEnemies(dt){const p=player;for(let i=enemies.length-1;i>=0;i--){const e=enemies[i],d=e.d;
-  e.tele=e.warn=false;if(e.dying){teleOutline(e.mesh,false);if(e.bar)e.bar.forEach(b=>b.visible=false);if(e.mark)e.mark.visible=false;if(e.star)e.star.visible=false;if(e.thread)e.thread.visible=false;e.dying-=dt;e.mesh.rotation.z+=dt*14;e.mesh.scale.multiplyScalar(Math.pow(.02,dt));if(e.dying<=0){removeEnemy(e);enemies.splice(i,1);}continue;}
+// elite trait looks: tint plus a particle cue each (the trait mark above them is the shape cue, see updateEnemyFx)
+function traitFx(e,m,dt){const k=e.trait,u=m.material.uniforms.uTint.value,rx=()=>e.x+rand(-.45,.45)*e.w,ry=()=>e.y+rand(0,1)*e.h;u.multiply(TRAITS[k].tv);
+  if(!e.named&&Math.hypot(player.x-e.x,player.y-e.y)<14){e.named=1;floatText(e.x,e.y+e.h+1.1,TRAITS[k].n+' elite','crit');}
+  if(k==='burning'){if(Math.random()<dt*18)emit('embers',rx(),ry(),{cols:ELEM.fire.col,spd:1,grav:-5,life:.5,sway:0});}
+  else if(k==='frosted'){if(Math.random()<dt*8)burst(rx(),ry(),['#eef6ff','#bfe3f7'],1,.5,{grav:1.5,life:1,bright:1,s:1.2});}
+  else if(k==='swift'){if(Math.abs(e.vx)>2&&Math.random()<dt*20)burst(e.x-Math.sign(e.vx)*e.w*.5,ry(),['#fbf8f0','#e9dcc0'],1,.3,{grav:0,life:.35});}
+  else if(k==='vampiric'){if(Math.random()<dt*5)burst(rx(),e.y+e.h,['#d4483b','#7a1a2a'],1,.4,{grav:-1.5,life:.7});}
+  else if(k==='explosive'){if(Math.random()<dt*10)burst(e.x,e.y+e.h+.1,['#ffd66b','#ff8a3d'],1,1.5,{grav:2,life:.3,bright:1});if(e.hp<e.max*.35){e.warn=true;}}
+  else if(k==='inky'){if(Math.random()<dt*8)emit('ink',rx(),e.y+e.h*.3,{cols:ELEM.ink.col,n:1,spd:.4});}
+  else if(k==='golden'){if(Math.random()<dt*10)burst(rx(),ry(),['#f1c04f','#fff3c0'],1,.5,{grav:-.5,life:.8,bright:1});}}
+// explosive elites leave a lit fuse where they fell: it hisses, then bursts (fire, parryable like any hit with a source)
+const fuses=[];
+function tickFuses(dt){for(let i=fuses.length-1;i>=0;i--){const f=fuses[i];f.t-=dt;if(Math.random()<dt*40)burst(f.x+rand(-.3,.3),f.y+rand(-.3,.3),['#ffd66b','#ff8a3d','#fbf8f0'],1,3,{grav:1,life:.3,bright:1});
+  if(f.t>0)continue;fuses.splice(i,1);const r=3.6;burst(f.x,f.y,['#ff8a3d','#ffd66b','#d4483b','#fbf8f0'],40,9,{bright:1});SFX.boom();shake(.4);
+  if(!player.dead&&Math.hypot(player.x-f.x,player.y+.9-f.y)<r)hurtPlayer(f.dmg,f.x,f.src,'fire');}}
+export function updateEnemies(dt){const p=player;tickFuses(dt);for(let i=enemies.length-1;i>=0;i--){const e=enemies[i],d=e.d;
+  e.tele=e.warn=false;if(e.dying){teleOutline(e.mesh,false);if(e.bar)e.bar.forEach(b=>b.visible=false);if(e.mark)e.mark.visible=false;if(e.star)e.star.visible=false;if(e.tmark)e.tmark.visible=false;if(e.thread)e.thread.visible=false;e.dying-=dt;e.mesh.rotation.z+=dt*14;e.mesh.scale.multiplyScalar(Math.pow(.02,dt));if(e.dying<=0){removeEnemy(e);enemies.splice(i,1);}continue;}
   e.t+=dt;e.flash=Math.max(0,e.flash-dt);e.hitCD-=dt;e.tagT=(e.tagT||0)-dt;if(e.st){tickStatus(e,dt);if(e.dying)continue;}const dx=p.x-e.x,dy=(p.y+.9)-(e.y+e.h/2),dist=Math.hypot(dx,dy);const toward=dx>0?1:-1;const night=isNight();
   if(d.boss&&!e.parent&&dist>60&&d.fly){e.x=p.x+rand(-10,10);e.y=p.y+12;e.vx=e.vy=0;if(e.segs)e.segs.forEach(sg=>{sg.x=e.x;sg.y=e.y;});}
   if(dist>75&&!d.boss&&!e.parent){removeEnemy(e);enemies.splice(i,1);continue;}
@@ -588,7 +609,7 @@ export function updateEnemies(dt){const p=player;for(let i=enemies.length-1;i>=0
       else{const sp=6.5;e.vx+=toward*dt*9;e.vy+=Math.sign(dy)*dt*7+Math.sin(e.t*3)*dt*3;const v=Math.hypot(e.vx,e.vy);if(v>sp){e.vx*=sp/v;e.vy*=sp/v;}e.face=e.vx>0?1:-1;if(!night&&dist>30){e.vy+=dt*20;}
         if(e.cd<=0&&dist<12&&night&&!p.dead){e.act='wind';e.at=.45;}}}
   else if(e.type==='bat'){e.vx+=(toward*2+rand(-1,1)*6)*dt*3;e.vy+=(Math.sign(dy)*2+rand(-1,1)*6)*dt*3;const v=Math.hypot(e.vx,e.vy);if(v>5.5){e.vx*=5.5/v;e.vy*=5.5/v;}e.face=e.vx>0?1:-1;}
-  else if(e.type==='wraith'){const l=Math.hypot(dx,dy)||1;e.vx+=(dx/l*3.8-e.vx)*dt*1.5;e.vy+=(dy/l*3.8+Math.sin(e.t*2)*1.5-e.vy)*dt*1.5;e.face=e.vx>0?1:-1;if(!isNight()){e.vy+=dt*6;}if(Math.random()<dt*6)burst(e.x,e.y+.3,['#5a2a6a','#b06ad0'],1,.5,{grav:-1,life:.6});}
+  else if(e.type==='wraith'){const l=Math.hypot(dx,dy)||1;e.vx+=(dx/l*3.8-e.vx)*dt*1.5;e.vy+=(dy/l*3.8+Math.sin(e.t*2)*1.5-e.vy)*dt*1.5;e.face=e.vx>0?1:-1;if(!isNight()&&!eclipseOn()){e.vy+=dt*6;}if(Math.random()<dt*6)burst(e.x,e.y+.3,['#5a2a6a','#b06ad0'],1,.5,{grav:-1,life:.6});}
   else if(e.type==='cinderbat'||e.type==='flurry'){const mx=e.type==='cinderbat'?7.5:4.2;e.vx+=(toward*2+rand(-1,1)*6)*dt*3;e.vy+=(Math.sign(dy)*2+rand(-1,1)*6)*dt*3;const v=Math.hypot(e.vx,e.vy);if(v>mx){e.vx*=mx/v;e.vy*=mx/v;}e.face=e.vx>0?1:-1;if(e.type==='cinderbat'&&Math.random()<dt*8)burst(e.x,e.y+.3,['#ff8a3d','#ffd66b'],1,.5,{grav:-3,life:.5,bright:1});}
   else if(e.type==='foldfox'){e.vy-=50*dt;e.cd=(e.cd??1.5)-dt;
     if(e.act==='wind'){e.at-=dt;e.vx*=Math.pow(.001,dt);e.tele=e.warn=true;e.face=toward;if(e.at<=0){e.act=null;e.vx=e.face*10;e.vy=12;e.cd=rand(1.8,2.8);SFX.jump();}}
@@ -670,14 +691,14 @@ export function updateEnemies(dt){const p=player;for(let i=enemies.length-1;i>=0
     else if(e.act==='drop'){e.vy-=60*dt;e.vx*=Math.pow(.1,dt);if(e.onGround){e.act='skitter';e.cd=.4;burst(e.x,e.y,['#3a2a24','#ff8a3d'],8,3,{up:1});}}
     else{e.vy-=50*dt;e.cd=(e.cd??.5)-dt;e.face=toward;e.vx+=(toward*5-e.vx)*Math.min(1,dt*6);if(e.hitWall&&e.onGround)e.vy=13;if(e.cd<=0&&e.onGround&&dist<6&&!p.dead){e.vy=11;e.vx=toward*8;e.cd=rand(1.2,2);SFX.jump();}}}
   if(d.slimy&&e.onGround&&e.timer<(d.boss?.6:.28)){e.tele=true;if(d.boss)e.warn=true;}
-  const ovx=e.vx,ovy=e.vy,mdt=e.st&&e.st.ink>0?dt*.5:dt;if(d.noclip){if(!e.parent){e.x+=e.vx*mdt;e.y+=e.vy*mdt;}}else collide(e,mdt);if(d.fly){if(e.hitWall)e.vx=-ovx*.8;if(e.onGround||e.hitCeil)e.vy=-ovy*.8;}
+  const ovx=e.vx,ovy=e.vy,mdt=e.st&&e.st.ink>0?dt*.5:dt,tsp=e.trait?TRAITS[e.trait].spd||1:1;e.vx*=tsp;if(d.noclip){if(!e.parent){e.x+=e.vx*mdt;e.y+=e.vy*mdt;}}else collide(e,mdt);e.vx/=tsp;if(d.fly){if(e.hitWall)e.vx=-ovx*.8;if(e.onGround||e.hitCeil)e.vy=-ovy*.8;}
   if(e.y<-4){removeEnemy(e);enemies.splice(i,1);continue;}
   // contact
   if(!p.dead&&!e.dying&&!e.burrow&&!(e.stun>0)&&!bossHeld(e)&&Math.abs(p.x-e.x)<(p.w+e.w)/2&&p.y<e.y+e.h&&p.y+p.h>e.y){
     const fromAbove=p.vy<0&&p.prevY>=e.y+e.h-.35&&(e.type!=='knight'||hasBadge('spike'));
     if(fromAbove&&e.hitCD<=0){e.hitCD=.25;const nice=p.jumpAge<.14*niceW();hurtEnemy(e,(nice?20:10)*(hasBadge('stomp')?2:1),p.face,2,nice);p.vy=nice?18:13;p.y=e.y+e.h+.02;SFX.stomp();stat('stomps');if(nice)stat('nices');burst(p.x,p.y,['#fbf8f0','#f1c04f'],8,4);
       if(nice){floatText(e.x,e.y+e.h+.6,'NICE!','nice');SFX.nice();}else{p.stompWin=.14*niceW();p.stompTarget=e;}}
-    else if(!fromAbove)hurtPlayer(edmg(e)*(e.act==='dash'?1.3:1),e.x,e,d.elem);}
+    else if(!fromAbove){const hp0=p.hp;hurtPlayer(edmg(e)*(e.act==='dash'?1.3:1),e.x,e,e.elem||d.elem);if(e.trait==='vampiric'&&p.hp<hp0){const h=Math.round((hp0-p.hp)*1.5);e.hp=Math.min(e.max,e.hp+h);e.hpShow=3;floatText(e.x,e.y+e.h+.3,'+'+h,'weak');burst(e.x,e.y+e.h/2,['#d4483b','#ff9aa8'],8,2,{grav:-2});}}}
   // mesh
   const m=e.mesh;e.rot+=((e.face>0?0:Math.PI)-e.rot)*Math.min(1,dt*14);m.rotation.y=e.rot;
   if(e.rig)foeClip(e);else{let fr=0;if(d.slimy)fr=e.onGround&&e.timer<.25?1:0;else fr=Math.floor(e.t*(d.fly?8:5))%2;e.mesh.material.uniforms.uFrame.value=fr;}
@@ -694,9 +715,9 @@ export function updateEnemies(dt){const p=player;for(let i=enemies.length-1;i>=0
   else if(e.type==='ashspider'){const hang=e.act==='hang'||e.act==='drop';m.rotation.z=hang?Math.PI:0;if(hang)m.position.y=e.y+e.h+.1;
     if(hang&&!e.thread){e.thread=new THREE.Mesh(threadGeo,new THREE.MeshBasicMaterial({color:0xd8cfc0}));e.thread.renderOrder=2;scene.add(e.thread);}
     if(e.thread){const len=(e.hangY??e.y+e.h)-(e.y+e.h);e.thread.visible=hang&&len>.05;e.thread.position.set(e.x,e.y+e.h,.09);e.thread.scale.y=Math.max(.01,len);}}
-  if(e.elite)m.scale.multiplyScalar(1.2);
+  if(e.elite)m.scale.multiplyScalar((traitOf(e)||{}).sz||1.2);
   if(d.boss||e.parent)bossLook(e,m,dt);
-  setTint(m.material,e.x,e.y+e.h/2);if(e.inked)m.material.uniforms.uTint.value.multiply(INKTINT);if(e.elite){m.material.uniforms.uTint.value.multiply(ELITE_TINT);if(Math.random()<dt*4)burst(e.x+rand(-e.w/2,e.w/2),e.y+rand(0,e.h),['#f1c04f','#fff3c0'],1,.6,{grav:-1,life:.6,bright:1});}if(e.st)statusFx(e,m,dt);m.material.uniforms.uFlash.value=e.flash>0?.8:(e.warn?.15+.12*Math.sin(e.t*28):0);teleOutline(m,SET.tele&&(e.tele||e.warn)&&!e.burrow,e.t);if(e.rig)rigUpdate(e.rig,dt);updateEnemyFx(e,dt);}
+  setTint(m.material,e.x,e.y+e.h/2);if(e.inked)m.material.uniforms.uTint.value.multiply(INKTINT);if(e.elite){m.material.uniforms.uTint.value.multiply(ELITE_TINT);if(e.trait)traitFx(e,m,dt);else if(Math.random()<dt*4)burst(e.x+rand(-e.w/2,e.w/2),e.y+rand(0,e.h),['#f1c04f','#fff3c0'],1,.6,{grav:-1,life:.6,bright:1});}if(e.st)statusFx(e,m,dt);m.material.uniforms.uFlash.value=e.flash>0?.8:(e.warn?.15+.12*Math.sin(e.t*28):0);teleOutline(m,SET.tele&&(e.tele||e.warn)&&!e.burrow,e.t);if(e.rig)rigUpdate(e.rig,dt);updateEnemyFx(e,dt);}
   if(boss){$('boss').querySelector('i').style.width=clamp(boss.hp/boss.max*100,0,100)+'%';}}
 // rigged foes (rig.js FOERIG) pick a clip from what they are doing: humans walk their gait and wince when hit, slimes crouch
 // before a hop, fliers flap, and the floating eye's iris follows you

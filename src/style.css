@@ -235,6 +235,9 @@ body.rm #chapter.in .ch-page,body.rm #chapter.out .ch-page{animation:none}
 #evbar .eb i{display:block;height:100%;width:100%;background:linear-gradient(#fbf8f0,#cfc3a8);transition:width .3s;}
 #evbar.army .en{background:#f7d6cf;} #evbar.army .eb i{background:linear-gradient(#ff9a7a,#d4483b);}
 #evbar.trav .en{background:#fff0bf;}
+#evbar.meteor .en{background:#fff3c0;} #evbar.meteor .eb i{background:linear-gradient(#ffe58a,#ff8a3d);}
+#evbar.eclipse .en{background:#e2d4f0;} #evbar.eclipse .eb i{background:linear-gradient(#b08ad0,#3a1a4a);}
+#evbar.mig .en{background:#dff0d0;} #evbar.mig .eb i{background:linear-gradient(#b6e08a,#5a9a3a);}
 .mini-rec{display:flex;gap:6px;align-items:center;font-size:calc(12px*var(--ts));margin:3px 0;}
 .mini-rec img{width:22px;height:22px;}
 #dashCd{position:fixed;left:0;top:0;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;pointer-events:none;border:2px solid var(--ink);background:conic-gradient(var(--gold) var(--f,0deg),rgba(42,33,48,.45) 0);box-shadow:1px 2px 0 rgba(20,14,26,.4);transition:transform .25s,opacity .25s;}
