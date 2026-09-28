@@ -1,7 +1,7 @@
 // Hand-built dungeons: layouts stored as text templates and stamped into the world. The Folded Clocktower stands on the
 // surface; the Hollow Archive is dug into the rock under a small gatehouse, and its key opens the Lost Stacks.
 import {
-  $,BIO,boss,burst,chapterCard,chests,countItem,EN,enemies,H,idx,makeElite,meta,mulberry32,pick,player,quests,randi,
+  $,BIO,boss,burst,cardId,chapterCard,chests,countItem,EN,enemies,H,idx,makeElite,meta,mulberry32,pick,player,quests,randi,
   removeEnemy,resetBossFx,setBoss,setTile,SFX,shake,SOLID,spawnEnemy,SPAWNX,stat,surf,T,tiles,toast,tone,W,walls,
 } from './game.js';
 
@@ -129,6 +129,8 @@ function lootFor(key,kind){const s=[];const add=(id,n)=>s.push({id,n});
   else if(kind==='C'){add('coin',randi(60,140));add('potion',randi(2,4));add('torch',randi(10,20));add('rope',randi(20,40));add(pick(['goldbar','frostbar']),randi(3,6));if(Math.random()<.5)add(pick(['potiron','potregen','potswift']),randi(1,2));}
   else if(kind==='c'){add('coin',randi(150,300));add('cog',randi(3,5));add('bpup',1);add(pick(['b_quick','b_close','b_last','toolbelt']),1);}
   else{add('clockwings',1);add('coin',randi(300,450));add('skyore',randi(8,14));add('cog',randi(4,8));}
+  // a trading card: often in the plain chests, always in the secret chest and the reward (issue #67)
+  if(kind!=='C'||Math.random()<.5)add(cardId(kind==='C'?1:2),1);
   while(s.length<20)s.push(null);return s;}
 // stamp a template with its ground row on ground level L at column x0 (fills dirt under the ground row's neighbours, clears
 // a way in on the left)
@@ -166,7 +168,7 @@ function place(k,r,gen){const dg=DUNGEONS[k],w=dg.rows[0].length,h=dg.rows.lengt
 // cave floor, their shell unbreakable (T.SEAL), so the Archive Key is the only way in. Each holds a chest of treasure.
 const ROCK=new Set([T.STONE,T.DIRT,T.COPPER,T.IRON,T.GOLD,T.ICE,T.SNOW,T.SAND,T.FROST,T.INKSTONE,T.INKORE]);
 function stacksLoot(){const s=[];const add=(id,n)=>s.push({id,n});add('coin',randi(250,450));add('bpup',1);add(pick(['b_quick','b_close','b_last','b_dip','b_nice']),1);
-  add(pick(['moonink','inkbar','goldbar']),randi(6,12));add(pick(['moontome','moonbow','kite','beacon','quilt','magnet','glider']),1);if(Math.random()<.6)add('fstar',randi(3,6));while(s.length<20)s.push(null);return s;}
+  add(pick(['moonink','inkbar','goldbar']),randi(6,12));add(pick(['moontome','moonbow','kite','beacon','quilt','magnet','glider']),1);if(Math.random()<.6)add('fstar',randi(3,6));add(cardId(2),1);while(s.length<20)s.push(null);return s;}
 function planStacks(rng){const out=[],lx=BIO.lake?BIO.lake[0]:-1e4,spots=[];
   const rock=(x0,x1,y0,y1)=>{if(x0<2||x1>W-3||y0<2||y1>H-3)return false;for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const i=idx(x,y);if(walls[i]>1||!ROCK.has(tiles[i])||chests.has(i))return false;}return true;};
   for(let y=BIO.uw+12;y<H-8;y++)for(let x=12;x<W-12;x++){if(y>surf[x]-20||Math.abs(x-SPAWNX)<40||Math.abs(x-lx)<30||!SOLID[tiles[idx(x,y-1)]])continue;let ok=true;for(let q=0;q<=2&&ok;q++){const i=idx(x,y+q);if(tiles[i]!==T.AIR||walls[i]>1)ok=false;}if(ok)spots.push([x,y]);}

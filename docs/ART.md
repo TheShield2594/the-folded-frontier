@@ -34,6 +34,7 @@ Ranked by how much a hand-made picture would add for the work involved:
 | Priority | Art | Where | Why |
 |---|---|---|---|
 | 1 | **Item icons**: one cell for each of the 253 items, starting with weapons, tools, armor, boss drops, fish and badges | `atlas/` | Shown at 64 px in the backpack, hotbar, tooltips, museum and the player's hand, all the time. One cell per item, independent of each other, so they can be done a few at a time. |
+| 1 | **Trading cards**: `card_<key>` for each of the 24 cards, `cardback0`–`cardback3` for the backs | `atlas/` | Each card's face is painted at boot from the game's own sketch, so a hand-made card replaces it by name. The Full Art cards (the Great Crane, the Mainspring, the Leviathan, the Folio, The Unfolded) are made to be painted edge to edge; keep the card's outline and its rarity mark in the corner. |
 | 2 | **Pets and the mount**: `pet_frog`, `pet_kit`, `pet_moth`, `pet_crease` (2 frames of 96×96), `stag` (3 frames of 160×112) | `sheets/` | These are cosmetic rewards, so they should look special. (Their backpack icons are separate atlas cells, which also come from `drawPet`/`drawStag`.) |
 | 3 | **UI pictures**: badges, the tab icons (`cellIcon`), the heart, the coin | `atlas/` | Small, but always on screen. |
 | 4 | **Boss rig parts**: the Great Crane, the Inkwell Leviathan, the Charred Folio, The Unfolded, The Mainspring, the King Slime | not yet | The largest characters on screen, each with a single look, so a painted piece per part would pay off. This needs a per-part override in `rigSkin` first (issue #48). |
