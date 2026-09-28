@@ -50,17 +50,20 @@ export function planTricks(){if(!BIO||!BIO.uw||BIO.trick)return;const rng=mulber
 // ---- tear: the Seam Ripper rips the seam open from the bottom up
 export function tearSeam(x,y){if(!countItem('ripper')){toast('The rock is stitched shut along this seam. A seam ripper could open it.');SFX.rustle(.15,.4);return;}
   const cells=[];let y0=y;while(tiles[idx(x,y0-1)]===T.SEAM)y0--;for(let yy=y0;tiles[idx(x,yy)]===T.SEAM;yy++)cells.push(yy);
-  cells.forEach((cy,n)=>setTimeout(()=>{if(tiles[idx(x,cy)]!==T.SEAM)return;setTile(x,cy,T.AIR);burst(x+.5,cy+.5,['#8d8f9a','#e9dcc0','#d4483b'],10,4);SFX.rustle(.2,.6);},n*110));
-  const s=BIO.trick&&BIO.trick.seam.find(s=>s[0]===x&&Math.abs(s[1]-y)<=3);if(s)s[2]=1;
+  // the seam is marked open only once its last stitch is torn (a save in between keeps the rest to tear); timers from a
+  // world that was left meanwhile do nothing
+  const b=BIO,s=b.trick&&b.trick.seam.find(s=>s[0]===x&&Math.abs(s[1]-y)<=3);
+  cells.forEach((cy,n)=>setTimeout(()=>{if(BIO!==b)return;if(tiles[idx(x,cy)]===T.SEAM){setTile(x,cy,T.AIR);burst(x+.5,cy+.5,['#8d8f9a','#e9dcc0','#d4483b'],10,4);SFX.rustle(.2,.6);}if(s&&n===cells.length-1)s[2]=1;},n*110));
   SFX.peel();shake(.15);toast('You rip the seam open. There was a pocket behind the rock!','gold');stat('tears');guideEv('tear');}
 // ---- stitch: the Golden Needle sews the whole hole shut, column by column; its top row becomes a paper patch you can walk on
 export function stitchRip(x,y){if(!countItem('needle')){toast('The page is torn right through here. A needle and thread could mend it.');SFX.rustle(.15,.4);return;}
   const seen=new Set([idx(x,y)]),q=[[x,y]],cells=[];while(q.length&&cells.length<400){const[cx,cy]=q.pop();cells.push([cx,cy]);
     for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=cx+dx,ny=cy+dy,i=idx(nx,ny);if(nx<0||ny<0||nx>=W||ny>=H||seen.has(i)||tiles[i]!==T.RIP)continue;seen.add(i);q.push([nx,ny]);}}
   const xs=cells.map(c=>c[0]),x0=Math.min(...xs),x1=Math.max(...xs),dir=player.x<(x0+x1)/2?1:-1;
-  cells.forEach(([cx,cy])=>{const k=dir>0?cx-x0:x1-cx;setTimeout(()=>{if(tiles[idx(cx,cy)]!==T.RIP)return;const top=tiles[idx(cx,cy+1)]!==T.RIP&&!seen.has(idx(cx,cy+1));
+  const b=BIO;cells.forEach(([cx,cy])=>{const k=dir>0?cx-x0:x1-cx;setTimeout(()=>{if(BIO!==b||tiles[idx(cx,cy)]!==T.RIP)return;const top=tiles[idx(cx,cy+1)]!==T.RIP&&!seen.has(idx(cx,cy+1));
     setTile(cx,cy,top?T.SEWN:T.AIR);if(top){burst(cx+.5,cy+.9,['#e9dcc0','#fbf8f0','#d4483b'],6,3);SFX.rustle(.15,.5);}},120+k*90);});
-  const r=BIO.trick&&BIO.trick.rip.find(r=>seen.has(idx(r[0],r[1])));if(r)r[2]=1;
+  // marked sewn after the last column (each column is sewn in one step, so a save in between leaves whole columns to sew)
+  const r=b.trick&&b.trick.rip.find(r=>seen.has(idx(r[0],r[1])));if(r)setTimeout(()=>{if(BIO===b)r[2]=1;},121+(x1-x0)*90);
   SFX.nice();toast('Stitch by stitch, the tear closes into a paper bridge.','gold');stat('stitches');guideEv('stitch');}
 // ---- fold: the Bone Folder folds the page so the two creases meet, and you step out of the other one. The vault's own
 // crease always folds you back out, tool or not, so leaving the folder in the vault's chest can't shut you in.

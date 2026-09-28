@@ -257,11 +257,11 @@ test('paper tricks: seams tear, torn holes stitch and creases fold, only with th
     // the guide hints at a trick the first time it is usable: carrying the tool near its spot
     g.SET.hints=true;g.setTut({s:99,seen:{peel:1,pop:1,flat:1}});g.addItem('ripper',1);p.x=s[0]-2+.5;p.y=s[1];for(let y=s[1]-6;y<=s[1]+6;y++)for(let x=s[0]-6;x<=s[0]+6;x++)g.explored[y*g.W+x]=1;g.updateGuide(1);out.hint=document.getElementById('gdT').textContent;g.SET.hints=false;
     g.addItem('needle',1);g.addItem('folder',1);
-    g.tearSeam(s[0],s[1]);g.stitchRip(rp[0],rp[1]);g.foldAt(f[0],f[1]);out.folded=[Math.floor(p.x),p.y]+''===[f[2],f[3]]+'';g.removeItem('folder',1);g.foldAt(f[2],f[3]);out.back=[Math.floor(p.x),p.y]+''===[f[0],f[1]]+'';
+    g.tearSeam(s[0],s[1]);g.stitchRip(rp[0],rp[1]);out.pending=[s[2],rp[2]];g.foldAt(f[0],f[1]);out.folded=[Math.floor(p.x),p.y]+''===[f[2],f[3]]+'';g.removeItem('folder',1);g.foldAt(f[2],f[3]);out.back=[Math.floor(p.x),p.y]+''===[f[0],f[1]]+'';
     // the seam and the tear open over a moment
     await new Promise(r=>setTimeout(r,2500));
     out.open=[0,1,2].every(k=>at(s[0],s[1]+k)===g.T.AIR);out.sewn=at(rp[0],rp[1])===g.T.SEWN&&at(rp[0],rp[1]-1)===g.T.AIR;out.flags=[s[2],rp[2]];
-    g.save();out.saved=JSON.parse(localStorage.getItem('folded-frontier-save-v1')).bio.trick;
+    out.seen=g.tut.seen;g.save();out.saved=JSON.parse(localStorage.getItem('folded-frontier-save-v1')).bio.trick;
     return out;});
   expect(r.n.every(n=>n>=1)).toBe(true);
   expect(r.locked).toEqual([true,true,true]);
@@ -269,10 +269,13 @@ test('paper tricks: seams tear, torn holes stitch and creases fold, only with th
   expect(r.hiddenOnMap).toBe(true);
   expect(r.onMap).toBe(true);
   expect(r.hint).toBe('Tear the seam');
+  expect(r.seen.tear&&r.seen.stitch&&r.seen.fold).toBe(1);
   expect(r.folded).toBe(true);
   expect(r.back).toBe(true);
   expect(r.open).toBe(true);
   expect(r.sewn).toBe(true);
+  // marked done only once the tiles have changed, so a save in between can't hide an unfinished spot
+  expect(r.pending).toEqual([0,0]);
   expect(r.flags).toEqual([1,1]);
   expect(r.saved.seam[0][2]).toBe(1);
   expect(r.saved.rip[0][2]).toBe(1);

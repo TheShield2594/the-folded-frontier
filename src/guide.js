@@ -58,7 +58,8 @@ const g={};let cardKey='',scanT=0,paperT=0,paperOn=null;
 export function setTut(v){g.init=false;paperOn=null;cardKey='';return tut=v;}
 function nextStep(skip){tut.s++;g.init=false;if(tut.s===STEPS.length){if(skip)toast('Guide finished. Hints still pop up for new paper tricks.');else{toast('You made it through your first night! That is the end of the guide. Hints still pop up for new paper tricks.','gold');SFX.nice();}}}
 // gameplay calls this for things the guide waits on: 'craft', 'dawn', 'peel', 'pop', 'flat', and the paper tricks 'tear', 'stitch', 'fold' (tricks.js)
-export function guideEv(ev){if(paperOn===ev){paperOn=null;tut.seen[ev]=1;}const st=STEPS[tut.s];if(st&&st.ev===ev)nextStep();}
+// a paper trick done counts as its hint seen, card up or not, so the hint never shows after the fact
+export function guideEv(ev){if(paperOn===ev)paperOn=null;if(PAPER[ev])tut.seen[ev]=1;const st=STEPS[tut.s];if(st&&st.ev===ev)nextStep();}
 function nearTile(r,test){const px=Math.floor(player.x),py=Math.floor(player.y+1);for(let y=Math.max(0,py-r);y<=Math.min(H-1,py+r);y++)for(let x=Math.max(0,px-r);x<=Math.min(W-1,px+r);x++)if(explored[y*W+x]&&test(tileAt(x,y)))return true;return false;}
 function flatGap(){const p=player;if(!p.onGround||p.flat)return false;const d=held('right')&&!held('left')?1:held('left')&&!held('right')?-1:0;if(!d)return false;const tx=Math.floor(p.x+d*(p.w/2+.35)),fy=Math.floor(p.y+.05);
   return !SOLID[tileAt(tx,fy)]&&SOLID[tileAt(tx,fy+1)]&&SOLID[tileAt(tx,fy-1)];}
