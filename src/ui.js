@@ -15,6 +15,7 @@ import {
   MOUNTS,PETORDER,PETS,toggleMount,togglePet,
   C,cellIcon,loreHTML,
   makeRig,FOLK,
+  SETS,setCount,fullSet,
 } from './game.js';
 
 // ================= UI =================
@@ -147,8 +148,11 @@ document.addEventListener('mousedown',e=>{const el=e.target.closest&&e.target.cl
 // for backpack, gear and chest slots and for crafting recipes.
 const KIND=it=>it.pick&&it.dmg?'Tool & weapon':it.pick?'Tool':it.rod?'Fishing rod':it.dmg?(it.ranged?'Ranged weapon':it.magic?'Magic weapon':it.use==='throw'?'Throwing weapon':it.heavy?'Heavy weapon':'Weapon')
   :it.slot!=null?['Helmet','Chest armor','Leggings'][it.slot]:it.block?'Shield':it.acc?'Accessory':it.bait?'Bait':it.adm?'Ammo':it.use?'Use item':it.place!=null||it.wall?'Placeable':'Material';
+// each weapon family's extra moves, and an armor set's bonus with how many pieces are worn
+function moveHint(it){const h=it.heavy?'Hold at the top of the swing to charge. A full charge sends a shockwave that cracks shells and armor.':it.dmg&&!it.use&&!it.ranged&&!it.magic&&!it.pick&&!it.ammoOf?'The third cut of a combo is a finisher. In the air, hits keep you aloft and the third spikes foes down. Swing right after a parry to counter.':it.ranged&&it.ammo==='arrow'?'Let go just as the draw fills for a Perfect shot.':it.magic?'Cast again as the rune ring closes for a Rune cast: stronger, and half the mana.':'';return h?`<div class="ds mv">${h}</div>`:'';}
+function setCard(k){const S=SETS[k],n=setCount(k),on=fullSet()===k;return `<div class="ds set${on?' on':''}"><b>${S.name} set</b> · ${S.kind} · ${n}/3 worn<br>${on?'Set bonus':'Full set'}: ${S.bonus}</div>`;}
 function itemCard(id,n,extra=''){const it=ITEMS[id];const lines=[],et=it.elem||(it.proj&&PK[it.proj]&&PK[it.proj].elem);if(it.dmg)lines.push(`${it.dmg} damage`);if(et)lines.push(`${ELEM[et].name} type`);if(it.heavy)lines.push('Heavy');if(it.block)lines.push(`Blocks ${Math.round(it.block*100)}% of a hit`);if(it.ranged)lines.push(it.ammo==='arrow'?'Uses arrows · hold to draw':'Uses Paper Sheets');if(it.magic)lines.push(`${it.mana} mana per cast`);if(it.adm)lines.push(`+${it.adm} damage as ammo`);if(it.pick)lines.push(`Pick power ${it.pick}`);if(it.rod)lines.push(`Fishing power ${it.fpow}${it.lava?' · Fishes in lava':''}`);if(it.bait)lines.push(`Bait power ${it.bait}`);if(it.def)lines.push(`+${it.def} defense`);if(it.place!=null||it.wall)lines.push('Can be placed');
-  return `<div class="icard"><div class="icArt"><img src="${icon(id)}" alt=""></div><div class="icHead"><b>${it.name}</b><small>${KIND(it)}${n>1?` · ×${n}`:''}</small></div></div>${lines.length?`<div class="st">${lines.join(' · ')}</div>`:''}${it.desc?`<div class="ds">${it.desc}</div>`:''}${it.block?`<div class="ds">Wear it in an accessory slot, then hold right-click (or ${KEYNAME(SET.bind.block)}) to block. Raise it just as a hit lands to parry.</div>`:''}${extra}`;}
+  return `<div class="icard"><div class="icArt"><img src="${icon(id)}" alt=""></div><div class="icHead"><b>${it.name}</b><small>${KIND(it)}${n>1?` · ×${n}`:''}</small></div></div>${lines.length?`<div class="st">${lines.join(' · ')}</div>`:''}${it.desc?`<div class="ds">${it.desc}</div>`:''}${moveHint(it)}${it.set?setCard(it.set):''}${it.block?`<div class="ds">Wear it in an accessory slot, then hold right-click (or ${KEYNAME(SET.bind.block)}) to block. Raise it just as a hit lands to parry.</div>`:''}${extra}`;}
 document.addEventListener('mouseover',e=>{const el=e.target.closest&&e.target.closest('.slot,.rec');hoverSlot=el&&el.classList.contains('slot')?el:null;if(!el){$('tip').hidden=true;return;}
   if(el.classList.contains('rec')){const r=RECIPES[+el.dataset.r];if(!r){$('tip').hidden=true;return;}$('tip').innerHTML=itemCard(r[0],r[1],`<div class="ds mk">${el.classList.contains('can')?'Click to craft · Shift-click for 5':'Missing something'}${r[3]?` · at ${ITEMS[r[3]].name}`:''}</div>`);$('tip').hidden=false;placeTip(e.clientX+16,e.clientY+14);return;}
   const s=slotData(el.dataset.kind,+el.dataset.i);if(!s){$('tip').hidden=true;return;}

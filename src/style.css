@@ -351,6 +351,7 @@ h3.stk::after{content:"";position:absolute;right:0;top:-5px;width:24px;height:24
 #tip .icHead b{font-family:'Bagel Fat One','Arial Black',sans-serif;font-weight:400;font-size:calc(16px*var(--ts));line-height:1.1;}
 .icHead small{display:block;margin-top:3px;font-size:calc(10.5px*var(--ts));font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--ink2);}
 #tip .st{padding:4px 0;border-top:1.5px dashed rgba(42,33,48,.25);} #tip .ds{margin-top:4px;} #tip .mk{font-weight:800;color:var(--ink);}
+#tip .mv{font-style:italic;} #tip .set{padding:4px 6px;border:1.5px dashed rgba(42,33,48,.3);border-radius:6px;} #tip .set.on{border-style:solid;border-color:var(--good);background:rgba(79,157,82,.1);} #tip .set b{color:var(--ink);}
 /* partner speech bubble */
 .bubble.pal{background:#fff6cf;border-style:dashed;}
 .bubble.pal::after{background:#fff6cf;}

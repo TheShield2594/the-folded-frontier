@@ -77,17 +77,24 @@ C.buckler=sticker(t=>{circ(t,32,32,24);fi(t,'#a9adb8');circ(t,32,32,16);ink(t,2,
 C.ribbon=sticker(t=>{poly(t,[32,32,10,16,8,44]);fi(t,'#d4483b');poly(t,[32,32,54,16,56,44]);fi(t,'#d4483b');poly(t,[30,34,22,58,30,54,34,58]);fi(t,'#b33a2f',2);poly(t,[34,34,42,58,34,54]);fi(t,'#b33a2f',2);circ(t,32,32,7);fi(t,'#f1c04f');});
 C.crown=sticker(t=>{poly(t,[8,48,56,48,58,18,45,32,32,12,19,32,6,18]);fi(t,'#7fd3f0');t.fillStyle='rgba(255,255,255,.5)';t.fillRect(12,38,40,4);circ(t,32,40,5);fi(t,'#e0506b',2);});
 C.shuri=sticker(t=>{poly(t,[32,4,38,26,60,32,38,38,32,60,26,38,4,32,26,26]);fi(t,'#fbf8f0');poly(t,[32,4,38,26,32,32]);t.fillStyle='#dcd3c2';t.fill();poly(t,[60,32,38,38,32,32]);t.fill();poly(t,[32,60,26,38,32,32]);t.fillStyle='#e9e2d4';t.fill();circ(t,32,32,3);fi(t,'#d4483b',1.5);});
-const helmIcon=col=>sticker(t=>{t.beginPath();t.moveTo(10,44);t.quadraticCurveTo(10,10,32,10);t.quadraticCurveTo(54,10,54,44);t.lineTo(44,44);t.lineTo(44,30);t.lineTo(20,30);t.lineTo(20,44);t.closePath();fi(t,col);t.fillStyle='rgba(255,255,255,.4)';t.fillRect(18,16,6,10);rr(t,8,42,48,8,3);fi(t,sh(col,.8),2);});
-const mailIcon=col=>sticker(t=>{poly(t,[14,12,24,8,32,14,40,8,50,12,58,26,48,30,46,56,18,56,16,30,6,26]);fi(t,col);for(let y=20;y<54;y+=7)for(let x=22;x<44;x+=7){circ(t,x,y,1.5);t.fillStyle='rgba(42,33,48,.4)';t.fill();}});
-const legIcon=col=>sticker(t=>{rr(t,14,8,36,10,3);fi(t,sh(col,.85));rr(t,15,16,14,36,5);fi(t,col);rr(t,35,16,14,36,5);fi(t,col);rr(t,12,48,18,9,4);fi(t,sh(col,.7),2);rr(t,34,48,18,9,4);fi(t,sh(col,.7),2);});
+const helmPaint=(t,col)=>{t.beginPath();t.moveTo(10,44);t.quadraticCurveTo(10,10,32,10);t.quadraticCurveTo(54,10,54,44);t.lineTo(44,44);t.lineTo(44,30);t.lineTo(20,30);t.lineTo(20,44);t.closePath();fi(t,col);t.fillStyle='rgba(255,255,255,.4)';t.fillRect(18,16,6,10);rr(t,8,42,48,8,3);fi(t,sh(col,.8),2);},helmIcon=col=>sticker(t=>helmPaint(t,col));
+const mailPaint=(t,col)=>{poly(t,[14,12,24,8,32,14,40,8,50,12,58,26,48,30,46,56,18,56,16,30,6,26]);fi(t,col);for(let y=20;y<54;y+=7)for(let x=22;x<44;x+=7){circ(t,x,y,1.5);t.fillStyle='rgba(42,33,48,.4)';t.fill();}},mailIcon=col=>sticker(t=>mailPaint(t,col));
+const legPaint=(t,col)=>{rr(t,14,8,36,10,3);fi(t,sh(col,.85));rr(t,15,16,14,36,5);fi(t,col);rr(t,35,16,14,36,5);fi(t,col);rr(t,12,48,18,9,4);fi(t,sh(col,.7),2);rr(t,34,48,18,9,4);fi(t,sh(col,.7),2);},legIcon=col=>sticker(t=>legPaint(t,col));
 export const METAL={cu:'#d9853b',fe:'#a9adb8',au:'#f0c040',fr:'#aee0f2',ik:'#8a6ac0',em:'#ff8a3d',fo:'#d9dcec'};
 for(const m in METAL){C['helm'+m]=helmIcon(METAL[m]);C['mail'+m]=mailIcon(METAL[m]);C['legs'+m]=legIcon(METAL[m]);}
+// endgame armor sets (#37): each piece is a metal-style icon in the set's color with the set's mark in a paper tag
+export const SETCOL={warden:'#c8503c',sky:'#5fb08e',weave:'#6a55b0'};
+const SETMARK={warden:t=>{t.beginPath();t.moveTo(43,57);t.lineTo(57,43);ink(t,3.5,'#c8503c');t.beginPath();t.moveTo(44,48);t.lineTo(52,56);ink(t,2.5,INK);},
+  sky:t=>{t.beginPath();t.moveTo(44,56);t.quadraticCurveTo(46,44,57,43);t.quadraticCurveTo(55,54,44,56);fi(t,'#5fb08e',1.5);},
+  weave:t=>{poly(t,[50,41,52.5,47.5,59,50,52.5,52.5,50,59,47.5,52.5,41,50,47.5,47.5]);fi(t,'#6a55b0',1.5);}};
+for(const k in SETCOL){const col=SETCOL[k],mk=t=>{circ(t,50,50,10);fi(t,'#fbf8f0',2);SETMARK[k](t);};
+  C['helm_'+k]=sticker(t=>{helmPaint(t,col);mk(t);});C['mail_'+k]=sticker(t=>{mailPaint(t,col);mk(t);});C['legs_'+k]=sticker(t=>{legPaint(t,col);mk(t);});}
 const starPts=(cx,cy,R,r)=>{const a=[];for(let i=0;i<10;i++){const g=-Math.PI/2+i*Math.PI/5,d=i%2?r:R;a.push(cx+Math.cos(g)*d,cy+Math.sin(g)*d);}return a;};
 const bowIcon=col=>sticker(t=>{for(const[w,c]of[[8.5,INK],[5,col]]){t.beginPath();t.moveTo(10,14);t.quadraticCurveTo(62,2,50,54);ink(t,w,c);}t.beginPath();t.moveTo(10,14);t.lineTo(50,54);ink(t,1.6,'#f4f0e6');t.save();t.translate(46,18);t.rotate(.785);rr(t,-5,-7,10,14,3);fi(t,'#6b4430',2);t.restore();});
-const arrowIcon=el=>sticker(t=>{t.beginPath();t.moveTo(12,52);t.lineTo(46,18);ink(t,6,INK);t.beginPath();t.moveTo(12,52);t.lineTo(46,18);ink(t,3,'#c98f4f');poly(t,[56,8,50,26,38,14]);fi(t,el==='water'?'#5aa7e0':el?'#f5a524':'#a9adb8',2);
+const arrowIcon=el=>sticker(t=>{t.beginPath();t.moveTo(12,52);t.lineTo(46,18);ink(t,6,INK);t.beginPath();t.moveTo(12,52);t.lineTo(46,18);ink(t,3,'#c98f4f');poly(t,[56,8,50,26,38,14]);if(el==='pierce')poly(t,[60,4,52,28,36,12]);fi(t,el==='water'?'#5aa7e0':el==='ink'?'#6b4c8f':el==='ric'?'#7fd3f0':el==='pierce'?'#dfe3ec':el?'#f5a524':'#a9adb8',2);
   if(el===true){t.beginPath();t.moveTo(59,3);t.quadraticCurveTo(63,14,55,17);t.quadraticCurveTo(49,11,59,3);t.fillStyle='#ffe58a';t.fill();}
-  else if(el==='water'){t.beginPath();t.moveTo(58,2);t.quadraticCurveTo(64,12,58,15);t.quadraticCurveTo(52,12,58,2);fi(t,'#8fcaf0',1.5);}poly(t,[12,52,5,44,16,42]);fi(t,'#d4483b',1.6);poly(t,[12,52,20,59,22,48]);fi(t,'#fbf8f0',1.6);});
-C.bowW=bowIcon('#c98f4f');C.bowG=bowIcon('#f0c040');C.arrow=arrowIcon(false);C.farrow=arrowIcon(true);C.warrow=arrowIcon('water');
+  else if(el==='water'){t.beginPath();t.moveTo(58,2);t.quadraticCurveTo(64,12,58,15);t.quadraticCurveTo(52,12,58,2);fi(t,'#8fcaf0',1.5);}else if(el==='ink'){circ(t,58,6,4);fi(t,'#3a2a5a',1.5);}else if(el==='ric'){t.beginPath();t.arc(54,16,11,-2.2,.6);ink(t,2.5,'#5aa7e0');}else if(el==='pierce'){t.beginPath();t.moveTo(40,24);t.lineTo(52,12);ink(t,1.5,'#fbf8f0');}poly(t,[12,52,5,44,16,42]);fi(t,'#d4483b',1.6);poly(t,[12,52,20,59,22,48]);fi(t,'#fbf8f0',1.6);});
+C.bowW=bowIcon('#c98f4f');C.bowG=bowIcon('#f0c040');C.arrow=arrowIcon(false);C.farrow=arrowIcon(true);C.warrow=arrowIcon('water');C.iarrow=arrowIcon('ink');C.parrow=arrowIcon('pierce');C.rarrow=arrowIcon('ric');
 // warhammers (heavy melee) and shields (off-hand, hold to block)
 const warhammerIcon=col=>sticker(t=>{t.beginPath();t.moveTo(10,58);t.lineTo(38,26);ink(t,8,INK);t.beginPath();t.moveTo(10,58);t.lineTo(38,26);ink(t,4.5,'#9a6a3f');t.save();t.translate(41,21);t.rotate(.72);rr(t,-19,-12,38,24,5);fi(t,col);
   t.fillStyle=sh(col,.72);t.fillRect(-11,-11,4,22);t.fillRect(7,-11,4,22);t.fillStyle='rgba(255,255,255,.45)';t.fillRect(-16,-8,30,3);t.restore();});
