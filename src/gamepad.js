@@ -52,7 +52,7 @@ function menuPad(h,e){const now=performance.now(),dt=(now-padLast)/1000;padLast=
   if(e('use')){if(el.classList.contains('slot'))slotClick(el,2,false);else if(el.classList.contains('rec'))craft(+el.dataset.r,5);else if(el.classList.contains('shopi'))fire(el,0,true);setInvDirty(true);}
   if(e('pr')&&el.classList.contains('slot')){slotClick(el,0,true);setInvDirty(true);}}
 export function padInteract(){const p=player;{const n=npcs.find(n=>Math.abs(n.x-p.x)<3&&Math.abs(n.y-p.y)<2.5);if(n){mouse.wx=n.x;mouse.wy=n.y+1;mouse.rp=true;return;}}
-  let best=null,bd=9;for(let y=Math.floor(p.y)-1;y<=Math.floor(p.y)+3;y++)for(let x=Math.floor(p.x)-3;x<=Math.floor(p.x)+3;x++){const t=tileAt(x,y);if(t===T.DOOR||t===T.CHEST||t===T.BED||t===T.MURAL||t===T.CRANK||t===T.GATE){const d=Math.hypot(x+.5-p.x,y+.5-(p.y+.9));if(d<bd){bd=d;best=[x,y];}}}
+  let best=null,bd=9;for(let y=Math.floor(p.y)-1;y<=Math.floor(p.y)+3;y++)for(let x=Math.floor(p.x)-3;x<=Math.floor(p.x)+3;x++){const t=tileAt(x,y);if(t===T.DOOR||t===T.CHEST||t===T.BED||t===T.MURAL||t===T.CRANK||t===T.GATE||t===T.SEAM||t===T.RIP||t===T.CREASE){const d=Math.hypot(x+.5-p.x,y+.5-(p.y+.9));if(d<bd){bd=d;best=[x,y];}}}
   if(best){mouse.wx=best[0]+.5;mouse.wy=best[1]+.5;mouse.rp=true;}}
 // Imported bindings are read-only, so other modules assign these through setters.
 export function setPadFocus(v){return padFocus=v;}

@@ -10,8 +10,10 @@ import {
 //  (default bottom centre); s: world units per design px (1/60, as sheets used).
 //  parts, back to front (the array order is the draw order): {n name, at [x,y] pivot in design px, up parent name,
 //  paint(t, skin, variant) the drawing, loc 1 if paint draws around the pivot (limbs) rather than in design coordinates,
-//  clip [x0,y0,x1,y1] keeps only that design rect of the drawing, v variant names (swaps, '' first), wob wobble amount}.
-//  A part with no paint is a bare joint (the root).
+//  clip [x0,y0,x1,y1] keeps only that design rect of the drawing, v variant names (swaps, '' first), wob wobble amount,
+//  slot [x0,y0,x1,y1] a held-item slot (no paint: rigHold() cuts a picture into it, that design rect around the pivot),
+//  rigid 1 to follow the parent's pivot and turn but not its stretch (a held sword stays a sword while the arm stretches)}.
+//  A part with no paint or slot is a bare joint (the root).
 // Clips: {len seconds, loop, bl blend-in seconds, tr: {part: {r, x, y, sx, sy, sw: keys}}}. Keys are [time, value, easing
 //  to the next key] (EZR names); r is radians (canvas turn: positive is clockwise on screen), x/y design px, sx/sy scale,
 //  sw a variant name that holds until the next key ('-' hides the part).
@@ -20,7 +22,8 @@ import {
 // re-bakes, never new frame sheets.
 // At runtime every rig is one mesh with one material: makeRig() builds it, rigPlay() picks a clip (blending from the pose
 // it was in), rigSet() pins a part for this frame (the swinging arm), rigUpdate() poses it. The material has the uniforms
-// sprites have (uTint, uFlash, uOut, uCr...), so tinting, hit flashes, attack outlines and boss creases work on rigs too.
+// sprites have (uTint, uFlash, uOut, uCr...), so tinting, hit flashes, attack outlines and boss creases work on rigs too;
+// uPF (part a, flash a, part b, flash b) flashes one or two parts alone (the held weapon's nice window, the parrying shield).
 // Paper touches: each part wobbles a little (not with reduced motion), casts a soft drop shadow on the parts behind it,
 // and the turn to face the other way (mesh.rotation.y) shades the paper as it goes edge-on.
 export const RIGS={};
@@ -38,9 +41,13 @@ export function loopClip(len,keys,ez='io',bl){const tr={};for(const[t,v]of keys)
 
 // ---- skins: every part and variant drawn once, cropped and packed into one texture
 const PAD=10,BORDER=3,skins=new Map();
+// a cut-out piece: w x h of src (drawn at dw x dh) with paper grain and the cream paper edge, PAD px of margin all round
+function paperPiece(src,sx,sy,w,h,dw=w,dh=h){const cw=dw+PAD*2,chh=dh+PAD*2,tmp=mk(cw,chh),t=tmp.getContext('2d');t.drawImage(src,sx,sy,w,h,PAD,PAD,dw,dh);grain(t,0,0,cw,chh,12);
+  const sil=mk(cw,chh),s=sil.getContext('2d');s.drawImage(tmp,0,0);s.globalCompositeOperation='source-in';s.fillStyle='#fbf5e6';s.fillRect(0,0,cw,chh);
+  const out=mk(cw,chh),o=out.getContext('2d');for(let i=0;i<16;i++){const an=i/16*Math.PI*2;o.drawImage(sil,Math.cos(an)*BORDER,Math.sin(an)*BORDER);}o.drawImage(tmp,0,0);return out;}
 export function rigSkin(k,skin,key){const ck=key!=null?k+':'+key:null;if(ck&&skins.has(ck))return skins.get(ck);
   const d=RIGS[k],M=Math.ceil(Math.max(d.w,d.h)*.3),W=d.w+M*2,H=d.h+M*2,pieces=[];
-  for(const p of d.parts){if(!p.paint)continue;for(const v of p.v){const c=mk(W,H),t=c.getContext('2d');t.translate(M,M);
+  for(const p of d.parts){if(p.slot){const[a,b,c,e]=p.slot;pieces.push({p:p.i,v:'',slot:1,x0:M+p.at[0]+a,y0:M+p.at[1]+b,w:c-a,h:e-b});continue;}if(!p.paint)continue;for(const v of p.v){const c=mk(W,H),t=c.getContext('2d');t.translate(M,M);
     if(p.clip){t.beginPath();t.rect(p.clip[0],p.clip[1],p.clip[2]-p.clip[0],p.clip[3]-p.clip[1]);t.clip();}if(p.loc)t.translate(p.at[0],p.at[1]);
     t.lineJoin='round';t.lineCap='round';p.paint(t,skin,v);
     const a=t.getImageData(0,0,W,H).data;let x0=W,y0=H,x1=-1,y1=-1;for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(a[(y*W+x)*4+3]>8){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
@@ -49,13 +56,12 @@ export function rigSkin(k,skin,key){const ck=key!=null?k+':'+key:null;if(ck&&ski
   const AW=Math.max(256,...pieces.map(q=>q.w+PAD*2));let x=0,y=0,row=0;
   for(const q of pieces.slice().sort((a,b)=>b.h-a.h)){if(x+q.w+PAD*2>AW){x=0;y+=row;row=0;}q.ax=x;q.ay=y;x+=q.w+PAD*2;row=Math.max(row,q.h+PAD*2);}
   const AH=y+row,img=mk(AW,Math.max(1,AH)),o=img.getContext('2d'),cells=d.parts.map(()=>({}));
-  for(const q of pieces){const cw=q.w+PAD*2,chh=q.h+PAD*2,tmp=mk(cw,chh),t=tmp.getContext('2d');t.drawImage(q.c,q.x0,q.y0,q.w,q.h,PAD,PAD,q.w,q.h);grain(t,0,0,cw,chh,12);
-    // the cream paper edge every cut-out piece has (makeSheet gives whole sprites the same)
-    const sil=mk(cw,chh),s=sil.getContext('2d');s.drawImage(tmp,0,0);s.globalCompositeOperation='source-in';s.fillStyle='#fbf5e6';s.fillRect(0,0,cw,chh);
-    for(let i=0;i<16;i++){const an=i/16*Math.PI*2;o.drawImage(sil,q.ax+Math.cos(an)*BORDER,q.ay+Math.sin(an)*BORDER);}o.drawImage(tmp,q.ax,q.ay);
+  for(const q of pieces){const cw=q.w+PAD*2,chh=q.h+PAD*2;
+    // the cream paper edge every cut-out piece has (makeSheet gives whole sprites the same); a slot stays empty until rigHold
+    if(!q.slot)o.drawImage(paperPiece(q.c,q.x0,q.y0,q.w,q.h),q.ax,q.ay);
     // the design rect this cell covers at rest (pivot-relative), and its uv rect
     const dx=q.x0-M-PAD,dy=q.y0-M-PAD,P=d.parts[q.p];
-    cells[q.p][q.v]={l:[dx-P.at[0],dy-P.at[1],dx+cw-P.at[0],dy+chh-P.at[1]],uv:[q.ax/AW,1-(q.ay+chh)/AH,(q.ax+cw)/AW,1-q.ay/AH],ax:q.ax,ay:q.ay,w:cw,h:chh};}
+    cells[q.p][q.v]={l:[dx-P.at[0],dy-P.at[1],dx+cw-P.at[0],dy+chh-P.at[1]],uv:[q.ax/AW,1-(q.ay+chh)/AH,(q.ax+cw)/AW,1-q.ay/AH],ax:q.ax,ay:q.ay,w:cw,h:chh,iw:q.w,ih:q.h};}
   const S={img,cells,tex:canvasTex(img),key:ck};if(ck)skins.set(ck,S);return S;}
 
 // ---- clips
@@ -74,10 +80,10 @@ function samplePose(d,c,t,out){for(const o of out){o.r=o.x=o.y=0;o.sx=o.sy=1;o.s
 // depth, so opaque things in front (the held tool, the shield) cover it.
 export function rigMat(tex){return new THREE.ShaderMaterial({side:THREE.DoubleSide,transparent:true,depthWrite:false,forceSinglePass:true,
   uniforms:{map:{value:tex},uFrame:{value:0},uFrames:{value:1},uTint:{value:new THREE.Vector3(1,1,1)},uFlash:{value:0},uOut:{value:new THREE.Vector4(0,0,0,0)},uPx:{value:new THREE.Vector2()},
-    uCr:{value:new THREE.Vector3()},uSh:{value:new THREE.Vector2(.028,-.034)},uBack:{value:0}},
-  vertexShader:`attribute vec2 aQ;attribute vec4 aCell;attribute float aSh;uniform vec2 uSh;varying vec2 vUv;varying vec2 vQ;varying vec4 vCell;varying float vSh;
-    void main(){vUv=uv;vQ=aQ;vCell=aCell;vSh=aSh;vec3 p=position;if(aSh>.5&&aSh<1.5)p.xy+=uSh;gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.);}`,
-  fragmentShader:`uniform sampler2D map;uniform vec3 uTint;uniform float uFlash;uniform vec4 uOut;uniform vec2 uPx;uniform vec3 uCr;uniform float uBack;varying vec2 vUv;varying vec2 vQ;varying vec4 vCell;varying float vSh;
+    uCr:{value:new THREE.Vector3()},uSh:{value:new THREE.Vector2(.028,-.034)},uBack:{value:0},uPF:{value:new THREE.Vector4(-1,0,-1,0)}},
+  vertexShader:`attribute vec2 aQ;attribute vec4 aCell;attribute float aSh;attribute float aP;uniform vec2 uSh;varying vec2 vUv;varying vec2 vQ;varying vec4 vCell;varying float vSh;varying float vP;
+    void main(){vUv=uv;vQ=aQ;vCell=aCell;vSh=aSh;vP=aP;vec3 p=position;if(aSh>.5&&aSh<1.5)p.xy+=uSh;gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.);}`,
+  fragmentShader:`uniform sampler2D map;uniform vec3 uTint;uniform float uFlash;uniform vec4 uOut;uniform vec2 uPx;uniform vec3 uCr;uniform float uBack;uniform vec4 uPF;varying vec2 vUv;varying vec2 vQ;varying vec4 vCell;varying float vSh;varying float vP;
     void main(){vec4 t=texture2D(map,vUv);
     if(vSh>1.5){if(uOut.a<=0.)discard;float a=t.a;for(int i=0;i<8;i++){float an=float(i)*.785398;a=max(a,texture2D(map,clamp(vUv+vec2(cos(an),sin(an))*uPx,vCell.xy,vCell.zw)).a);}
       if(a<.5)discard;gl_FragColor=vec4(uOut.rgb,1.);return;}
@@ -86,21 +92,22 @@ export function rigMat(tex){return new THREE.ShaderMaterial({side:THREE.DoubleSi
     float cd=9.,cw=0.;if(uCr.x>0.){vec2 q=vQ;cd=abs(q.x*.9+q.y-1.05+.035*sin(q.y*47.));if(uCr.x>1.5)cd=min(cd,abs(q.x-q.y*.7-.12+.03*sin(q.x*53.+1.)));
       cw=uCr.z*(.03+.02*sin(q.x*91.+q.y*67.));if(cd<cw)discard;}
     vec3 c=t.rgb*uTint*(1.-.2*uBack);if(cw>0.&&cd<cw+.018)c=vec3(.98,.95,.88)*uTint;else if(cd<.011)c=mix(c,vec3(.16,.13,.19),uCr.y);
-    gl_FragColor=vec4(mix(c,vec3(1.),uFlash),1.);}`});}
+    float fl=uFlash;if(abs(vP-uPF.x)<.5)fl=max(fl,uPF.y);if(abs(vP-uPF.z)<.5)fl=max(fl,uPF.w);
+    gl_FragColor=vec4(mix(c,vec3(1.),fl),1.);}`});}
 
 // ---- instances
 // makeRig(kind, skin, key): key names a shared skin (townsfolk of one type share one texture); null bakes a private one
 export function makeRig(k,skin,key,o={}){const d=RIGS[k],n=d.parts.length,Q=n*3,g=new THREE.BufferGeometry();
   const A=(sz)=>new THREE.BufferAttribute(new Float32Array(Q*4*sz),sz);
-  g.setAttribute('position',A(3));g.setAttribute('uv',A(2));g.setAttribute('aQ',A(2));g.setAttribute('aCell',A(4));g.setAttribute('aSh',A(1));
+  g.setAttribute('position',A(3));g.setAttribute('uv',A(2));g.setAttribute('aQ',A(2));g.setAttribute('aCell',A(4));g.setAttribute('aSh',A(1));g.setAttribute('aP',A(1));
   for(const nm of['position','uv','aQ','aCell'])g.attributes[nm].setUsage(THREE.DynamicDrawUsage);
   const I=[],PI=[];for(let q=0;q<Q;q++){const b=q*4;I.push(b,b+1,b+2,b,b+2,b+3);}for(let i=0;i<n;i++){const b=(n+i*2+1)*4;PI.push(b,b+1,b+2,b,b+2,b+3);}g.setIndex(I);
   // quad q: 0..n-1 outlines, then per part a shadow and the part itself
-  for(let i=0;i<n;i++)for(let v=0;v<4;v++){g.attributes.aSh.array[i*4+v]=2;g.attributes.aSh.array[(n+i*2)*4+v]=1;}
+  for(let i=0;i<n;i++)for(let v=0;v<4;v++){g.attributes.aSh.array[i*4+v]=2;g.attributes.aSh.array[(n+i*2)*4+v]=1;for(const q of[i,n+i*2,n+i*2+1])g.attributes.aP.array[q*4+v]=i;}
   const r=Math.max(d.w,d.h)*d.s;g.boundingSphere=new THREE.Sphere(new THREE.Vector3((d.w/2-d.ox)*d.s,(d.oy-d.h/2)*d.s,0),r);
   const S=rigSkin(k,skin,key),mat=rigMat(S.tex),mesh=new THREE.Mesh(g,mat);if(o.add!==false)scene.add(mesh);
   const R={d,k,S,mesh,mat,g,PI,t:Math.random()*9,c:null,ct:0,sp:1,w:1,bl:.1,cur:blankPose(n),from:blankPose(n),last:blankPose(n),ov:new Array(n).fill(null),ovl:new Array(n).fill(null),ow:new Float32Array(n),
-    M:new Float32Array(n*6),abs:new Float32Array(n),vis:new Array(n).fill(''),shadow:o.shadow!==false};
+    M:new Float32Array(n*6),abs:new Float32Array(n),vis:new Array(n).fill(''),shadow:o.shadow!==false,hs:new Array(n).fill(null),hk:new Array(n).fill(null)};
   rigPlay(R,o.clip||'idle');rigUpdate(R,0);return R;}
 // re-dress a rig (new armor, a new look): bakes the new skin and drops the old texture if nothing shares it
 export function rigReskin(R,skin,key){const old=R.S;R.S=rigSkin(R.k,skin,key);R.mat.uniforms.map.value=R.S.tex;R.vis.fill(null);if(!old.key&&old!==R.S)old.tex.dispose();rigUpdate(R,0);}
@@ -114,6 +121,16 @@ export function rigPlay(R,c,o={}){if(c!==R.c){if(!R.d.clips[c])return;for(let i=
 export function rigSet(R,p,o){const i=R.d.pi[p];if(i!=null)R.ov[i]=o;}
 // where a part's pivot is now, in world units from the mesh origin (facing right, before the mesh's own transform)
 export function rigJoint(R,p){const i=R.d.pi[p],d=R.d;return[(R.M[i*6+4]-d.ox)*d.s,(d.oy-R.M[i*6+5])*d.s];}
+// a point given in a part's own design px (from its pivot), posed, in world units from the mesh origin (facing right)
+export function rigPt(R,p,x,y){const i=R.d.pi[p],d=R.d,M=R.M,o=i*6;return[(M[o]*x+M[o+2]*y+M[o+4]-d.ox)*d.s,(d.oy-(M[o+1]*x+M[o+3]*y+M[o+5]))*d.s];}
+// rigHold(R, part, src): cut a picture (a canvas, such as an item's icon) into a slot part as a paper piece, or null to
+// empty it (the part hides). Pieces are cached per picture, so switching items is one copy into the skin; a re-dress
+// (rigReskin) re-cuts on the next call. Only for private skins (the player's): a shared skin would show it on every wearer.
+const slotCut=new WeakMap();
+export function rigHold(R,p,src){const i=R.d.pi[p];if(i==null||R.S.key)return;if(R.hs[i]===src&&R.hk[i]===R.S)return;R.hs[i]=src;R.hk[i]=R.S;if(!src)return;
+  const cell=R.S.cells[i][''];if(!cell)return;let m=slotCut.get(src);if(!m)slotCut.set(src,m={});const k=cell.iw+'x'+cell.ih;
+  const pc=m[k]||(m[k]=paperPiece(src,0,0,src.width,src.height,cell.iw,cell.ih)),t=R.S.img.getContext('2d');
+  t.clearRect(cell.ax,cell.ay,cell.w,cell.h);t.drawImage(pc,cell.ax,cell.ay);R.S.tex.needsUpdate=true;}
 export function rigUpdate(R,dt){const d=R.d,n=d.parts.length,rm=reduceMotion();R.t+=dt;R.ct+=dt*R.sp;R.w=Math.min(1,R.w+dt/Math.max(.001,R.bl));
   samplePose(d,R.c,R.ct,R.cur);const w=EZR.io(R.w);
   for(let i=0;i<n;i++){const a=R.from[i],b=R.cur[i],L=R.last[i];for(const ch of CH)L[ch]=a[ch]+(b[ch]-a[ch])*w;L.sw=w<.5?a.sw:b.sw;
@@ -125,9 +142,10 @@ export function rigUpdate(R,dt){const d=R.d,n=d.parts.length,rm=reduceMotion();R
     let px=p.at[0]+L.x,py=p.at[1]+L.y;if(j>=0){px-=P[j].at[0];py-=P[j].at[1];}
     const c=Math.cos(r),s=Math.sin(r),la=c*L.sx,lb=s*L.sx,lc=-s*L.sy,ld=c*L.sy,o=i*6;
     if(j<0){M[o]=la;M[o+1]=lb;M[o+2]=lc;M[o+3]=ld;M[o+4]=px;M[o+5]=py;R.abs[i]=r;}
+    else if(p.rigid){const q=j*6,a=R.abs[j]+r,ca=Math.cos(a),sa=Math.sin(a);M[o]=ca*L.sx;M[o+1]=sa*L.sx;M[o+2]=-sa*L.sy;M[o+3]=ca*L.sy;M[o+4]=M[q]*px+M[q+2]*py+M[q+4];M[o+5]=M[q+1]*px+M[q+3]*py+M[q+5];R.abs[i]=a;}
     else{const q=j*6,A=M[q],B=M[q+1],C=M[q+2],D=M[q+3];M[o]=A*la+C*lb;M[o+1]=B*la+D*lb;M[o+2]=A*lc+C*ld;M[o+3]=B*lc+D*ld;M[o+4]=A*px+C*py+M[q+4];M[o+5]=B*px+D*py+M[q+5];R.abs[i]=R.abs[j]+r;}}
   const pos=R.g.attributes.position.array,uv=R.g.attributes.uv.array,aq=R.g.attributes.aQ.array,ac=R.g.attributes.aCell.array;let uvDirty=false;
-  for(let i=0;i<n;i++){const cs=R.S.cells[i],L=R.last[i],cell=L.sw!=='-'&&cs&&(cs[L.sw]||cs['']),o=i*6,qs=[i,n+i*2,n+i*2+1];
+  for(let i=0;i<n;i++){const cs=R.S.cells[i],L=R.last[i],cell=L.sw!=='-'&&(!P[i].slot||R.hs[i])&&cs&&(cs[L.sw]||cs['']),o=i*6,qs=[i,n+i*2,n+i*2+1];
     if(!cell){for(const q of qs)pos.fill(0,q*12,q*12+12);continue;}
     const l=cell.l,X=[l[0],l[2],l[2],l[0]],Y=[l[3],l[3],l[1],l[1]];
     for(let v=0;v<4;v++){const x=M[o]*X[v]+M[o+2]*Y[v]+M[o+4],y=M[o+1]*X[v]+M[o+3]*Y[v]+M[o+5],wx=(x-d.ox)*d.s,wy=(d.oy-y)*d.s;
@@ -149,7 +167,7 @@ export function rigPic(k,skin,clip,t=0,key){const d=RIGS[k],S=rigSkin(k,skin,key
   const P=d.parts,M=R.M;for(const i of d.topo){const p=P[i],L=R.last[i],j=p.pa;let px=p.at[0]+L.x,py=p.at[1]+L.y;if(j>=0){px-=P[j].at[0];py-=P[j].at[1];}
     const c=Math.cos(L.r),s=Math.sin(L.r),la=c*L.sx,lb=s*L.sx,lc=-s*L.sy,ld=c*L.sy,o=i*6;
     if(j<0){M.set([la,lb,lc,ld,px,py],o);}else{const q=j*6,A=M[q],B=M[q+1],C=M[q+2],D=M[q+3];M.set([A*la+C*lb,B*la+D*lb,A*lc+C*ld,B*lc+D*ld,A*px+C*py+M[q+4],B*px+D*py+M[q+5]],o);}}
-  const c=mk(d.w,d.h),t2=c.getContext('2d');for(let i=0;i<P.length;i++){const cs=S.cells[i],sw=R.last[i].sw,cell=sw!=='-'&&cs&&(cs[sw]||cs['']);if(!cell)continue;const o=i*6;
+  const c=mk(d.w,d.h),t2=c.getContext('2d');for(let i=0;i<P.length;i++){if(P[i].slot)continue;const cs=S.cells[i],sw=R.last[i].sw,cell=sw!=='-'&&cs&&(cs[sw]||cs['']);if(!cell)continue;const o=i*6;
     t2.setTransform(M[o],M[o+1],M[o+2],M[o+3],M[o+4],M[o+5]);t2.drawImage(S.img,cell.ax,cell.ay,cell.w,cell.h,cell.l[0],cell.l[1],cell.w,cell.h);}return c;}
 
 // ================= human rig =================
@@ -172,7 +190,11 @@ defRig('human',{w:96,h:144,parts:[
   {n:'hacc',at:[50,72],up:'head',paint:hl(['head','acc']),clip:[-60,-60,160,67],wob:0},
   {n:'bacc',at:[48,90],up:'torso',paint:hl(['head','acc']),clip:[-60,67,160,220],wob:0},
   {n:'armA',at:LIMB.armA,up:'torso',loc:1,paint:hl(['armA','shirt'],['armA','armor'],['armA','body'])},
-  {n:'front',at:[62,88],up:'torso',paint:hl(['front','acc']),wob:.01}]});
+  {n:'front',at:[62,88],up:'torso',paint:hl(['front','acc']),wob:.01},
+  // the held weapon or tool at the front hand (22 px down the arm, ARML in gameplay.js) and the raised shield: slots that
+  // gameplay fills with the item's icon (rigHold); the icon's corner is the grip, so the blade runs up and to the right
+  {n:'held',at:[LIMB.armA[0],LIMB.armA[1]+22],up:'armA',slot:[-8,-67,67,8],rigid:1,wob:0},
+  {n:'shield',at:[66,94],up:'root',slot:[-30,-30,30,30],rigid:1,wob:0}]});
 // a render.js pose (legA, armA, lean, bob, wave, face, blink...) as channel values
 export function poseCh(o){const w=o.wave||0,v={legA:{r:o.legA||0},legB:{r:o.legB||0},armB:{r:o.armB||0},root:{r:o.lean||0,y:o.bob||0},cape:{r:-w/54},hairB:{r:-w/40},scarf:{r:-w*.012},head:{sw:o.face||(o.blink?'blink':'')}};
   if(!o.noArm)v.armA={r:o.armA||0};return v;}

@@ -37,6 +37,7 @@ export * from './pals.js';
 export * from './awaken.js';
 export * from './lore.js';
 export * from './secrets.js';
+export * from './tricks.js';
 export * from './layers.js';
 export * from './dungeons.js';
 export * from './perf.js';

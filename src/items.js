@@ -2,7 +2,7 @@
 import {C,METAL,SETCOL} from './game.js';
 
 // ================= tiles =================
-export const T={SKYSTONE:68,CLOUD:69,SKYORE:70,DEEP:71,MACHINE:72,BONE:73,GATE:74,CRANK:75,TOWER:76,FAKE:64,DRIFT:65,THIN:66,SEAL:67,MURAL:63,RARE:62,FOIL:61,PEEL:55,SKETCH:56,SIGN:57,PEDESTAL:58,RUBBLE:59,ALTAR:60,CROP:52,ALCHEMY:53,PAINT5:54,PAINT1:39,PAINT2:40,PAINT3:41,PAINT4:42,BANR:43,BANB:44,BANG:45,LANTERNP:46,SHELF:47,CANDLE:48,POT:49,CLOCK:50,ARMCHAIR:51,SNOW:28,ICE:29,FROST:30,INKSTONE:31,INKORE:32,ASH:33,EMBERORE:34,ROPE:35,INK:36,LAVA:37,BLOOM:38,AIR:0,GRASS:1,DIRT:2,STONE:3,PLANK:4,TRUNK:5,COPPER:6,IRON:7,GOLD:8,SAND:9,TORCH:10,DOOR:11,TABLE:12,CHAIR:13,CHEST:14,BENCH:15,BRICK:16,GLASS:17,PLATFORM:18,FURNACE:19,ANVIL:20,BED:21,HEART:22,TUFT:23,FLOWER:24,MUSH:25,CORE:26,FLOWER2:27};
+export const T={SEAM:77,RIP:78,SEWN:79,CREASE:80,SKYSTONE:68,CLOUD:69,SKYORE:70,DEEP:71,MACHINE:72,BONE:73,GATE:74,CRANK:75,TOWER:76,FAKE:64,DRIFT:65,THIN:66,SEAL:67,MURAL:63,RARE:62,FOIL:61,PEEL:55,SKETCH:56,SIGN:57,PEDESTAL:58,RUBBLE:59,ALTAR:60,CROP:52,ALCHEMY:53,PAINT5:54,PAINT1:39,PAINT2:40,PAINT3:41,PAINT4:42,BANR:43,BANB:44,BANG:45,LANTERNP:46,SHELF:47,CANDLE:48,POT:49,CLOCK:50,ARMCHAIR:51,SNOW:28,ICE:29,FROST:30,INKSTONE:31,INKORE:32,ASH:33,EMBERORE:34,ROPE:35,INK:36,LAVA:37,BLOOM:38,AIR:0,GRASS:1,DIRT:2,STONE:3,PLANK:4,TRUNK:5,COPPER:6,IRON:7,GOLD:8,SAND:9,TORCH:10,DOOR:11,TABLE:12,CHAIR:13,CHEST:14,BENCH:15,BRICK:16,GLASS:17,PLATFORM:18,FURNACE:19,ANVIL:20,BED:21,HEART:22,TUFT:23,FLOWER:24,MUSH:25,CORE:26,FLOWER2:27};
 export const TP=[];export const SOLID=new Uint8Array(128),OPAQUE=new Uint8Array(128),LB=new Uint8Array(128),LIGHT=new Uint8Array(128);
 function def(id,o){TP[id]=Object.assign({hard:.5,pick:0,drop:null,light:0,solid:false,col:'#888'},o);SOLID[id]=o.solid?1:0;OPAQUE[id]=o.solid&&id!==T.DOOR?1:0;LB[id]=OPAQUE[id]&&id!==T.GLASS?1:0;LIGHT[id]=o.light||0;}
 def(T.AIR,{hard:0,col:'#000'});
@@ -80,6 +80,12 @@ def(T.BONE,{solid:1,hard:1.4,pick:2,drop:null,cell:C.bone,col:'#efe6cf'});
 // dungeons (dungeons.js): the shell and gates can't be dug through, so the puzzle, the mini-boss and the boss have to be beaten in order
 def(T.TOWER,{solid:1,hard:99,pick:99,cell:C.tower,col:'#6e5a48'});
 def(T.GATE,{solid:1,hard:99,pick:99,cell:C.gate,col:'#8a6a3a'});
+// paper tricks (tricks.js): a stitched seam the Seam Ripper tears open, a torn hole in the page the Golden Needle sews shut
+// (into a solid paper patch), and a crease mark the Bone Folder folds the page along to reach its partner
+def(T.SEAM,{solid:1,hard:99,pick:99,cell:C.seam,col:'#8d8f9a'});
+def(T.RIP,{hard:99,pick:99,cell:C.rip,col:'#1c1520'});
+def(T.SEWN,{solid:1,hard:1.2,drop:null,cell:C.sewn,col:'#e9dcc0'});
+def(T.CREASE,{hard:99,pick:99,cell:C.crease,col:'#b8a07a',light:2});
 def(T.CRANK,{hard:99,pick:99,cell:C.crank[0],col:'#c9a24a'});
 export const WALLCELL=[0,C.wDirt,C.wWood,C.wStone,C.wRed,C.wBlue,C.wGreen,C.wYellow],WALLCOL=['#000','#4e3824','#5e4128','#55576a','#6a2e28','#2e4262','#3a583a','#806832'],WALLDROP=[null,null,'woodwall','stonewall','wallred','wallblue','wallgreen','wallyellow'];
 
@@ -298,6 +304,9 @@ item('skybar',{name:'Skyglass Bar',cell:C.barSky,value:45});
 item('deepslate',{name:'Pressed Slate',cell:C.deep,place:T.DEEP,desc:'Pages pressed flat for ages. Needs a Frostsilver Pickaxe or better.'});
 item('cog',{name:'Ancient Cog',cell:C.cog,value:15,desc:'Pried from the old machines of the Pressed Deep.'});
 item('clockwings',{name:'Clockwork Wings',cell:C.clockwings,acc:['fly','djump'],max:1,value:400,desc:'Brass and paper wings from the Folded Clocktower. Hold Jump in mid-air to fly for a moment; they rewind on the ground. Reaches the sky islands.'});
+item('ripper',{name:'Seam Ripper',cell:C.ripper,max:1,value:90,desc:'A paper trick: while it is in your backpack, right-click a stitched seam in the rock to tear it open.'});
+item('needle',{name:'Golden Needle',cell:C.needle,max:1,value:150,desc:'A paper trick: while it is in your backpack, right-click a torn hole in the page to sew it shut.'});
+item('folder',{name:'Bone Folder',cell:C.folder,max:1,value:240,desc:'A paper trick: while it is in your backpack, right-click a crease mark to fold the page along it and step out at the other end.'});
 item('skyhook',{name:'Skyglass Hook',cell:C.skyhook,hook:1,max:1,value:180,desc:'A grappling hook with a skyglass tip: reaches almost twice as far and pulls faster. Press F (or LT) to fire.'});
 item('skyblade',{name:'Skyglass Saber',cell:C.swSky,dmg:36,kb:6,dur:.25,max:1,value:140,desc:'Light as air. Quick cuts.'});
 item('gear',{name:'Spinning Gear',cell:C.cog});
@@ -354,6 +363,7 @@ export const RECIPES=[
  ['helm_sky',1,[['emberbar',8],['plume',4],['batwing',4]],'anvil'],['mail_sky',1,[['emberbar',12],['plume',6],['batwing',6]],'anvil'],['legs_sky',1,[['emberbar',10],['plume',5],['batwing',4]],'anvil'],
  ['helm_weave',1,[['emberbar',8],['inkheart',2],['fstar',8]],'anvil'],['mail_weave',1,[['emberbar',12],['inkheart',3],['fstar',12]],'anvil'],['legs_weave',1,[['emberbar',10],['inkheart',2],['fstar',10]],'anvil'],['shfo',1,[['foilbar',14]],'anvil'],
  ['skybar',1,[['skyore',4]],'furnace'],['skyhook',1,[['skybar',10],['cog',4],['hook',1]],'anvil'],['skyblade',1,[['skybar',14],['cog',2]],'anvil'],['clock',1,[['wood',8],['cog',2]],'bench'],
+ ['ripper',1,[['ironbar',4],['plume',2]],'anvil'],['needle',1,[['goldbar',4],['inkheart',1],['rope',5]],'anvil'],['folder',1,[['fos_amm',1],['fos_tri',1],['cinder',1]],'anvil'],
  ['inktome',1,[['fstar',5],['gel',8],['mushroom',3]],'bench'],['cranetome',1,[['fstar',10],['goldbar',8],['batwing',4]],'anvil'],['starstaff',1,[['fstar',20],['goldbar',12]],'anvil'],
 ];
 export const SHOP=[['rodwood',40],['fly',3],['tmap',150],['seed_sun',5],['seed_wheat',5],['bucket',60],['b_stomp',60],['b_dip',150],['b_heartf',120],['torch',5],['rope',1],['hook',200],['potion',25],['arrow',1],['paper',1],['manapotion',20],['woodbow',30],['shuriken',3],['glass',4],['bed',60],['crown',180],['lantern',300],['glider',450]];

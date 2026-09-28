@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import {
   bossDefeatFx,bossHeld,bossLook,bossPhaseFx,crops,DEFEAT_T,markChunk,RARE,RARECOL,RAREHOW,reduceMotion,RSEEDS,RSOIL,teleOutline,wev,
-  $,AC,addItem,ambBus,BADGES,FCLIP,HUMANFOE,FOLK,rigPlay,rigSet,rigUpdate,rigJoint,bestDrop,bestKill,BIO,biomeAt,boss,boxHits,BUFFS,burst,camera,camT,chests,
+  $,AC,addItem,ambBus,BADGES,FCLIP,HUMANFOE,FOLK,rigPlay,rigSet,rigUpdate,rigJoint,rigHold,rigPt,bestDrop,bestKill,BIO,biomeAt,boss,boxHits,BUFFS,burst,camera,camT,chests,
   clamp,collide,consumeSel,countItem,crackerBoom,cursor,DASH_V,defense,dormant,dropItem,dummy,edmg,ELEM,
   ELITE_LOOT,ELITE_TINT,TRAITS,traitOf,eclipseOn,migPick,EN,enemies,floatText,H,hasAcc,hasBadge,hasBuff,held,HERBCOL,HERBS,iconTex,idx,
   INKTINT,inNiceWin,isFest,invOpen,isNight,isOpaque,isSolid,ITEMS,keys,touch,lerp,lightAt,makeElite,markDirty,meta,
@@ -13,7 +13,7 @@ import {
   palEv,partnerCheer,FISH,season,festival,worldDay,hasNPC,META,
   updateCoins,updateDashHud,updateDrawHud,updateEnemyFx,updateGhosts,upx,W,WALLCOL,WALLDROP,walls,
   worldClock,worldTime,digFossil,evKill,fcount,npcLine,plain,clockRoom,layerAt,crankAt,gateAt,
-  guideEv,dismount,MOUNTS,petS,toggleMount,togglePet,NDL,emit,loreChest,readMural,PF,lookColors,SHEETS,canvasTex,fullSet,setOn,setMul,SETS,
+  guideEv,trickAt,dismount,MOUNTS,petS,toggleMount,togglePet,NDL,emit,loreChest,readMural,PF,lookColors,SHEETS,canvasTex,fullSet,setOn,setMul,SETS,
 } from './game.js';
 
 // ================= gameplay =================
@@ -312,7 +312,7 @@ export function updateFishing(dt){const p=player,it=selItem();
   // hold the rod up toward the bobber while the line is out
   p.face=bob.x>=p.x?1:-1;const ca=bob.state===1&&bob.t<.3?lerp(2.7,1.1,EZ.o2(bob.t/.3)):bob.state===3||bob.state===5&&bob.fight.thr>0?1.1+Math.sin(bob.t*40)*.1:1.1,aim=p.face>0?ca:Math.PI-ca;if(!p.swing||p.swing.tool!==bob.rod)p.swing={t:0,dur:1,tool:bob.rod,aim};else{p.swing.t=0;p.swing.aim=aim;}
   bobMesh.visible=lineObj.visible=true;bobMesh.position.set(bob.x,bob.y+.1,.46);bobMesh.rotation.z=bob.state===1?bob.t*8:Math.sin(bob.t*2.4)*.15;setTint(bobMesh.material,bob.x,bob.y);
-  let tx0=p.x+p.face*.9,ty0=p.y+2.2;if(toolMesh&&toolPivot.visible){toolPivot.updateMatrixWorld(true);toolMesh.localToWorld(tipV.set(1.08,1.08,0));tx0=tipV.x;ty0=tipV.y;}
+  let tx0=p.x+p.face*.9,ty0=p.y+2.2;if(p.rig.hs[p.rig.d.pi.held]){const[lx,ly]=rigPt(p.rig,'held',65,-65);p.mesh.updateMatrixWorld(true);p.mesh.localToWorld(tipV.set(lx,ly,0));tx0=tipV.x;ty0=tipV.y;}
   const pos=lineObj.geometry.attributes.position,bx=bob.x,by=bob.y+.32,sag=bob.state===1?0:Math.min(1.6,Math.hypot(bx-tx0,by-ty0)*.12);
   for(let i=0;i<16;i++){const k=i/15;pos.setXYZ(i,lerp(tx0,bx,k),lerp(ty0,by,k)-Math.sin(k*Math.PI)*sag,.45);}pos.needsUpdate=true;const L=lightAt(bx,by);lineObj.material.color.setRGB(.96*L[0],.94*L[1],.9*L[2]);}
 function openCrate(){const p=player,x=p.x,y=p.y+1.2,g=(id,n)=>dropItem(id,n,x,y),tier=quests.folio?3:quests.lev?2:quests.crane?1:0;g('coin',randi(40,120));
@@ -398,6 +398,7 @@ function interact(){const tx=Math.floor(mouse.wx),ty=Math.floor(mouse.wy);
   if(t===T.CRANK){crankAt(tx,ty);return;}
   if(t===T.GATE){gateAt(tx,ty);return;}
   if(t===T.SKETCH){popSketch(tx,ty);return;}
+  if(t===T.SEAM||t===T.RIP||t===T.CREASE){trickAt(t,tx,ty);return;}
   if(t===T.SIGN){signAt(tx,ty);return;}
   if(t===T.MURAL){readMural(tx,ty);SFX.rustle(.2,.5);return;}
   if(t===T.ALTAR){toast('"Five small flames upon the stones, beneath a moon of ink, will wake the one who was unfolded."');SFX.pick();return;}
@@ -408,7 +409,7 @@ function interact(){const tx=Math.floor(mouse.wx),ty=Math.floor(mouse.wy);
   if(t===T.CLOCK){const h=Math.floor(worldTime),m=Math.floor((worldTime-h)*60);toast(`The clock reads ${(h%12)||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}.`);SFX.pick();return;}
   if(t===T.BED){player.spawn={x:tx+.5,y:ty};toast('Spawn point set.','good');SFX.pick();return;}}
 
-export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();setCheck();updateDashHud(dt);updateDrawHud();if(p.dead){p.dashT=0;updateShield(dt);dieAnim(dt);p.deadT-=dt;$('deadTxt').textContent=`Refolding in ${Math.max(0,Math.ceil(p.deadT))}…`;if(p.deadT<=0)respawn();return;}
+export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();setCheck();updateDashHud(dt);updateDrawHud();if(p.dead){p.dashT=0;updateTool(null);updateShield(dt);updateNock();dieAnim(dt);p.deadT-=dt;$('deadTxt').textContent=`Refolding in ${Math.max(0,Math.ceil(p.deadT))}…`;if(p.deadT<=0)respawn();return;}
   const cx=Math.floor(p.x);const lt=tileAt(cx,Math.floor(p.y+.7));p.inLiq=TP[lt].liq?lt:0;
   if(p.inLiq===T.INK&&!p.wasInk)stat('swims');p.wasInk=p.inLiq===T.INK;
   if(p.inLiq===T.LAVA&&!hasBuff('fire')){if(p.inv_t<=0)hurtPlayer(30,p.x-p.face,null,'fire');burst(p.x,p.y+.5,['#ff8a3d','#ffd66b'],1,2,{grav:-4,bright:1});}
@@ -455,7 +456,7 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();se
   p.manaT=(p.manaT||0)+dt;if(p.manaT>.8&&p.mana<p.maxMana)p.mana=Math.min(p.maxMana,p.mana+dt*(3+p.maxMana*.05)*(Math.abs(p.vx)<.5?1.6:1)*(setOn('weave')?2:1));
   p.inv_t-=dt;p.potT=Math.max(0,p.potT-dt);p.stompWin-=dt;p.regenT+=dt;if(p.regenT>5&&p.hp<p.max){p.hp=Math.min(p.max,p.hp+dt*(p.regenT>12?3:1));}if(hasBadge('happy')&&p.hp<p.max)p.hp=Math.min(p.max,p.hp+dt);const rg=(hasBuff('regen')?2:0)+(hasBuff('lunar')&&isNight()?3:0)+(hasBuff('fed')?.5:0)+(hasAcc('nightregen')&&isNight()?1:0);if(rg&&p.hp<p.max)p.hp=Math.min(p.max,p.hp+rg*dt);
   for(const k in p.buffs){p.buffs[k]-=dt;if(p.buffs[k]<=0){delete p.buffs[k];toast(`${BUFFS[k][0]} wore off.`);}}
-  updatePlayerStatus(dt);if(p.dead){updateTool(null,1);return;}
+  updatePlayerStatus(dt);if(p.dead){updateTool(null);return;}
   if(wind&&!p.onGround&&hook.state!==2&&!p.inLiq)p.vx+=wind*dt*3;
   // items
   const it=selItem();p.mineP=p.mineP||0;
@@ -484,7 +485,8 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();se
   rigPlay(p.rig,c,{t:ct});m.position.set(p.x,p.y-.08+(p.rideY||0),.15);setTint(p.mat,p.x,p.y+1);statusOverlay(dt);p.mat.uniforms.uFlash.value=p.inv_t>0&&!(p.inv_t>1.3)?(Math.floor(p.inv_t*14)%2?.6:0):0;
   const sq=(p.onGround?(p.squash>0?1-p.squash*.9:1):clamp(1+p.vy*.006,.92,1.08))*(sp?sp.sq:1);m.scale.set(1/Math.sqrt(sq),sq,1);if(p.flat)m.scale.set(1.3,.42,1);if(p.cheerT>0&&!reduceMotion())m.position.y+=Math.abs(Math.sin(p.cheerT*10))*.12;
   if(p.dashT>0){m.scale.x*=1.22;m.scale.y*=.9;p.ghostT-=dt;if(p.ghostT<=0){p.ghostT=.03;spawnGhost();}}
-  updateArm(sp);rigUpdate(p.rig,dt);updateTool(sp,sq);updateShield(dt);}
+  updateArm(sp);updateTool(sp);updateShield(dt);rigUpdate(p.rig,dt);
+  if(p.swing&&p.swing.aim!=null)aimHand=sp?swingHand(sp,sq,1):[p.x+p.face*.25,p.y+1.1];updateNock();}
 // sword: a three-hit combo, each cut keyframed as [k end, arm angle, easing, body frame]. Angles are world radians
 // relative to facing (0 forward, + up). A cut coils back (anticipation), snaps through fast (ease-out-quart), overshoots, then settles.
 // 0 overhead cut, 1 rising cut back up, 2 a wider lunging finisher. Each wind-up starts from where the last cut ended so chains flow.
@@ -571,22 +573,27 @@ export function updateTrail(dt){const p=player,s=p.swing;
     const dx=p.face*Math.cos(sp.blade),dy=Math.sin(sp.blade),a=u**1.4*clamp((Math.abs(sp.v)-4)/16,0,1)*(s.combo===2?.95:.8);if(a>.02)any=1;
     trailPos.set([hx+dx*.35*ts,hy+dy*.35*ts,.3,hx+dx*1.6*ts,hy+dy*1.6*ts,.3],i*6);trailA[i*2]=a*.1;trailA[i*2+1]=a;}
   trailMesh.visible=!!any;trailGeo.attributes.position.needsUpdate=true;trailGeo.attributes.aA.needsUpdate=true;}
-const toolPivot=new THREE.Group();scene.add(toolPivot);let toolMesh=null,toolId=null,aimHand=[0,0];
+let aimHand=[0,0];
 // while swinging or aiming, gameplay holds the rig's front arm: pinned on screen from the shoulder toward the weapon's grip
 function updateArm(sp){const p=player;if(!sp||p.dead||p.flat)return;rigSet(p.rig,'armA',{r:-(sp.arm+Math.PI/2),sy:sp.sc,abs:1,snap:1});}
-function updateTool(sp,sq){const p=player,s=p.swing;if(!s||!s.tool||p.dead){toolPivot.visible=false;return;}if(toolId!==s.tool){if(toolMesh){toolPivot.remove(toolMesh);toolMesh.material.dispose();}const g=new THREE.PlaneGeometry(1.25,1.25);g.translate(.5,.5,0);toolMesh=new THREE.Mesh(g,spriteMat(iconTex(s.tool)));toolPivot.add(toolMesh);toolId=s.tool;}
-  toolPivot.visible=true;const k=clamp(s.t/s.dur,0,1),ang=sp?sp.blade:s.aim!=null?(p.face>0?s.aim:Math.PI-s.aim):lerp(1.9,-.5,Math.sin(k*Math.PI*.5));
-  if(s.aim!=null){const r=.55+.2*(1-k),[hx,hy]=aimHand=sp?swingHand(sp,sq,1):[p.x+p.face*.25,p.y+1.1];toolPivot.position.set(hx-Math.cos(s.aim)*r,hy-Math.sin(s.aim)*r,.18);}else if(sp){const[hx,hy]=swingHand(sp,sq,1);toolPivot.position.set(hx,hy,.18);}else toolPivot.position.set(p.x+p.face*.2,p.y+1.05+(p.rideY||0),.18);const ts=s.heavy?1.2:1;toolPivot.scale.set(p.face*ts,ts,1);toolPivot.rotation.z=(ang-Math.PI/4)*p.face;setTint(toolMesh.material,p.x,p.y+1);toolMesh.material.uniforms.uFlash.value=inNiceWin(s)||s.draw>=1?.55+.2*Math.sin(worldClock*30):s.nice?.35:s.draw?s.draw*.25:0;}
+// the held weapon or tool is the rig's 'held' piece (rig.js), cut from the item's icon: it hangs at the hand, turned to the
+// blade's angle (which leads or lags the arm), bigger for a warhammer, and set back along the aim for bows, wands and rods.
+// Runs before rigUpdate so the piece and the arm pose in the same frame.
+function updateTool(sp){const p=player,s=p.swing,R=p.rig;if(!s||!s.tool||p.dead){rigHold(R,'held',null);return;}rigHold(R,'held',iconTex(s.tool).image);
+  const k=clamp(s.t/s.dur,0,1),ang=sp?sp.blade:s.aim!=null?(p.face>0?s.aim:Math.PI-s.aim):lerp(1.9,-.5,Math.sin(k*Math.PI*.5)),ts=s.heavy?1.2:1,o={r:Math.PI/4-ang,sx:ts,sy:ts,abs:1,snap:1};
+  // the aimed item sits behind the hand along the aim (the held piece is rigid, but its pivot rides the stretched arm)
+  if(s.aim!=null)o.y=-(.55+.2*(1-k))*60/(sp?sp.sc:1);rigSet(R,'held',o);
+  const f=inNiceWin(s)||s.draw>=1?.55+.2*Math.sin(worldClock*30):s.nice?.35:s.draw?s.draw*.25:0,u=R.mat.uniforms.uPF.value;u.x=R.d.pi.held;u.y=f;}
 // a nocked arrow slides back along the bow while drawing
-let nockMesh=null,nockId=null,shieldMesh=null,shieldId=null;
+let nockMesh=null,nockId=null;
 function updateNock(){const p=player,s=p.swing;if(!s||s.draw==null||p.dead){if(nockMesh)nockMesh.visible=false;return;}const ai=findAmmo('arrow'),id=ai>=0?p.inv[ai].id:'arrow';
   if(nockId!==id){if(nockMesh){scene.remove(nockMesh);nockMesh.material.dispose();nockMesh.geometry.dispose();}nockMesh=new THREE.Mesh(new THREE.PlaneGeometry(.8,.8),spriteMat(iconTex(id)));nockMesh.renderOrder=5;scene.add(nockMesh);nockId=id;}
   const a=s.aim,r=.25-.42*s.draw;nockMesh.visible=true;nockMesh.position.set(aimHand[0]+Math.cos(a)*r,aimHand[1]+.05+Math.sin(a)*r,.19);nockMesh.rotation.z=a-Math.PI/4;setTint(nockMesh.material,p.x,p.y+1);nockMesh.material.uniforms.uFlash.value=s.draw>=1?.5:0;}
-// the raised shield sits in front of the player; it glows while a parry would still land
-function updateShield(dt){const p=player;p.shieldFlash=Math.max(0,(p.shieldFlash||0)-dt);updateNock();if(!p.blocking||p.dead){if(shieldMesh)shieldMesh.visible=false;return;}const id=shieldItem().id;
-  if(shieldId!==id){if(shieldMesh){scene.remove(shieldMesh);shieldMesh.material.dispose();shieldMesh.geometry.dispose();}shieldMesh=new THREE.Mesh(new THREE.PlaneGeometry(1,1),spriteMat(iconTex(id)));shieldMesh.renderOrder=5;scene.add(shieldMesh);shieldId=id;}
-  const up=Math.min(1,p.blockT/.08),hot=p.parryOK&&p.blockT<PARRY_W*niceW();shieldMesh.visible=true;shieldMesh.position.set(p.x+p.face*(.3+.25*up),p.y+.75+(p.rideY||0)+.3*up,.2);shieldMesh.rotation.z=p.face*(1-up)*.5;
-  setTint(shieldMesh.material,p.x,p.y+1);shieldMesh.material.uniforms.uFlash.value=p.shieldFlash>0?.9:hot?.3:0;}
+// the raised shield is the rig's 'shield' piece, in front of everything; it swings up as the block starts and glows while a
+// parry would still land. Runs before rigUpdate, like updateTool.
+function updateShield(dt){const p=player,R=p.rig,u=R.mat.uniforms.uPF.value;p.shieldFlash=Math.max(0,(p.shieldFlash||0)-dt);if(!p.blocking||p.dead){rigHold(R,'shield',null);u.w=0;return;}
+  rigHold(R,'shield',iconTex(shieldItem().id).image);const up=Math.min(1,p.blockT/.08),hot=p.parryOK&&p.blockT<PARRY_W*niceW();
+  rigSet(R,'shield',{x:15*up,y:-18*up,r:-(1-up)*.5,abs:1,snap:1});u.z=R.d.pi.shield;u.w=p.shieldFlash>0?.9:hot?.3:0;}
 
 export function spawnLogic(dt){spawnT-=dt;if(spawnT>0)return;spawnT=.9;const p=player;if(p.dead)return;const surfY=surf[clamp(Math.floor(p.x),0,W-1)];const under=p.y<surfY-12;const ecl=eclipseOn()&&!under,night=isNight()||ecl;
   const cap=(under||biomeAt(p.x,p.y)==='under'?6:(night?7:4+(weather==='rain'?2:0)))*(inkMoon&&night&&!under?2:1);if(enemies.filter(e=>!e.d.boss&&!e.parent).length>=cap+(BIO.awake?2:0)+(ecl?2:0))return;if(Math.random()<(inkMoon&&night?.1:.45))return;

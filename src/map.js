@@ -1,7 +1,7 @@
 // The pop-up book page turn for new biomes and the world map.
 import * as THREE from 'three';
 import {
-  $,BIO,BIONAME,boss,camera,canvasTex,chests,CHH,chunks,circ,clamp,CS,CW,fi,grain,H,idx,INK,ink,invOpen,
+  $,BIO,drawTrickMarks,BIONAME,boss,camera,canvasTex,chests,CHH,chunks,circ,clamp,CS,CW,fi,grain,H,idx,INK,ink,invOpen,
   LIGHT,liqChunks,meta,mk,N,NPCDEF,npcs,OPAQUE,player,rr,scene,setInv,SFX,state,surf,surfAvg,T,TCOL,
   tileAt,tiles,W,walls,WCOL,
   lore,MARKS,
@@ -68,6 +68,7 @@ export function drawMap(){const d=mbImg.data;for(let y=0;y<H;y++)for(let x=0;x<W
   g.font=`bold ${Math.max(10,S*4)}px sans-serif`;g.textAlign='center';for(const[k,x,y]of(BIO.marks||[])){if(!lore.f[k]&&!explored[idx(x,Math.min(H-1,y+2))])continue;const X=x*S,Y=(H-y-6)*S;
     g.beginPath();g.moveTo(X,Y-9);g.lineTo(X+7,Y);g.lineTo(X,Y+9);g.lineTo(X-7,Y);g.closePath();g.fillStyle=lore.f[k]?'#b06ad0':'#e9dcc0';g.fill();g.lineWidth=2;g.strokeStyle='#2a2130';g.stroke();
     g.lineWidth=3;g.strokeStyle='rgba(251,248,240,.85)';g.strokeText(MARKS[k].n,X,Y-13);g.fillStyle='#2a2130';g.fillText(MARKS[k].n,X,Y-13);}
+  drawTrickMarks(g,S);
   dot(player.spawn.x,player.spawn.y+.5,'#e8636a',5);npcs.forEach(n=>dot(n.x,n.y+1,'#6cf07a',6));if(boss)dot(boss.x,boss.y+2,'#7fd3f0',9);dot(player.x,player.y+1,'#fff',7);}
 export function toggleMap(o=!mapOpen){if(state!=='play'&&o)return;mapOpen=o;$('map').hidden=!o;if(o){if(invOpen)setInv(false);drawMap();}}
 // Imported bindings are read-only, so other modules assign these through setters.

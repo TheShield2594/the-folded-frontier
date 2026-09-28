@@ -386,5 +386,23 @@ const slab2=(t,col)=>{poly(t,[10,14,40,6,58,20,56,48,30,58,8,46]);fi(t,col);};
 C.fosSpine=sticker(t=>{slab2(t,'#b9b4c4');for(let k=0;k<4;k++){const x=16+k*10,y=44-k*8;t.beginPath();t.ellipse(x,y,6,5,-.6,0,6.28);fi(t,'#f0e8d6',2);poly(t,[x,y-4,x+2,y-12,x+5,y-3]);fi(t,'#f0e8d6',1.5);}});
 C.fosClaw=sticker(t=>{slab2(t,'#b9b4c4');for(const[dx,s]of[[-8,.9],[2,1],[12,.85]]){t.beginPath();t.moveTo(24+dx,50);t.quadraticCurveTo(22+dx,24,34+dx*1.2,14*s+4);t.quadraticCurveTo(30+dx,28,32+dx,50);t.closePath();fi(t,'#f0e8d6',2);}});
 C.fosWing=sticker(t=>{slab2(t,'#b9b4c4');t.beginPath();t.moveTo(14,46);t.lineTo(30,30);t.lineTo(50,16);ink(t,5,'#f0e8d6');for(const[x,y]of[[30,30],[40,23],[50,16]]){t.beginPath();t.moveTo(x,y);t.lineTo(x+4,y+20);ink(t,3,'#f0e8d6');}t.beginPath();t.moveTo(14,46);t.lineTo(30,30);t.lineTo(50,16);ink(t,1.2,'rgba(90,70,50,.5)');});
+// ---- paper tricks (tricks.js): the stitched seam in the rock, a torn hole in the page, the patch sewn over it, a crease mark,
+// and the three tools. Thread is red so the seam and the patch read as sewn in every color-vision mode by their cross-stitches.
+const THREAD='#d4483b';
+C.seam=blockCell('#8d8f9a',c=>{stoneDeco(c);c.beginPath();c.moveTo(34,0);for(let y=8;y<=64;y+=8)c.lineTo(y%16?28:36,y);ink(c,5,'#1c1520');
+  for(let y=6;y<64;y+=10){c.beginPath();c.moveTo(22,y);c.lineTo(42,y+5);ink(c,4,INK);c.beginPath();c.moveTo(22,y);c.lineTo(42,y+5);ink(c,2.2,THREAD);}});
+C.rip=sticker(t=>{t.beginPath();t.moveTo(0,4);for(let x=0;x<=64;x+=8)t.lineTo(x,x%16?1:7);t.lineTo(64,60);for(let x=64;x>=0;x-=8)t.lineTo(x,x%16?63:57);t.closePath();t.fillStyle='#1c1520';t.fill();
+  t.strokeStyle='#e9dcc0';t.lineWidth=3;t.stroke();const g=t.createRadialGradient(32,32,4,32,32,34);g.addColorStop(0,'rgba(90,60,120,.55)');g.addColorStop(1,'rgba(0,0,0,0)');t.fillStyle=g;t.fillRect(4,6,56,52);
+  for(const[x,l]of[[14,14],[40,20],[52,10]]){t.beginPath();t.moveTo(x,5);t.quadraticCurveTo(x+4,5+l*.6,x-1,5+l);ink(t,1.6,THREAD);}},0);
+C.sewn=blockCell('#e9dcc0',c=>{c.fillStyle='rgba(140,120,90,.18)';for(let i=0;i<5;i++)c.fillRect(rand(4,50),rand(8,52),rand(8,16),2);
+  for(const y of[12,52]){c.setLineDash([6,5]);c.beginPath();c.moveTo(4,y);c.lineTo(60,y);ink(c,2.2,THREAD);c.setLineDash([]);}
+  for(let x=10;x<64;x+=14){c.beginPath();c.moveTo(x-4,8);c.lineTo(x+4,16);c.moveTo(x+4,8);c.lineTo(x-4,16);ink(c,2,THREAD);}});
+C.crease=sticker(t=>{poly(t,[10,58,32,6,54,58]);fi(t,'#e9dcc0',2.2);poly(t,[32,6,54,58,32,58]);t.fillStyle='rgba(106,96,112,.22)';t.fill();t.setLineDash([6,4]);t.beginPath();t.moveTo(32,4);t.lineTo(32,60);ink(t,2.4,'#6a6070');t.setLineDash([]);
+  poly(t,[32,40,46,54,32,54]);fi(t,'#fbf8f0',2);t.beginPath();t.arc(32,22,8,Math.PI*.9,Math.PI*2.1);ink(t,2.4,'#b06ad0');poly(t,[40,17,44,24,36,24]);t.fillStyle='#b06ad0';t.fill();},0);
+C.ripper=sticker(t=>{rr(t,6,40,26,12,5);fi(t,'#c0633a',2.5);t.save();t.translate(30,40);t.rotate(-.75);rr(t,-2,-4,24,8,2);fi(t,'#c9cdd8',2);t.beginPath();t.moveTo(22,-4);t.lineTo(32,-6);t.lineTo(24,0);t.lineTo(32,6);t.lineTo(22,4);t.closePath();fi(t,'#e6e9f0',2);circ(t,26,0,2);t.fillStyle=THREAD;t.fill();t.restore();});
+C.needle=sticker(t=>{t.beginPath();t.moveTo(12,54);t.lineTo(50,12);ink(t,6,INK);t.beginPath();t.moveTo(12,54);t.lineTo(50,12);ink(t,3.2,'#f1c04f');t.beginPath();t.ellipse(46,16,3,5,.73,0,6.28);t.fillStyle=INK;t.fill();
+  t.beginPath();t.moveTo(46,16);t.bezierCurveTo(60,30,30,40,44,58);ink(t,2.4,THREAD);});
+C.folder=sticker(t=>{t.save();t.translate(32,32);t.rotate(-.78);rr(t,-26,-6,52,12,6);fi(t,'#f0e8d6',2.5);t.beginPath();t.moveTo(-14,-6);t.lineTo(-14,6);ink(t,1.6,'rgba(42,33,48,.4)');t.restore();
+  t.setLineDash([4,3]);t.beginPath();t.moveTo(8,20);t.lineTo(26,6);ink(t,1.8,'#6a6070');t.setLineDash([]);});
 C.hl=sticker(t=>{rr(t,2,2,60,60,8);t.setLineDash([8,5]);ink(t,3,'#fff');t.setLineDash([]);},0);
 if(cellN>(32-4)*16)console.warn('atlas overflow');
