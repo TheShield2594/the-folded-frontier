@@ -179,9 +179,12 @@ function planStacks(rng){const out=[],lx=BIO.lake?BIO.lake[0]:-1e4,spots=[];
       for(const k of[3,4,9,10])tiles[idx(c(k),y)]=T.SHELF;tiles[idx(c(6),y)]=T.CANDLE;const ci=idx(c(7),y);tiles[ci]=T.CHEST;chests.set(ci,stacksLoot());
       out.push([c(1),y,0]);break;}}
   return out;}
+const opening=new Set();
 export function stacksAt(x,y){if(!countItem('archkey')){toast('Shelves sealed shut with ink, a keyhole in the middle. The key of the Hollow Archive would fit it.');SFX.pick();return;}
-  let y0=y;while(tiles[idx(x,y0-1)]===T.STACKS)y0--;const b=BIO,s=(b.dun&&b.dun.stacks||[]).find(s=>s[0]===x&&Math.abs(s[1]-y)<=3);
-  for(let yy=y0,n=0;tiles[idx(x,yy)]===T.STACKS;yy++,n++){const cy=yy;setTimeout(()=>{if(BIO!==b||tiles[idx(x,cy)]!==T.STACKS)return;setTile(x,cy,T.AIR);burst(x+.5,cy+.5,['#3a2a5a','#e0b0ff','#e9dcc0'],10,4);SFX.rustle(.2,.6);},n*120);}
+  // a door already dissolving ignores more clicks (a door saved halfway can still be opened on a later load)
+  let y0=y;while(tiles[idx(x,y0-1)]===T.STACKS)y0--;const k=idx(x,y0);if(opening.has(k))return;opening.add(k);const b=BIO,s=(b.dun&&b.dun.stacks||[]).find(s=>s[0]===x&&Math.abs(s[1]-y)<=3);let n=0;
+  for(let yy=y0;tiles[idx(x,yy)]===T.STACKS;yy++,n++){const cy=yy;setTimeout(()=>{if(BIO!==b||tiles[idx(x,cy)]!==T.STACKS)return;setTile(x,cy,T.AIR);burst(x+.5,cy+.5,['#3a2a5a','#e0b0ff','#e9dcc0'],10,4);SFX.rustle(.2,.6);},n*120);}
+  setTimeout(()=>opening.delete(k),n*120+1);
   if(s)s[2]=1;SFX.door();tone(330,494,.4,'triangle',.06);toast('The ink seal dissolves. Behind it: the Lost Stacks!','gold');stat('stacks');}
 const inD=(d,x,y)=>x>=d.x&&x<d.x+d.w&&y>=d.y&&y<d.y+d.h+1;
 // which dungeon a point is in (its key), or null

@@ -277,7 +277,7 @@ test('new worlds get the Hollow Archive: a seam, a crank and a torn curtain, the
     out.quest=!!g.quests.arch;out.B=[43,44,45].map(r=>at(22,r));const[rx,ry]=xy(16,45),rw=g.chests.get(ry*g.W+rx);out.key=!!rw&&rw.some(i=>i&&i.id==='archkey');
     // the Lost Stacks open only with the key
     const st=g.BIO.dun.stacks,s0=st[0];out.stacks=st.length;g.stacksAt(s0[0],s0[1]);out.locked=g.tiles[s0[1]*g.W+s0[0]]===T.STACKS;
-    g.addItem('archkey',1);g.stacksAt(s0[0],s0[1]+1);await wait(600);out.open=[0,1,2].map(k=>g.tiles[(s0[1]+k)*g.W+s0[0]]);
+    g.addItem('archkey',1);const n0=g.META.stats.stacks||0;g.stacksAt(s0[0],s0[1]+1);g.stacksAt(s0[0],s0[1]);out.once=(g.META.stats.stacks||0)-n0;await wait(600);out.open=[0,1,2].map(k=>g.tiles[(s0[1]+k)*g.W+s0[0]]);
     g.save();const sv=JSON.parse(localStorage.getItem('folded-frontier-save-v1'));out.st=sv.bio.dun.arch.st;out.saved=sv.bio.dun.stacks[0][2];
     // a save from before the Archive keeps its terrain: it gets neither the Archive nor the Lost Stacks
     const old=JSON.parse(JSON.stringify(sv));delete old.bio.dun.arch;delete old.bio.dun.stacks;g.loadWorld(old);out.oldArch=g.BIO.dun.arch;out.oldStacks=g.BIO.dun.stacks;out.oldClock=!!g.BIO.dun.clock;
@@ -301,6 +301,7 @@ test('new worlds get the Hollow Archive: a seam, a crank and a torn curtain, the
   expect(s.stacks).toBe(2);
   expect(s.locked).toBe(true);
   expect(s.open).toEqual([AIR,AIR,AIR]);
+  expect(s.once).toBe(1);
   expect(s.st).toMatchObject({e:1,g:1,m:1,c:1});
   expect(s.saved).toBe(1);
   expect(s.oldArch).toBeNull();
