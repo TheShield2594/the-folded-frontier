@@ -1,7 +1,7 @@
 // Mining crack and highlight overlays, day/night sky and the camera.
 import * as THREE from 'three';
 import {
-  arenaF,atlasTex,BIO,biomeAt,boltF,C,camDist,camera,cellUV,clamp,clouds,cursor,dioLight,H,hasAcc,hasBuff,
+  arenaF,eclF,atlasTex,BIO,biomeAt,boltF,C,camDist,camera,cellUV,clamp,clouds,cursor,dioLight,H,hasAcc,hasBuff,
   fullMoon,inkMoon,lerp,moonMesh,season,seasonSky,mouse,N,OPAQUE,pad,player,rainF,rand,reachOK,scene,selItem,setShakeT,setSnowF,
   shakeT,skyMesh,skyU,snowF,SPAWNX,state,sunMesh,surfAvg,T,tiles,U,W,worldMat,
   worldTime,touch,
@@ -33,17 +33,19 @@ export function updateSky(){const h=worldTime,f=dayF(h),warm=f>0&&f<1?Math.sin(f
     const ld=Math.max(0,Math.abs(camera.position.x-BIO.lake[0])-BIO.lake[1]);const lf=clamp(1-ld/25,0,1)*(1-under);skyU.uBot.value.lerp(cB.set('#9a88c0'),lf*.35);skyU.uTop.value.lerp(cB.set('#b6d7e6'),snowF*.3*f);}
   seasonSky(skyU,cB,f,under);
   if(rainF>0){skyU.uTop.value.lerp(cB.set('#6f7f8f'),rainF*.6*f+rainF*.2);skyU.uBot.value.lerp(cB.set('#a9b4bf'),rainF*.5*f);U.uSky.value.multiplyScalar(1-rainF*.25);}
+  // an eclipse (events.js) folds the sun shut: a dusky violet sky, dim light and a few stars at midday
+  if(eclF>0){const ef=eclF*(1-under);skyU.uTop.value.lerp(cB.set('#140c22'),ef*.85);skyU.uBot.value.lerp(cB.set('#5a2a4a'),ef*.7);U.uSky.value.multiplyScalar(1-ef*.55);}
   if(arenaF>0){const af=arenaF*(1-under);skyU.uTop.value.lerp(cB.set('#3a1430'),af*.55);skyU.uBot.value.lerp(cB.set('#b0503a'),af*.4);}
   if(boltF>0){const bf=boltF*(1-under);skyU.uTop.value.lerp(cB.set('#eeeaff'),bf*.7);skyU.uBot.value.lerp(cB.set('#fffbe8'),bf*.6);U.uSky.value.multiplyScalar(1+bf*.5);}
   if(inkMoon){const im=(1-f)*(1-under);skyU.uTop.value.lerp(cB.set('#2a0f3a'),im);skyU.uBot.value.lerp(cB.set('#6a2a5a'),im);moonMesh.material.color.set(0xd08aff);}else moonMesh.material.color.set(0xffffff);moonMesh.scale.setScalar(fullMoon()&&!inkMoon?1.35:1);
-  skyU.uStars.value=(1-f)*(1-under)*(1-rainF);skyU.uTime.value=worldClock;
+  skyU.uStars.value=Math.max((1-f)*(1-under)*(1-rainF),eclF*.6*(1-under));skyU.uTime.value=worldClock;
   const cx=camera.position.x,cy=camera.position.y;skyMesh.position.x=cx;skyMesh.position.y=cy;
   const sa=(h-6)/12*Math.PI;sunMesh.position.set(cx-Math.cos(sa)*55,cy-2+Math.sin(sa)*34,-100);sunMesh.visible=sa>-0.3&&sa<Math.PI+.3&&under<.9;
   const ma=(((h+12)%24)-6)/12*Math.PI;moonMesh.position.set(cx-Math.cos(ma)*55,cy-2+Math.sin(ma)*34,-100);moonMesh.visible=ma>-0.3&&ma<Math.PI+.3&&under<.9;
   // the sun (or the moon, dimmer) lights the normal-mapped paper from where it hangs in the sky; with post-processing both glow past white
   {const a=f>.05?sa:ma,dx=-Math.cos(a),dy=Math.max(.15,Math.sin(a)),l=Math.hypot(dx,dy,1.1);U.uSun.value.set(dx/l,dy/l,1.1/l,(f>.05?f:.45)*(1-under)*(1-rainF*.6));}
-  const hd=U.uHdr.value;sunMesh.material.color.setScalar(1+.7*hd);moonMesh.material.color.multiplyScalar(1+.35*hd);
-  const tint=lerp(.35,1,f)*(1-under*.6);dioLight(tint*lerp(1,1.05,warm),tint*lerp(1,.85,warm),tint*lerp(1.05,.8,warm),under);
+  const hd=U.uHdr.value;sunMesh.material.color.setScalar(1+.7*hd);if(eclF>0){sunMesh.material.color.lerp(cB.set('#1a1024'),eclF*.92);U.uSun.value.w*=1-eclF*.7;}moonMesh.material.color.multiplyScalar(1+.35*hd);
+  const tint=lerp(.35,1,f)*(1-under*.6)*(1-eclF*.5);dioLight(tint*lerp(1,1.05,warm),tint*lerp(1,.85,warm),tint*lerp(1.05,.8,warm),under);
   clouds.forEach(c=>{c.material.color.setRGB(tint*lerp(1,1.1,warm),tint*lerp(1,.85,warm),tint*lerp(1,.8,warm));});}
 
 // ================= camera =================

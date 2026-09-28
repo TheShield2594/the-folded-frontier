@@ -85,6 +85,7 @@ export const BEST=[['slime','Green Slime','Forest, by day'],['bslime','Blue Slim
   ['king','King Slime','Boss · summoned on the surface'],['crane','Great Crane','Boss · Origami Snowfield'],['lev','Inkwell Leviathan','Boss · Ink Lake'],['folio','Charred Folio','Boss · Burnt Underworld'],['unfolded','The Unfolded','Secret boss · the ink shrine']];
 export let bestiary={};
 export function bestKill(e){const b=bestiary[e.type]||(bestiary[e.type]={k:0,d:{}});b.k++;if(e.elite)b.e=(b.e||0)+1;
+  if(e.trait&&TRAITS[e.trait]){const tr=b.tr||(b.tr={});if(!tr[e.trait]&&!Object.values(bestiary).some(o=>o.tr&&o.tr[e.trait]))toast(`New elite trait in the bestiary: ${TRAITS[e.trait].n}!`,'gold');tr[e.trait]=(tr[e.trait]||0)+1;}
   if(b.k===1){const row=BEST.find(r=>r[0]===e.type);toast(`New bestiary entry: ${row?row[1]:e.type}!`,'gold');stat('bestiary');}}
 export const bestDrop=(e,id,n)=>{const b=bestiary[e.type];if(b)b.d[id]=(b.d[id]||0)+n;};
 export function spawnEnemy(type,x,y){const d=EN[type];const e={type,d,x,y,w:d.w,h:d.h,vx:0,vy:0,hp:d.hp,max:d.hp,face:1,rot:0,t:rand(0,2),timer:rand(.5,2),flash:0,dying:0,onGround:false,step:d.step,kb:0,hitCD:0};
@@ -95,12 +96,30 @@ export function spawnEnemy(type,x,y){const d=EN[type];const e={type,d,x,y,w:d.w,
   if(d.worm&&type==='lev'){e.segs=[];e.ang=0;for(let k=0;k<12;k++){const sg=spawnEnemy(k===11?'levtail':'levseg',x-(k+1)*1.2,y);sg.parent=e;e.segs.push(sg);}}return e;}
 // elites: tougher, bigger, gold-starred, better loot. Only rolled for natural spawns.
 export const ELITE_TINT=new THREE.Vector3(1.22,1.06,.72),ELITE_LOOT=['potion','potion','manapotion','potswift','potiron','potregen','fstar'];
-export function makeElite(e){e.elite=true;e.hp=e.max=Math.round(e.max*2.6);e.w*=1.2;e.h*=1.2;return e;}
-export const edmg=e=>e.d.dmg*(e.elite?1.4:1)*(e.inked?1.3:1)*(e.awake?1.3:1)*(e.st&&e.st.soak>0?.75:1);
+// traits (#84): each elite rolls one, which changes how it looks (tint, a trait mark beside its star with its own shape) and fights.
+// elem: the type its hits carry; res/weak override the foe's own; hp/dmg/spd/sz multiply; w: roll weight. Effects live where they run
+// (hurtEnemy for armored, the contact hit for vampiric, killEnemy for explosive and golden, updateEnemies for speed and particles).
+export const TRAITS={
+  burning:{n:'Burning',tip:'Its hits set you alight. Douse it with water.',tint:[1.35,.82,.6],elem:'fire',res:'fire',weak:'water',w:3},
+  frosted:{n:'Frosted',tip:'Slow and soaking. Fire thaws it.',tint:[.78,.95,1.35],elem:'water',res:'water',weak:'fire',spd:.8,w:3},
+  giant:{n:'Giant',tip:'Huge, slow and hard to knock back.',tint:[1.05,1,.95],hp:1.6,dmg:1.3,spd:.85,sz:1.5,w:3},
+  swift:{n:'Swift',tip:'Twice as fast on its feet, but frail.',tint:[1.08,1.12,.9],hp:.75,spd:1.6,w:3},
+  armored:{n:'Armored',tip:'Shrugs off ordinary hits. Crits and weak spots get through.',tint:[.82,.85,.92],w:2},
+  vampiric:{n:'Vampiric',tip:'Heals when it hurts you.',tint:[1.25,.7,.78],w:2},
+  explosive:{n:'Explosive',tip:'Bursts a moment after it falls. Step away!',tint:[1.2,.95,.7],w:2},
+  inky:{n:'Ink-infused',tip:'Its hits slow you with ink. Drips Moon Ink.',tint:[.8,.62,1.2],elem:'ink',res:'ink',w:2},
+  golden:{n:'Golden',tip:'Made of gilt paper. Drops a fortune in coins.',tint:[1.35,1.15,.55],hp:.9,w:1},
+};
+for(const k in TRAITS)TRAITS[k].tv=new THREE.Vector3(...TRAITS[k].tint);
+function rollTrait(){let s=0;for(const k in TRAITS)s+=TRAITS[k].w;let v=Math.random()*s;for(const k in TRAITS){v-=TRAITS[k].w;if(v<=0)return k;}return 'giant';}
+export function makeElite(e,trait){const k=TRAITS[trait]?trait:rollTrait(),tr=TRAITS[k],sz=tr.sz||1.2;e.elite=true;e.trait=k;e.hp=e.max=Math.round(e.max*2.6*(tr.hp||1));e.w*=sz;e.h*=sz;
+  if(tr.elem)e.elem=tr.elem;if(tr.res)e.res=tr.res;if(tr.weak)e.weak=tr.weak;return e;}
+export const traitOf=e=>e.trait&&TRAITS[e.trait];
+export const edmg=e=>e.d.dmg*(e.elite?1.4*((traitOf(e)||{}).dmg||1):1)*(e.inked?1.3:1)*(e.awake?1.3:1)*(e.st&&e.st.soak>0?.75:1);
 export function crackerBoom(e){e.dying=.05;e.mesh.visible=false;const cx=e.x,cy=e.y+e.h/2,r=e.elite?4:3.2;burst(cx,cy,['#ff8a3d','#ffd66b','#d4483b','#fbf8f0'],36,8,{bright:1});SFX.boom();shake(.35);
   const p=player;if(!p.dead&&Math.hypot(p.x-cx,p.y+.9-cy)<r)hurtPlayer(edmg(e),cx,e,'fire');
   for(const o of enemies)if(o!==e&&!o.dying&&!o.d.boss&&!o.parent&&Math.hypot(o.x-cx,o.y+o.h/2-cy)<r){o.vx=(o.x>cx?1:-1)*8;o.vy=8;}}
-export function removeEnemy(e){if(e.mark)scene.remove(e.mark);if(e.star)scene.remove(e.star);if(e.thread){scene.remove(e.thread);e.thread.material.dispose();}if(e.bar)scene.remove(...e.bar);scene.remove(e.mesh);e.mesh.geometry.dispose();e.mesh.material.dispose();}
+export function removeEnemy(e){if(e.mark)scene.remove(e.mark);if(e.star)scene.remove(e.star);if(e.tmark)scene.remove(e.tmark);if(e.thread){scene.remove(e.thread);e.thread.material.dispose();}if(e.bar)scene.remove(...e.bar);scene.remove(e.mesh);e.mesh.geometry.dispose();e.mesh.material.dispose();}
 export function dropItem(id,n,x,y,vx,vy,delay=0){const p={id,n,x,y,vx:vx??rand(-2,2),vy:vy??rand(3,6),w:.5,h:.5,t:delay,age:0};p.mesh=new THREE.Mesh(new THREE.PlaneGeometry(.62,.62),spriteMat(iconTex(id)));p.mesh.position.z=.22;scene.add(p.mesh);pickups.push(p);}
 
 export function lightAt(x,y){const tx=clamp(Math.floor(x),0,W-1),ty=clamp(Math.floor(y),0,H-1),i=ty*W+tx;const s=Math.pow(sky[i]/15,1.6),b=Math.pow(blk[i]/15,1.45);const sk=U.uSky.value;

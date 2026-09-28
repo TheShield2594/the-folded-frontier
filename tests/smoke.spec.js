@@ -144,6 +144,41 @@ test('seasonal routes undo themselves over a year, and secrets and records are s
   expect(s.rec).toEqual({minnow:12});
 });
 
+test('elite traits and the meteor shower, eclipse and migration events run',async({page})=>{
+  await boot(page);
+  await newSmallWorld(page);
+  const r=await page.evaluate(async()=>{
+    const g=await import('/src/game.js'),p=g.player,out={};
+    // one elite of every trait: it spawns, moves, draws its trait mark, is defeated (explosive ones burst after a fuse)
+    for(const k of Object.keys(g.TRAITS)){const e=g.makeElite(g.spawnEnemy('slime',p.x+6,p.y+2),k);g.updateEnemies(1/30);g.hurtEnemy(e,99999,1);}
+    for(let i=0;i<12;i++)g.updateEnemies(.1);
+    out.traits=Object.keys(g.bestiary.slime.tr).sort();out.left=g.enemies.length;
+    const rnd=Math.random;
+    // meteor shower at dusk: a crater far from town gets ore
+    g.wev.cd=0;g.setWorldDay(5);Math.random=()=>.2;g.evDusk();Math.random=rnd;out.meteor=g.wev.k;
+    const top=x=>{let y=g.H-8;while(y>4&&!g.isSolid(x,y))y--;return y;},nat=[g.T.GRASS,g.T.DIRT,g.T.SAND,g.T.SNOW,g.T.STONE];
+    let x=g.SPAWNX+30;while(x<g.W-8&&!nat.includes(g.tileAt(x,top(x))))x++;const y=top(x);
+    const ores=[g.T.GOLD,g.T.FROST,g.T.INKORE,g.T.EMBERORE,g.T.FOIL],ore=()=>{let n=0;for(let dx=-4;dx<=4;dx++)for(let dy=-4;dy<=2;dy++)if(ores.includes(g.tileAt(x+dx,y+dy)))n++;return n;};
+    const o0=ore();g.meteorStrike(x,y);out.ore=ore()-o0;for(let i=0;i<8;i++)g.updateEvents(.5,21);g.evDawn();out.afterDawn=g.wev.k;
+    // eclipse: pending in the morning, starts at its hour, darkens the sky, ends at dusk
+    g.wev.cd=0;g.wev.pend='eclipse';g.wev.at=11;g.updateEvents(1/30,12);out.eclipse=g.wev.k;for(let i=0;i<40;i++)g.updateEvents(.5,12);out.eclF=g.eclF;g.spawnLogic(1);g.evDusk();out.afterDusk=g.wev.k;
+    // migration: its foes turn up in the target biome, and defeating enough of them ends it with a reward
+    g.wev.mig={from:'snow',to:'forest',days:3,n:0,goal:3};Math.random=()=>.1;out.pick=g.migPick('forest',false,false);Math.random=rnd;g.updateEvents(1/30,12);
+    const coins=p.coins+g.countItem('coin');for(let i=0;i<3;i++)g.evKill({mig:true});out.mig=g.wev.mig;out.paid=p.coins+g.countItem('coin')>coins;
+    return out;
+  });
+  expect(r.traits).toEqual(Object.keys(await page.evaluate(async()=>(await import('/src/game.js')).TRAITS)).sort());
+  expect(r.meteor).toBe('meteor');
+  expect(r.ore).toBeGreaterThan(0);
+  expect(r.afterDawn).toBeNull();
+  expect(r.eclipse).toBe('eclipse');
+  expect(r.eclF).toBeGreaterThan(.5);
+  expect(r.afterDusk).toBeNull();
+  expect(['foldfox','flurry','snowroll','frostpuff']).toContain(r.pick);
+  expect(r.mig).toBeNull();
+  expect(r.paid).toBe(true);
+});
+
 test('save code round trip loads the same world',async({page})=>{
   await boot(page);
   await newSmallWorld(page);
