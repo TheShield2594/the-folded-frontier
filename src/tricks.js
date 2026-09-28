@@ -3,7 +3,7 @@
 // page shut into a paper bridge (stitch) and the Bone Folder folds the page along a crease mark to step out at its partner
 // (fold). Each tool is crafted from a boss's materials, and every spot they open is a side pocket with loot, never the way on.
 import {
-  BIO,burst,camT,chests,countItem,guideEv,hook,hurtPlayer,idx,meta,mulberry32,player,popUp,reduceMotion,ruinLoot,
+  BIO,burst,camT,chests,countItem,explored,guideEv,hook,idx,meta,mulberry32,player,popUp,reduceMotion,ruinLoot,
   seed,setTile,SFX,shake,SOLID,SPAWNX,stat,surf,T,tiles,toast,treasureLoot,walls,W,H,
 } from './game.js';
 
@@ -62,19 +62,32 @@ export function stitchRip(x,y){if(!countItem('needle')){toast('The page is torn 
     setTile(cx,cy,top?T.SEWN:T.AIR);if(top){burst(cx+.5,cy+.9,['#e9dcc0','#fbf8f0','#d4483b'],6,3);SFX.rustle(.15,.5);}},120+k*90);});
   const r=BIO.trick&&BIO.trick.rip.find(r=>seen.has(idx(r[0],r[1])));if(r)r[2]=1;
   SFX.nice();toast('Stitch by stitch, the tear closes into a paper bridge.','gold');stat('stitches');guideEv('stitch');}
-// ---- fold: the Bone Folder folds the page so the two creases meet, and you step out of the other one
-export function foldAt(x,y){const f=BIO.trick&&BIO.trick.fold.find(f=>f[0]===x&&f[1]===y||f[2]===x&&f[3]===y);if(!f)return;
-  if(!countItem('folder')){toast('A crease runs down the page here, as if it was once folded shut. A bone folder could fold it again.');SFX.rustle(.15,.4);return;}
+// ---- fold: the Bone Folder folds the page so the two creases meet, and you step out of the other one. The vault's own
+// crease always folds you back out, tool or not, so leaving the folder in the vault's chest can't shut you in.
+export function foldAt(x,y){const f=BIO.trick&&BIO.trick.fold.find(f=>f[0]===x&&f[1]===y||f[2]===x&&f[3]===y);if(!f)return;const out=f[0]===x&&f[1]===y;
+  if(out&&!countItem('folder')){toast('A crease runs down the page here, as if it was once folded shut. A bone folder could fold it again.');SFX.rustle(.15,.4);return;}
   const p=player,[tx,ty]=f[0]===x&&f[1]===y?[f[2],f[3]]:[f[0],f[1]],cols=['#e9dcc0','#fbf8f0','#b06ad0'];burst(p.x,p.y+1,cols,24,5,{grav:0});
   p.x=tx+.5;p.y=ty;p.vx=p.vy=0;hook.state=0;camT.x=p.x;camT.y=p.y+1;burst(p.x,p.y+1,cols,24,5,{grav:0});if(!reduceMotion())popUp();SFX.peel();shake(.2);
-  toast(f[0]===x&&f[1]===y?'The page folds shut along the crease, and you step out somewhere sealed away.':'The page folds you back along the crease.','gold');stat('folds');guideEv('fold');}
+  toast(out?'The page folds shut along the crease, and you step out somewhere sealed away.':'The page folds you back along the crease.','gold');stat('folds');guideEv('fold');}
+// the world map (drawMap) marks every trick spot you have explored and not used up, each with its own shape so they
+// read in every color-vision mode: a zig-zag seam, a torn hole, a crease triangle. Opened seams and sewn holes drop off;
+// the outer crease stays, since it can be folded again. Nothing new is saved: explored already is.
+export function drawTrickMarks(g,S){const tr=BIO&&BIO.trick;if(!tr)return;const seen=(x,y)=>explored[idx(x,y)];
+  const at=(x,y,draw)=>{const X=(x+.5)*S,Y=(H-y-.5)*S;g.save();g.translate(X,Y);g.lineJoin='round';g.lineCap='round';draw();g.restore();};
+  for(const[x,y,o]of tr.seam)if(!o&&seen(x,y+1))at(x,y+1,()=>{g.fillStyle='#8d8f9a';g.fillRect(-6,-9,12,18);g.lineWidth=2;g.strokeStyle='#2a2130';g.strokeRect(-6,-9,12,18);
+    g.beginPath();g.moveTo(0,-9);for(let k=1;k<=4;k++)g.lineTo(k%2?-3:3,-9+k*4.5);g.lineWidth=3;g.strokeStyle='#d4483b';g.stroke();});
+  for(const[x,y,o]of tr.rip)if(!o&&seen(x,y))at(x,y,()=>{g.beginPath();g.moveTo(-10,-5);for(let k=0;k<=4;k++)g.lineTo(-10+k*5,k%2?-2:-6);g.lineTo(10,5);for(let k=4;k>=0;k--)g.lineTo(-10+k*5,k%2?2:6);g.closePath();
+    g.fillStyle='#1c1520';g.fill();g.lineWidth=2;g.strokeStyle='#e9dcc0';g.stroke();});
+  for(const[x,y,vx,vy]of tr.fold)for(const[cx,cy]of[[x,y],[vx,vy]])if(seen(cx,cy))at(cx,cy,()=>{g.beginPath();g.moveTo(0,-9);g.lineTo(8,7);g.lineTo(-8,7);g.closePath();g.fillStyle='#e9dcc0';g.fill();g.lineWidth=2;g.strokeStyle='#2a2130';g.stroke();
+    g.beginPath();g.moveTo(0,-9);g.lineTo(0,7);g.setLineDash([3,2]);g.strokeStyle='#b06ad0';g.stroke();g.setLineDash([]);});}
 export function trickAt(t,x,y){if(t===T.SEAM)tearSeam(x,y);else if(t===T.RIP)stitchRip(x,y);else if(t===T.CREASE)foldAt(x,y);}
 
-// a torn hole has no page to stand on: stepping into one throws you back to where you last stood
+// a torn hole has no page to stand on: stepping into one throws you back to where you last stood. It is a locked door,
+// not a trap, so it costs no life
 let safe=null,ripT=0,trBIO=null;
 export function updateTricks(dt){const p=player;ripT-=dt;if(trBIO!==BIO){trBIO=BIO;safe=null;}if(p.dead||!BIO||!BIO.trick||!BIO.trick.rip.length)return;
   const x0=Math.floor(p.x-p.w/2),x1=Math.floor(p.x+p.w/2),y0=Math.floor(p.y),y1=Math.floor(p.y+p.h);let inRip=false,nearRip=false;
   for(let y=y0-1;y<=y1;y++)for(let x=x0-1;x<=x1+1;x++){if(tiles[idx(x,y)]!==T.RIP)continue;nearRip=true;if(x>=x0&&x<=x1&&y>=y0)inRip=true;}
   if(!inRip){if(p.onGround&&!nearRip)safe={x:p.x,y:p.y};return;}
-  burst(p.x,p.y+.8,['#1c1520','#5a3c78','#e9dcc0'],14,4,{grav:-2});hurtPlayer(6,p.x);if(safe){p.x=safe.x;p.y=safe.y;}else p.y+=3;p.vx=p.vy=0;SFX.rustle(.2,.5);
+  burst(p.x,p.y+.8,['#1c1520','#5a3c78','#e9dcc0'],14,4,{grav:-2});if(safe){p.x=safe.x;p.y=safe.y;}else p.y+=3;p.vx=p.vy=0;SFX.rustle(.2,.5);
   if(ripT<=0){ripT=4;toast('The torn page will not hold you. It could be sewn shut.','bad');}}

@@ -249,12 +249,15 @@ test('paper tricks: seams tear, torn holes stitch and creases fold, only with th
     // without the tool nothing happens
     const s=t.seam[0],rp=t.rip[0],f=t.fold[0];g.tearSeam(s[0],s[1]);g.stitchRip(rp[0],rp[1]);const x0=p.x;g.foldAt(f[0],f[1]);
     out.locked=[at(s[0],s[1])===g.T.SEAM,at(rp[0],rp[1])===g.T.RIP,p.x===x0];
-    // stepping into a torn hole throws you back out
-    p.x=rp[0]+.5;p.y=rp[1]+.3;p.vx=p.vy=0;p.inv_t=0;g.updateTricks(1/30);out.thrown=at(Math.floor(p.x),Math.floor(p.y))!==g.T.RIP&&p.hp<p.max;
+    // stepping into a torn hole throws you back out, without costing life
+    const hp0=p.hp;p.x=rp[0]+.5;p.y=rp[1]+.3;p.vx=p.vy=0;p.inv_t=0;g.updateTricks(1/30);out.thrown=at(Math.floor(p.x),Math.floor(p.y))!==g.T.RIP&&p.hp===hp0;
+    // the map marks explored spots: drawTrickMarks draws into a canvas only once the spot is explored
+    const mc=document.createElement('canvas');mc.width=g.W*2;mc.height=g.H*2;const inked=()=>mc.getContext('2d').getImageData(0,0,mc.width,mc.height).data.some(v=>v>0);
+    for(const[x,y]of[[s[0],s[1]+1],[rp[0],rp[1]],[f[0],f[1]],[f[2],f[3]]])g.explored[g.idx(x,y)]=0;g.drawTrickMarks(mc.getContext('2d'),2);out.hiddenOnMap=!inked();g.explored[g.idx(s[0],s[1]+1)]=1;g.drawTrickMarks(mc.getContext('2d'),2);out.onMap=inked();
     // the guide hints at a trick the first time it is usable: carrying the tool near its spot
     g.SET.hints=true;g.setTut({s:99,seen:{peel:1,pop:1,flat:1}});g.addItem('ripper',1);p.x=s[0]-2+.5;p.y=s[1];for(let y=s[1]-6;y<=s[1]+6;y++)for(let x=s[0]-6;x<=s[0]+6;x++)g.explored[y*g.W+x]=1;g.updateGuide(1);out.hint=document.getElementById('gdT').textContent;g.SET.hints=false;
     g.addItem('needle',1);g.addItem('folder',1);
-    g.tearSeam(s[0],s[1]);g.stitchRip(rp[0],rp[1]);g.foldAt(f[0],f[1]);out.folded=[Math.floor(p.x),p.y]+''===[f[2],f[3]]+'';g.foldAt(f[2],f[3]);out.back=[Math.floor(p.x),p.y]+''===[f[0],f[1]]+'';
+    g.tearSeam(s[0],s[1]);g.stitchRip(rp[0],rp[1]);g.foldAt(f[0],f[1]);out.folded=[Math.floor(p.x),p.y]+''===[f[2],f[3]]+'';g.removeItem('folder',1);g.foldAt(f[2],f[3]);out.back=[Math.floor(p.x),p.y]+''===[f[0],f[1]]+'';
     // the seam and the tear open over a moment
     await new Promise(r=>setTimeout(r,2500));
     out.open=[0,1,2].every(k=>at(s[0],s[1]+k)===g.T.AIR);out.sewn=at(rp[0],rp[1])===g.T.SEWN&&at(rp[0],rp[1]-1)===g.T.AIR;out.flags=[s[2],rp[2]];
@@ -263,6 +266,8 @@ test('paper tricks: seams tear, torn holes stitch and creases fold, only with th
   expect(r.n.every(n=>n>=1)).toBe(true);
   expect(r.locked).toEqual([true,true,true]);
   expect(r.thrown).toBe(true);
+  expect(r.hiddenOnMap).toBe(true);
+  expect(r.onMap).toBe(true);
   expect(r.hint).toBe('Tear the seam');
   expect(r.folded).toBe(true);
   expect(r.back).toBe(true);

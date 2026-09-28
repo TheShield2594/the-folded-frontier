@@ -81,8 +81,8 @@ Three tools open side pockets in places you already passed (`tricks.js`). Each i
 | Trick | Tool (anvil recipe) | Earliest | What it opens |
 |---|---|---|---|
 | Tear | Seam Ripper (4 iron bars, 2 crane plumes) | After the Great Crane | A stitched seam in a cave wall (unbreakable) with a small brick pocket and a chest behind it. 2 per small world, about W/200 |
-| Stitch | Golden Needle (4 gold bars, 1 ink heart, 5 rope) | After the Inkwell Leviathan | A torn hole ten tiles across in the floor of a low corridor dug into the rock; stepping in throws you back (6 damage). Sewn shut, its top row is a paper bridge to a pocket with a chest. 1–2 per small world |
-| Fold | Bone Folder (a Paper Ammonite, a Folded Trilobite, a cinder) | After the Charred Folio (fossils come from the Pressed Deep) | A crease mark on a cave floor whose partner is in a vault sealed all round, with a treasure chest. 1 per small world, about W/300 |
+| Stitch | Golden Needle (4 gold bars, 1 ink heart, 5 rope) | After the Inkwell Leviathan | A torn hole ten tiles across in the floor of a low corridor dug into the rock; stepping in throws you back (no damage: it's a locked door, not a trap). Sewn shut, its top row is a paper bridge to a pocket with a chest. 1–2 per small world |
+| Fold | Bone Folder (a Paper Ammonite, a Folded Trilobite, a cinder) | After the Charred Folio (fossils come from the Pressed Deep) | A crease mark on a cave floor whose partner is in a vault sealed all round, with a treasure chest. The vault's crease folds you back out without the tool. 1 per small world, about W/300 |
 
 ## Still needs a human playtest
 
