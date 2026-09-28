@@ -128,14 +128,14 @@ export function quickHeal(){if(player.potT>0){toast(`Potion sickness: wait ${Mat
 export function heal(n){const h=Math.min(n,player.max-player.hp);player.hp+=h;floatText(player.x,player.y+2,'+'+Math.round(h),'heal');burst(player.x,player.y+1,['#9be27d','#fbf8f0'],10,3,{grav:-2});}
 export let shakeT=0;export let hitStop=0;function hitPause(t){if(SET.hitstop)hitStop=Math.max(hitStop,t);}
 export function shake(a){if(!SET.shake||reduceMotion())return;shakeT=Math.max(shakeT,a);}
-function useItem(it,dt){const tx=Math.floor(mouse.wx),ty=Math.floor(mouse.wy);const p=player;
+function useItem(it,dt,pressed){const tx=Math.floor(mouse.wx),ty=Math.floor(mouse.wy);const p=player;
   if(it.pet||it.mount){if(mouse.lp){if(it.pet)togglePet(it.pet);else toggleMount(it.mount);}return;}
   if(it.rod){if(mouse.lp)fishClick(it);return;}
   if(it.bucket){if(!mouse.lp)return;if(!reachOK(tx,ty))return;const t=tileAt(tx,ty);
     if(it.bucket==='empty'){if(t!==T.INK&&t!==T.LAVA)return;setTile(tx,ty,T.AIR);consumeSel();const f=t===T.INK?'bucketink':'bucketlava';if(addItem(f,1))dropItem(f,1,p.x,p.y+1);SFX.door();emit(t===T.INK?'ink':'sparks',tx+.5,ty+.5,t===T.INK?{grav:18,life:1}:{cols:['#ff7a2d','#ffd66b'],n:8,spd:3,grav:18,life:1});stat('scoops');}
     else{if(!(t===T.AIR||(TP[t].repl&&!TP[t].liq)))return;setTile(tx,ty,it.bucket==='ink'?T.INK:T.LAVA);consumeSel();if(addItem('bucket',1))dropItem('bucket',1,p.x,p.y+1);SFX.door();}return;}
   if(it.ranged&&it.ammo==='arrow'){drawBow(it,dt);return;}
-  if(it.ranged||it.magic){p.placeT-=dt;if(p.placeT>0)return;p.placeT=(it.ranged?fireRanged(it):castMagic(it))?it.ut:.25;return;}
+  if(it.ranged||it.magic){p.placeT-=dt;if(p.placeT>0)return;p.placeT=(it.ranged?fireRanged(it):castMagic(it,pressed))?it.ut:.25;return;}
   if(it.pick){p.face=mouse.wx>p.x?1:-1;if(!p.swing)p.swing={t:0,dur:.26/it.mine**.3,tool:it.id,tool2:true};
     const t=tileAt(tx,ty);const i=idx(tx,ty);if(t===T.AIR||TP[t].liq||!reachOK(tx,ty)||tx<0||ty<0||tx>=W||ty>=H){p.mineP=0;return;}
     const d=TP[t];if(d.pick>it.pick){if(p.mineTile!==-2){toast(t===T.CORE?'Nothing can break the cardboard core.':'You need a stronger pickaxe for this.','bad');p.mineTile=-2;}return;}
@@ -174,7 +174,7 @@ function updateHook(dt){const p=player;if(!hookMesh){hookMesh=new THREE.Mesh(new
   if(hook.state===3){const dx=hx-hook.x,dy=hy-hook.y,d=Math.hypot(dx,dy);if(d<1.2){hook.state=0;hookMesh.visible=chainMesh.visible=false;return;}hook.x+=dx/d*Math.min(d,45*dt);hook.y+=dy/d*Math.min(d,45*dt);}
   const dx=hook.x-hx,dy=hook.y-hy,d=Math.hypot(dx,dy),a=Math.atan2(dy,dx);chainMesh.visible=hookMesh.visible=true;chainMesh.position.set(hx,hy,.2);chainMesh.rotation.z=a;chainMesh.scale.set(Math.max(.01,d),1,1);
   hookMesh.position.set(hook.x,hook.y,.22);hookMesh.rotation.z=a-Math.PI/4;setTint(hookMesh.material,hook.x,hook.y);const L=lightAt(hx,hy);chainMesh.material.color.setRGB(.48*L[0],.35*L[1],.23*L[2]);}
-function throwStar(){const p=player;const{ox,oy,a}=aimFrom();p.face=Math.cos(a)>=0?1:-1;consumeSel();SFX.swing();fireProj('shuri',ox,oy,Math.cos(a)*22,Math.sin(a)*22,ITEMS.shuriken.dmg,{src:'ranged'});if(!p.swing)p.swing={t:0,dur:.2,tool:null};}
+function throwStar(){const p=player;const{ox,oy,a}=aimFrom();p.face=Math.cos(a)>=0?1:-1;consumeSel();SFX.swing();fireProj('shuri',ox,oy,Math.cos(a)*22,Math.sin(a)*22,Math.round(ITEMS.shuriken.dmg*setMul('ranged')),{src:'ranged'});if(!p.swing)p.swing={t:0,dur:.2,tool:null};}
 export const PK={
  arrow:{icon:'arrow',size:.85,grav:14,rot:'vel',rotOff:Math.PI/4,drop:.45,dropId:'arrow'},
  firearrow:{elem:'fire',icon:'firearrow',size:.85,grav:14,rot:'vel',rotOff:Math.PI/4,trail:['#f5a524','#ffe58a'],trailRate:.8,light:[1.1,.6,.2,5],drop:.25,dropId:'firearrow',glow:1},
@@ -226,9 +226,9 @@ function releaseBow(){const p=player,d=p.draw;p.draw=null;const it=ITEMS[d.id],a
   SFX.bow();if(full){SFX.snap();stat('fulldraws');}
   if(perf){stat('perfects');SFX.nice();floatText(ox+Math.cos(a),oy+1.2,'PERFECT!','nice');for(let k=0;k<12;k++){const g=k/12*Math.PI*2;burst(ox+Math.cos(a)*.6+Math.cos(g)*.5,oy+Math.sin(a)*.6+Math.sin(g)*.5,['#fff3c0','#f1c04f'],1,1.5,{grav:0,life:.35,bright:1});}}}
 // rune timing: every cast draws a rune ring that closes on the hand (updateRune); casting again with the same spell as it closes
-// (within RUNE_W) is a Rune cast: more damage, one more bolt, half the mana. Holding the button casts faster, so it never lands on the rune.
+// with a fresh press (within RUNE_W) is a Rune cast: more damage, one more bolt, half the mana. Holding the button casts faster, so it never lands on the rune.
 const RUNE_W=.14,RUNE_T=1.8;
-function castMagic(it){const p=player,rune=p.rune&&p.rune.id===it.id&&Math.abs(worldClock-p.rune.at)<RUNE_W*niceW(),cost=Math.ceil(it.mana*(setOn('weave')?.75:1)*(rune?.5:1)),dmg=Math.round(it.dmg*setMul('magic')*(rune?1.6:1));if(p.mana<cost){const k=p.inv.findIndex(s=>s&&s.id==='manapotion');if(k>=0){const s=p.inv[k];s.n--;if(!s.n)p.inv[k]=null;setInvDirty(true);p.mana=Math.min(p.maxMana,p.mana+60);SFX.potion();floatText(p.x,p.y+2,'+60 mana','heal');}
+function castMagic(it,pressed){const p=player,rune=pressed&&p.rune&&p.rune.id===it.id&&Math.abs(worldClock-p.rune.at)<RUNE_W*niceW(),cost=Math.ceil(it.mana*(setOn('weave')?.75:1)*(rune?.5:1)),dmg=Math.round(it.dmg*setMul('magic')*(rune?1.6:1));if(p.mana<cost){const k=p.inv.findIndex(s=>s&&s.id==='manapotion');if(k>=0){const s=p.inv[k];s.n--;if(!s.n)p.inv[k]=null;setInvDirty(true);p.mana=Math.min(p.maxMana,p.mana+60);SFX.potion();floatText(p.x,p.y+2,'+60 mana','heal');}
     else{if(mouse.lp)toast('Not enough mana.','bad');return false;}}
   p.mana-=cost;p.manaT=0;stat('casts');const{ox,oy,a}=aimFrom();shootPose(it,a);
   if(it.proj==='star'){for(let j=0;j<(rune?2:1);j++){const tx=mouse.wx+j*rand(-2,2),ty=mouse.wy,sx=tx+rand(-5,5),sy=camera.position.y+14+j*2,d=Math.hypot(tx-sx,ty-sy)||1;fireProj('star',sx,sy,(tx-sx)/d*it.spd,(ty-sy)/d*it.spd,dmg,{src:'magic',noclipAbove:ty+.5});}SFX.star();}
@@ -458,7 +458,7 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();se
   // Settings > Bow draw: Toggle keeps drawing after the button is let go and looses on the next press (drawLock waits for that press to end)
   const useIn=mouse.l||(pad.active&&!!pad.held.use),usePr=useIn&&!p.useWas;p.useWas=useIn;let useHeld=useIn;
   if(SET.drawTog){if(p.draw){useHeld=!(usePr&&p.draw.t>0);if(!useHeld)p.drawLock=true;}else if(p.drawLock){if(useIn)useHeld=false;else p.drawLock=false;}}
-  if(useHeld&&!cursor&&!p.blocking){if(it)useItem(it,dt);}else{if(p.draw)releaseBow();if(p.mineTile!==-2)p.mineP=Math.max(0,p.mineP-dt*2);if(p.mineTile===-2)p.mineTile=-1;p.placeT=0;}
+  if(useHeld&&!cursor&&!p.blocking){if(it)useItem(it,dt,usePr);}else{if(p.draw)releaseBow();if(p.mineTile!==-2)p.mineP=Math.max(0,p.mineP-dt*2);if(p.mineTile===-2)p.mineTile=-1;p.placeT=0;}
   if(mouse.rp)interact();
   if(p.swing){const s=p.swing;s.t+=dt;if(s.heavy&&!s.slam&&!s.rel&&s.t>=s.dur*HAM_TOP){if(useHeld&&!p.blocking){s.t=s.dur*HAM_TOP;hamCharge(s,dt);}else s.rel=true;}if(s.sword){const k=s.t/s.dur;const[tipX,tipY]=swingTip(s,Math.min(1,k));if(!s.heavy)swingStep(s,k);if(s.heavy&&!s.slam&&k>=HAM_HIT)hammerImpact(s,tipX,tipY);if(inNiceWin(s)){if(!s.cued){s.cued=true;SFX.cue();emit('sparks',tipX,tipY);}burst(tipX,tipY,['#fff3c0','#ffe58a'],1,1,{grav:0,life:.3,bright:1});}
       if(s.heavy?k>.46&&k<.8:k>=SWKEYS[s.combo][0][0]*.5)for(const e of enemies){if(e.dying||s.hit.has(e))continue;const cx=e.x,cy=e.y+e.h/2;const dx=cx-p.x,dy=cy-(p.y+1);if((dx*p.face>-.6)&&Math.hypot(dx,dy)<2.1+(s.reach||0)+e.w/2){s.hit.add(e);if(s.charged)crack(e);const air=!s.heavy&&!p.onGround&&!p.climb&&!e.d.boss;hurtEnemy(e,s.dmg*(s.nice?1.8:1)*(s.counter?2:1)*(air&&s.combo===2?1.25:1)*rand(.9,1.1),p.face,s.kb,s.nice||s.counter,s.elem);if(s.heavy)stagger(e);if(air)airHit(s,e);if(setOn('warden')&&p.hp<p.max)p.hp=Math.min(p.max,p.hp+1);}}}
