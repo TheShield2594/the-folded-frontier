@@ -1,4 +1,4 @@
-// Smoke tests: boot, new world, save/load through localStorage, seasonal routes and secrets in the save, the vertical layers and the clocktower, save code round trip, hand-made art overrides.
+// Smoke tests: boot, portraits from the rig, new world, save/load through localStorage, seasonal routes and secrets in the save, the vertical layers and the clocktower, save code round trip, hand-made art overrides.
 // They check that the game starts and its saves survive, not how it plays. Game state is read
 // through `import('/src/game.js')`, which on the dev server returns the live modules.
 import {test,expect} from '@playwright/test';
@@ -82,6 +82,23 @@ test('boots to the title screen with no console errors',async({page})=>{
   // the frame loop is running: the title camera pans
   const x0=await page.evaluate(async()=>(await import('/src/game.js')).camT.x);
   await page.waitForFunction(async x0=>(await import('/src/game.js')).camT.x!==x0,x0);
+});
+
+test('portraits and the look preview are pictures of the human rig, with its expressions',async({page})=>{
+  await boot(page);
+  const r=await page.evaluate(async()=>{const g=await import('/src/game.js');
+    // the head's pixels (design rect around the face) as a string, to tell expressions apart
+    const face=c=>Array.from(c.getContext('2d').getImageData(28,26,44,44).data).join();
+    const out={bad:[],same:[],heads:g.RIGS.human.parts.find(p=>p.n==='head').v};
+    for(const k of['player',...Object.keys(g.FOLK)]){const n=g.facePic(k),f0=face(n);
+      if(n.width!==96||n.height!==144)out.bad.push(k);
+      for(const e of['happy','surprised','sad','angry']){const c=g.facePic(k,e);if(face(c)===f0)out.same.push(k+':'+e);}
+      if(k!=='player'&&(g.SHEETS[k].width!==96||g.SHEETS[k].height!==144))out.bad.push('sheet:'+k);}
+    const l=g.lookPic({hairS:2,tunic:1});out.look=[l.width,l.height];return out;});
+  expect(r.heads).toEqual(expect.arrayContaining(['','happy','surprised','sad','angry']));
+  expect(r.bad).toEqual([]);
+  expect(r.same).toEqual([]);
+  expect(r.look).toEqual([96,144]);
 });
 
 test('creates a small world and spawns the player',async({page})=>{

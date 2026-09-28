@@ -17,7 +17,7 @@ import {
 // Clips: {len seconds, loop, bl blend-in seconds, tr: {part: {r, x, y, sx, sy, sw: keys}}}. Keys are [time, value, easing
 //  to the next key] (EZR names); r is radians (canvas turn: positive is clockwise on screen), x/y design px, sx/sy scale,
 //  sw a variant name that holds until the next key ('-' hides the part).
-// A skin is what a rig wears: an object the paint functions read (for humans, the look o of drawHuman). rigSkin() bakes
+// A skin is what a rig wears: an object the paint functions read (for humans, the look o that render.js HL paints). rigSkin() bakes
 // every part and variant of a skin once into one texture, so armor, clothes, hair and expressions are part swaps and
 // re-bakes, never new frame sheets.
 // At runtime every rig is one mesh with one material: makeRig() builds it, rigPlay() picks a clip (blending from the pose
@@ -40,14 +40,15 @@ export function loopClip(len,keys,ez='io',bl){const tr={};for(const[t,v]of keys)
   for(const p in tr)for(const ch in tr[p]){const a=tr[p][ch];if(a[a.length-1][0]<len)a.push([len,a[0][1]]);}return{len,loop:1,bl,tr};}
 
 // ---- skins: every part and variant drawn once, cropped and packed into one texture
-const PAD=10,BORDER=3,skins=new Map();
+// RF: canvases whose pixels are read back (the crop scan, paper grain) stay in memory, as a GPU readback per piece is slow
+const PAD=10,BORDER=3,skins=new Map(),RF={willReadFrequently:true};
 // a cut-out piece: w x h of src (drawn at dw x dh) with paper grain and the cream paper edge, PAD px of margin all round
-function paperPiece(src,sx,sy,w,h,dw=w,dh=h){const cw=dw+PAD*2,chh=dh+PAD*2,tmp=mk(cw,chh),t=tmp.getContext('2d');t.drawImage(src,sx,sy,w,h,PAD,PAD,dw,dh);grain(t,0,0,cw,chh,12);
+function paperPiece(src,sx,sy,w,h,dw=w,dh=h){const cw=dw+PAD*2,chh=dh+PAD*2,tmp=mk(cw,chh),t=tmp.getContext('2d',RF);t.drawImage(src,sx,sy,w,h,PAD,PAD,dw,dh);grain(t,0,0,cw,chh,12);
   const sil=mk(cw,chh),s=sil.getContext('2d');s.drawImage(tmp,0,0);s.globalCompositeOperation='source-in';s.fillStyle='#fbf5e6';s.fillRect(0,0,cw,chh);
   const out=mk(cw,chh),o=out.getContext('2d');for(let i=0;i<16;i++){const an=i/16*Math.PI*2;o.drawImage(sil,Math.cos(an)*BORDER,Math.sin(an)*BORDER);}o.drawImage(tmp,0,0);return out;}
 export function rigSkin(k,skin,key){const ck=key!=null?k+':'+key:null;if(ck&&skins.has(ck))return skins.get(ck);
   const d=RIGS[k],M=Math.ceil(Math.max(d.w,d.h)*.3),W=d.w+M*2,H=d.h+M*2,pieces=[];
-  for(const p of d.parts){if(p.slot){const[a,b,c,e]=p.slot;pieces.push({p:p.i,v:'',slot:1,x0:M+p.at[0]+a,y0:M+p.at[1]+b,w:c-a,h:e-b});continue;}if(!p.paint)continue;for(const v of p.v){const c=mk(W,H),t=c.getContext('2d');t.translate(M,M);
+  for(const p of d.parts){if(p.slot){const[a,b,c,e]=p.slot;pieces.push({p:p.i,v:'',slot:1,x0:M+p.at[0]+a,y0:M+p.at[1]+b,w:c-a,h:e-b});continue;}if(!p.paint)continue;for(const v of p.v){const c=mk(W,H),t=c.getContext('2d',RF);t.translate(M,M);
     if(p.clip){t.beginPath();t.rect(p.clip[0],p.clip[1],p.clip[2]-p.clip[0],p.clip[3]-p.clip[1]);t.clip();}if(p.loc)t.translate(p.at[0],p.at[1]);
     t.lineJoin='round';t.lineCap='round';p.paint(t,skin,v);
     const a=t.getImageData(0,0,W,H).data;let x0=W,y0=H,x1=-1,y1=-1;for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(a[(y*W+x)*4+3]>8){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
@@ -161,21 +162,26 @@ export function rigSnap(R,geo){const src=R.g.attributes;if(!geo||!geo.userData.r
   else{geo.attributes.position.array.set(src.position.array);geo.attributes.uv.array.set(src.uv.array);geo.attributes.position.needsUpdate=geo.attributes.uv.needsUpdate=true;}
   geo.boundingSphere=R.g.boundingSphere.clone();return geo;}
 // a still picture of a rig (portraits, bestiary sketches, sheets for things that are not animated): design-sized canvas
-export function rigPic(k,skin,clip,t=0,key){const d=RIGS[k],S=rigSkin(k,skin,key),R={d,S,t:0,c:null,ct:0,sp:0,w:1,bl:.1,cur:blankPose(d.parts.length),from:blankPose(d.parts.length),last:blankPose(d.parts.length),
+// skin is a look to bake (shared under key, or baked for this picture alone when key is null) or an already baked skin (R.S);
+// set holds channel values over the clip's pose, {part: {r, sw, ...}} (a townsperson's tool arm, a portrait's expression)
+export function rigPic(k,skin,clip,t=0,key,set){const d=RIGS[k],own=!skin?.cells&&key==null,S=skin?.cells?skin:rigSkin(k,skin,key),R={d,S,t:0,c:null,ct:0,sp:0,w:1,bl:.1,cur:blankPose(d.parts.length),from:blankPose(d.parts.length),last:blankPose(d.parts.length),
   ov:[],ovl:[],ow:new Float32Array(d.parts.length),M:new Float32Array(d.parts.length*6),abs:new Float32Array(d.parts.length),vis:[],shadow:false,g:null,mesh:null};
   samplePose(d,clip||'idle',t,R.cur);for(let i=0;i<R.last.length;i++)Object.assign(R.last[i],R.cur[i]);
+  if(set)for(const pn in set){const i=d.pi[pn];if(i!=null)Object.assign(R.last[i],set[pn]);}
   const P=d.parts,M=R.M;for(const i of d.topo){const p=P[i],L=R.last[i],j=p.pa;let px=p.at[0]+L.x,py=p.at[1]+L.y;if(j>=0){px-=P[j].at[0];py-=P[j].at[1];}
     const c=Math.cos(L.r),s=Math.sin(L.r),la=c*L.sx,lb=s*L.sx,lc=-s*L.sy,ld=c*L.sy,o=i*6;
     if(j<0){M.set([la,lb,lc,ld,px,py],o);}else{const q=j*6,A=M[q],B=M[q+1],C=M[q+2],D=M[q+3];M.set([A*la+C*lb,B*la+D*lb,A*lc+C*ld,B*lc+D*ld,A*px+C*py+M[q+4],B*px+D*py+M[q+5]],o);}}
   const c=mk(d.w,d.h),t2=c.getContext('2d');for(let i=0;i<P.length;i++){if(P[i].slot)continue;const cs=S.cells[i],sw=R.last[i].sw,cell=sw!=='-'&&cs&&(cs[sw]||cs['']);if(!cell)continue;const o=i*6;
-    t2.setTransform(M[o],M[o+1],M[o+2],M[o+3],M[o+4],M[o+5]);t2.drawImage(S.img,cell.ax,cell.ay,cell.w,cell.h,cell.l[0],cell.l[1],cell.w,cell.h);}return c;}
+    t2.setTransform(M[o],M[o+1],M[o+2],M[o+3],M[o+4],M[o+5]);t2.drawImage(S.img,cell.ax,cell.ay,cell.w,cell.h,cell.l[0],cell.l[1],cell.w,cell.h);}if(own)S.tex.dispose();return c;}
 
 // ================= human rig =================
-// The player, townsfolk and human-shaped foes. Each part bakes the drawHuman layers (render.js HL) that belong to it, in
-// HUMAN_ORDER's order; limbs are drawn around their joint. `extra` accessories split at the neck: above it they ride the
-// head, below it the body. The head swaps between expressions.
+// The player, townsfolk and human-shaped foes. Each part bakes the human layers (render.js HL) that belong to it, in
+// the order its hl() lists give; limbs are drawn around their joint. `extra` accessories split at the neck: above it they ride the
+// head, below it the body. The head swaps between expressions: blink, happy, hurt and ko in play, and the dialogue
+// portraits' surprised, sad and angry, which add brows (facePic in render.js).
 const hl=(...L)=>(t,o)=>{for(const[p,l]of L)HL[l](t,p,o,LIMB[p]?LIMB[p][2]:1);};
-const headV=(t,o,v)=>hl(['head','body'],['head','hair'],['head','armor'],['head','face'],['head','hat'])(t,v?Object.assign({},o,v==='blink'?{blink:1}:{face:v}):o);
+const BROW={surprised:1,sad:1,angry:1};
+const headV=(t,o,v)=>hl(['head','body'],['head','hair'],['head','armor'],['head','face'],['head','hat'])(t,v?Object.assign({},o,v==='blink'?{blink:1}:{face:v,brow:BROW[v]}):o);
 defRig('human',{w:96,h:144,parts:[
   {n:'root',at:[48,138]},
   {n:'cape',at:[44,70],up:'torso',paint:hl(['back','cape']),wob:.03},
@@ -185,7 +191,7 @@ defRig('human',{w:96,h:144,parts:[
   {n:'pack',at:[44,84],up:'torso',paint:hl(['back','acc'])},
   {n:'torso',at:[48,110],up:'root',paint:hl(['torso','shirt'],['torso','armor'],['torso','pants']),wob:.008},
   {n:'legA',at:LIMB.legA,up:'root',loc:1,paint:hl(['legA','pants'],['legA','armor'],['legA','boots'])},
-  {n:'head',at:[50,72],up:'torso',paint:headV,v:['','blink','happy','hurt','ko'],wob:.01},
+  {n:'head',at:[50,72],up:'torso',paint:headV,v:['','blink','happy','hurt','ko','surprised','sad','angry'],wob:.01},
   {n:'scarf',at:[40,72],up:'torso',paint:hl(['neck','cape']),wob:.012},
   {n:'hacc',at:[50,72],up:'head',paint:hl(['head','acc']),clip:[-60,-60,160,67],wob:0},
   {n:'bacc',at:[48,90],up:'torso',paint:hl(['head','acc']),clip:[-60,67,160,220],wob:0},
