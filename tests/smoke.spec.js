@@ -1,4 +1,4 @@
-// Smoke tests: boot, new world, save/load through localStorage, seasonal routes and secrets in the save, save code round trip, hand-made art overrides.
+// Smoke tests: boot, new world, save/load through localStorage, seasonal routes and secrets in the save, the vertical layers and the clocktower, save code round trip, hand-made art overrides.
 // They check that the game starts and its saves survive, not how it plays. Game state is read
 // through `import('/src/game.js')`, which on the dev server returns the live modules.
 import {test,expect} from '@playwright/test';
@@ -156,7 +156,7 @@ test('elite traits and the meteor shower, eclipse and migration events run',asyn
     const rnd=Math.random;
     // meteor shower at dusk: a crater far from town gets ore
     g.wev.cd=0;g.setWorldDay(5);Math.random=()=>.2;g.evDusk();Math.random=rnd;out.meteor=g.wev.k;
-    const top=x=>{let y=g.H-8;while(y>4&&!g.isSolid(x,y))y--;return y;},nat=[g.T.GRASS,g.T.DIRT,g.T.SAND,g.T.SNOW,g.T.STONE];
+    const top=x=>{let y=Math.min(g.H-8,g.surf[x]+24);while(y>4&&!g.isSolid(x,y))y--;return y;},nat=[g.T.GRASS,g.T.DIRT,g.T.SAND,g.T.SNOW,g.T.STONE];
     let x=g.SPAWNX+30;while(x<g.W-8&&!nat.includes(g.tileAt(x,top(x))))x++;const y=top(x);
     const ores=[g.T.GOLD,g.T.FROST,g.T.INKORE,g.T.EMBERORE,g.T.FOIL],ore=()=>{let n=0;for(let dx=-4;dx<=4;dx++)for(let dy=-4;dy<=2;dy++)if(ores.includes(g.tileAt(x+dx,y+dy)))n++;return n;};
     const o0=ore();g.meteorStrike(x,y);out.ore=ore()-o0;for(let i=0;i<8;i++)g.updateEvents(.5,21);g.evDawn();out.afterDawn=g.wev.k;
@@ -177,6 +177,42 @@ test('elite traits and the meteor shower, eclipse and migration events run',asyn
   expect(['foldfox','flurry','snowroll','frostpuff']).toContain(r.pick);
   expect(r.mig).toBeNull();
   expect(r.paid).toBe(true);
+});
+
+test('new worlds get sky islands, the Pressed Deep and the Folded Clocktower, which can be cleared and is saved',async({page})=>{
+  await boot(page);
+  await newSmallWorld(page);
+  const s=await page.evaluate(async()=>{
+    const g=await import('/src/game.js'),B=g.BIO,d=B.dun.clock,P=g.player;
+    // the deep band keeps an unbroken crust: every column has at least three slate tiles in a row
+    let holes=0;for(let x=0;x<g.W;x++){let run=0,best=0;for(let y=B.deep[0]-4;y<=B.deep[1]+4;y++){const t=g.tiles[y*g.W+x];run=t===g.T.DEEP||t===g.T.MACHINE?run+1:0;best=Math.max(best,run);}if(best<3)holes++;}
+    // template cell (column, row from the top) to tile; walk through the tower by calling the dungeon code directly
+    const at=(c,r)=>g.tiles[(d.y+d.h-1-r)*g.W+d.x+c],put=(c,r)=>{P.x=d.x+c+.5;P.y=d.y+d.h-1-r;P.vx=P.vy=0;P.onGround=true;},tick=()=>{for(let k=0;k<4;k++)g.updateDungeons(.3);};
+    g.gateAt(d.x,d.y+1);const shut=at(0,38)===g.T.GATE;g.quests.crane=true;g.gateAt(d.x,d.y+1);const door=at(0,38);
+    g.crankAt(d.x+20,d.y+8);await new Promise(r=>setTimeout(r,900));const puzzle=at(1,24);
+    put(8,17);tick();const mini=g.enemies.find(e=>e.type==='sentinel');g.hurtEnemy(mini,1e6,1);for(let k=0;k<30;k++)g.updateEnemies(.05);tick();const arena=at(12,10);
+    put(4,9);tick();const b=g.boss&&g.boss.type;g.boss.act=null;g.hurtEnemy(g.boss,1e6,1);for(let k=0;k<120;k++)g.updateEnemies(.05);tick();
+    const reward=g.chests.get((d.y+d.h-1-9)*g.W+d.x+16);
+    g.save();const sv=JSON.parse(localStorage.getItem('folded-frontier-save-v1'));
+    // a save from before the layers (v3, no sky, deep or dungeon data) still loads; it gets no deep layer
+    const old=JSON.parse(JSON.stringify(sv));old.v=3;delete old.bio.sky;delete old.bio.dun;delete old.bio.deep;g.loadWorld(old);
+    return {H:g.H,holes,islands:sv.bio.sky.is.length,shut,door,puzzle,arena,b,clock:g.quests.clock,roof:at(10,1),wings:!!reward&&reward.some(i=>i&&i.id==='clockwings'),st:sv.bio.dun.clock.st,
+      T:{AIR:g.T.AIR,PLATFORM:g.T.PLATFORM},oldDeep:g.BIO.deep||null,oldDun:typeof g.BIO.dun};
+  });
+  expect(s.H).toBe(200);
+  expect(s.holes).toBe(0);
+  expect(s.islands).toBeGreaterThan(2);
+  expect(s.shut).toBe(true);
+  expect(s.door).toBe(s.T.AIR);
+  expect(s.puzzle).toBe(s.T.PLATFORM);
+  expect(s.arena).toBe(s.T.PLATFORM);
+  expect(s.b).toBe('mainspring');
+  expect(s.clock).toBe(true);
+  expect(s.roof).toBe(s.T.AIR);
+  expect(s.wings).toBe(true);
+  expect(s.st).toMatchObject({e:1,g:1,m:1,c:1});
+  expect(s.oldDeep).toBeNull();
+  expect(s.oldDun).toBe('object');
 });
 
 test('save code round trip loads the same world',async({page})=>{
@@ -232,7 +268,7 @@ test('?perf shows the performance overlay with world and save numbers',async({pa
   await expect(page.locator('#perfTxt')).toContainText(/Fold \d+ ms/);
   await expect(page.locator('#perfTxt')).toContainText(/Save 0\.\d+M chars/);
   const r=await page.evaluate(async()=>(await import('/src/game.js')).perfReport());
-  expect(r).toContain('Small 420×170');
+  expect(r).toContain('Small 420×200');
 });
 
 test('hand-made art replaces the atlas cells and sprite sheets it names',async({page})=>{

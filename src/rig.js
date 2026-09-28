@@ -228,10 +228,12 @@ export const HUMANFOE={
   zombie:{skin:'#a8c79a',hair:'#3e5a3a',tunic:'#6b5b8a',pants:'#4a4058',boots:'#3a3040',eyeCol:'#c0392b',noBlush:1,extra:t=>{t.fillStyle='#2a2130';t.fillRect(40,95,6,10);t.fillRect(52,85,4,8);},clip:'shamble'},
   knight:{skin:'#c7a57a',helm:'#b48a5a',mail:'#b48a5a',greaves:'#9a7448',boots:'#6b4a2f',pants:'#6b4a2f',tunic:'#b48a5a',eyeCol:'#f1c04f',noBlush:1,eyeY:47,
     front:t=>{rr(t,58,70,24,34,8);fi(t,'#8e6a40');circ(t,70,87,5);fi(t,'#f1c04f',2);},clip:'march'},
+  sentinel:{skin:'#b08a4a',helm:'#c9a24a',mail:'#b08a4a',greaves:'#8a6a3a',boots:'#4a3a26',pants:'#6b5234',tunic:'#c9a24a',eyeCol:'#8fd0ff',noBlush:1,eyeY:47,
+    front:t=>{circ(t,70,87,13);fi(t,'#e0b04a');for(let k=0;k<8;k++){const a=k/8*Math.PI*2;circ(t,70+Math.cos(a)*13,87+Math.sin(a)*13,3);t.fillStyle='#e0b04a';t.fill();}circ(t,70,87,4);fi(t,'#6b5234',2);},clip:'march'},
   ashimp:{skin:'#9a3b2a',tunic:'#3a2a24',pants:'#2a1e1a',boots:'#1e1614',eyeCol:'#ffd66b',noBlush:1,
     extra:t=>{poly(t,[34,34,28,14,40,28]);fi(t,'#3a2a24',2);poly(t,[62,30,72,10,68,32]);fi(t,'#3a2a24',2);},front:t=>{circ(t,70,84,7);t.fillStyle='rgba(255,138,61,.6)';t.fill();},clip:'march',arm:-.8}};
 export const FOERIG={slime:['slime',{col:'#6cc57a'}],bslime:['slime',{col:'#5aa7e0'}],blot:['slime',{col:'#4a3570'}],king:['king',{col:'#5aa7e0'}],
   bat:['bat',{c1:'#6b4c8f',c2:'#5a3f7a',eye:'#f1c04f',fang:1}],cinderbat:['bat',{c1:'#3a2a24',c2:'#2a1e1a',eye:'#ff8a3d'}],eye:['eye',{}],
-  zombie:['human',HUMANFOE.zombie],knight:['human',HUMANFOE.knight],ashimp:['human',HUMANFOE.ashimp]};
+  zombie:['human',HUMANFOE.zombie],knight:['human',HUMANFOE.knight],sentinel:['human',HUMANFOE.sentinel],ashimp:['human',HUMANFOE.ashimp]};
 // the enemies' still pictures (bestiary sketches) come from their rigs; the T textures stay for anything that still wants a sheet
 export function buildRigSheets(SHEETS){for(const k in FOERIG){if(SHEETS[k])continue;const[r,s]=FOERIG[k],d=RIGS[r];SHEETS[k]=rigPic(r,s,r==='human'?'idle':d.clips.fly?'fly':'idle',0,k);SHEETS[k+'T']=canvasTex(SHEETS[k]);}}

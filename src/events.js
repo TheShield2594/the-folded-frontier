@@ -27,7 +27,7 @@ function wpick(list){let s=0;for(const r of list)s+=r[3];let v=Math.random()*s;f
 const give=(id,n)=>{const l=addItem(id,n);if(l)dropItem(id,l,player.x,player.y+1);};
 const onSurface=()=>player.y>surf[clamp(Math.floor(player.x),0,W-1)]-12;
 function announce(k,s2){const[n,s1]=EVENTS[k],sub=s2||s1;chapterCard(null,n,sub,'A world event');toast(`${n}! ${sub}`,k==='army'||k==='eclipse'?'bad':'gold');}
-function groundAt(x){let y=H-8;while(y>4&&!isSolid(x,y))y--;return y+1;}
+function groundAt(x){let y=Math.min(H-8,surf[x]+24);while(y>4&&!isSolid(x,y))y--;return y+1;}
 function spawnNear(type,side){const x=clamp(Math.floor(player.x+side*rand(22,32)),3,W-4),y=groundAt(x);if(Math.abs(y-player.y)>30||walls[idx(x,y)]>=2||isSolid(x,y)||isSolid(x,y+1))return null;return spawnEnemy(type,x+.5,y);}
 // rolled at each dawn: the army retreats, the meteors stop, a migration moves on or goes home, a storm or (after two bosses)
 // an eclipse may be on its way, a migration may start, the Traveling Merchant may visit

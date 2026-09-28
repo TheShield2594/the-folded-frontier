@@ -62,8 +62,21 @@ Warhammers take about 40% fewer hits at every step. Paper Hearts (17–18 per me
 
 The curve rises steadily with no wall. The steepest step is the Leviathan (58 → 92 hits), because its tier's weapons need its own ink hearts, so it is fought with the Crane-tier blade. That is worth watching in a real playtest; if it drags, lowering its life to about 2,000 would bring it to 80 hits.
 
+## Vertical layers and the Folded Clocktower
+
+Added after the audit above, which was made on 640 × 220 medium worlds. Worlds are now taller (small 420 × 200, medium 640 × 260, large 900 × 300) to make room for two layers, and the surface sits at 63% of the height.
+
+| Step | Gate | What it opens |
+|---|---|---|
+| The Pressed Deep (a band of Pressed Slate right above the Burnt Underworld) | Pick power 4: the Frostsilver Pickaxe, so after the Great Crane | Ancient machines (Ancient Cogs, a chest each), giant fossil skeletons (a fossil from every bone; the Giants of the Deep museum collection), underground ink lakes, gold veins, Clockwork Beetles. The Underworld is below it, so the Charred Folio's region now also waits for the Crane, one step before its Emberite is minable anyway |
+| The Folded Clocktower (a hand-built dungeon on the surface) | Its front door opens once the Great Crane is defeated | A crank puzzle behind a peel wall and a crawlspace, a sketched bridge, the Clockwork Sentinel (mini-boss, an elite with 598 life) and The Mainspring (boss, 1,900 life, defense 13, contact 30: between the Crane and the Leviathan) |
+| Sky islands (above the clouds) | Clockwork Wings, the Clocktower's reward (hold jump to fly for 1.6 s) | Skyglass Ore (pick 3) for the Skyglass Hook (twice the reach) and Saber, sky ruins with a chest each, Paper Rays |
+
+With a Frostsilver Blade (32) the Mainspring takes about 75 hits, between the Crane (58) and the Leviathan (92). Nothing on the main boss path needs the layers: they are side routes that pay out in cogs, skyglass, fossils and the wings. Worlds saved before the layers keep their terrain: they get the clocktower and sky islands where those fit on untouched ground, and no Pressed Deep.
+
 ## Still needs a human playtest
 
 - Total playtime, fresh start to The Unfolded.
 - Whether any boss's attack patterns (not just its numbers) spike, especially the Leviathan.
 - Whether finding the Ink Lake inkstone, the Snowfield depths and the Underworld is obvious without the map.
+- Whether the Clocktower's puzzle reads without hints, and whether the Mainspring's gear rain in its small chamber is fair.

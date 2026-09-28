@@ -12,7 +12,7 @@ export const player={buffs:{},partners:[],partner:null,badges:[],badgesOn:[],bpU
   onGround:false,coyote:0,jbuf:0,jumpAge:9,usedDouble:false,swing:null,lastSwingEnd:-9,niceNext:false,inv_t:0,spawn:{x:0,y:0},regenT:0,potT:0,mineP:0,mineTile:-1,placeT:0,walkT:0,dead:false,deadT:0,stompWin:0,stompTarget:null,dashT:0,dashCD:0,dashI:0,dashDir:1,airDashed:false,ghostT:0,dashPing:0,sheetDirty:true,mesh:null,mat:null,prevY:0};
 export let enemies=[],pickups=[],projs=[],npcs=[],boss=null;
 export let worldTime=7.5,quests={},hintT=0;
-export const QUESTS=[['tree','Chop down a tree'],['bar','Smelt a bar at a furnace'],['house','Build a house for the Merchant'],['heart','Find and use a Paper Heart'],['iron','Forge iron gear at an anvil'],['king','Defeat the King Slime'],['crane','Defeat the Great Crane'],['lev','Defeat the Inkwell Leviathan'],['folio','Defeat the Charred Folio'],['unfolded','Solve the riddle of the ink shrine']];
+export const QUESTS=[['tree','Chop down a tree'],['bar','Smelt a bar at a furnace'],['house','Build a house for the Merchant'],['heart','Find and use a Paper Heart'],['iron','Forge iron gear at an anvil'],['king','Defeat the King Slime'],['crane','Defeat the Great Crane'],['clock','Conquer the Folded Clocktower'],['lev','Defeat the Inkwell Leviathan'],['folio','Defeat the Charred Folio'],['unfolded','Solve the riddle of the ink shrine']];
 export function questDone(k){if(quests[k])return;quests[k]=true;const q=QUESTS.find(q=>q[0]===k);toast(`Quest complete: ${q[1]}`,'gold');SFX.nice();renderQuests();}
 
 export function boxHits(x,y,w,h,prevY,drop){const x0=Math.floor(x-w/2),x1=Math.floor(x+w/2-1e-6),y0=Math.floor(y),y1=Math.floor(y+h-1e-6);
@@ -65,6 +65,12 @@ export const EN={
   // burnt underworld
   cracker:{w:.8,h:1.2,hp:60,dmg:48,def:8,sheet:'cracker',fw:80,fh:112,coins:[12,24],drops:[['ash',1,3,.6],['emberore',1,1,.2]],col:['#d4483b','#ffd66b'],name:'Firecracker Imp',step:1},
   ashspider:{w:1.1,h:.7,hp:95,dmg:32,def:12,sheet:'ashspider',fw:112,fh:72,coins:[14,28],drops:[['ash',1,2,.5],['rope',2,5,.4]],col:['#3a2a24','#ff8a3d'],name:'Ash Spider',step:1},
+  // sky islands and the Pressed Deep (layers.js)
+  skyray:{w:1.6,h:.9,hp:120,dmg:30,def:10,fly:1,sheet:'skyray',fw:128,fh:80,coins:[10,22],drops:[['skyore',1,3,.35],['plume',1,1,.1],['cloud',2,4,.5]],col:['#dfe7fb','#8fd0ff'],name:'Paper Ray'},
+  clockbug:{w:1.2,h:.9,hp:150,dmg:28,def:14,sheet:'clockbug',fw:112,fh:80,coins:[10,22],drops:[['cog',1,2,.4],['goldore',1,3,.3]],col:['#b08a4a','#e0b04a'],name:'Clockwork Beetle',step:1},
+  // the Folded Clocktower (dungeons.js): its mini-boss is always an elite, its boss sits in the clock chamber at the top
+  sentinel:{w:.85,h:1.85,hp:230,dmg:26,def:12,sheet:'sentinel',fw:96,fh:144,coins:[40,70],drops:[['cog',2,4,1],['goldbar',3,6,1]],col:['#c9a24a','#6b5234'],name:'Clockwork Sentinel',step:1},
+  mainspring:{w:3.2,h:3.2,hp:1900,dmg:30,def:13,fly:1,noclip:1,sheet:'mainspring',fw:240,fh:240,boss:1,name:'The Mainspring',quest:'clock',coins:[450,600],drops:[['cog',6,10,1],['skyore',6,12,1],['goldbar',6,10,1],['b_quick',1,1,.5]],col:['#b08a4a','#f4ecd8','#d4483b']},
   king:{w:4.4,h:3.3,hp:750,dmg:26,def:6,sheet:'king',fw:340,fh:280,boss:1,name:'King Slime',quest:'king',slimy:1,coins:[250,320],drops:[['b_nice',1,1,1],['ribbon',1,1,1],['gel',20,35,1],['goldbar',5,10,1],['starstaff',1,1,.6],['fstar',5,10,1]],col:['#5aa7e0','#8fcaf0','#f1c04f']},
 };
 // damage types: weak takes ×1.5, resists take ×.5. Fire burns (damage over time), ink stains (slows), water soaks (takes +25% damage, hits 25% softer).
@@ -74,6 +80,7 @@ export const ELEM={fire:{name:'Fire',st:'Burning',col:['#ff8a3d','#ffd66b'],icon
  ['foldfox','fire','water'],['flurry','fire','water','water'],['snowroll','fire','water','water'],['snowlet','fire','water','water'],['frostpuff','fire','water','water'],
  ['blot','water','ink','ink'],['inksquid','water','ink','ink'],['inkwisp','water','ink','ink'],['quillfish','','ink','ink'],['wraith','water','ink','ink'],
  ['cinderbat','water','fire','fire'],['ashimp','water','fire','fire'],['cracker','water','fire','fire'],['ashspider','water','fire','fire'],
+ ['skyray','fire','water'],['clockbug','water','fire'],['sentinel','water'],['mainspring','water','fire'],
  ['king','fire','water'],['crane','fire','water'],['lev','water','ink','ink'],['levseg','water','ink','ink'],['levtail','water','ink','ink'],['folio','water','fire','fire'],['unfolded','fire','ink','ink']
 ].forEach(([k,w,r,el])=>{Object.assign(EN[k],{weak:w||null,res:r||null,elem:el||null});});
 // bestiary: order, display names and where each enemy lives (segments of the Leviathan are part of it)
@@ -82,7 +89,8 @@ export const BEST=[['slime','Green Slime','Forest, by day'],['bslime','Blue Slim
   ['foldfox','Fold Fox','Origami Snowfield'],['flurry','Flurry','Origami Snowfield'],['snowroll','Snow Roller','Origami Snowfield'],['snowlet','Snowlet','Origami Snowfield, from Snow Rollers'],['frostpuff','Frost Puff','Origami Snowfield'],
   ['blot','Ink Blot','Ink Lake'],['inksquid','Ink Squid','Ink Lake, in the ink'],['inkwisp','Ink Wisp','Ink Lake'],['quillfish','Quillfish','Ink Lake, in the ink'],
   ['cinderbat','Cinder Bat','Burnt Underworld'],['ashimp','Ash Imp','Burnt Underworld'],['cracker','Firecracker Imp','Burnt Underworld'],['ashspider','Ash Spider','Burnt Underworld ceilings'],['wraith','Ink Wraith','Surface, under the Ink Moon'],
-  ['king','King Slime','Boss · summoned on the surface'],['crane','Great Crane','Boss · Origami Snowfield'],['lev','Inkwell Leviathan','Boss · Ink Lake'],['folio','Charred Folio','Boss · Burnt Underworld'],['unfolded','The Unfolded','Secret boss · the ink shrine']];
+  ['skyray','Paper Ray','Sky islands'],['clockbug','Clockwork Beetle','The Pressed Deep'],['sentinel','Clockwork Sentinel','Mini-boss · the Folded Clocktower'],
+  ['king','King Slime','Boss · summoned on the surface'],['crane','Great Crane','Boss · Origami Snowfield'],['mainspring','The Mainspring','Boss · the Folded Clocktower'],['lev','Inkwell Leviathan','Boss · Ink Lake'],['folio','Charred Folio','Boss · Burnt Underworld'],['unfolded','The Unfolded','Secret boss · the ink shrine']];
 export let bestiary={};
 export function bestKill(e){const b=bestiary[e.type]||(bestiary[e.type]={k:0,d:{}});b.k++;if(e.elite)b.e=(b.e||0)+1;
   if(e.trait&&TRAITS[e.trait]){const tr=b.tr||(b.tr={});if(!tr[e.trait]&&!Object.values(bestiary).some(o=>o.tr&&o.tr[e.trait]))toast(`New elite trait in the bestiary: ${TRAITS[e.trait].n}!`,'gold');tr[e.trait]=(tr[e.trait]||0)+1;}

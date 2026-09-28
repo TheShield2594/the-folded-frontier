@@ -115,6 +115,7 @@ export const MUSEUM=[
   {id:'legend',wing:'Aquarium',n:'Legendary fish',items:['oldcrease','glacierjaw','moonscale','magmaw'],tip:'Four giants that fight hard on the line.',reward:[['bpup',1],['fcrate',5],['coin',1000]]},
   {id:'ores',n:'Ores',items:['copperore','ironore','goldore','frostore','inkore','emberore'],tip:'One of every ore, from copper to Emberite.',reward:[['goldbar',8],['coin',200]]},
   {id:'curios',n:'Curiosities',items:['lens','batwing','mushroom','inksac','fstar','moonink'],tip:'Odd things dropped by creatures and the night sky.',reward:[['potiron',3],['potswift',3]]},
+  {id:'giants',n:'Giants of the Deep',items:['fos_spine','fos_claw','fos_wing'],tip:'Dig the great bones of the Pressed Deep.',reward:[['bpup',1],['coin',600]]},
   {id:'keeps',n:'Boss keepsakes',items:['ribbon','plume','inkheart','cinder'],tip:'One keepsake from each great boss.',reward:[['bpup',2],['coin',500]]}];
 export function museumHTML(){const n=donated(),all=MUSEUM.reduce((a,c)=>a+c.items.length,0);
   let wing='';return `<h3 style="margin-top:10px">Museum · ${n} of ${all} displays filled</h3>`+MUSEUM.map(c=>{const have=c.items.filter(id=>folk.mus[id]).length,wh=c.wing&&c.wing!==wing?`<h3 style="margin-top:10px">${c.wing} wing</h3>`:'';wing=c.wing||'';
@@ -125,7 +126,10 @@ export function donate(id){if(folk.mus[id]||!ITEMS[id]||countItem(id)<1)return;r
   for(const c of MUSEUM)if(!folk.col[c.id]&&c.items.every(i=>folk.mus[i])){folk.col[c.id]=1;c.reward.forEach(([i,n])=>give(i,n));stat('collections');setTimeout(()=>toast(`Collection complete: ${c.n}! The Curator gives you ${rewardTxt(c.reward)}.`,'gold'),600);}
   setInvDirty(true);checkAch();}
 // fossils: a small chance in dirt, sand, stone and ash dug well below the surface; skulls only deep down
-export function digFossil(x,y,t){if(t!==T.STONE&&t!==T.DIRT&&t!==T.SAND&&t!==T.ASH)return;const depth=surf[Math.min(W-1,Math.max(0,x))]-y;if(depth<10||Math.random()>.012)return;
+export function digFossil(x,y,t){
+  // the great skeletons of the Pressed Deep (layers.js): every bone gives a fossil, and one in four is a piece of a giant
+  if(t===T.BONE){const id=Math.random()<.25?pick(['fos_spine','fos_claw','fos_wing']):pick(['fos_amm','fos_tri','fos_fern','fos_skull']);dropItem(id,1,x+.5,y+.5);fcount('fossil');palEv('fossil');return;}
+  if(t!==T.STONE&&t!==T.DIRT&&t!==T.SAND&&t!==T.ASH)return;const depth=surf[Math.min(W-1,Math.max(0,x))]-y;if(depth<10||Math.random()>.012)return;
   const id=depth>45&&Math.random()<.3?'fos_skull':pick(['fos_amm','fos_amm','fos_tri','fos_tri','fos_fern','fos_fern']);dropItem(id,1,x+.5,y+.5);fcount('fossil');palEv('fossil');if((folk.n.fossil||0)===1)toast('You found a fossil! A museum would treasure it.','gold');}
 // Imported bindings are read-only, so other modules assign these through setters.
 export function setFolk(v){return folk=v;}

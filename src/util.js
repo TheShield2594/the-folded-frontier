@@ -1,8 +1,9 @@
 // Constants and helpers: world sizes, seeded RNG, noise, canvas drawing helpers.
 
 // ================= constants & helpers =================
-export let W=420,H=170,N=W*H;export const CS=32;export let SPAWNX=210;
-export const SIZES={s:{w:420,h:170,name:'Small',note:'420 × 170 tiles. Quick to explore.'},m:{w:640,h:220,name:'Medium',note:'640 × 220 tiles. Room for everything.'},l:{w:900,h:260,name:'Large',note:'900 × 260 tiles. A long expedition. Takes a few seconds to fold.'}};
+export let W=420,H=200,N=W*H;export const CS=32;export let SPAWNX=210;
+// the heights leave room above the surface for the sky islands and below the caves for the Pressed Deep (layers.js); saves keep the size they were made at
+export const SIZES={s:{w:420,h:200,name:'Small',note:'420 × 200 tiles. Quick to explore.'},m:{w:640,h:260,name:'Medium',note:'640 × 260 tiles. Room for everything.'},l:{w:900,h:300,name:'Large',note:'900 × 300 tiles. A long expedition. Takes a few seconds to fold.'}};
 export let worldSize='s',seedText='';
 export const $=id=>document.getElementById(id);
 export const clamp=(v,a,b)=>v<a?a:v>b?b:v;

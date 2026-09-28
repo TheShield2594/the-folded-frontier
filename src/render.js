@@ -110,7 +110,7 @@ export function buildChunk(cx,cy){markFg(cx);const P=[],UV=[],L=[],I=[];let vc=0
     const w=walls[i];if(w){quad([x,y,-.5,x+1,y,-.5,x+1,y+1,-.5,x,y+1,-.5],cellUV(WALLCELL[w]),c4(),.52);}
     if(t===T.AIR)continue;
     if(TP[t].liq){const top=tileAt(x,y+1)!==t;const lava=t===T.LAVA;lquad([x,y,.42,x+1,y,.42,x+1,y+1,.42,x,y+1,.42],cellUV(lava?(top?C.lavaT:C.lavaF):(top?C.inkT:C.inkF)),c4(),lava?2:1);continue;}
-    let cell=TP[t].cell,z=0;if(t===T.SKETCH)cell=meta[i]===2?C.sketchS:C.sketchB;if(t===T.SIGN)cell=meta[i]?C.sign1:C.sign0;if(t===T.MURAL){cell=C.murals[meta[i]&3];z=-.45;}if(t===T.CROP){const m=meta[i];cell=C.crops[Math.min(4,m>>2)][Math.min(2,m&3)];}if(t===T.RARE){const m=meta[i];cell=C.rare[Math.min(3,m>>2)][Math.min(2,m&3)];}
+    let cell=TP[t].cell,z=0;if(t===T.SKETCH)cell=meta[i]===2?C.sketchS:C.sketchB;if(t===T.SIGN)cell=meta[i]?C.sign1:C.sign0;if(t===T.CRANK)cell=C.crank[meta[i]&1];if(t===T.MURAL){cell=C.murals[meta[i]&3];z=-.45;}if(t===T.CROP){const m=meta[i];cell=C.crops[Math.min(4,m>>2)][Math.min(2,m&3)];}if(t===T.RARE){const m=meta[i];cell=C.rare[Math.min(3,m>>2)][Math.min(2,m&3)];}
     if(t===T.DOOR){const m=meta[i];cell=(m&1)?((m&2)?C.doorOT:C.doorOB):((m&2)?C.doorT:C.doorB);}
     if(t===T.TRUNK)z=-.2;
     const l4=c4();quad([x,y,z,x+1,y,z,x+1,y+1,z,x,y+1,z],cellUV(cell),l4,EMIS(t,1));
@@ -351,7 +351,26 @@ export function buildMoreSheets(){
   SHEETS.ashspider=makeSheet(2,112,72,(t,f)=>{const lg=f?4:-4;for(let k=0;k<4;k++){const x=40+k*14,o=k%2?lg:-lg;t.beginPath();t.moveTo(x,44);t.lineTo(x-8+o,24);t.lineTo(x-14+o,66);ink(t,4,'#1e1614');}
     t.beginPath();t.ellipse(38,42,26,20,0,0,6.28);fi(t,'#3a2a24',3);poly(t,[30,34,38,26,46,34,38,50]);t.fillStyle='#ff8a3d';t.fill();
     circ(t,74,46,14);fi(t,'#2a1e1a',3);for(const[x,y]of[[78,42],[86,44],[80,50]]){circ(t,x,y,2.6);t.fillStyle='#ffd66b';t.fill();}});
-  for(const k of['crumple','toadstool','dunefin','scarab','sunkite','snowroll','snowlet','frostpuff','inkwisp','quillfish','cracker','ashspider'])SHEETS[k+'T']=canvasTex(SHEETS[k]);}
+  // the vertical layers: the Paper Ray glides between the sky islands, the Clockwork Beetle winds through the Pressed Deep
+  SHEETS.skyray=makeSheet(2,128,80,(t,f)=>{const w=f?-10:8;t.beginPath();t.moveTo(18,44);t.quadraticCurveTo(4,50,2,62);ink(t,2.5,'#6a7fb8');
+    t.beginPath();t.moveTo(18,44);t.quadraticCurveTo(52,30+w,64,6+w*1.4);t.quadraticCurveTo(76,30,98,36);t.quadraticCurveTo(122,40,124,46);t.quadraticCurveTo(100,56,78,56);t.quadraticCurveTo(64,74-w,40,70-w*.6);t.quadraticCurveTo(30,54,18,44);t.closePath();fi(t,'#dfe7fb',3);
+    t.beginPath();t.moveTo(40,46);t.quadraticCurveTo(60,22+w,64,14+w*1.2);t.moveTo(46,50);t.quadraticCurveTo(62,62-w*.5,58,66-w*.6);ink(t,1.4,'rgba(42,33,48,.3)');
+    t.beginPath();t.moveTo(78,42);t.quadraticCurveTo(100,40,122,46);ink(t,1.4,'rgba(42,33,48,.3)');circ(t,104,42,3.2);t.fillStyle=INK;t.fill();circ(t,113,43,3);t.fill();t.beginPath();t.arc(108,49,3.5,.3,2.8);ink(t,1.8);
+    for(const[x,y]of[[70,40],[84,48]]){circ(t,x,y,3);t.fillStyle='#8fd0ff';t.fill();}});
+  const gearP=(t,x,y,r,n)=>{t.beginPath();for(let k=0;k<n*2;k++){const a=k/(n*2)*Math.PI*2,q=k%2?r*.8:r;t.lineTo(x+Math.cos(a-.1)*q,y+Math.sin(a-.1)*q);t.lineTo(x+Math.cos(a+.1)*q,y+Math.sin(a+.1)*q);}t.closePath();};
+  SHEETS.clockbug=makeSheet(2,112,80,(t,f)=>{const lg=f?5:-5;for(const[x,o]of[[34,lg],[52,-lg],[70,lg]]){t.beginPath();t.moveTo(x,60);t.lineTo(x+o-6,76);ink(t,4,'#4a3a26');}
+    t.save();t.translate(44,18);t.rotate(f?.5:0);rr(t,-3,-14,6,16,2);fi(t,'#a9adb8',2);t.beginPath();t.ellipse(-8,-16,7,5,0,0,6.28);t.ellipse(8,-16,7,5,0,0,6.28);fi(t,'#c9a24a',2);t.restore();
+    poly(t,[84,44,104,40,108,52,100,62,84,60]);fi(t,'#6b5234',3);circ(t,98,48,3.2);t.fillStyle='#ffd66b';t.fill();
+    t.beginPath();t.moveTo(14,64);t.bezierCurveTo(12,14,92,10,90,64);t.closePath();fi(t,'#b08a4a',3.5);gearP(t,52,44,13,7);fi(t,'#e0b04a',2);circ(t,52,44,4);t.fillStyle='#6b5234';t.fill();
+    t.beginPath();t.moveTo(14,64);t.lineTo(90,64);ink(t,4,'#6b5234');});
+  // the Folded Clocktower's boss: a great clock face in a brass gear rim; its hands sweep between the two frames
+  SHEETS.mainspring=makeSheet(2,240,240,(t,f)=>{const cx=120,cy=120;gearP(t,cx,cy,108,16);fi(t,'#b08a4a',4);gearP(t,cx,cy,96,16);t.fillStyle='rgba(255,230,160,.25)';t.fill();
+    circ(t,cx,cy,84);fi(t,'#f4ecd8',4);for(let k=0;k<12;k++){const a=k/12*Math.PI*2;t.beginPath();t.moveTo(cx+Math.cos(a)*70,cy+Math.sin(a)*70);t.lineTo(cx+Math.cos(a)*(k%3?78:80),cy+Math.sin(a)*(k%3?78:80));ink(t,k%3?3:6);}
+    for(const[ex,ey]of[[92,98],[148,98]]){t.beginPath();t.ellipse(ex,ey,11,15,0,0,6.28);fi(t,'#fbf8f0',2.5);circ(t,ex+4,ey+3,6);t.fillStyle=INK;t.fill();}
+    t.beginPath();t.moveTo(78,78);t.lineTo(104,88);t.moveTo(162,78);t.lineTo(136,88);ink(t,5);
+    const hand=(a,l,w,col)=>{t.save();t.translate(cx,cy);t.rotate(a);poly(t,[-w,0,0,-l,w,0,0,w*1.5]);fi(t,col,2.5);t.restore();};hand(f?.4:-.3,44,7,'#6b5234');hand(f?2.4:2.9,64,5,'#d4483b');circ(t,cx,cy,9);fi(t,'#c9a24a',2.5);
+    t.beginPath();t.arc(cx,cy+46,16,Math.PI+.4,-.4);ink(t,4);});
+  for(const k of['crumple','toadstool','dunefin','scarab','sunkite','snowroll','snowlet','frostpuff','inkwisp','quillfish','cracker','ashspider','skyray','clockbug','mainspring'])SHEETS[k+'T']=canvasTex(SHEETS[k]);}
 export function buildBiomeSheets(){
   SHEETS.foldfox=makeSheet(2,128,96,(t,f)=>{const lg=f?6:-6;for(const[x,o]of[[40,lg],[52,-lg],[80,-lg],[92,lg]]){poly(t,[x-4,62,x+4,62,x+2+o,90,x-4+o,90]);fi(t,x<60?'#b8612a':'#e0823d',2);}
     poly(t,[26,60,40,40,88,38,104,56,90,66,36,68]);fi(t,'#e0823d');poly(t,[60,66,88,40,90,66]);fi(t,'#f4f0e6',2);
