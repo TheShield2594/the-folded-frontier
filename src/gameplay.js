@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import {
   bossDefeatFx,bossHeld,bossLook,bossPhaseFx,crops,DEFEAT_T,markChunk,RARE,RARECOL,RAREHOW,reduceMotion,RSEEDS,RSOIL,teleOutline,wev,
-  $,AC,addItem,ambBus,ARMF,BADGES,bestDrop,bestKill,BIO,biomeAt,boss,boxHits,BUFFS,burst,camera,camT,chests,
+  $,AC,addItem,ambBus,BADGES,FCLIP,HUMANFOE,FOLK,rigPlay,rigSet,rigUpdate,rigJoint,bestDrop,bestKill,BIO,biomeAt,boss,boxHits,BUFFS,burst,camera,camT,chests,
   clamp,collide,consumeSel,countItem,crackerBoom,cursor,DASH_V,defense,dormant,dropItem,dummy,edmg,ELEM,
   ELITE_LOOT,ELITE_TINT,EN,enemies,floatText,H,hasAcc,hasBadge,hasBuff,held,HERBCOL,HERBS,iconTex,idx,
   INKTINT,inNiceWin,isFest,invOpen,isNight,isOpaque,isSolid,ITEMS,keys,touch,lerp,lightAt,makeElite,markDirty,meta,
@@ -93,7 +93,7 @@ let stMesh=null;
 function statusOverlay(dt){const p=player,st=p.st||{},m=p.mesh,f=st.burn>0?0:st.ink>0?1:st.soak>0?2:-1;
   if(f>=0){const u=p.mat.uniforms.uTint.value;if(st.burn>0)u.multiply(BURNTINT);if(st.ink>0)u.multiply(STAINTINT);if(st.soak>0)u.multiply(SOAKTINT);}
   if(f<0||p.dead||!m.visible){if(stMesh)stMesh.visible=false;return;}
-  if(!stMesh){stMesh=new THREE.Mesh(m.geometry,spriteMat(canvasTex(SHEETS.pstatus),3));stMesh.renderOrder=4;scene.add(stMesh);}
+  if(!stMesh){const g=new THREE.PlaneGeometry(1.6,2.4);g.translate(0,1.2,0);stMesh=new THREE.Mesh(g,spriteMat(canvasTex(SHEETS.pstatus),3));stMesh.renderOrder=4;scene.add(stMesh);}
   p.stT=(p.stT||0)+dt;const u=stMesh.material.uniforms;u.uFrame.value=f;setTint(stMesh.material,p.x,p.y+1);
   stMesh.visible=true;stMesh.position.set(p.x,m.position.y+(f===2&&!reduceMotion()?-Math.abs(Math.sin(p.stT*3))*.05:0),.2);
   // flames flicker by flipping the cut-out every few frames
@@ -114,7 +114,7 @@ function die(){dismount(true);player.dead=true;player.deadT=4;player.dieT=0;play
 function respawn(){endDie();player.dead=false;player.dashT=player.dashCD=player.dashI=0;player.st={};player.draw=null;player.blocking=player.blockOn=false;player.hp=player.max;player.x=player.spawn.x;player.y=player.spawn.y;player.vx=player.vy=0;player.mesh.visible=true;$('dead').hidden=true;player.inv_t=2;}
 // the death pose: the player buckles (the 'ko' face), tips over backward for DIE_T seconds, then bursts into scraps and the sheet hides until respawn
 const DIE_T=.7;
-function dieAnim(dt){const p=player,m=p.mesh;if(p.dieT==null)return;p.dieT+=dt;const k=Math.min(1,p.dieT/DIE_T);p.mat.uniforms.uFrame.value=PF.death;p.mat.uniforms.uFlash.value=0;
+function dieAnim(dt){const p=player,m=p.mesh;if(p.dieT==null)return;p.dieT+=dt;const k=Math.min(1,p.dieT/DIE_T);rigPlay(p.rig,'death');rigUpdate(p.rig,dt);p.mat.uniforms.uFlash.value=0;
   m.scale.set(1,1-.12*k,1);m.rotation.z=reduceMotion()?0:k*k*1.3;setTint(p.mat,p.x,p.y+1);statusOverlay(0);
   if(k>=1){const c=lookColors(p.look);endDie();m.visible=false;burst(p.x,p.y+.6,[c.tunic,c.scarf||'#d4483b',c.skin,'#fbf8f0'],50,7,{grav:8,life:1.5});SFX.crunch();}}
 export function endDie(){const p=player;p.dieT=null;if(p.mesh){p.mesh.rotation.z=0;p.mesh.scale.set(1,1,1);}}
@@ -449,16 +449,17 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateDashHud(d
   // pickups magnet handled in pickups
   // mesh
   const m=p.mesh;const target=p.face>0?0:Math.PI;p.rot+=(target-p.rot)*Math.min(1,dt*16);m.rotation.y=p.rot;
-  // which sheet frame (render.js POSES/PF): swings and aimed items first, then reactions (parry, block, hurt), then movement
+  // which rig clip (rig.js, built from render.js POSES/PF): swings and aimed items first, then reactions (parry, block, hurt),
+  // then movement. The rig blends from one clip to the next; walk and climb run on their own phase.
   for(const k of['hurtT','parryT','landT','cheerT'])if(p[k]>0)p[k]-=dt;if(p.swing||Math.abs(p.vx)>.5||!p.onGround)p.cheerT=0;
-  let f=0;const sp=p.swing&&!p.blocking&&(p.swing.sword||p.swing.tool)?swingPose(p.swing):null;if(sp)f=sp.f;else if(p.parryT>0)f=PF.parry;else if(p.blocking)f=PF.block;else if(p.swing&&(p.swing.sword||p.swing.tool))f=PF.hold;
-  else if(p.hurtT>0)f=PF.hurt;else if(p.flat)f=PF.flat;else if(p.dashT>0)f=PF.dash;else if(p.climb)f=PF.climb0+(Math.floor(p.climbT||0)&1);else if(!p.onGround)f=p.vy>0?PF.jump:PF.fall;else if(p.landT>0)f=PF.land;
-  else if(Math.abs(p.vx)>.5){p.walkT+=dt*Math.abs(p.vx)*1.3;f=PF.walk+Math.floor(p.walkT)%4;}else if(p.cheerT>0)f=PF.cheer0+(Math.floor(p.cheerT*5)&1);else{p.walkT=0;f=Math.floor(worldClock*1.6)%2;}
-  if(p.mount&&!sp&&!p.blocking)f=Math.floor(worldClock*1.6)%2;
-  p.mat.uniforms.uFrame.value=f;m.position.set(p.x,p.y-.08+(p.rideY||0),.15);setTint(p.mat,p.x,p.y+1);statusOverlay(dt);p.mat.uniforms.uFlash.value=p.inv_t>0&&!(p.inv_t>1.3)?(Math.floor(p.inv_t*14)%2?.6:0):0;
+  let c='idle',ct=null;const sp=p.swing&&!p.blocking&&(p.swing.sword||p.swing.tool)?swingPose(p.swing):null;if(sp)c=FCLIP[sp.f]||'hold';else if(p.parryT>0)c='parry';else if(p.blocking)c='block';else if(p.swing&&(p.swing.sword||p.swing.tool))c='hold';
+  else if(p.hurtT>0)c='hurt';else if(p.flat)c='flat';else if(p.dashT>0)c='dash';else if(p.climb){c='climb';ct=p.climbT||0;}else if(!p.onGround)c=p.vy>0?'jump':'fall';else if(p.landT>0)c='land';
+  else if(Math.abs(p.vx)>.5){p.walkT+=dt*Math.abs(p.vx)*1.3;c='walk';ct=p.walkT%4/4;}else if(p.cheerT>0)c='cheer';else p.walkT=0;
+  if(p.mount&&!sp&&!p.blocking){c='idle';ct=null;}if(c==='reel0'||c==='reel1')c='reel';
+  rigPlay(p.rig,c,{t:ct});m.position.set(p.x,p.y-.08+(p.rideY||0),.15);setTint(p.mat,p.x,p.y+1);statusOverlay(dt);p.mat.uniforms.uFlash.value=p.inv_t>0&&!(p.inv_t>1.3)?(Math.floor(p.inv_t*14)%2?.6:0):0;
   const sq=(p.onGround?(p.squash>0?1-p.squash*.9:1):clamp(1+p.vy*.006,.92,1.08))*(sp?sp.sq:1);m.scale.set(1/Math.sqrt(sq),sq,1);if(p.flat)m.scale.set(1.3,.42,1);if(p.cheerT>0&&!reduceMotion())m.position.y+=Math.abs(Math.sin(p.cheerT*10))*.12;
   if(p.dashT>0){m.scale.x*=1.22;m.scale.y*=.9;p.ghostT-=dt;if(p.ghostT<=0){p.ghostT=.03;spawnGhost();}}
-  updateTool(sp,sq);updateShield(dt);}
+  updateArm(sp);rigUpdate(p.rig,dt);updateTool(sp,sq);updateShield(dt);}
 // sword: a three-hit combo, each cut keyframed as [k end, arm angle, easing, body frame]. Angles are world radians
 // relative to facing (0 forward, + up). A cut coils back (anticipation), snaps through fast (ease-out-quart), overshoots, then settles.
 // 0 overhead cut, 1 rising cut back up, 2 a wider lunging finisher. Each wind-up starts from where the last cut ended so chains flow.
@@ -481,7 +482,8 @@ function aimFrame(s,k){const it=ITEMS[s.tool]||{};if(s.draw!=null)return PF.bow;
   if(it.rod)return bob.state===1&&bob.t<.3?PF.fcast:bob.state===3?PF.reel0+(Math.floor(bob.t*12)&1):PF.reel0;
   if(it.magic)return PF.cast;if(it.ammo==='arrow')return k<.7?PF.bowrel:PF.bow;return 9;}
 const ARML=.367;
-function swingHand(sp,sq=1){const p=player,[sx,sy]=shoulderAt(sp.f),l=ARML*sp.sc;return[p.x+p.face*(sx+Math.cos(sp.arm)*l),p.y-.08+(p.rideY||0)+sy*sq+Math.sin(sp.arm)*l];}
+// live: from the rig's posed shoulder (the arm the player sees); otherwise from the pose's numbers (the trail's curve)
+function swingHand(sp,sq=1,live){const p=player,[sx,sy]=live?rigJoint(p.rig,'armA'):shoulderAt(sp.f),l=ARML*sp.sc;return[p.x+p.face*(sx+Math.cos(sp.arm)*l),p.y-.08+(p.rideY||0)+sy*sq+Math.sin(sp.arm)*l];}
 function swingTip(s,k){const p=player,sp=swingPose(s,k),[hx,hy]=swingHand(sp),r=1.5*(s.heavy?1.2:1);return[hx+p.face*Math.cos(sp.blade)*r,hy+Math.sin(sp.blade)*r];}
 // the moment a cut starts its strike: step into it, and the finisher kicks up dust and a little shake
 function swingStep(s,k){const p=player,w=SWKEYS[s.combo][0][0];if(s.stepped||k<w)return;s.stepped=true;
@@ -523,15 +525,12 @@ export function updateTrail(dt){const p=player,s=p.swing;
     const dx=p.face*Math.cos(sp.blade),dy=Math.sin(sp.blade),a=u**1.4*clamp((Math.abs(sp.v)-4)/16,0,1)*(s.combo===2?.95:.8);if(a>.02)any=1;
     trailPos.set([hx+dx*.35*ts,hy+dy*.35*ts,.3,hx+dx*1.6*ts,hy+dy*1.6*ts,.3],i*6);trailA[i*2]=a*.1;trailA[i*2+1]=a;}
   trailMesh.visible=!!any;trailGeo.attributes.position.needsUpdate=true;trailGeo.attributes.aA.needsUpdate=true;}
-const toolPivot=new THREE.Group();scene.add(toolPivot);let toolMesh=null,toolId=null,armMesh=null,aimHand=[0,0];
-// while swinging, the body frame has no front arm; this mesh (the sheet's last frame) draws it from the shoulder to the weapon's grip
-function updateArm(sp,sq){const p=player;if(!sp||p.dead||p.flat||!p.mesh.visible){if(armMesh)armMesh.visible=false;return;}
-  if(!armMesh){armMesh=new THREE.Mesh(new THREE.PlaneGeometry(1.6,2.4),spriteMat(p.mat.uniforms.map.value,ARMF+1));armMesh.material.uniforms.uFrame.value=ARMF;scene.add(armMesh);}
-  const u=armMesh.material.uniforms,[sx,sy]=shoulderAt(sp.f);u.map.value=p.mat.uniforms.map.value;u.uFrames.value=ARMF+1;u.uTint.value.copy(p.mat.uniforms.uTint.value);u.uFlash.value=p.mat.uniforms.uFlash.value;
-  armMesh.visible=true;armMesh.position.set(p.x+p.face*sx,p.y-.08+(p.rideY||0)+sy*sq,.185);armMesh.scale.set(p.face,sp.sc,1);armMesh.rotation.z=(sp.arm+Math.PI/2)*p.face;}
-function updateTool(sp,sq){const p=player,s=p.swing;updateArm(sp,sq);if(!s||!s.tool||p.dead){toolPivot.visible=false;return;}if(toolId!==s.tool){if(toolMesh){toolPivot.remove(toolMesh);toolMesh.material.dispose();}const g=new THREE.PlaneGeometry(1.25,1.25);g.translate(.5,.5,0);toolMesh=new THREE.Mesh(g,spriteMat(iconTex(s.tool)));toolPivot.add(toolMesh);toolId=s.tool;}
+const toolPivot=new THREE.Group();scene.add(toolPivot);let toolMesh=null,toolId=null,aimHand=[0,0];
+// while swinging or aiming, gameplay holds the rig's front arm: pinned on screen from the shoulder toward the weapon's grip
+function updateArm(sp){const p=player;if(!sp||p.dead||p.flat)return;rigSet(p.rig,'armA',{r:-(sp.arm+Math.PI/2),sy:sp.sc,abs:1,snap:1});}
+function updateTool(sp,sq){const p=player,s=p.swing;if(!s||!s.tool||p.dead){toolPivot.visible=false;return;}if(toolId!==s.tool){if(toolMesh){toolPivot.remove(toolMesh);toolMesh.material.dispose();}const g=new THREE.PlaneGeometry(1.25,1.25);g.translate(.5,.5,0);toolMesh=new THREE.Mesh(g,spriteMat(iconTex(s.tool)));toolPivot.add(toolMesh);toolId=s.tool;}
   toolPivot.visible=true;const k=clamp(s.t/s.dur,0,1),ang=sp?sp.blade:s.aim!=null?(p.face>0?s.aim:Math.PI-s.aim):lerp(1.9,-.5,Math.sin(k*Math.PI*.5));
-  if(s.aim!=null){const r=.55+.2*(1-k),[hx,hy]=aimHand=sp?swingHand(sp,sq):[p.x+p.face*.25,p.y+1.1];toolPivot.position.set(hx-Math.cos(s.aim)*r,hy-Math.sin(s.aim)*r,.18);}else if(sp){const[hx,hy]=swingHand(sp,sq);toolPivot.position.set(hx,hy,.18);}else toolPivot.position.set(p.x+p.face*.2,p.y+1.05+(p.rideY||0),.18);const ts=s.heavy?1.2:1;toolPivot.scale.set(p.face*ts,ts,1);toolPivot.rotation.z=(ang-Math.PI/4)*p.face;setTint(toolMesh.material,p.x,p.y+1);toolMesh.material.uniforms.uFlash.value=inNiceWin(s)||s.draw>=1?.55+.2*Math.sin(worldClock*30):s.nice?.35:s.draw?s.draw*.25:0;}
+  if(s.aim!=null){const r=.55+.2*(1-k),[hx,hy]=aimHand=sp?swingHand(sp,sq,1):[p.x+p.face*.25,p.y+1.1];toolPivot.position.set(hx-Math.cos(s.aim)*r,hy-Math.sin(s.aim)*r,.18);}else if(sp){const[hx,hy]=swingHand(sp,sq,1);toolPivot.position.set(hx,hy,.18);}else toolPivot.position.set(p.x+p.face*.2,p.y+1.05+(p.rideY||0),.18);const ts=s.heavy?1.2:1;toolPivot.scale.set(p.face*ts,ts,1);toolPivot.rotation.z=(ang-Math.PI/4)*p.face;setTint(toolMesh.material,p.x,p.y+1);toolMesh.material.uniforms.uFlash.value=inNiceWin(s)||s.draw>=1?.55+.2*Math.sin(worldClock*30):s.nice?.35:s.draw?s.draw*.25:0;}
 // a nocked arrow slides back along the bow while drawing
 let nockMesh=null,nockId=null,shieldMesh=null,shieldId=null;
 function updateNock(){const p=player,s=p.swing;if(!s||s.draw==null||p.dead){if(nockMesh)nockMesh.visible=false;return;}const ai=findAmmo('arrow'),id=ai>=0?p.inv[ai].id:'arrow';
@@ -681,7 +680,7 @@ export function updateEnemies(dt){const p=player;for(let i=enemies.length-1;i>=0
     else if(!fromAbove)hurtPlayer(edmg(e)*(e.act==='dash'?1.3:1),e.x,e,d.elem);}
   // mesh
   const m=e.mesh;e.rot+=((e.face>0?0:Math.PI)-e.rot)*Math.min(1,dt*14);m.rotation.y=e.rot;
-  let fr=0;if(d.slimy)fr=e.onGround&&e.timer<.25?1:0;else fr=Math.floor(e.t*(d.fly?8:5))%2;e.mesh.material.uniforms.uFrame.value=fr;
+  if(e.rig)foeClip(e);else{let fr=0;if(d.slimy)fr=e.onGround&&e.timer<.25?1:0;else fr=Math.floor(e.t*(d.fly?8:5))%2;e.mesh.material.uniforms.uFrame.value=fr;}
   if(d.fly)m.position.set(e.x,e.y+e.h/2,m.position.z);else m.position.set(e.x,e.y-.1,m.position.z);if(e.tele)m.position.x+=Math.sin(e.t*75)*.05*(d.boss?2.5:1);
   if(!d.fly&&!e.onGround&&d.slimy){const s=clamp(1+e.vy*.02,.85,1.2);m.scale.set(1/s,s,1);}else m.scale.set(1,1,1);
   if(e.folded)m.scale.set(1.2,.25,1);if(d.worm){m.rotation.y=0;const a=e.ang||0;m.rotation.z=a;m.scale.set(1,Math.cos(a)<0?-1:1,1);}
@@ -697,12 +696,22 @@ export function updateEnemies(dt){const p=player;for(let i=enemies.length-1;i>=0
     if(e.thread){const len=(e.hangY??e.y+e.h)-(e.y+e.h);e.thread.visible=hang&&len>.05;e.thread.position.set(e.x,e.y+e.h,.09);e.thread.scale.y=Math.max(.01,len);}}
   if(e.elite)m.scale.multiplyScalar(1.2);
   if(d.boss||e.parent)bossLook(e,m,dt);
-  setTint(m.material,e.x,e.y+e.h/2);if(e.inked)m.material.uniforms.uTint.value.multiply(INKTINT);if(e.elite){m.material.uniforms.uTint.value.multiply(ELITE_TINT);if(Math.random()<dt*4)burst(e.x+rand(-e.w/2,e.w/2),e.y+rand(0,e.h),['#f1c04f','#fff3c0'],1,.6,{grav:-1,life:.6,bright:1});}if(e.st)statusFx(e,m,dt);m.material.uniforms.uFlash.value=e.flash>0?.8:(e.warn?.15+.12*Math.sin(e.t*28):0);teleOutline(m,SET.tele&&(e.tele||e.warn)&&!e.burrow,e.t);updateEnemyFx(e,dt);}
+  setTint(m.material,e.x,e.y+e.h/2);if(e.inked)m.material.uniforms.uTint.value.multiply(INKTINT);if(e.elite){m.material.uniforms.uTint.value.multiply(ELITE_TINT);if(Math.random()<dt*4)burst(e.x+rand(-e.w/2,e.w/2),e.y+rand(0,e.h),['#f1c04f','#fff3c0'],1,.6,{grav:-1,life:.6,bright:1});}if(e.st)statusFx(e,m,dt);m.material.uniforms.uFlash.value=e.flash>0?.8:(e.warn?.15+.12*Math.sin(e.t*28):0);teleOutline(m,SET.tele&&(e.tele||e.warn)&&!e.burrow,e.t);if(e.rig)rigUpdate(e.rig,dt);updateEnemyFx(e,dt);}
   if(boss){$('boss').querySelector('i').style.width=clamp(boss.hp/boss.max*100,0,100)+'%';}}
+// rigged foes (rig.js FOERIG) pick a clip from what they are doing: humans walk their gait and wince when hit, slimes crouch
+// before a hop, fliers flap, and the floating eye's iris follows you
+function foeClip(e){const R=e.rig,p=player;
+  if(R.k==='human'){const H=HUMANFOE[e.type]||{},walk=Math.abs(e.vx)>.3;rigPlay(R,walk?H.clip||'march':'idle',{sp:clamp(Math.abs(e.vx)/2.2,.6,1.8)});
+    if(H.arm!=null)rigSet(R,'armA',{r:H.arm});if(e.type==='zombie'&&!walk){rigSet(R,'armA',{r:-1.45});rigSet(R,'armB',{r:-1.3});}if(e.flash>0||e.stun>0)rigSet(R,'head',{sw:'hurt',snap:1});}
+  else if(R.k==='slime'||R.k==='king')rigPlay(R,e.onGround&&e.timer<.25?'crouch':'idle');
+  else rigPlay(R,'fly',{sp:e.stun>0?.3:1});
+  if(R.k==='eye'){const dx=p.x-e.x,dy=p.y+1-(e.y+e.h/2),l=Math.hypot(dx,dy)||1;rigSet(R,'iris',{x:dx/l*5*e.face,y:-dy/l*5});}}
 export function updateNPC(dt){for(const n of npcs){n.t+=dt;n.timer-=dt;const h=n.home||n.roam;if(n.timer<=0){n.timer=rand(1.5,4);const r=Math.random();n.want=r<.45?0:(r<.72?-1:1);}
   const near=Math.abs(player.x-n.x)<3&&Math.abs(player.y-n.y)<2.5&&!player.dead;
   let want=near?0:(n.want||0);if(near)n.face=player.x>n.x?1:-1;if(h){if(n.x<h.minX+.7)want=1;if(n.x>h.maxX+.3)want=-1;}n.vx=want*1.6;if(want)n.face=want;n.vy-=50*dt;collide(n,dt);
-  n.rot+=((n.face>0?0:Math.PI)-n.rot)*Math.min(1,dt*14);n.mesh.rotation.y=n.rot;n.mesh.material.uniforms.uFrame.value=want?Math.floor(n.t*5)%2:0;n.mesh.position.set(n.x,n.y-.08,n.mesh.position.z);setTint(n.mesh.material,n.x,n.y+1);
+  n.rot+=((n.face>0?0:Math.PI)-n.rot)*Math.min(1,dt*14);n.mesh.rotation.y=n.rot;n.mesh.position.set(n.x,n.y-.08,n.mesh.position.z);setTint(n.mesh.material,n.x,n.y+1);
+  // townsfolk amble about, and stand holding their tool (FOLK arm) when they stop
+  const R=n.rig,F=FOLK[n.type];rigPlay(R,want?'amble':'idle');if(!want){rigSet(R,'armA',{r:F.arm});if(F.armB!=null)rigSet(R,'armB',{r:F.armB});}rigUpdate(R,dt);
   if(n.y<-3&&h){n.x=(h.minX+h.maxX)/2+.5;n.y=h.y;}
   n.bubT-=dt;if(near&&n.bubT<=0&&!n.bub){n.bub=document.createElement('div');n.bub.className='bubble';n.bub.textContent=plain(npcLine(n.type,true));$('nums').appendChild(n.bub);n.bubLife=3.2;n.bubT=rand(9,16);}
   if(n.bub){n.bubLife-=dt;pv.set(n.x,n.y+2.5,.5).project(camera);n.bub.style.left=upx((pv.x+1)/2*innerWidth);n.bub.style.top=upx((1-pv.y)/2*innerHeight);if(n.bubLife<=0){n.bub.remove();n.bub=null;}}}}

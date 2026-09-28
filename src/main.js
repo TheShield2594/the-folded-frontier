@@ -3,11 +3,11 @@
 import * as THREE from 'three';
 import {
   reduceMotion,
-  $,AC,ambient,ARMF,angler,biomeAt,BIONAME,buildBiomeSheets,buildChunk,buildMoreSheets,buildPartnerSheets,
+  $,AC,ambient,angler,biomeAt,BIONAME,buildBiomeSheets,buildChunk,buildMoreSheets,buildPartnerSheets,
   buildSheets,camera,camT,canvasTex,chapterCard,checkAch,checkRitual,checkRoom,circ,clamp,clouds,
   computeLightStrip,crops,fullMoon,updateBossFx,rareGrowChance,drawWarnMark,curBio,CW,dirty,drawMap,eliteMat,explored,fi,H,handlePad,hasNPC,hitStop,
   inkMoon,invDirty,invOpen,isNight,lightDirty,loadSave,loadWorld,lx0,lx1,makeSheet,mapOpen,markChunk,
-  meta,mk,mouse,music,newWorld,nightsSeen,NPCDEF,NPCORDER,pickMusic,player,playerSheet,poly,
+  meta,mk,mouse,music,newWorld,nightsSeen,NPCDEF,NPCORDER,pickMusic,player,playerLook,makeRig,rigReskin,buildRigSheets,SHEETS,poly,
   popUp,pt,rand,refreshUI,renderer,renderQuests,reveal,revealT,rr,save,scene,setCurBio,setHitStop,
   setInkMoon,setLightDirty,setLx0,setLx1,setMusic,setNightsSeen,setRevealT,setWorldClock,setWorldTime,
   SFX,shake,simLiquids,spawnFallingStar,spawnLogic,spriteMat,stat,state,surf,T,tiles,toast,tryMoveIn,
@@ -19,15 +19,16 @@ import {
 } from './game.js';
 
 // ================= boot =================
-buildSheets();buildBiomeSheets();buildMoreSheets();buildPartnerSheets();buildPetSheets();
+buildSheets();buildBiomeSheets();buildMoreSheets();buildPartnerSheets();buildPetSheets();buildRigSheets(SHEETS);
 drawWarnMark();
 eliteMat.map=canvasTex(makeSheet(1,64,64,t=>{const s=[];for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,r=k%2?11:26;s.push(32+Math.cos(a)*r,34+Math.sin(a)*r);}poly(t,s);fi(t,'#f1c04f',3.5);circ(t,27,28,3);t.fillStyle='#fff8e4';t.fill();},3));eliteMat.needsUpdate=true;
-player.mat=spriteMat(canvasTex(mk(8,8)),ARMF+1);player.mesh=new THREE.Mesh((()=>{const g=new THREE.PlaneGeometry(1.6,2.4);g.translate(0,1.2,0);return g;})(),player.mat);scene.add(player.mesh);
+// the player is a paper rig (rig.js); player.mat is its material, so tints and flashes work as on any sprite
+player.rig=makeRig('human',playerLook(),null);player.mat=player.rig.mat;player.mesh=player.rig.mesh;
 {const d=loadSave();if(d){try{loadWorld(d);}catch(e){loadFailed(e);newWorld(Math.floor(Math.random()*1e9));}$('contBtn').hidden=false;}else newWorld(Math.floor(Math.random()*1e9));}
 renderQuests();updateCoins();
 let ritualT=2,townT=3,cropT=1,liqT=0,bioT=0,starT=8,lastT=performance.now(),autosave=0,housingT=0,achT=2,mapRedraw=0;
 function frame(now){requestAnimationFrame(frame);perfStart();const pf0=performance.now();const el=Math.max(0,(now-lastT)/1000);lastT=now;let dt=Math.min(el,1/30);setWorldClock(worldClock+(dt));
-  if(player.sheetDirty){const c=playerSheet();player.mat.uniforms.map.value.dispose();player.mat.uniforms.map.value=canvasTex(c);player.sheetDirty=false;}
+  if(player.sheetDirty){rigReskin(player.rig,playerLook(),null);player.sheetDirty=false;}
   handlePad();updateTouch(dt);
   if(state==='play'&&!mapOpen){let gdt=dt;if(hitStop>0){setHitStop(hitStop-(dt));gdt=dt*.07;}const pt=worldTime;setWorldTime((worldTime+gdt*24/600)%24);if(pt<4.5&&worldTime>=4.5){angler.day++;newDay();evDawn();palEv('dawn');if(!player.dead)stat('nights');guideEv('dawn');}
     if(pt<4.5&&worldTime>=4.5&&inkMoon){setInkMoon(false);toast('The Ink Moon sets. You made it through!','gold');stat('inkmoons');fcount('moon');}
