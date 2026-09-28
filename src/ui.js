@@ -10,6 +10,7 @@ import {
   travelTo,upx,W,walls,
   guideEv,town,TOWN,townLevel,townShop,
   donate,folk,folkClick,folkHTML,npcLine,lineNew,npcSpeaker,plain,say,sideJournal,visited,wev,
+  contestClaim,festival,FISH,worldDay,
   moveName,museumHTML,palJournal,palQuestTxt,
   MOUNTS,PETORDER,PETS,toggleMount,togglePet,
   C,cellIcon,loreHTML,
@@ -67,7 +68,7 @@ function sideBody(k){
   if(k==='tinker'){return `<div class="sideTip"><b>Combine accessories</b>Both parts must be in your backpack or equipped.</div>`+TINKER.map(([out,parts,fee],i)=>{const ok=parts.every(id=>countItem(id)>0||player.acc.some(s=>s&&s.id===id))&&player.coins>=fee;return `<div class="shopi ${ok?'':'poor'}" data-t="${i}"><img src="${icon(out)}" alt=""><span>${ITEMS[out].name}<br><small style="color:var(--ink2)">${parts.map(id=>ITEMS[id].name).join(' + ')}</small></span><span class="pr"><img src="${icon('coin')}" alt="">${fee}</span></div>`;}).join('')+`<h3 style="margin-top:10px">For sale</h3>`+shopHTML(side.list);}
   if(k==='angler'){const q=anglerQuest(),nx=Object.keys(ANGLER_REWARD).map(Number).find(n=>n>angler.done),has=q&&countItem(q)>0;
     return (q?`<div class="sideTip"><b>Today's request</b>Catch me a ${ITEMS[q].name}. Try ${ANGLER_WHERE[q]}.</div><div class="shopi ${has?'':'poor'}" data-a="fishq"><img src="${icon(q)}" alt=""><span>Hand over a ${ITEMS[q].name}</span><span class="pr">${has?'Give':'Need 1'}</span></div>`
-      :`<div class="sideTip"><b>All done for today</b>That was a fine catch. Come back tomorrow for a new request.</div>`)+`<p class="hint">Requests finished: ${angler.done}${nx?` · next prize at ${nx}: ${ITEMS[ANGLER_REWARD[nx][0]].name}`:''}</p><h3 style="margin-top:10px">For sale</h3>`+shopHTML(side.list);}
+      :`<div class="sideTip"><b>All done for today</b>That was a fine catch. Come back tomorrow for a new request.</div>`)+`<p class="hint">Requests finished: ${angler.done}${nx?` · next prize at ${nx}: ${ITEMS[ANGLER_REWARD[nx][0]].name}`:''}</p>`+contestHTML()+recordHTML()+`<h3 style="margin-top:10px">For sale</h3>`+shopHTML(side.list);}
   if(k==='travel'){const list=[{n:'Home',x:player.spawn.x-.5,y:player.spawn.y}].concat((BIO.camps||[]).filter(c=>c.done).map((c,j)=>({n:`Camp ${j+1}`,x:c.sx,y:c.sy})));
     return list.map((w,j)=>{const d=Math.round((w.x-player.x)*2);return `<div class="shopi" data-w="${j}"><img src="${icon('tmap')}" alt=""><span>${w.n}<br><small style="color:var(--ink2)">${Math.abs(d)} ft ${d<0?'west':'east'}</small></span><span class="pr">Go</span></div>`;}).join('')+'<p class="hint">Rebuild more abandoned camps to add signposts.</p>';}
   if(k==='party'){const p=player;return `<h3>Partners</h3>`+PORDER.map(id=>{const d=PARTNERS[id],has=p.partners.includes(id);return `<div class="pcard ${p.partner===id?'on':''} ${has?'':'lock'}" data-p="${id}"><img src="${pPortrait(id)}" alt="" style="${has?'':'filter:grayscale(1) brightness(.6)'}"><div><b>${has?d.name:'???'}</b><span>${has?`${d.desc} Move: ${moveName(id)}. ${d.moveDesc}`:d.how}</span>${has&&palQuestTxt(id)?`<small class="pq">${palQuestTxt(id)}</small>`:''}</div></div>`;}).join('')+
@@ -90,7 +91,7 @@ $('sideBody').addEventListener('mousedown',e=>{if(side&&side.kind==='travel'){co
   if(side&&side.kind==='party'){const pc=e.target.closest('.pcard'),bd=e.target.closest('.bdg');
     if(pc&&(pc.dataset.pet||pc.dataset.mount)){const k=pc.dataset.pet||pc.dataset.mount,d=(pc.dataset.pet?PETS:MOUNTS)[k];if(countItem(d.item)>0){if(pc.dataset.pet)togglePet(k);else toggleMount(k);}$('sideBody').dataset.h='';invDirty=true;return;}if(pc&&player.partners.includes(pc.dataset.p)){setPartner(pc.dataset.p);SFX.pick();}else if(bd){const b=bd.dataset.b,on=player.badgesOn;if(on.includes(b))on.splice(on.indexOf(b),1);else if(bpUsed()+BADGES[b][1]>bpMax()){toast(`Not enough BP. ${BADGES[b][0]} needs ${BADGES[b][1]}.`,'bad');return;}else on.push(b);SFX.pick();}$('sideBody').dataset.h='';invDirty=true;return;}
   const el=e.target.closest('.shopi');if(!el||!side)return;$('sideBody').dataset.h='';invDirty=true;
-  if(el.dataset.a==='fishq'){anglerTurnIn();return;}
+  if(el.dataset.a==='fishq'){anglerTurnIn();return;}if(el.dataset.a==='contest'){contestClaim();renderSide();return;}
   if(el.dataset.q){folkClick(el.dataset.q);return;}if(el.dataset.m){donate(el.dataset.m);return;}
   if(el.dataset.a==='heal'){const miss=Math.ceil(player.max-player.hp),cost=Math.max(1,Math.ceil(miss*.8)+(player.potT>0?10:0));if(player.coins<cost){toast('Not enough coins.','bad');return;}player.coins-=cost;updateCoins();if(miss>0)heal(miss);player.potT=0;SFX.potion();return;}
   if(el.dataset.t!=null){const[out,parts,fee]=TINKER[+el.dataset.t];if(player.coins<fee){toast('Not enough coins.','bad');return;}
@@ -198,6 +199,13 @@ export const NPCDEF={
   traveler:{name:'Traveling Merchant',need:'Visits now and then, from dawn until dusk.',ok:()=>false,hello:'{happy}Wares from *far-off pages!* Buy now, I am ~gone by nightfall~.',
     lines:['Rare goods, fair prices. Well, rare goods.','I have folded myself across a dozen maps.','Tomorrow I will be three biomes away.']},
 };
+// the Angler's festival fishing contest and record book (the biggest of each fish you have caught)
+function contestHTML(){const fe=festival();if(!fe)return '';const f=angler.fest&&angler.fest.d===worldDay?angler.fest:null;
+  if(f&&f.got)return `<div class="sideTip"><b>${fe.fest} fishing contest</b>You already took today's prize. Well fished!</div>`;
+  return `<div class="sideTip quest"><b>${fe.fest} fishing contest</b>Today only: the biggest catch for its kind wins. Legendary fish score half again.<small>${f&&f.id?`Your best: ${ITEMS[f.id].name}, ${f.cm} cm, ${f.sc} points.`:'Catch something today to enter.'} Prizes at 70 and 120 points.</small></div>`+
+    (f&&f.id?`<div class="shopi" data-a="contest"><img src="${icon(f.id)}" alt=""><span>Enter your ${ITEMS[f.id].name}</span><span class="pr">Judge</span></div>`:'');}
+function recordHTML(){const ids=Object.keys(FISH),n=ids.filter(id=>angler.rec[id]).length;
+  return `<h3 style="margin-top:10px">Record book · ${n} of ${ids.length}</h3><div class="musG">`+ids.map(id=>{const r=angler.rec[id];return `<div class="shopi mus ${r?'done':'poor'}" title="${r?ITEMS[id].name:'Not caught yet'}"><img src="${icon(id)}" alt="" style="${r?'':'filter:grayscale(1) brightness(.5)'}"><span>${r?ITEMS[id].name:'???'}</span><span class="pr">${r?r+' cm':''}</span></div>`;}).join('')+'</div>';}
 export const NPCORDER=['merchant','guide','painter','nurse','tinkerer','angler','farmer','scout','curator'];
 const TINKER=[['kite',['glider','ribbon'],100],['beacon',['lantern','buckler'],100],['quilt',['patch','buckler'],60]];
 const SHOPS={painter:[['paint1',40],['paint2',40],['paint3',40],['paint4',40],['banr',25],['banb',25],['bang',25],['wallred',2],['wallblue',2],['wallgreen',2],['wallyellow',2]],

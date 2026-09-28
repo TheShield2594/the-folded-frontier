@@ -101,7 +101,7 @@ export function buildChunk(cx,cy){markFg(cx);const P=[],UV=[],L=[],I=[];let vc=0
   const x0=cx*CS,y0=cy*CS,x1=Math.min(W,x0+CS),y1=Math.min(H,y0+CS);
   for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){const i=y*W+x,t=tiles[i];
     const c4=()=>[cl(x,y),cl(x+1,y),cl(x+1,y+1),cl(x,y+1)];
-    if(OPAQUE[t]){const d=TP[t];const uv=cellUV(t===T.PEEL&&meta[i]?C.peelB:d.cell);quad([x,y,.5,x+1,y,.5,x+1,y+1,.5,x,y+1,.5],uv,c4(),EMIS(t,.93));
+    if(OPAQUE[t]){const d=TP[t];const uv=cellUV(t===T.PEEL&&meta[i]?C.peelB:t===T.FAKE?[C.stone,C.brick,C.dirt][meta[i]]||C.stone:t===T.SEAL&&meta[i]?C.sealDoor:d.cell);quad([x,y,.5,x+1,y,.5,x+1,y+1,.5,x,y+1,.5],uv,c4(),EMIS(t,.93));
       if(!isOpaque(x,y+1)&&y+1<H){const f=flat(x,y+1);quad([x,y+1,.5,x+1,y+1,.5,x+1,y+1,-.5,x,y+1,-.5],cellUV(d.top||d.cell),[f,f,f,f],1.02);}
       if(y>0&&!isOpaque(x,y-1)){const f=flat(x,y-1);quad([x,y,-.5,x+1,y,-.5,x+1,y,.5,x,y,.5],uv,[f,f,f,f],.45);}
       if(x>0&&!isOpaque(x-1,y)){const f=flat(x-1,y);quad([x,y,-.5,x,y,.5,x,y+1,.5,x,y+1,-.5],uv,[f,f,f,f],.7);}

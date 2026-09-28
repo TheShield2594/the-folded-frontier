@@ -300,10 +300,11 @@ const rodIcon=(col,tip)=>sticker(t=>{for(const[w,c]of[[6.5,INK],[3.5,col]]){t.be
   circ(t,24,44,5.5);fi(t,'#a9adb8',2);circ(t,24,44,2);t.fillStyle=INK;t.fill();circ(t,56,6,3);fi(t,tip,1.5);t.beginPath();t.moveTo(56,6);t.quadraticCurveTo(62,30,50,44);ink(t,1.3,'rgba(42,33,48,.65)');
   t.beginPath();t.arc(50,48,4.5,Math.PI,0);t.closePath();fi(t,'#d4483b',1.6);t.beginPath();t.arc(50,48,4.5,0,Math.PI);t.closePath();fi(t,'#fbf8f0',1.6);});
 C.rodW=rodIcon('#c98f4f','#e9dcc0');C.rodFe=rodIcon('#a9adb8','#f1c04f');C.rodFr=rodIcon('#aee0f2','#fbf8f0');C.rodEm=rodIcon('#ff8a3d','#ffd66b');
-const fishIcon=(body,belly,fin,deco)=>sticker(t=>{poly(t,[15,32,4,17,9,32,4,47]);fi(t,fin,2.5);poly(t,[30,17,39,5,43,18]);fi(t,fin,2);poly(t,[30,45,36,55,40,45]);fi(t,fin,2);
+const fishDraw=(t,body,belly,fin,deco)=>{poly(t,[15,32,4,17,9,32,4,47]);fi(t,fin,2.5);poly(t,[30,17,39,5,43,18]);fi(t,fin,2);poly(t,[30,45,36,55,40,45]);fi(t,fin,2);
   t.beginPath();t.moveTo(12,32);t.bezierCurveTo(22,12,46,10,59,30);t.bezierCurveTo(48,50,24,52,12,32);t.closePath();fi(t,body);t.save();t.beginPath();t.moveTo(12,32);t.bezierCurveTo(22,12,46,10,59,30);t.bezierCurveTo(48,50,24,52,12,32);t.clip();
   t.beginPath();t.moveTo(14,36);t.bezierCurveTo(28,48,48,44,58,32);t.lineTo(60,60);t.lineTo(10,60);t.closePath();t.fillStyle=belly;t.fill();if(deco)deco(t);t.restore();
-  t.beginPath();t.moveTo(34,14);t.lineTo(28,32);t.lineTo(34,48);ink(t,1.4,'rgba(42,33,48,.35)');circ(t,49,27,3.6);fi(t,'#fbf8f0',1.5);circ(t,50,27,1.7);t.fillStyle=INK;t.fill();});
+  t.beginPath();t.moveTo(34,14);t.lineTo(28,32);t.lineTo(34,48);ink(t,1.4,'rgba(42,33,48,.35)');circ(t,49,27,3.6);fi(t,'#fbf8f0',1.5);circ(t,50,27,1.7);t.fillStyle=INK;t.fill();};
+const fishIcon=(body,belly,fin,deco)=>sticker(t=>fishDraw(t,body,belly,fin,deco));
 C.minnow=fishIcon('#c9d6e0','#fbf8f0','#8fa6b8');
 C.koi=fishIcon('#fbf8f0','#f4f0e6','#d4483b',t=>{for(const[x,y,r]of[[22,26,6],[40,20,5],[46,38,4]]){circ(t,x,y,r);t.fillStyle='#e8636a';t.fill();}});
 C.inkfish=fishIcon('#4a3570','#8a78b0','#2a1a3a',t=>{t.fillStyle='rgba(200,180,255,.35)';for(const x of[20,30,40])t.fillRect(x,20,3,10);});
@@ -311,6 +312,29 @@ C.sandsole=fishIcon('#e3c77d','#f5e2ad','#b98f4a',t=>{t.fillStyle='rgba(120,80,4
 C.lavafish=fishIcon('#ff7a2d','#ffd66b','#3a2a24',t=>{t.strokeStyle='#3a2a24';t.lineWidth=1.6;t.beginPath();t.moveTo(18,24);t.lineTo(26,30);t.lineTo(22,38);t.moveTo(38,18);t.lineTo(42,28);t.lineTo(50,32);t.stroke();});
 C.goldfin=fishIcon('#f1c04f','#fff3c0','#d49a20',t=>{poly(t,starPts(26,30,7,3));t.fillStyle='#fffaf0';t.fill();});
 C.nightkoi=fishIcon('#2f3f7a','#8fa8e0','#b06ad0',t=>{t.beginPath();t.arc(26,28,7,0,6.283);t.arc(29,25,6,0,6.283,true);t.fillStyle='#f4e8ff';t.fill();});
+// seasonal, storm and legendary fish (legendaries get a gold rim)
+C.blossomtrout=fishIcon('#f4c6d6','#fbeef2','#d4708f',t=>{for(const[x,y]of[[24,24],[38,30],[30,38]]){for(let k=0;k<5;k++){const a=k*1.2566;circ(t,x+Math.cos(a)*2.6,y+Math.sin(a)*2.6,2);t.fillStyle='#fbf8f0';t.fill();}}});
+C.sunperch=fishIcon('#f5b53a','#ffe8a6','#d4701e',t=>{t.fillStyle='rgba(120,70,20,.35)';for(const x of[22,30,38,46])t.fillRect(x,16,3,26);});
+C.maplecarp=fishIcon('#c8502e','#f1b07a','#7a2a1a',t=>{t.fillStyle='rgba(255,220,160,.5)';for(let i=0;i<9;i++){poly(t,starPts(rand(18,52),rand(20,40),3.4,1.4));t.fill();}});
+C.icepike=fishIcon('#9fd0ea','#eef7fb','#5a8fb8',t=>{t.strokeStyle='rgba(255,255,255,.8)';t.lineWidth=2;for(const x of[22,34,46]){t.beginPath();t.moveTo(x,18);t.lineTo(x-4,42);t.stroke();}});
+C.stormeel=fishIcon('#4a5568','#a9b4c6','#2a3040',t=>{poly(t,[36,14,28,30,34,30,26,46,42,26,35,26,40,14]);t.fillStyle='#ffe066';t.fill();});
+const bigFish=(body,belly,fin,deco)=>sticker(t=>{circ(t,32,32,30);t.fillStyle='rgba(241,192,79,.28)';t.fill();t.save();t.translate(32,32);t.scale(.92,.92);t.translate(-32,-32);
+  fishDraw(t,body,belly,fin,deco);t.restore();poly(t,starPts(52,12,8,3.4));fi(t,'#f1c04f',1.6);});
+C.oldcrease=bigFish('#e9dcc0','#fbf8f0','#8a6a42',t=>{t.strokeStyle='rgba(42,33,48,.35)';t.lineWidth=1.4;for(let x=16;x<58;x+=6){t.beginPath();t.moveTo(x,14);t.lineTo(x+6,50);t.stroke();}});
+C.glacierjaw=bigFish('#dff1fa','#ffffff','#6fa8cf',t=>{for(let x=40;x<58;x+=5){poly(t,[x,34,x+2.5,40,x+5,34]);t.fillStyle='#fff';t.fill();}t.strokeStyle='#6fa8cf';t.lineWidth=1.6;t.beginPath();t.moveTo(18,22);t.lineTo(30,28);t.lineTo(24,40);t.stroke();});
+C.moonscale=bigFish('#2a1a4a','#6a4aa0','#b06ad0',t=>{for(let i=0;i<10;i++){circ(t,rand(16,54),rand(18,42),1.4);t.fillStyle='#f4e8ff';t.fill();}t.beginPath();t.arc(32,30,7,0,6.283);t.arc(35,27,6,0,6.283,true);t.fillStyle='#e0b0ff';t.fill();});
+C.magmaw=bigFish('#3a2a24','#ff7a2d','#ffd66b',t=>{t.strokeStyle='#ffb347';t.lineWidth=2;t.beginPath();t.moveTo(16,24);t.lineTo(26,32);t.lineTo(20,42);t.moveTo(34,16);t.lineTo(38,30);t.lineTo(52,34);t.stroke();});
+C.goldleaf=sticker(t=>{t.beginPath();t.moveTo(32,6);for(let k=1;k<=10;k++){const a=-Math.PI/2+k*Math.PI/5,r=k%2?12:24;t.lineTo(32+Math.cos(a)*r,30+Math.sin(a)*r);}t.closePath();fi(t,'#f1c04f');
+  t.beginPath();t.moveTo(32,54);t.lineTo(32,16);t.moveTo(32,34);t.lineTo(20,24);t.moveTo(32,34);t.lineTo(44,24);ink(t,1.6,'#b8862a');t.beginPath();t.moveTo(32,54);t.lineTo(32,60);ink(t,2.5,'#8a5a33');});
+C.leaflure=sticker(t=>{t.beginPath();t.moveTo(32,2);t.lineTo(32,12);ink(t,2,'rgba(42,33,48,.6)');t.beginPath();t.ellipse(32,30,11,16,0,0,6.28);fi(t,'#e0a030');t.beginPath();t.moveTo(32,16);t.lineTo(32,44);ink(t,1.4,'#8a5a1a');
+  for(const s of[-1,1])for(const y of[22,30,38]){t.beginPath();t.moveTo(32,y);t.lineTo(32+s*8,y-5);ink(t,1.2,'#8a5a1a');}t.beginPath();t.moveTo(32,46);t.quadraticCurveTo(32,58,24,56);ink(t,2.5,'#a9adb8');});
+// seasonal tiles: a snow drift heaped on the ground, and thin ice over open ink
+C.drift=sticker(t=>{t.beginPath();t.moveTo(0,64);t.lineTo(0,44);t.quadraticCurveTo(14,30,30,38);t.quadraticCurveTo(46,26,64,40);t.lineTo(64,64);t.closePath();fi(t,'#f6f9fb',2);t.fillStyle='#d6e4ee';for(let i=0;i<6;i++){circ(t,rand(8,56),rand(46,60),1.6);t.fill();}},0);
+C.thinIce=blockCell('#cfe8f5',c=>{c.fillStyle='rgba(58,42,90,.25)';c.fillRect(0,34,64,30);c.strokeStyle='rgba(255,255,255,.85)';c.lineWidth=2.5;c.beginPath();c.moveTo(6,20);c.lineTo(22,10);c.moveTo(34,26);c.lineTo(56,12);c.stroke();c.strokeStyle='rgba(90,150,190,.45)';c.lineWidth=1.4;c.beginPath();c.moveTo(10,44);c.lineTo(28,36);c.lineTo(40,46);c.lineTo(58,38);c.stroke();});
+// the sunken temple: dark carved blocks, and the sealed door with a crescent that answers the Ink Moon
+const sealBase=c=>{c.strokeStyle='rgba(160,130,220,.28)';c.lineWidth=2;for(const y of[21,42]){c.beginPath();c.moveTo(0,y);c.lineTo(64,y);c.stroke();}for(const[x,y0]of[[24,0],[44,21],[16,42]]){c.beginPath();c.moveTo(x,y0);c.lineTo(x,y0+21);c.stroke();}};
+C.seal=blockCell('#2e2446',sealBase);
+C.sealDoor=blockCell('#2e2446',c=>{sealBase(c);c.beginPath();c.arc(32,32,15,0,6.283);c.arc(38,27,12,0,6.283);c.fillStyle='#b06ad0';c.fill('evenodd');c.strokeStyle='rgba(224,176,255,.7)';c.lineWidth=1.5;c.beginPath();c.arc(32,32,21,0,6.283);c.stroke();});
 C.grilled=fishIcon('#b8743a','#e0a860','#7b4a25',t=>{t.strokeStyle='#4a2a14';t.lineWidth=3;for(const x of[22,32,42]){t.beginPath();t.moveTo(x-4,18);t.lineTo(x+4,44);t.stroke();}});
 C.soggy=sticker(t=>{poly(t,[12,14,30,8,52,16,48,34,54,50,30,56,10,48,16,30]);fi(t,'#c9d0d6');t.strokeStyle='rgba(42,33,48,.3)';t.lineWidth=1.4;t.beginPath();t.moveTo(18,20);t.lineTo(30,30);t.lineTo(26,46);t.moveTo(30,30);t.lineTo(46,24);t.stroke();for(const[x,y]of[[22,58],[40,60]]){t.beginPath();t.moveTo(x,y-6);t.quadraticCurveTo(x+3,y,x,y+1);t.quadraticCurveTo(x-3,y,x,y-6);t.fillStyle='#8fcaf0';t.fill();}});
 C.fly=sticker(t=>{poly(t,[30,32,8,14,22,34]);fi(t,'#fbf8f0',2);poly(t,[34,32,56,14,42,34]);fi(t,'#f4f0e6',2);t.beginPath();t.ellipse(32,38,6,12,0,0,6.28);fi(t,'#3a3040');circ(t,32,24,5);fi(t,'#3a3040',2);t.beginPath();t.moveTo(32,50);t.quadraticCurveTo(32,60,26,58);ink(t,2,'#a9adb8');});

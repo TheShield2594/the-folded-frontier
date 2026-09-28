@@ -2,14 +2,14 @@
 // newer townsfolk, and the Curator's museum. All of it is saved per world in `folk`.
 import {
   addItem,angler,BIO,BIONAME,checkAch,countItem,dropItem,icon,ITEMS,NPCDEF,npcs,pick,player,quests,
-  removeItem,renderQuests,setInvDirty,SFX,stat,surf,T,toast,townLevel,visited,W,palEv,
+  removeItem,renderQuests,setInvDirty,SFX,stat,surf,T,toast,townLevel,visited,W,palEv,season,worldDay,FISH,
 } from './game.js';
 
 // ================= folk =================
 // q: side quest state (1 accepted, 2 done); heard: memory lines each NPC has said ('type:key');
 // met: townsfolk already introduced; n: per-world counters (harvest, fossil, storm, army, trav, moon);
-// mus: items donated to the museum; col: museum collections whose reward was given.
-export const newFolk=()=>({q:{},heard:{},met:{},n:{},mus:{},col:{}});
+// mus: items donated to the museum; col: museum collections whose reward was given; ink: invisible-ink messages read ('x,y').
+export const newFolk=()=>({q:{},heard:{},met:{},n:{},mus:{},col:{},ink:{}});
 export let folk=newFolk();
 export function fcount(k,n=1){folk.n[k]=(folk.n[k]||0)+n;}
 const give=(id,n)=>{if(id==='coin'){addItem('coin',n);return;}const l=addItem(id,n);if(l)dropItem(id,l,player.x,player.y+1);};
@@ -82,6 +82,15 @@ const MEMORY=[
   ['army','merchant nurse tinkerer farmer',()=>(folk.n.army||0)>0,'{happy}You held off the *Paper Army!* {sad}We would have been ~folded into cranes~ without you.'],
   ['trav','merchant',()=>(folk.n.trav||0)>0,'{angry}Did that traveling merchant come by again? Their prices are *criminal.* {neutral}Mine are merely rude.'],
   ['fossil','curator',()=>(folk.n.fossil||0)>0&&!donated(),'{surprised}You found a *fossil!* {happy}Bring it to me. I will make it famous.'],
+  // rumors: hints at secrets and at what the seasons do to the land
+  ['r_fake','scout tinkerer',()=>worldDay>=2,'{neutral}Tap along the deep cave walls some time. {surprised}A few of them are only *painted on*. You can walk ~right through~.'],
+  ['r_ink','painter guide',()=>worldDay>=3,'{happy}The old explorers wrote in *invisible ink.* {neutral}Hold a torch close to the walls down there, or bring Lumi along.'],
+  ['r_temple','angler curator',()=>worldDay>=6||!!quests.lev,'{surprised}They say a temple sleeps under the Ink Lake. {neutral}It wakes for whoever swims there under an *Ink Moon* carrying a ~Moon Lily~.'],
+  ['r_legend','angler',()=>angler.caught>=5,'{surprised}Four *legendary* fish swim in this world. {neutral}Old Crease in the forest ponds, Glacier Jaw under winter ice, Magmaw in the lava, and one that only rises under an ~Ink Moon~.'],
+  ['r_ice','farmer scout angler',()=>season().k==='winter','{happy}The ponds and the lake froze over. You can *walk on the ice!* {neutral}Break a hole in it if you want to fish.'],
+  ['r_dry','farmer angler',()=>season().k==='summer','{surprised}The shallow ponds dried up in the heat. {happy}People find *all sorts* in the mud.'],
+  ['r_flood','scout guide',()=>season().k==='spring','{sad}The spring melt flooded the low cave passages again. {neutral}They drain by summer, or you can ~swim~ through.'],
+  ['r_crane','scout painter farmer',()=>season().k==='fall','{happy}The paper cranes are *migrating!* {neutral}And the forest trees drop *golden leaves.* They make lovely lures.'],
 ];
 const said=v=>typeof v==='function'?v():v;
 // the line an NPC says when you talk to them; `passive` (a speech bubble while you walk past) never uses up a new line.
@@ -101,13 +110,16 @@ export function npcLine(type,passive){const d=NPCDEF[type];lineNew=false;if(!d)r
 export const MUSEUM=[
   {id:'fossils',n:'Fossils',items:['fos_amm','fos_tri','fos_fern','fos_skull'],tip:'Dig dirt, sand, stone and ash underground.',reward:[['bpup',1],['coin',300]]},
   {id:'fish',n:'Fish',items:['minnow','koi','inkfish','sandsole','nightkoi','goldfin','lavafish'],tip:'The Angler knows where each one lives.',reward:[['tackle',1],['moonlure',10]]},
+  // the aquarium wing: fish that only bite in one season or a storm, and the four legendaries
+  {id:'aqua',wing:'Aquarium',n:'Seasons & storms',items:['blossomtrout','sunperch','maplecarp','icepike','stormeel'],tip:'One for each season, and one that only bites in the rain.',reward:[['leaflure',12],['potfish',3],['coin',300]]},
+  {id:'legend',wing:'Aquarium',n:'Legendary fish',items:['oldcrease','glacierjaw','moonscale','magmaw'],tip:'Four giants that fight hard on the line.',reward:[['bpup',1],['fcrate',5],['coin',1000]]},
   {id:'ores',n:'Ores',items:['copperore','ironore','goldore','frostore','inkore','emberore'],tip:'One of every ore, from copper to Emberite.',reward:[['goldbar',8],['coin',200]]},
   {id:'curios',n:'Curiosities',items:['lens','batwing','mushroom','inksac','fstar','moonink'],tip:'Odd things dropped by creatures and the night sky.',reward:[['potiron',3],['potswift',3]]},
   {id:'keeps',n:'Boss keepsakes',items:['ribbon','plume','inkheart','cinder'],tip:'One keepsake from each great boss.',reward:[['bpup',2],['coin',500]]}];
 export function museumHTML(){const n=donated(),all=MUSEUM.reduce((a,c)=>a+c.items.length,0);
-  return `<h3 style="margin-top:10px">Museum · ${n} of ${all} displays filled</h3>`+MUSEUM.map(c=>{const have=c.items.filter(id=>folk.mus[id]).length;
-    return `<div class="musH"><b>${folk.col[c.id]?'✓ ':''}${c.n} · ${have}/${c.items.length}</b><small>${folk.col[c.id]?'Collection complete!':c.tip+' Reward: '+rewardTxt(c.reward)}</small></div><div class="musG">`+c.items.map(id=>{const d=folk.mus[id],can=!d&&countItem(id)>0;
-      return `<div class="shopi mus ${d?'done':can?'':'poor'}" ${can?`data-m="${id}"`:''} title="${ITEMS[id].name}"><img src="${icon(id)}" alt="" style="${d||can?'':'filter:grayscale(1) brightness(.5)'}"><span>${d||can?ITEMS[id].name:'???'}</span><span class="pr">${d?'✓':can?'Give':''}</span></div>`;}).join('')+'</div>';}).join('')+
+  let wing='';return `<h3 style="margin-top:10px">Museum · ${n} of ${all} displays filled</h3>`+MUSEUM.map(c=>{const have=c.items.filter(id=>folk.mus[id]).length,wh=c.wing&&c.wing!==wing?`<h3 style="margin-top:10px">${c.wing} wing</h3>`:'';wing=c.wing||'';
+    return wh+`<div class="musH"><b>${folk.col[c.id]?'✓ ':''}${c.n} · ${have}/${c.items.length}</b><small>${folk.col[c.id]?'Collection complete!':c.tip+' Reward: '+rewardTxt(c.reward)}</small></div><div class="musG">`+c.items.map(id=>{const d=folk.mus[id],can=!d&&countItem(id)>0;
+      return `<div class="shopi mus ${d?'done':can?'':'poor'}" ${can?`data-m="${id}"`:''} title="${ITEMS[id].name}${FISH[id]&&angler.rec[id]?` · record ${angler.rec[id]} cm`:''}"><img src="${icon(id)}" alt="" style="${d||can?'':'filter:grayscale(1) brightness(.5)'}"><span>${d||can?ITEMS[id].name:'???'}</span><span class="pr">${d?'✓':can?'Give':''}</span></div>`;}).join('')+'</div>';}).join('')+
     '<p class="hint">Carry a find to donate it. Donations stay on display for good.</p>';}
 export function donate(id){if(folk.mus[id]||!ITEMS[id]||countItem(id)<1)return;removeItem(id,1);folk.mus[id]=1;SFX.nice();toast(`Donated ${ITEMS[id].name} to the museum!`,'good');stat('donations');
   for(const c of MUSEUM)if(!folk.col[c.id]&&c.items.every(i=>folk.mus[i])){folk.col[c.id]=1;c.reward.forEach(([i,n])=>give(i,n));stat('collections');setTimeout(()=>toast(`Collection complete: ${c.n}! The Curator gives you ${rewardTxt(c.reward)}.`,'gold'),600);}
