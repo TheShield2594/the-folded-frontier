@@ -4,7 +4,7 @@ import {
   atlasTex,buildNormals,postOK,clearIcons,drawOres,drawWarnMark,H,hexRgb,hintT,icon,initAudio,inkMoon,isNight,lerp,META,npcs,wev,
   ORECOL,player,PSTAT,renderHearts,saveMeta,saveSettings,SET,setCamDist,setHintT,setInvDirty,setSoundOn,SFX,sky,soundOn,
   fullMoon,seasonIdx,seasonInfo,SEASONS,state,surf,T,tiles,TP,W,WALLCOL,walls,weather,worldTime,
-  playerCheer,
+  playerCheer,paintArt,
 } from './game.js';
 
 // ================= settings & achievements UI =================
@@ -120,7 +120,7 @@ $('achClose').addEventListener('click',()=>{$('ach').hidden=true;});
 // color vision: ores keep their shapes but take the palette for SET.cb, on the atlas, item icons and the maps
 const ORET={copper:[T.COPPER,'copperore'],iron:[T.IRON,'ironore'],gold:[T.GOLD,'goldore'],frostOre:[T.FROST,'frostore'],inkOre:[T.INKORE,'inkore'],emberOre:[T.EMBERORE,'emberore']};
 function oreCols(maps){const pal=ORECOL[SET.cb]||ORECOL.off;for(const k in ORET){const t=ORET[k][0];TP[t].col=pal[k];if(maps)TCOL[t]=hexRgb(pal[k]);}}
-export function applyCB(){drawOres();atlasTex.needsUpdate=true;buildNormals();clearIcons(Object.values(ORET).map(o=>o[1]));oreCols(true);drawWarnMark();setInvDirty(true);}
+export function applyCB(){drawOres();paintArt();atlasTex.needsUpdate=true;buildNormals();clearIcons(Object.values(ORET).map(o=>o[1]));oreCols(true);drawWarnMark();setInvDirty(true);}
 oreCols(false);
 const mini=$('mini'),mctx=mini.getContext('2d'),mimg=mctx.createImageData(140,80);export const TCOL=TP.map(d=>d?hexRgb(d.col):[0,0,0]);export const WCOL=WALLCOL.map(hexRgb);
 let miniT=0;

@@ -368,8 +368,8 @@ export function icon(id){return iconCache[id]||(iconCache[id]=iconCanvas(id).toD
 // an icon straight from an atlas cell (tabs whose picture is not an item)
 export function cellIcon(c){const k='#'+c;if(iconCache[k])return iconCache[k];const cv=mk(64,64),[x,y]=cellXY(c);cv.getContext('2d').drawImage(atlas,x,y,64,64,0,0,64,64);return iconCache[k]=cv.toDataURL();}
 export function iconTex(id){return iconTexCache[id]||(iconTexCache[id]=canvasTex(iconCanvas(id)));}
-// drops cached icons after their atlas cells are redrawn (color-vision mode changes the ore art)
-export function clearIcons(ids){for(const id of ids){delete iconCache[id];if(iconTexCache[id]){iconTexCache[id].dispose();delete iconTexCache[id];}}}
+// drops cached icons after their atlas cells are redrawn (color-vision mode changes the ore art); no ids drops them all
+export function clearIcons(ids=[...new Set([...Object.keys(iconCache),...Object.keys(iconTexCache)])]){for(const id of ids){delete iconCache[id];if(iconTexCache[id]){iconTexCache[id].dispose();delete iconTexCache[id];}}}
 // the "!" over an enemy winding up an attack; colorblind modes swap it for a bright warning triangle
 export function drawWarnMark(){const cb=SET.cb&&SET.cb!=='off';if(markMat.map)markMat.map.dispose();
   markMat.map=canvasTex(makeSheet(1,64,64,t=>{if(cb){poly(t,[32,3,61,57,3,57]);fi(t,SET.cb==='trit'?'#ff5a8a':'#ffd23f',4.5);rr(t,28.5,19,7,23,3.5);t.fillStyle=INK;t.fill();circ(t,32,49,4);t.fill();}

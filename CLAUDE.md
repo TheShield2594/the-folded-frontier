@@ -7,19 +7,21 @@ Guide for working on The Folded Frontier: a papercraft 2D sandbox adventure (Pap
 ```
 docs/STORY.md     the main story outline (the mystery, how The Unfolded and the Awakening fit, where each page is)
 docs/PROGRESSION.md  ore tiers, boss order and the difficulty curve on a medium world, with the numbers behind them
+docs/ART.md       hand-made art: which pictures are worth painting, what stays procedural, how to add one
 index.html        HTML only: HUD, menus, title screen, pause, save-code dialog, settings
 src/style.css     all CSS
 src/main.js       entry point and boot (main frame loop)
 src/game.js       hub that re-exports every module in boot order (see "Modules" below)
 src/*.js          the game, split into ES modules (table below)
 public/assets/    title.webp: title screen background (painted art with the logo baked in, 3816×1620)
+assets/art/       optional hand-made art bundled by Vite: atlas/<C name>.png cells and sheets/<SHEETS name>.png sprite sheets (see docs/ART.md)
 vite.config.js    Vite config (relative base so dist/ works from any path)
 .github/workflows/pages.yml  builds with Vite and deploys dist/ to GitHub Pages
 .github/workflows/test.yml   builds and runs the Playwright smoke tests on pushes to main and on pull requests
 tests/            Playwright smoke tests (playwright.config.js starts the dev server)
 ```
 
-The project is built with Vite. The only runtime dependency is three.js, pinned to r186 (`three@0.186.1` from npm) and bundled into the build, so nothing loads from a CDN at runtime. three.js needs WebGL 2 since r163. There are no audio assets and the only image asset is `public/assets/title.webp`, the title screen background; it's loaded with `new Image()` and the `#title` overlay only gets its `bg` class (image, cream card behind the menu, HTML logo hidden on landscape screens) once it loads, so a missing file falls back to the plain overlay. The title screen must fit without scrolling: it holds only the tagline and menu buttons, and the controls list lives in the `#howto` overlay behind the How to play button. All game art is drawn in code onto canvases, and all sound is synthesized with Web Audio.
+The project is built with Vite. The only runtime dependency is three.js, pinned to r186 (`three@0.186.1` from npm) and bundled into the build, so nothing loads from a CDN at runtime. three.js needs WebGL 2 since r163. There are no audio assets. The only image asset in use is `public/assets/title.webp`, the title screen background, plus any hand-made art dropped into `assets/art/` (see Modules, `art.js`); it's loaded with `new Image()` and the `#title` overlay only gets its `bg` class (image, cream card behind the menu, HTML logo hidden on landscape screens) once it loads, so a missing file falls back to the plain overlay. The title screen must fit without scrolling: it holds only the tagline and menu buttons, and the controls list lives in the `#howto` overlay behind the How to play button. All other game art is drawn in code onto canvases, and all sound is synthesized with Web Audio.
 
 ## Running locally
 
@@ -57,6 +59,7 @@ Each file in `src/` is one or more of the old script's sections, in the same ord
 | `boss.js` | boss presentation | Boss arrival (`bossIntro`: title card `#bossCard`, camera move, boss held in `e.act==='intro'`), phase-change crease/tear look (`bossLook`, the `uCr` sprite uniform) and camera pull-back, the torn arena at 25% (`arenaF`, `updateBossFx`), defeat camera; `bossHeld(e)` |
 | `partners.js` | partners | `PARTNERS` and partner behavior; their rigs (`p_lumi`, `p_snip`, `p_smudge`, `p_ember`); move upgrades read `palUp(k)`; `partnerCheer(t)` celebration hop, idle fidgets after 5 s standing still |
 | `pets.js` | pets & mounts | Cosmetic pets (`PETS`, `togglePet`, follower in `petS`) and mounts (`MOUNTS`, `toggleMount`, `dismount`); their sprite drawings `drawPet`/`drawStag`, which the atlas also uses for their icons |
+| `art.js` | art | Hand-made art pipeline (`docs/ART.md`): `import.meta.glob` bundles `assets/art/atlas/*.png` (64×64 cells named after `C` keys, `crack.1` for array cells) and `assets/art/sheets/*.png` (whole `SHEETS` strips); `loadArt()` at boot paints them over the drawn art (`applyArt(kind, name, img)`), rebuilds the normal map and clears cached icons; `artReady`; `paintArt()` repaints atlas overrides after `applyCB()`; ores keep their drawn cells in color-vision modes; `artList()`/`artExport()` for artists |
 | `map.js` | pop-up book, world map | Page-turn effect when entering a new biome; full map view |
 | `gamepad.js` | gamepad | Gamepad polling and menu navigation; `padInteract()` interacts with the nearest NPC, door, chest or bed |
 | `touch.js` | touch | Touch controls for phones and tablets: `touch` state (in `settings.js`), `setTouch(on)` toggles `body.touch`, joystick, Use stick (hold to use, drag to aim), action buttons, tap-to-use / tap-to-interact on the world, backpack by touch; `updateTouch(dt)` each frame |
@@ -107,7 +110,7 @@ Browser-only saves are why the game will be self-hosted with server-side saves (
 
 - **Tile IDs are saved as raw bytes.** Never renumber or reuse a value in `T`. Add new tiles with new IDs. The lookup arrays are sized 128 and the highest ID is now 67 (`T.SEAL`).
 - **Atlas cells are allocated in order** (`cellN++`). Adding cells in the middle shifts later cells. That's fine at runtime, since nothing saves cell indices, but keep new art grouped with its section.
-- **Art style:** cream paper, dark ink outlines (`INK = '#2a2130'`), rounded shapes, paper grain. Reuse the drawing helpers so new art matches.
+- **Art style:** cream paper, dark ink outlines (`INK = '#2a2130'`), rounded shapes, paper grain. Reuse the drawing helpers so new art matches. New art is still drawn in code first; a hand-made picture can then replace a cell or sheet by name in `assets/art/` (`docs/ART.md`), so keep new `C` and `SHEETS` names stable.
 - **Code style is dense:** short names, many statements per line. Match the surrounding code rather than reformatting it; a big reformat makes diffs unreadable.
 - **Boss phases:** every boss runs `bossPhase()` at 50% and 25% life (`e.phase` 1 and 2), sits in `e.act==='phase'` (immune) and then `bossRefold()`s. Each boss's AI reads `e.phase` to add or change attacks, so a new boss should do the same.
 - **Boss presentation** (`boss.js`) works for any `EN` entry with `boss:1`: `spawnEnemy()` calls `bossIntro()` (the boss holds in `e.act==='intro'`, immune and without contact damage), each phase creases and tears the sprite through the `uCr` uniform and pulls the camera back, phase 2 rips the sky open (the arena), and the killing blow starts `e.act==='defeat'` for `DEFEAT_T` seconds before `killEnemy()` runs for real and the loot drops. The boss music adds a layer per phase (`musicNote` in `audio.js`) and goes quiet during the defeat. A new boss needs a `BOSSCARD` entry (kicker and tagline) and a `PHASE_MSG` entry.
@@ -144,7 +147,7 @@ Browser-only saves are why the game will be self-hosted with server-side saves (
 
 ## Testing
 
-`npm test` runs the Playwright smoke tests in `tests/smoke.spec.js` against the dev server (the config starts it on port 5199, or reuses one already running there outside CI): boot with no console errors, creating a small world, save/Continue through `localStorage`, a full year of seasonal routes leaving the tiles as they were (with `bio.sea`, `bio.sec` and the fishing record book in the save), a save code round trip, a save that storage refuses, and the `?perf` overlay. They read game state through `import('/src/game.js')`; `window.__snap` (installed by the tests) summarizes the world, and a test clicks Continue and takes the snapshot in the same task so no frame runs in between. Console errors fail a test, except Google Fonts and the missing favicon. CI (`test.yml`) runs `npm run build` and `npm test`, and uploads the report and traces when a test fails. A run takes a few minutes, since software WebGL is slow. When a change touches the title screen, new world dialog, pause menu or save format, update the tests with it.
+`npm test` runs the Playwright smoke tests in `tests/smoke.spec.js` against the dev server (the config starts it on port 5199, or reuses one already running there outside CI): boot with no console errors, creating a small world, save/Continue through `localStorage`, a full year of seasonal routes leaving the tiles as they were (with `bio.sea`, `bio.sec` and the fishing record book in the save), a save code round trip, a save that storage refuses, the `?perf` overlay, and hand-made art replacing an atlas cell and a sprite sheet. They read game state through `import('/src/game.js')`; `window.__snap` (installed by the tests) summarizes the world, and a test clicks Continue and takes the snapshot in the same task so no frame runs in between. Console errors fail a test, except Google Fonts and the missing favicon. CI (`test.yml`) runs `npm run build` and `npm test`, and uploads the report and traces when a test fails. A run takes a few minutes, since software WebGL is slow. When a change touches the title screen, new world dialog, pause menu or save format, update the tests with it.
 
 The smoke tests don't cover play itself. To check a change by hand:
 
