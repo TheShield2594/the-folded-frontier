@@ -118,7 +118,7 @@ $('achClose').addEventListener('click',()=>{$('ach').hidden=true;});
 
 // ================= minimap/HUD =================
 // color vision: ores keep their shapes but take the palette for SET.cb, on the atlas, item icons and the maps
-const ORET={copper:[T.COPPER,'copperore'],iron:[T.IRON,'ironore'],gold:[T.GOLD,'goldore'],frostOre:[T.FROST,'frostore'],inkOre:[T.INKORE,'inkore'],emberOre:[T.EMBERORE,'emberore']};
+const ORET={copper:[T.COPPER,'copperore'],iron:[T.IRON,'ironore'],gold:[T.GOLD,'goldore'],frostOre:[T.FROST,'frostore'],inkOre:[T.INKORE,'inkore'],emberOre:[T.EMBERORE,'emberore'],skyOre:[T.SKYORE,'skyore']};
 function oreCols(maps){const pal=ORECOL[SET.cb]||ORECOL.off;for(const k in ORET){const t=ORET[k][0];TP[t].col=pal[k];if(maps)TCOL[t]=hexRgb(pal[k]);}}
 export function applyCB(){drawOres();paintArt();atlasTex.needsUpdate=true;buildNormals();clearIcons(Object.values(ORET).map(o=>o[1]));oreCols(true);drawWarnMark();setInvDirty(true);}
 oreCols(false);

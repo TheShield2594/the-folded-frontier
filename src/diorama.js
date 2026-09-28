@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import {
   reduceMotion,
-  BIO,biomeAt,camera,canvasTex,circ,CS,fi,grain,H,ink,mk,mouse,mulberry32,player,poly,rr,scene,season,SET,seed,
+  skyFloor,BIO,biomeAt,camera,canvasTex,circ,CS,fi,grain,H,ink,mk,mouse,mulberry32,player,poly,rr,scene,season,SET,seed,
   skyU,state,surf,surfAvg,T,tiles,W,walls,wind,worldClock,
 } from './game.js';
 
@@ -157,7 +157,8 @@ const fgMat=new THREE.ShaderMaterial({uniforms:FU,transparent:true,depthWrite:fa
   gl_FragColor=vec4(t.rgb*uTint,mix(.2,1.,k));}`});
 const NAT=new Set([T.GRASS,T.DIRT,T.SAND,T.SNOW,T.STONE,T.ICE,T.ASH]),SEE=new Set([T.TUFT,T.FLOWER,T.FLOWER2,T.MUSH,T.BLOOM,T.TRUNK]);
 // top of the natural ground in column x, or -1 when the surface there is built, walled, liquid or dug out
-function groundAt(x){for(let y=H-1;y>0;y--){const t=tiles[y*W+x];if(t===T.AIR||SEE.has(t))continue;if(!NAT.has(t)||y<surf[x]-6||y+1<H&&walls[(y+1)*W+x])return -1;return y+1;}return -1;}
+// scan from under the sky layer, so cutouts stand on the ground and not on the sky islands
+function groundAt(x){for(let y=Math.min(H-1,skyFloor()-1);y>0;y--){const t=tiles[y*W+x];if(t===T.AIR||SEE.has(t))continue;if(!NAT.has(t)||y<surf[x]-6||y+1<H&&walls[(y+1)*W+x])return -1;return y+1;}return -1;}
 function buildFgBand(b){const old=fgBands[b];if(old){fgGroup.remove(old);old.geometry.dispose();fgBands[b]=null;}
   const Q=[],x0=b*CS,x1=Math.min(W,x0+CS),on=x=>hh(x,1)<.24;
   for(let x=x0;x<x1;x++){if(!on(x)||on(x-1)||on(x-2))continue;const gy=groundAt(x);if(gy<0)continue;const set=fgSet(biomeAt(x,gy)),c=set[Math.floor(hh(x,2)*set.length)],s=FGS[c]*(.8+hh(x,3)*.45);

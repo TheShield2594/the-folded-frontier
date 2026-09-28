@@ -41,7 +41,7 @@ $('touch').addEventListener('touchstart',e=>{const b=e.target.closest('[data-act
   if(h)touch.held[h]=true;const a=ACT[b.dataset.act];if(a&&state==='play')a();},{passive:false});
 
 // tap the world: talk to townsfolk and open doors/chests/signs where you tap, otherwise use the held item there
-const TAPT=new Set([T.MURAL,T.PEEL,T.SKETCH,T.SIGN,T.ALTAR,T.DOOR,T.CHEST,T.CROP,T.RARE,T.CLOCK,T.BED]);
+const TAPT=new Set([T.CRANK,T.GATE,T.MURAL,T.PEEL,T.SKETCH,T.SIGN,T.ALTAR,T.DOOR,T.CHEST,T.CROP,T.RARE,T.CLOCK,T.BED]);
 function tapTarget(wx,wy){if(npcs.some(n=>Math.abs(wx-n.x)<1&&wy>n.y-.3&&wy<n.y+2.2))return true;const tx=Math.floor(wx),ty=Math.floor(wy);return reachOK(tx,ty,6.5)&&TAPT.has(tileAt(tx,ty));}
 renderer.domElement.addEventListener('touchstart',e=>{e.preventDefault();const t=e.changedTouches[0];$('tip').hidden=true;
   if(state==='talk'){initAudio();dlgNext();return;}if(state!=='play')return;
@@ -70,5 +70,5 @@ export function updateTouch(dt){const el=$('touch'),show=touch.on&&!pad.active&&
   const menu=invOpen||mapOpen;if(menu!==el.classList.contains('menu')){el.classList.toggle('menu',menu);if(menu)releaseTouch();}
   $('tInv').classList.toggle('on',invOpen);$('tMap').classList.toggle('on',mapOpen);
   if((checkT-=dt)>0)return;checkT=.5;const has=f=>player.inv.some(s=>s&&f(ITEMS[s.id],s));
-  $('tHook').hidden=!has((it,s)=>s.id==='hook');$('tBlock').hidden=!shieldItem();$('tMount').hidden=!player.mount&&!has(it=>it.mount);
+  $('tHook').hidden=!has(it=>it.hook);$('tBlock').hidden=!shieldItem();$('tMount').hidden=!player.mount&&!has(it=>it.mount);
   $('tAbility').hidden=!player.partner;$('tPartner').hidden=player.partners.length<2;$('tHeal').hidden=!has((it,s)=>s.id==='potion');}

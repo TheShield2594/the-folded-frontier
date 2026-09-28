@@ -1,5 +1,5 @@
 // World state, world generation, secrets and structures, and tile lighting.
-import {BADGES,H,LB,LIGHT,makeNoise,mulberry32,N,OPAQUE,pick,randi,RSEEDS,SEEDIDS,SOLID,SPAWNX,T,TP,W} from './game.js';
+import {genDeep,planSky,planDungeons,BADGES,H,LB,LIGHT,makeNoise,mulberry32,N,OPAQUE,pick,randi,RSEEDS,SEEDIDS,SOLID,SPAWNX,T,TP,W} from './game.js';
 
 // ================= world state =================
 export let tiles=new Uint8Array(N),walls=new Uint8Array(N),meta=new Uint8Array(N),stamp=new Uint32Array(N);export let BIO={uw:0};
@@ -20,11 +20,12 @@ export let curBio='';export const BIONAME={forest:'Paper Meadow',snow:'Origami S
 export function generate(sd){
   seed=sd;const nz=makeNoise(sd),nz2=makeNoise(sd+99),rng=mulberry32(sd+7);
   tiles.fill(0);walls.fill(0);meta.fill(0);chests=new Map();
-  const base0=Math.round(H*.6),UW=Math.max(22,Math.floor(H*.14));const snowLeft=rng()<.5;
+  // rows from the bottom: the underworld (UW), the Pressed Deep (DP, layers.js), the caves, the surface at 63% and the sky islands above it
+  const base0=Math.round(H*.63),UW=Math.max(22,Math.floor(H*.12)),DP=[UW+9,UW+9+Math.floor(H*.11)],D1=DP[1]+2;const snowLeft=rng()<.5;
   const snow=snowLeft?[Math.floor(W*.06),Math.floor(W*.25)]:[Math.floor(W*.75),Math.floor(W*.94)];
   const desert=snowLeft?[Math.floor(W*.31),Math.floor(W*.40)]:[Math.floor(W*.60),Math.floor(W*.69)];
   const lw=Math.max(24,Math.floor(W*.065)),lx=snowLeft?Math.floor(W*.76):Math.floor(W*.24);
-  BIO={snow,desert,lake:[lx,lw,0],uw:UW};const inR=(x,r)=>x>=r[0]&&x<=r[1];
+  BIO={snow,desert,lake:[lx,lw,0],uw:UW,deep:DP};const inR=(x,r)=>x>=r[0]&&x<=r[1];
   const hAt=x=>base0+(nz.fbm(x/70,.5,3)-.5)*30+(nz.n2(x/14,3.3)-.5)*5+(inR(x,snow)?(nz.n2(x/26,9)-.35)*16:0);const base=Math.round(hAt(SPAWNX));
   for(let x=0;x<W;x++){let h=hAt(x);const d=Math.abs(x-SPAWNX-4);if(d<20){const k=d<13?1:1-(d-13)/7;h=h*(1-k)+base*k;}surf[x]=Math.round(h);}
   const wl=Math.min(surf[lx-lw],surf[lx+lw])-1;BIO.lake[2]=wl;
@@ -53,6 +54,7 @@ export function generate(sd){
   for(let x=2;x<W-2;x++)for(let y=2;y<=7;y++){const i=idx(x,y);if(tiles[i]===T.AIR)tiles[i]=T.LAVA;}
   // ink lake
   for(let x=lx-lw;x<=lx+lw;x++)for(let y=surf[x]+1;y<=wl;y++){const i=idx(x,y);if(tiles[i]===T.AIR)tiles[i]=T.INK;}
+  genDeep(sd);
   const shafts=[];
   // cave entrances
   for(let k=0;k<Math.round(W/105);k++){let x=Math.floor(20+rng()*(W-40));if(Math.abs(x-SPAWNX)<30||Math.abs(x-lx)<lw+12)continue;const s=surf[x];let cx=x;shafts.push(x);
@@ -62,8 +64,8 @@ export function generate(sd){
     const nearSpawn=x>SPAWNX-6&&x<SPAWNX+18,sz=top===T.SNOW;
     if(!nearSpawn&&x-last>=4&&rng()<(sz?.3:.24)&&surf[x-1]===s&&surf[x+1]===s&&s+12<H){const h=(sz?6:5)+Math.floor(rng()*5);for(let y=s+1;y<=s+h;y++)tiles[idx(x,y)]=T.TRUNK;meta[idx(x,s+h)]=sz?3:(rng()<.5?1:2);last=x;continue;}
     const r=rng();if(sz){if(r<.14)tiles[idx(x,s+1)]=T.BLOOM;else if(r<.19){tiles[idx(x,s+1)]=T.CROP;meta[idx(x,s+1)]=1*4+2;}continue;}if(top===T.GRASS&&r>.96){tiles[idx(x,s+1)]=T.CROP;meta[idx(x,s+1)]=2;continue;}if(r<.3)tiles[idx(x,s+1)]=T.TUFT;else if(r<.37)tiles[idx(x,s+1)]=T.FLOWER;else if(r<.41)tiles[idx(x,s+1)]=T.FLOWER2;else if(r<.43)tiles[idx(x,s+1)]=T.MUSH;}
-  for(let k=0;k<Math.round(W*5.2);k++){const x=Math.floor(2+rng()*(W-4)),y=Math.floor(UW+4+rng()*(surf[x]-UW-16));if(y<6)continue;if(tiles[idx(x,y)]===T.AIR&&OPAQUE[tiles[idx(x,y-1)]]&&rng()<.16)tiles[idx(x,y)]=T.MUSH;}
-  const placed=[];const findFloor=(minDepth)=>{for(let a=0;a<60;a++){const x=Math.floor(8+rng()*(W-16));const top=surf[x]-minDepth;if(top<UW+8)continue;let y=Math.floor(UW+6+rng()*(top-UW-6));for(;y>UW+4;y--){if(tiles[idx(x,y)]===T.AIR&&tiles[idx(x,y+1)]===T.AIR&&OPAQUE[tiles[idx(x,y-1)]])break;}if(y<=UW+4)continue;if(placed.some(p=>Math.abs(p[0]-x)+Math.abs(p[1]-y)<14))continue;placed.push([x,y]);return[x,y];}return null;};
+  for(let k=0;k<Math.round(W*5.2);k++){const x=Math.floor(2+rng()*(W-4)),y=Math.floor(D1+4+rng()*(surf[x]-D1-16));if(y<6)continue;if(tiles[idx(x,y)]===T.AIR&&OPAQUE[tiles[idx(x,y-1)]]&&rng()<.16)tiles[idx(x,y)]=T.MUSH;}
+  const placed=[];const findFloor=(minDepth)=>{for(let a=0;a<60;a++){const x=Math.floor(8+rng()*(W-16));const top=surf[x]-minDepth;if(top<D1+8)continue;let y=Math.floor(D1+6+rng()*(top-D1-6));for(;y>D1+4;y--){if(tiles[idx(x,y)]===T.AIR&&tiles[idx(x,y+1)]===T.AIR&&OPAQUE[tiles[idx(x,y-1)]])break;}if(y<=D1+4)continue;if(placed.some(p=>Math.abs(p[0]-x)+Math.abs(p[1]-y)<14))continue;placed.push([x,y]);return[x,y];}return null;};
   for(let k=0;k<Math.round(W/19);k++){const p=findFloor(14);if(!p)continue;const i=idx(p[0],p[1]);tiles[i]=T.CHEST;chests.set(i,lootRoll());}
   for(let k=0;k<Math.round(W/35);k++){const p=findFloor(24);if(!p)continue;tiles[idx(p[0],p[1])]=T.HEART;}
   // ---- secrets & structures
@@ -80,7 +82,7 @@ export function generate(sd){
     for(let x=x0c+2;x<=x0c+7;x++)if(rng()<.5&&tiles[idx(x,L+1)]===T.AIR)setT(x,L+1,T.RUBBLE);
     setT(x0c-1,L+1,T.SIGN,0);BIO.camps.push({x0:x0c,L,sx:x0c-1,sy:L+1,done:false});k++;}
   // ruins with secret rooms and crawlspaces
-  const nR=Math.max(3,Math.round(W/120));for(let k=0,tries=0;k<nR&&tries<120;tries++){const rx=Math.floor(20+rng()*(W-50));if(Math.abs(rx-lx)<lw+14)continue;const top=surf[rx]-30;if(top<UW+20)continue;const ry=Math.floor(UW+14+rng()*(top-UW-14));
+  const nR=Math.max(3,Math.round(W/120));for(let k=0,tries=0;k<nR&&tries<120;tries++){const rx=Math.floor(20+rng()*(W-50));if(Math.abs(rx-lx)<lw+14)continue;const top=surf[rx]-30;if(top<D1+10)continue;const ry=Math.floor(D1+6+rng()*(top-D1-6));
     const rw=12,rh=6;for(let x=rx-1;x<=rx+rw;x++)for(let y=ry-1;y<=ry+rh;y++){const edge=x===rx-1||x===rx+rw||y===ry-1||y===ry+rh;setT(x,y,edge?(rng()<.88?T.BRICK:T.STONE):T.AIR);walls[idx(x,y)]=3;}
     for(let x=rx;x<rx+rw;x++)if(rng()<.25)setT(x,ry,T.RUBBLE);setT(rx+2,ry,T.CHEST);chests.set(idx(rx+2,ry),ruinLoot(false));setT(rx+rw-3,ry+3,T.TORCH);
     // sketched stairs up the right side to a shaft
@@ -91,18 +93,19 @@ export function generate(sd){
     else{for(let x=rx+rw;x<=rx+rw+6;x++){setT(x,ry,T.AIR);setT(x,ry-1,T.BRICK);setT(x,ry+1,T.BRICK);walls[idx(x,ry)]=3;}for(let x=rx+rw+7;x<=rx+rw+10;x++)for(let y=ry-1;y<=ry+3;y++){const edge=x===rx+rw+10||y===ry-1||y===ry+3;setT(x,y,edge?T.BRICK:T.AIR);walls[idx(x,y)]=3;}setT(rx+rw+8,ry,T.CHEST);chests.set(idx(rx+rw+8,ry),ruinLoot(true));}
     k++;}
   // loose peel walls in caves: hidden pockets
-  for(let k=0;k<Math.round(W/40);k++){const x=Math.floor(10+rng()*(W-20)),y=Math.floor(UW+12+rng()*Math.max(1,surf[x]-UW-30));if(tiles[idx(x,y)]!==T.STONE)continue;let ok=true;for(let dx=-2;dx<=2;dx++)for(let dy=-1;dy<=2;dy++)if(tiles[idx(x+dx,y+dy)]!==T.STONE&&tiles[idx(x+dx,y+dy)]!==T.DIRT)ok=false;if(!ok)continue;
+  for(let k=0;k<Math.round(W/40);k++){const x=Math.floor(10+rng()*(W-20)),y=Math.floor(D1+4+rng()*Math.max(1,surf[x]-D1-22));if(tiles[idx(x,y)]!==T.STONE)continue;let ok=true;for(let dx=-2;dx<=2;dx++)for(let dy=-1;dy<=2;dy++)if(tiles[idx(x+dx,y+dy)]!==T.STONE&&tiles[idx(x+dx,y+dy)]!==T.DIRT)ok=false;if(!ok)continue;
     for(let dx=-1;dx<=1;dx++)for(let dy=0;dy<=1;dy++){setT(x+dx,y+dy,T.AIR);walls[idx(x+dx,y+dy)]=1;}setT(x,y,T.CHEST);chests.set(idx(x,y),ruinLoot(false));for(let dx=-2;dx<=2;dx++)for(let dy=-1;dy<=2;dy++){const t=tiles[idx(x+dx,y+dy)];if(t===T.STONE||t===T.DIRT)setT(x+dx,y+dy,T.PEEL,0);}}
   // buried treasure
-  for(let k=0,tries=0;k<6&&tries<200;tries++){const x=Math.floor(10+rng()*(W-20)),y=Math.floor(UW+10+rng()*Math.max(1,surf[x]-UW-40));if(!OPAQUE[tiles[idx(x,y)]]||!OPAQUE[tiles[idx(x,y-1)]]||TP[tiles[idx(x,y)]].pick>2)continue;setT(x,y,T.CHEST);chests.set(idx(x,y),treasureLoot());BIO.treasure.push([x,y]);k++;}
+  for(let k=0,tries=0;k<6&&tries<200;tries++){const x=Math.floor(10+rng()*(W-20)),y=Math.floor(D1+3+rng()*Math.max(1,surf[x]-D1-33));if(!OPAQUE[tiles[idx(x,y)]]||!OPAQUE[tiles[idx(x,y-1)]]||TP[tiles[idx(x,y)]].pick>2)continue;setT(x,y,T.CHEST);chests.set(idx(x,y),treasureLoot());BIO.treasure.push([x,y]);k++;}
   // the shrine
-  for(let tries=0;tries<80;tries++){const sx=Math.floor(30+rng()*(W-60));if(Math.abs(sx-SPAWNX)<50||Math.abs(sx-lx)<lw+16)continue;const sy=Math.floor(UW+10+(surf[sx]-UW)*.4);
+  for(let tries=0;tries<80;tries++){const sx=Math.floor(30+rng()*(W-60));if(Math.abs(sx-SPAWNX)<50||Math.abs(sx-lx)<lw+16)continue;const sy=Math.floor(D1+3+(surf[sx]-D1)*.28);
     for(let x=sx-9;x<=sx+9;x++)for(let y=sy-1;y<=sy+8;y++){const edge=x===sx-9||x===sx+9||y===sy-1||y===sy+8;setT(x,y,edge?T.BRICK:T.AIR);walls[idx(x,y)]=3;}
     setT(sx,sy,T.ALTAR);for(const dx of[-7,-4,-1,2,5]){const px=sx+dx+(dx>0?1:0);setT(px,sy,T.PEDESTAL);}setT(sx-8,sy+5,T.TORCH);setT(sx+8,sy+5,T.TORCH);
     for(let y=sy;y<=sy+3;y++)setT(sx+9,y,T.PEEL,1);BIO.shrine=[sx,sy];break;}
   // wild rare plants: ghost mushrooms in deep caves, sunfruit on the dunes (after the structures, so older seeds keep their layout)
-  for(let k=0;k<Math.round(W*.06);k++){const x=Math.floor(4+rng()*(W-8)),y=Math.floor(UW+10+rng()*Math.max(1,surf[x]-UW-40));const i=idx(x,y);if(tiles[i]!==T.AIR||!walls[i])continue;const b=tiles[i-W];if(b===T.STONE||b===T.DIRT){tiles[i]=T.RARE;meta[i]=3*4+2;}}
+  for(let k=0;k<Math.round(W*.06);k++){const x=Math.floor(4+rng()*(W-8)),y=Math.floor(D1+3+rng()*Math.max(1,surf[x]-D1-33));const i=idx(x,y);if(tiles[i]!==T.AIR||!walls[i])continue;const b=tiles[i-W];if(b===T.STONE||b===T.DIRT){tiles[i]=T.RARE;meta[i]=3*4+2;}}
   for(let x=BIO.desert[0]+3;x<=BIO.desert[1]-3;x++){const s2=surf[x],i=idx(x,s2+1);if(tiles[idx(x,s2)]===T.SAND&&tiles[i]===T.AIR&&rng()<.04){tiles[i]=T.RARE;meta[i]=2*4+2;}}
+  planDungeons(sd);planSky(sd);
   const L=surf[SPAWNX],x0=SPAWNX+2;
   for(let x=x0-2;x<=x0+13;x++)for(let y=L+1;y<=L+10;y++){const i=idx(x,y);tiles[i]=T.AIR;walls[i]=0;}
   for(let x=x0-2;x<=x0+13;x++){tiles[idx(x,L)]=(x>=x0&&x<=x0+11)?T.PLANK:T.GRASS;for(let y=L-1;y>L-4;y--)if(tiles[idx(x,y)]===T.AIR)tiles[idx(x,y)]=T.DIRT;}
@@ -121,12 +124,14 @@ export let sky=new Uint8Array(N),blk=new Uint8Array(N);const QS=1<<19,QM=QS-1,Q=
 function spread(arr,qt){let qh=0;const go=(n,v)=>{const nv=v-(LB[tiles[n]]?2:1);if(nv>arr[n]){arr[n]=nv;Q[qt]=n;qt=(qt+1)&QM;}};
   while(qh!==qt){const i=Q[qh];qh=(qh+1)&QM;const v=arr[i];if(v<=1)continue;const x=i%W;if(x>0)go(i-1,v);if(x<W-1)go(i+1,v);if(i>=W)go(i-W,v);if(i<N-W)go(i+W,v);}}
 export function computeLightStrip(x0,x1){x0=Math.max(0,x0);x1=Math.min(W-1,x1);for(let y=0;y<H;y++){const r=y*W;for(let x=x0;x<=x1;x++){sky[r+x]=0;blk[r+x]=0;}}
-  let qt=0;for(let x=x0;x<=x1;x++)for(let y=H-1;y>=0;y--){const i=y*W+x;if(LB[tiles[i]]||walls[i]===1)break;sky[i]=15;Q[qt]=i;qt=(qt+1)&QM;}
+  let qt=0;const sf=skyFloor();for(let x=x0;x<=x1;x++)for(let y=H-1;y>=0;y--){const i=y*W+x;if((LB[tiles[i]]||walls[i]===1)&&y<sf)break;sky[i]=15;Q[qt]=i;qt=(qt+1)&QM;}
   for(const bx of[x0-1,x1+1]){if(bx<0||bx>=W)continue;for(let y=0;y<H;y++){const i=y*W+bx;if(sky[i]>1){Q[qt]=i;qt=(qt+1)&QM;}}}spread(sky,qt);
   qt=0;const uwg=BIO&&BIO.uw?BIO.uw-1:0;for(let y=0;y<H;y++)for(let x=x0;x<=x1;x++){const i=y*W+x;let l=LIGHT[tiles[i]];if(!l&&y<uwg&&tiles[i]===T.AIR)l=8;if(l){blk[i]=l;Q[qt]=i;qt=(qt+1)&QM;}}
   for(const bx of[x0-1,x1+1]){if(bx<0||bx>=W)continue;for(let y=0;y<H;y++){const i=y*W+bx;if(blk[i]>1){Q[qt]=i;qt=(qt+1)&QM;}}}spread(blk,qt);}
-export function computeLight(){sky.fill(0);blk.fill(0);let qt=0;
-  for(let x=0;x<W;x++)for(let y=H-1;y>=0;y--){const i=y*W+x;if(LB[tiles[i]]||walls[i]===1)break;sky[i]=15;Q[qt]=i;qt=(qt+1)&QM;}
+// sunlight falls straight through the sky layer (BIO.sky), so floating islands don't throw a column of shadow onto the ground below
+export const skyFloor=()=>BIO&&BIO.sky?BIO.sky.y:1e9;
+export function computeLight(){sky.fill(0);blk.fill(0);let qt=0;const sf=skyFloor();
+  for(let x=0;x<W;x++)for(let y=H-1;y>=0;y--){const i=y*W+x;if((LB[tiles[i]]||walls[i]===1)&&y<sf)break;sky[i]=15;Q[qt]=i;qt=(qt+1)&QM;}
   spread(sky,qt);qt=0;const uwg=BIO&&BIO.uw?(BIO.uw-1)*W:0;for(let i=0;i<N;i++){let l=LIGHT[tiles[i]];if(!l&&i<uwg&&tiles[i]===T.AIR)l=8;if(l){blk[i]=l;Q[qt]=i;qt=(qt+1)&QM;}}spread(blk,qt);}
 // Imported bindings are read-only, so other modules assign these through setters.
 export function setTiles(v){return tiles=v;}
