@@ -25,7 +25,7 @@ assets/art/sheets/<name>.png   one whole sprite sheet, named after its key in SH
 3. `g.artExport('sheets','folio')` or `g.artExport('atlas','swFe')` downloads the current drawn art as a PNG. Paint over it so the frames, the anchor point (feet at the bottom middle for walkers) and the size stay the same.
 4. Save it under `assets/art/atlas/` or `assets/art/sheets/` with the same name. The dev server reloads and the new art shows.
 
-Keep the paper look so hand-made pictures sit well beside the drawn ones. That means cream paper with a sticker border about 3–4 px wide around the shape (the drawn art gets it from `sticker()`/`makeSheet()`), dark ink outlines (`#2a2130`), rounded shapes and a little grain. Transparent pixels are see-through in the world, and the colors are plain sRGB (color management is off).
+Keep the paper look so hand-made pictures sit well beside the drawn ones (`docs/STYLE.md` has the full style, line weights and prompts). That means cream paper with a sticker border about 3–4 px wide around the shape (the drawn art gets it from `sticker()`/`makeSheet()`), dark ink outlines (`#2a2130`), rounded shapes and a little grain. Transparent pixels are see-through in the world, and the colors are plain sRGB (color management is off).
 
 ## What benefits most
 
@@ -46,3 +46,11 @@ Ranked by how much a hand-made picture would add for the work involved:
 - **Diorama layers and foreground cutouts**: one 2048×512 strip per layer, biome and season (more than 80), drawn lazily as the camera nears. Hand-painting them would be a large project of its own.
 - **Rigged characters** (the player, townsfolk, partners, slimes, the King Slime, bats, the eye, zombies, knights, ash imps): each rig part is painted for a skin (`rigSkin`), so one design covers every look, armor set and color variant, which painted images can't do. Their entries in `SHEETS` (`slime`, `p_lumi`, the townsfolk `guide`…) only feed the bestiary sketches and portraits. Replacing one changes that still picture, not the character in the world. Painted rig parts would need a per-part override in `rigSkin`, and that is only worth it for a character with a single look (the King Slime, a partner).
 - **Status overlays** (`pstatus`) and the elite star: small effects drawn over sprites.
+
+## Painted so far
+
+Generated with Nano Banana Pro (Higgsfield or OpenRouter) from the prompts in `tools/art/`, then cut out and restyled by `tools/art/build.py` (it redraws the ink outline and cream border at the `docs/STYLE.md` weight).
+
+- **In the game:** all 32 weapon, tool and shield icons (`assets/art/atlas/`: `swWood` … `swEm`, `foldblade`, `pickCu` … `pickEm`, `hammer`, `shuri`, `bowW`, `bowG`, `bowFr`, `bowMoon`, `launch`, `launchMoon`, `tomeInk`, `tomeCrane`, `tomeTide`, `tomeMoon`, `staff`, `staffEm`, `shwood`, `buckler`, `quilt`, `beacon`) and the Fold Fox (`assets/art/sheets/foldfox.png`).
+- **Pending, not wired in yet** (`tools/art/pending/`): painted player parts in side view with a tint mask, painted armour for the six metal sets (a head wearing the helmet, torso, arm and leg per metal), the two leafy tree canopies and a two-tile trunk with roots. They need code: per-part overrides in `rigSkin` for the player and armour, and region overrides (the canopies are 256×256 atlas regions, not cells, and the trunk is drawn wider than its cell) for the trees.
+- **Prompts:** `tools/art/weapon-prompts.txt` (the icon sheet format), `tools/art/armor-prompts.txt`, `tools/art/grip-prompt.txt` (fists that grip the held item).

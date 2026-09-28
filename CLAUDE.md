@@ -8,6 +8,8 @@ Guide for working on The Folded Frontier: a papercraft 2D sandbox adventure (Pap
 docs/STORY.md     the main story outline (the mystery, how The Unfolded and the Awakening fit, where each page is)
 docs/PROGRESSION.md  ore tiers, boss order and the difficulty curve on a medium world, with the numbers behind them
 docs/ART.md       hand-made art: which pictures are worth painting, what stays procedural, how to add one
+docs/STYLE.md     the art style: look, palette, line weights, sprite sizes, how to prompt for painted art
+tools/art/        Python (Pillow, numpy, scipy) scripts and prompts for painted art; pending/ holds painted art not wired in yet
 index.html        HTML only: HUD, menus, title screen, pause, save-code dialog, settings
 src/style.css     all CSS
 src/main.js       entry point and boot (main frame loop)
