@@ -10,6 +10,7 @@ export * from './atlas.js';
 export * from './items.js';
 export * from './world.js';
 export * from './render.js';
+export * from './rig.js';
 export * from './diorama.js';
 export * from './audio.js';
 export * from './entities.js';

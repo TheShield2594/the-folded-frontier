@@ -141,10 +141,11 @@ export function makeSheet(n,fw,fh,draw,b=4){const out=mk(n*fw,fh),o=out.getConte
 //  body: skin | face: eyeCol, eyeY, noBlush, blink, face (an expression, as faceX) | hair: hair color, hairS style | hat: hat color, hatS style
 //  shirt: tunic | pants: pants, belt | boots: boots | cape: scarf (at the neck), cape (down the back) | acc: back/extra/front draw callbacks
 //  armor: helm, mail, greaves, the worn armor's colors, drawn over the clothes
-// HUMAN_ORDER is the list of [part, layer] steps; a layer with nothing to wear on a part draws nothing, so any mix of armor, clothes
-// and cosmetics is one redraw of the sheet (player.sheetDirty), not a new hand-drawn one. The held weapon, the shield and status
-// overlays are their own meshes over the sprite (gameplay.js).
-const HIP=110,LIMB={legB:[43,HIP,.8],armB:[42,82,.78],legA:[53,HIP,1],armA:[55,82,1]};
+// HUMAN_ORDER is the list of [part, layer] steps; a layer with nothing to wear on a part draws nothing. The human rig (rig.js)
+// bakes each part's layers into its own paper piece, so any mix of armor, clothes and cosmetics is one re-bake of the rig's skin
+// (player.sheetDirty), not a new hand-drawn sheet. drawHuman still draws whole still pictures (portraits, the look preview).
+// The held weapon, the shield and status overlays are their own meshes over the rig (gameplay.js).
+const HIP=110;export const LIMB={legB:[43,HIP,.8],armB:[42,82,.78],legA:[53,HIP,1],armA:[55,82,1]};
 const HUMAN_ORDER=[['back','cape'],['back','hair'],['legB','pants'],['legB','armor'],['legB','boots'],['armB','shirt'],['armB','armor'],['armB','body'],['back','acc'],
   ['torso','shirt'],['torso','armor'],['torso','pants'],['legA','pants'],['legA','armor'],['legA','boots'],
   ['head','body'],['head','hair'],['head','armor'],['head','face'],['head','hat'],['neck','cape'],['head','acc'],['armA','shirt'],['armA','armor'],['armA','body'],['front','acc']];
@@ -166,7 +167,7 @@ function hat(t,o){const s=o.hatS,c=o.hat;
   else if(s==='straw'){t.beginPath();t.ellipse(50,36,34,7,-.05,0,6.28);fi(t,'#e0c07a');t.beginPath();t.moveTo(32,36);t.quadraticCurveTo(32,14,50,14);t.quadraticCurveTo(68,14,68,36);t.closePath();fi(t,'#e0c07a');
     rr(t,32,28,36,7,2);fi(t,c,2);t.strokeStyle='rgba(42,33,48,.25)';t.lineWidth=1;for(let x=38;x<66;x+=6){t.beginPath();t.moveTo(x,17);t.lineTo(x-2,27);t.stroke();}}
   else if(s==='beanie'){t.beginPath();t.moveTo(27,46);t.quadraticCurveTo(26,18,50,18);t.quadraticCurveTo(74,18,73,44);t.closePath();fi(t,c);rr(t,26,38,48,9,4);fi(t,sh(c,.8));circ(t,50,15,6);fi(t,'#fbf8f0');}}
-const HL={
+export const HL={
   body(t,p,o,k){if(isArm(p)){circ(t,0,22,5.5);fi(t,k<1?sh(o.skin,.85):o.skin);}else if(p==='head'){circ(t,50,50,22);fi(t,o.skin);}},
   shirt(t,p,o,k){if(isArm(p)){rr(t,-5.5,-3,11,22,5.5);fi(t,k<1?sh(o.tunic,k):o.tunic);}else if(p==='torso'){rr(t,33,72,31,42,11);fi(t,o.tunic);t.fillStyle='rgba(255,255,255,.18)';t.fillRect(37,76,6,30);}},
   pants(t,p,o,k){if(isLeg(p)){rr(t,-6.5,-4,13,28,6);fi(t,k<1?sh(o.pants,k):o.pants);}else if(p==='torso'){t.fillStyle=o.belt||'#5a3a22';t.fillRect(34,102,29,5);}},
@@ -193,23 +194,22 @@ const HL={
     if(!o.noBlush){circ(t,63,58,X==='happy'?5:4);t.fillStyle='rgba(230,110,110,.45)';t.fill();}
     t.beginPath();if(X==='happy'){t.moveTo(53.5,58);t.quadraticCurveTo(58,67,62.5,58);t.closePath();fi(t,'#9a3b3b',1.8);}else if(X==='surprised'||X==='hurt'){t.ellipse(58,61,2.6,3.6,0,0,6.28);fi(t,'#6a2a2a',1.6);}
     else if(X==='sad'||X==='ko'){t.arc(58,64,3.5,3.5,5.9);ink(t,2);}else if(X==='angry'){t.moveTo(54,61.5);t.lineTo(58,60);t.lineTo(62,61.5);ink(t,2);}else{t.arc(58,59,3.5,.2,2.6);ink(t,2);}}};
-// one part's layers, with a limb's transform (at its own joint, or at x,y,a for the lone arm frame)
-function humanPart(t,o,p,x,y,a){const L=LIMB[p];if(L){t.save();t.translate(x??L[0],y??L[1]);t.rotate(a??(o[p]||0));}for(const[q,l]of HUMAN_ORDER)if(q===p)HL[l](t,p,o,L?L[2]:1);if(L)t.restore();}
 // faceX: the expression drawHuman gives the face ('happy','surprised','sad','angry'); only set while facePic draws a portrait
 let faceX=null;
 function drawHuman(t,o){t.save();t.translate(0,o.bob||0);if(o.lean){t.translate(48,138);t.rotate(o.lean);t.translate(-48,-138);}
   for(const[p,l]of HUMAN_ORDER){if(p==='armA'&&o.noArm)continue;const L=LIMB[p];if(L){t.save();t.translate(L[0],L[1]);t.rotate(o[p]||0);HL[l](t,p,o,L[2]);t.restore();}else HL[l](t,p,o,1);}
   t.restore();}
-// Player poses, one sheet frame each. 0-1 idle, 2-5 walk, 6 jump, 7 fall, 8 hold (a tool or item at rest)
-const POSES=[{legA:.03,legB:-.03,armA:.12,armB:-.12},{legA:.03,legB:-.03,armA:.18,armB:-.08,bob:1.5,wave:2}];
+// Player poses: the numbers the human rig's clips are built from (rig.js turns each into a clip, and the idle, walk, climb,
+// cheer and reel loops blend between them). 0-1 idle, 2-5 walk, 6 jump, 7 fall, 8 hold (a tool or item at rest)
+export const POSES=[{legA:.03,legB:-.03,armA:.12,armB:-.12},{legA:.03,legB:-.03,armA:.18,armB:-.08,bob:1.5,wave:2}];
 for(let k=0;k<4;k++){const ph=k/4*Math.PI*2,s=Math.sin(ph);POSES.push({legA:s*.6,legB:-s*.6,armA:-s*.65,armB:s*.65,bob:-Math.abs(Math.cos(ph))*2.5+1,wave:s*3});}
 POSES.push({legA:-.7,legB:.4,armA:-2.5,armB:-.5,wave:-4},{legA:.3,legB:-.3,armA:-2.9,armB:-2.5,wave:5},{legA:.25,legB:-.25,armA:-1.6,armB:.25});
-// swing bodies (frames 9-12) leave the front arm off: gameplay draws it as its own mesh so it can follow the weapon every frame.
+// swing bodies (poses 9-12) leave the front arm to gameplay, which pins the rig's arm to the weapon every frame (rigSet).
 // 9 hold, 10 coiled back (weight on the back foot), 11 mid-strike, 12 lunged forward into the follow-through
 export const SWPOSE=[{legA:.25,legB:-.25,armB:.25},{legA:-.35,legB:.5,armB:.9,lean:-.13,bob:1,wave:-3},{legA:.45,legB:-.3,armB:-.6,lean:.07,wave:3},{legA:.7,legB:-.55,armB:-1.1,lean:.17,bob:3.5,wave:5}];
 for(const o of SWPOSE)o.noArm=1;POSES.push(...SWPOSE);
 // the rest of the animation set, by name (PF.land etc.). Arm angles: 0 hangs down, negative swings forward, positive back.
-// noArm frames are aimed or tool poses whose front arm is the arm mesh; face sets the expression for that frame.
+// noArm poses are aimed or tool poses whose front arm gameplay holds; face swaps the head to that expression.
 const MOREPOSE={land:{legA:.55,legB:-.5,armA:-.55,armB:.55,bob:4},dash:{legA:-.9,legB:.75,armA:.95,armB:1.25,lean:.2,wave:7},
   hurt:{legA:.35,legB:-.45,armA:.9,armB:1.2,lean:-.2,bob:1,wave:-5,face:'hurt'},death:{legA:.65,legB:-.15,armA:.35,armB:.6,lean:-.17,bob:4,face:'ko'},
   flat:{legA:-.75,legB:.75,armA:-1.9,armB:1.9,blink:1},mine0:{legA:.35,legB:-.35,armB:.6,lean:-.1,bob:1,noArm:1},mine1:{legA:.5,legB:-.4,armB:-.55,lean:.2,bob:3.5,noArm:1},
@@ -219,9 +219,7 @@ const MOREPOSE={land:{legA:.55,legB:-.5,armA:-.55,armB:.55,bob:4},dash:{legA:-.9
   climb0:{legA:-.6,legB:.1,armA:-2.9,armB:-2.2},climb1:{legA:.1,legB:-.6,armA:-2.2,armB:-2.9},
   cheer0:{legA:.2,legB:-.2,armA:-2.8,armB:2.8,bob:-3,wave:4,face:'happy'},cheer1:{legA:-.1,legB:.1,armA:-2.5,armB:2.5,wave:-3,face:'happy'}};
 export const PF={idle:0,walk:2,jump:6,fall:7,hold:8,swing:9};for(const k in MOREPOSE){PF[k]=POSES.length;POSES.push(MOREPOSE[k]);}
-// the lone front arm is the last frame, pivot at the frame centre. The sheet is one row of 96px frames: keep it under 4096px (42 frames).
-export const ARMF=POSES.length;
-// the front shoulder of frame f in world units from the bottom of the player mesh, so the arm mesh lines up with the body
+// the front shoulder in pose f in world units from the bottom of the player mesh (the swing trail's curve; the live arm reads the rig)
 export function shoulderAt(f){const o=POSES[f]||{},l=o.lean||0,x=7*Math.cos(l)+56*Math.sin(l),y=7*Math.sin(l)-56*Math.cos(l)+138+(o.bob||0);return[x/60,(144-y)/60];}
 // Player customization (New World dialog, saved as p.look): each field is an index into its list, so a save can't carry a bad value.
 // hat and cape take the accent color; the straw hat keeps its own straw.
@@ -231,66 +229,55 @@ export const LOOK={hairS:['short','long','spiky','bun','pony','curly'],hair:['#5
 export function cleanLook(l){const o={};for(const k in LOOK){const v=l&&l[k];o[k]=Number.isInteger(v)&&v>=0&&v<LOOK[k].length?v:0;}return o;}
 export function lookColors(l){l=cleanLook(l);const a=LOOK.acc[l.acc],c=LOOK.capeS[l.capeS];
   return{skin:LOOK.skin[l.skin],hair:LOOK.hair[l.hair],hairS:LOOK.hairS[l.hairS],tunic:LOOK.tunic[l.tunic],hatS:LOOK.hatS[l.hatS],hat:a,scarf:c==='none'?null:a,cape:c==='cape'?a:null};}
-export function playerSheet(){return makeSheet(ARMF+1,96,144,playerDraw());}
-function playerDraw(look=player.look){const eq={};const a=player.armor||[];if(a[0])eq.helm=ITEMS[a[0].id].color;if(a[1])eq.mail=ITEMS[a[1].id].color;if(a[2])eq.greaves=ITEMS[a[2].id].color;
-  const base=Object.assign({pants:'#3b3552',boots:'#6b4430',back:tt=>{tt.beginPath();tt.moveTo(38,74);tt.lineTo(58,104);ink(tt,3.5,'#6b4430');rr(tt,24,92,16,16,4);fi(tt,'#b9874f',2);}},lookColors(look),eq);
-  return (t,f)=>{if(f===ARMF){humanPart(t,base,'armA',48,72,0);return;}drawHuman(t,Object.assign({},base,POSES[f]));};}
+// playerLook(): what the player wears now (the look picked at world creation plus worn armor), the skin of the player's rig
+export function playerLook(look=player.look){const eq={};const a=player.armor||[];if(a[0])eq.helm=ITEMS[a[0].id].color;if(a[1])eq.mail=ITEMS[a[1].id].color;if(a[2])eq.greaves=ITEMS[a[2].id].color;
+  return Object.assign({pants:'#3b3552',boots:'#6b4430',back:tt=>{tt.beginPath();tt.moveTo(38,74);tt.lineTo(58,104);ink(tt,3.5,'#6b4430');rr(tt,24,92,16,16,4);fi(tt,'#b9874f',2);}},lookColors(look),eq);}
+function playerDraw(look=player.look){const base=playerLook(look);return t=>drawHuman(t,Object.assign({},base,POSES[0]));}
 // lookPic(look): the player standing in a given look, for the New World dialog's preview
 export function lookPic(look){return makeSheet(1,96,144,t=>playerDraw(look)(t,0));}
 // Townsfolk sheets keep their draw function so facePic() can redraw frame 0 with an expression.
 const NPCDRAW={};function npcSheet(k,draw){NPCDRAW[k]=draw;return makeSheet(2,96,144,draw);}
 // facePic(k, expr): one standing frame of an NPC type (or 'player') drawn with the given expression, for dialogue portraits
 export function facePic(k,expr){const draw=k==='player'?playerDraw():NPCDRAW[k];if(!draw)return null;faceX=expr||null;try{return makeSheet(1,96,144,t=>draw(t,0));}finally{faceX=null;}}
+// Townsfolk looks (drawHuman's o): their rigs wear these (rig.js), and their sheets are the still pictures for portraits.
+// arm: the front arm angle they stand with (holding their tool), armB the back arm's.
+export const FOLK={
+  guide:{skin:'#e8b88f',hair:'#7a4b2a',tunic:'#4f7fa6',pants:'#3b3552',boots:'#5a3a22',scarf:'#f1c04f',
+    front:tt=>{tt.save();tt.translate(66,88);tt.rotate(-.3);rr(tt,-9,-12,18,22,2);fi(tt,'#f4f0e6',2);tt.strokeStyle='#d4483b';tt.lineWidth=1.5;tt.beginPath();tt.moveTo(-5,-4);tt.lineTo(0,2);tt.lineTo(5,-6);tt.stroke();tt.restore();},arm:-.9},
+  painter:{skin:'#c98a60',hair:'#2a2130',tunic:'#f4f0e6',pants:'#3f6fa8',boots:'#3a2c22',
+    extra:tt=>{tt.beginPath();tt.ellipse(52,28,22,8,-.15,0,6.28);fi(tt,'#d4483b');circ(tt,52,20,3);fi(tt,'#d4483b',2);for(const[x,y,c]of[[42,84,'#d4483b'],[52,96,'#3f6fa8'],[46,104,'#f1c04f']]){circ(tt,x,y,3);tt.fillStyle=c;tt.fill();}},
+    front:tt=>{tt.beginPath();tt.ellipse(72,78,12,9,-.4,0,6.28);fi(tt,'#c98f4f',2);for(const[x,y,c]of[[68,74,'#d4483b'],[75,74,'#3f6fa8'],[76,81,'#f1c04f']]){circ(tt,x,y,2.4);tt.fillStyle=c;tt.fill();}},arm:-1.2},
+  nurse:{skin:'#f3d2b0',hair:'#a8483f',tunic:'#f4f0e6',pants:'#e8e2d6',boots:'#e8636a',
+    extra:tt=>{circ(tt,30,36,9);fi(tt,'#a8483f',2);rr(tt,38,22,26,8,3);fi(tt,'#fbf8f0',2);tt.beginPath();tt.moveTo(51,31);tt.bezierCurveTo(46,26,44,22,48,21);tt.bezierCurveTo(50,21,51,23,51,24);tt.bezierCurveTo(51,23,52,21,54,21);tt.bezierCurveTo(58,22,56,26,51,31);tt.fillStyle='#e0506b';tt.fill();tt.beginPath();tt.moveTo(49,94);tt.bezierCurveTo(42,88,42,82,46,82);tt.bezierCurveTo(48,82,49,84,49,85);tt.bezierCurveTo(49,84,50,82,52,82);tt.bezierCurveTo(56,82,56,88,49,94);tt.fillStyle='#e0506b';tt.fill();},arm:.1},
+  tinkerer:{skin:'#e0a878',hair:'#e0823d',tunic:'#c96a2a',pants:'#6b4a2f',boots:'#3a2c22',belt:'#3a2c22',
+    extra:tt=>{rr(tt,30,36,42,8,3);fi(tt,'#5a3a22',2);for(const x of[46,62]){circ(tt,x,40,7);fi(tt,'#a9adb8',2.5);circ(tt,x,40,4);tt.fillStyle='#bfe6f0';tt.fill();}},
+    front:tt=>{tt.save();tt.translate(66,92);tt.rotate(-.6);rr(tt,-2,-14,4,20,2);fi(tt,'#8a5a33',1.5);rr(tt,-6,-18,12,6,2);fi(tt,'#a9adb8',1.5);tt.restore();},arm:-.6,armB:.2},
+  angler:{skin:'#e8b88f',hair:'#6b4430',tunic:'#3f7a5f',pants:'#4a4058',boots:'#3a3040',belt:'#2a2130',
+    extra:tt=>{tt.beginPath();tt.ellipse(50,34,28,7,-.08,0,6.28);fi(tt,'#c9a574');tt.beginPath();tt.moveTo(30,34);tt.quadraticCurveTo(32,12,50,12);tt.quadraticCurveTo(68,12,70,32);tt.closePath();fi(tt,'#c9a574');tt.fillStyle='#d4483b';tt.fillRect(31,26,38,4);poly(tt,[62,24,70,14,68,26]);fi(tt,'#fbf8f0',1.5);},
+    front:tt=>{tt.beginPath();tt.moveTo(60,104);tt.lineTo(90,24);ink(tt,4,INK);tt.beginPath();tt.moveTo(60,104);tt.lineTo(90,24);ink(tt,2,'#c98f4f');tt.beginPath();tt.moveTo(90,24);tt.quadraticCurveTo(94,60,86,80);ink(tt,1,'rgba(42,33,48,.6)');circ(tt,86,83,3);fi(tt,'#d4483b',1.5);},arm:-.9},
+  merchant:{skin:'#f0c9a0',hair:'#e8e2d6',tunic:'#7a4b2a',pants:'#4a3a2e',boots:'#3a2c22',
+    extra:tt=>{tt.beginPath();tt.moveTo(40,60);tt.quadraticCurveTo(52,86,68,62);tt.quadraticCurveTo(60,68,52,64);tt.closePath();fi(tt,'#f4f0e6',2);tt.beginPath();tt.moveTo(24,36);tt.lineTo(78,36);tt.lineTo(70,30);tt.quadraticCurveTo(52,8,32,30);tt.closePath();fi(tt,'#3f7a3b');tt.fillStyle='#f1c04f';tt.fillRect(33,30,36,4);},arm:.1},
+  farmer:{skin:'#d9a070',hair:'#a86b3a',tunic:'#e8dcc0',pants:'#5a7fa8',boots:'#5a3a22',belt:'#5a7fa8',
+    extra:tt=>{for(const x of[42,58]){rr(tt,x-3,72,6,24,2);fi(tt,'#5a7fa8',1.5);}tt.beginPath();tt.ellipse(50,31,32,7,0,0,6.28);fi(tt,'#e9c46a');tt.beginPath();tt.moveTo(32,31);tt.quadraticCurveTo(34,10,50,10);tt.quadraticCurveTo(66,10,68,30);tt.closePath();fi(tt,'#e9c46a');tt.fillStyle='#d4483b';tt.fillRect(33,24,34,4);},
+    front:tt=>{tt.save();tt.translate(70,86);tt.rotate(.25);for(let k=-2;k<=2;k++){tt.beginPath();tt.moveTo(0,16);tt.lineTo(k*3,-10);ink(tt,1.6,'#b98f4a');tt.beginPath();tt.ellipse(k*3,-13,2.4,6,k*.1,0,6.28);fi(tt,'#e9c46a',1.2);}rr(tt,-6,2,12,4,2);fi(tt,'#d4483b',1.2);tt.restore();},arm:-.8},
+  scout:{skin:'#b97a50',hair:'#2a2130',tunic:'#8a6a3a',pants:'#4a5a3a',boots:'#3a2c22',scarf:'#3f7a5f',belt:'#3a2c22',
+    extra:tt=>{tt.beginPath();tt.moveTo(26,36);tt.quadraticCurveTo(28,14,50,14);tt.quadraticCurveTo(72,14,74,34);tt.lineTo(86,38);tt.lineTo(72,40);tt.closePath();fi(tt,'#c9a574');tt.fillStyle='#6b4430';tt.fillRect(28,30,45,4);},
+    front:tt=>{tt.save();tt.translate(68,88);tt.rotate(-.5);rr(tt,-5,-14,10,28,4);fi(tt,'#f4f0e6',2);tt.beginPath();tt.moveTo(-5,-4);tt.lineTo(5,-4);tt.moveTo(-5,4);tt.lineTo(5,4);ink(tt,1.4,'#d4483b');tt.restore();},arm:-.7},
+  curator:{skin:'#f0c9a0',hair:'#c9c2b6',tunic:'#5a3a6a',pants:'#3a3040',boots:'#2a2130',belt:'#3a3040',
+    extra:tt=>{poly(tt,[42,70,50,74,42,78]);fi(tt,'#d4483b',1.5);poly(tt,[58,70,50,74,58,78]);fi(tt,'#d4483b',1.5);circ(tt,58,50,7);ink(tt,2,'#c9a24a');tt.beginPath();tt.moveTo(64,53);tt.quadraticCurveTo(68,64,62,74);ink(tt,1,'#c9a24a');},
+    front:tt=>{tt.save();tt.translate(70,84);tt.rotate(-.4);rr(tt,-2,2,4,16,2);fi(tt,'#6b4430',1.5);circ(tt,0,-6,8);fi(tt,'rgba(191,230,240,.7)',2.5);tt.restore();},arm:-.5},
+  traveler:{skin:'#e0b48a',hair:'#5a3a22',tunic:'#b0503a',pants:'#4a3a2e',boots:'#3a2c22',belt:'#f1c04f',
+    back:tt=>{rr(tt,12,58,26,44,8);fi(tt,'#8a5a33');rr(tt,14,50,22,12,5);fi(tt,'#a86b3a',2);tt.beginPath();tt.moveTo(16,78);tt.lineTo(36,78);ink(tt,2,'#5a3a22');circ(tt,20,106,6);fi(tt,'#d4483b',2);rr(tt,6,40,6,26,2);fi(tt,'#e9dcc0',1.5);},
+    extra:tt=>{tt.beginPath();tt.moveTo(24,52);tt.quadraticCurveTo(22,18,50,18);tt.quadraticCurveTo(78,18,76,44);tt.lineTo(70,36);tt.quadraticCurveTo(50,28,32,38);tt.closePath();fi(tt,'#7a3a2a');},arm:-.6}};
 export const SHEETS={};
-function slimeDraw(col,crown){return(t,f,w,h)=>{const cx=w/2,by=h-7,sq=f?1:0;const sw=w*.78*(1+sq*.16),sh_=h*.66*(1-sq*.22);
-  t.beginPath();t.moveTo(cx-sw/2,by);t.bezierCurveTo(cx-sw/2-4,by-sh_*1.25,cx+sw/2+4,by-sh_*1.25,cx+sw/2,by);t.closePath();fi(t,col,crown?5:3);
-  t.beginPath();t.ellipse(cx-sw*.22,by-sh_*.68,sw*.1,sh_*.12,-.5,0,6.28);t.fillStyle='rgba(255,255,255,.6)';t.fill();
-  const er=crown?9:3.4;for(const ex of[cx+sw*.1,cx+sw*.3]){t.beginPath();t.ellipse(ex,by-sh_*.45,er*.8,er*1.4,0,0,6.28);t.fillStyle=INK;t.fill();circ(t,ex+er*.3,by-sh_*.45-er*.5,er*.35);t.fillStyle='#fff';t.fill();}
-  if(crown){const cy=by-sh_*.93,s=2.6;poly(t,[cx-18*s,cy,cx+18*s,cy,cx+20*s,cy-22*s,cx+10*s,cy-10*s,cx,cy-26*s,cx-10*s,cy-10*s,cx-20*s,cy-22*s]);fi(t,'#f1c04f',5);circ(t,cx,cy-9*s,4*s);fi(t,'#e0506b',4);}
-  else{t.beginPath();t.arc(cx+sw*.2,by-sh_*.25,3,.2,2.9);ink(t,2);}};}
 export function buildSheets(){
+  for(const k in FOLK){const o=FOLK[k];SHEETS[k]=npcSheet(k,(t,f)=>drawHuman(t,Object.assign({},o,{legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.3:o.arm,armB:o.armB??.1,bob:f?-1:0})));}
   // the player's status overlays (gameplay.js statusOverlay): 0 paper flames, 1 ink blots and drips, 2 water drops
   SHEETS.pstatus=makeSheet(3,96,144,(t,f)=>{
     if(f===0){for(const[x,y,h,c]of[[26,126,26,'#ff8a3d'],[70,128,30,'#ff8a3d'],[34,98,20,'#ffd66b'],[66,84,22,'#ffd66b'],[22,72,18,'#ff8a3d'],[76,58,16,'#ffd66b']]){t.beginPath();t.moveTo(x-7,y);t.quadraticCurveTo(x-8,y-h*.6,x,y-h);t.quadraticCurveTo(x+8,y-h*.6,x+7,y);t.closePath();fi(t,c,2);t.beginPath();t.moveTo(x-3,y);t.quadraticCurveTo(x,y-h*.7,x+3,y);t.closePath();t.fillStyle='#fff3c0';t.fill();}}
     else if(f===1){for(const[x,y,r]of[[44,86,6],[58,98,4.5],[40,56,4],[62,40,3.5],[50,112,4]]){circ(t,x,y,r);fi(t,'#3a2a5a',1.8);circ(t,x+r*.8,y+r*.6,r*.4);t.fillStyle='#3a2a5a';t.fill();}
       for(const[x,y,l]of[[36,62,14],[60,104,12],[48,90,10]]){rr(t,x-2,y,4,l,2);fi(t,'#3a2a5a',1.5);circ(t,x,y+l,3);t.fillStyle='#3a2a5a';t.fill();}}
     else for(const[x,y,r]of[[30,40,4],[70,52,3.5],[26,80,4.5],[74,96,4],[40,20,3.5],[62,24,3]]){t.beginPath();t.moveTo(x,y-r*2);t.quadraticCurveTo(x+r,y-r*.3,x+r,y+r*.3);t.arc(x,y+r*.3,r,0,Math.PI);t.quadraticCurveTo(x-r,y-r*.3,x,y-r*2);fi(t,'#a8e4ff',1.8);circ(t,x-r*.35,y,r*.3);t.fillStyle='#fff';t.fill();}});
-  SHEETS.slime=makeSheet(2,96,80,(t,f)=>slimeDraw('#6cc57a')(t,f,96,80));
-  SHEETS.bslime=makeSheet(2,96,80,(t,f)=>slimeDraw('#5aa7e0')(t,f,96,80));
-  SHEETS.king=makeSheet(2,340,280,(t,f)=>slimeDraw('#5aa7e0',1)(t,f,340,280),6);
-  SHEETS.zombie=makeSheet(2,96,144,(t,f)=>drawHuman(t,{skin:'#a8c79a',hair:'#3e5a3a',tunic:'#6b5b8a',pants:'#4a4058',boots:'#3a3040',legA:f?.4:-.3,legB:f?-.4:.3,armA:-1.45,armB:-1.3,eyeCol:'#c0392b',noBlush:1,bob:f?1:0,
-    extra:tt=>{tt.fillStyle='#2a2130';tt.fillRect(40,95,6,10);tt.fillRect(52,85,4,8);}}));
-  SHEETS.knight=makeSheet(2,96,144,(t,f)=>drawHuman(t,{skin:'#c7a57a',helm:'#b48a5a',mail:'#b48a5a',greaves:'#9a7448',boots:'#6b4a2f',pants:'#6b4a2f',tunic:'#b48a5a',legA:f?.35:-.3,legB:f?-.35:.3,armA:-.4,armB:.2,eyeCol:'#f1c04f',noBlush:1,eyeY:47,
-    front:tt=>{rr(tt,58,70,24,34,8);fi(tt,'#8e6a40');circ(tt,70,87,5);fi(tt,'#f1c04f',2);}}));
-  SHEETS.guide=npcSheet('guide',(t,f)=>drawHuman(t,{skin:'#e8b88f',hair:'#7a4b2a',tunic:'#4f7fa6',pants:'#3b3552',boots:'#5a3a22',scarf:'#f1c04f',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.3:-.9,armB:.1,bob:f?-1:0,wave:f?3:0,
-    front:tt=>{tt.save();tt.translate(66,88);tt.rotate(-.3);rr(tt,-9,-12,18,22,2);fi(tt,'#f4f0e6',2);tt.strokeStyle='#d4483b';tt.lineWidth=1.5;tt.beginPath();tt.moveTo(-5,-4);tt.lineTo(0,2);tt.lineTo(5,-6);tt.stroke();tt.restore();}}));
-  SHEETS.painter=npcSheet('painter',(t,f)=>drawHuman(t,{skin:'#c98a60',hair:'#2a2130',tunic:'#f4f0e6',pants:'#3f6fa8',boots:'#3a2c22',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.3:-1.2,armB:.1,bob:f?-1:0,
-    extra:tt=>{tt.beginPath();tt.ellipse(52,28,22,8,-.15,0,6.28);fi(tt,'#d4483b');circ(tt,52,20,3);fi(tt,'#d4483b',2);for(const[x,y,c]of[[42,84,'#d4483b'],[52,96,'#3f6fa8'],[46,104,'#f1c04f']]){circ(tt,x,y,3);tt.fillStyle=c;tt.fill();}},
-    front:tt=>{tt.beginPath();tt.ellipse(72,78,12,9,-.4,0,6.28);fi(tt,'#c98f4f',2);for(const[x,y,c]of[[68,74,'#d4483b'],[75,74,'#3f6fa8'],[76,81,'#f1c04f']]){circ(tt,x,y,2.4);tt.fillStyle=c;tt.fill();}}}));
-  SHEETS.nurse=npcSheet('nurse',(t,f)=>drawHuman(t,{skin:'#f3d2b0',hair:'#a8483f',tunic:'#f4f0e6',pants:'#e8e2d6',boots:'#e8636a',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.3:.1,armB:.1,bob:f?-1:0,
-    extra:tt=>{circ(tt,30,36,9);fi(tt,'#a8483f',2);rr(tt,38,22,26,8,3);fi(tt,'#fbf8f0',2);tt.beginPath();tt.moveTo(51,31);tt.bezierCurveTo(46,26,44,22,48,21);tt.bezierCurveTo(50,21,51,23,51,24);tt.bezierCurveTo(51,23,52,21,54,21);tt.bezierCurveTo(58,22,56,26,51,31);tt.fillStyle='#e0506b';tt.fill();tt.beginPath();tt.moveTo(49,94);tt.bezierCurveTo(42,88,42,82,46,82);tt.bezierCurveTo(48,82,49,84,49,85);tt.bezierCurveTo(49,84,50,82,52,82);tt.bezierCurveTo(56,82,56,88,49,94);tt.fillStyle='#e0506b';tt.fill();}}));
-  SHEETS.tinkerer=npcSheet('tinkerer',(t,f)=>drawHuman(t,{skin:'#e0a878',hair:'#e0823d',tunic:'#c96a2a',pants:'#6b4a2f',boots:'#3a2c22',belt:'#3a2c22',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.4:-.6,armB:.2,bob:f?-1:0,
-    extra:tt=>{rr(tt,30,36,42,8,3);fi(tt,'#5a3a22',2);for(const x of[46,62]){circ(tt,x,40,7);fi(tt,'#a9adb8',2.5);circ(tt,x,40,4);tt.fillStyle='#bfe6f0';tt.fill();}},
-    front:tt=>{tt.save();tt.translate(66,92);tt.rotate(-.6);rr(tt,-2,-14,4,20,2);fi(tt,'#8a5a33',1.5);rr(tt,-6,-18,12,6,2);fi(tt,'#a9adb8',1.5);tt.restore();}}));
-  SHEETS.angler=npcSheet('angler',(t,f)=>drawHuman(t,{skin:'#e8b88f',hair:'#6b4430',tunic:'#3f7a5f',pants:'#4a4058',boots:'#3a3040',belt:'#2a2130',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.5:-.9,armB:.1,bob:f?-1:0,
-    extra:tt=>{tt.beginPath();tt.ellipse(50,34,28,7,-.08,0,6.28);fi(tt,'#c9a574');tt.beginPath();tt.moveTo(30,34);tt.quadraticCurveTo(32,12,50,12);tt.quadraticCurveTo(68,12,70,32);tt.closePath();fi(tt,'#c9a574');tt.fillStyle='#d4483b';tt.fillRect(31,26,38,4);poly(tt,[62,24,70,14,68,26]);fi(tt,'#fbf8f0',1.5);},
-    front:tt=>{tt.beginPath();tt.moveTo(60,104);tt.lineTo(90,24);ink(tt,4,INK);tt.beginPath();tt.moveTo(60,104);tt.lineTo(90,24);ink(tt,2,'#c98f4f');tt.beginPath();tt.moveTo(90,24);tt.quadraticCurveTo(94,60,86,80);ink(tt,1,'rgba(42,33,48,.6)');circ(tt,86,83,3);fi(tt,'#d4483b',1.5);}}));
-  SHEETS.merchant=npcSheet('merchant',(t,f)=>drawHuman(t,{skin:'#f0c9a0',hair:'#e8e2d6',tunic:'#7a4b2a',pants:'#4a3a2e',boots:'#3a2c22',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.3:.1,armB:.1,bob:f?-1:0,
-    extra:tt=>{tt.beginPath();tt.moveTo(40,60);tt.quadraticCurveTo(52,86,68,62);tt.quadraticCurveTo(60,68,52,64);tt.closePath();fi(tt,'#f4f0e6',2);tt.beginPath();tt.moveTo(24,36);tt.lineTo(78,36);tt.lineTo(70,30);tt.quadraticCurveTo(52,8,32,30);tt.closePath();fi(tt,'#3f7a3b');tt.fillStyle='#f1c04f';tt.fillRect(33,30,36,4);}}));
-  SHEETS.farmer=npcSheet('farmer',(t,f)=>drawHuman(t,{skin:'#d9a070',hair:'#a86b3a',tunic:'#e8dcc0',pants:'#5a7fa8',boots:'#5a3a22',belt:'#5a7fa8',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.4:-.8,armB:.1,bob:f?-1:0,
-    extra:tt=>{for(const x of[42,58]){rr(tt,x-3,72,6,24,2);fi(tt,'#5a7fa8',1.5);}tt.beginPath();tt.ellipse(50,31,32,7,0,0,6.28);fi(tt,'#e9c46a');tt.beginPath();tt.moveTo(32,31);tt.quadraticCurveTo(34,10,50,10);tt.quadraticCurveTo(66,10,68,30);tt.closePath();fi(tt,'#e9c46a');tt.fillStyle='#d4483b';tt.fillRect(33,24,34,4);},
-    front:tt=>{tt.save();tt.translate(70,86);tt.rotate(.25);for(let k=-2;k<=2;k++){tt.beginPath();tt.moveTo(0,16);tt.lineTo(k*3,-10);ink(tt,1.6,'#b98f4a');tt.beginPath();tt.ellipse(k*3,-13,2.4,6,k*.1,0,6.28);fi(tt,'#e9c46a',1.2);}rr(tt,-6,2,12,4,2);fi(tt,'#d4483b',1.2);tt.restore();}}));
-  SHEETS.scout=npcSheet('scout',(t,f)=>drawHuman(t,{skin:'#b97a50',hair:'#2a2130',tunic:'#8a6a3a',pants:'#4a5a3a',boots:'#3a2c22',scarf:'#3f7a5f',belt:'#3a2c22',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.3:-.7,armB:.1,bob:f?-1:0,wave:f?2:0,
-    extra:tt=>{tt.beginPath();tt.moveTo(26,36);tt.quadraticCurveTo(28,14,50,14);tt.quadraticCurveTo(72,14,74,34);tt.lineTo(86,38);tt.lineTo(72,40);tt.closePath();fi(tt,'#c9a574');tt.fillStyle='#6b4430';tt.fillRect(28,30,45,4);},
-    front:tt=>{tt.save();tt.translate(68,88);tt.rotate(-.5);rr(tt,-5,-14,10,28,4);fi(tt,'#f4f0e6',2);tt.beginPath();tt.moveTo(-5,-4);tt.lineTo(5,-4);tt.moveTo(-5,4);tt.lineTo(5,4);ink(tt,1.4,'#d4483b');tt.restore();}}));
-  SHEETS.curator=npcSheet('curator',(t,f)=>drawHuman(t,{skin:'#f0c9a0',hair:'#c9c2b6',tunic:'#5a3a6a',pants:'#3a3040',boots:'#2a2130',belt:'#3a3040',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.2:-.5,armB:.1,bob:f?-1:0,
-    extra:tt=>{poly(tt,[42,70,50,74,42,78]);fi(tt,'#d4483b',1.5);poly(tt,[58,70,50,74,58,78]);fi(tt,'#d4483b',1.5);circ(tt,58,50,7);ink(tt,2,'#c9a24a');tt.beginPath();tt.moveTo(64,53);tt.quadraticCurveTo(68,64,62,74);ink(tt,1,'#c9a24a');},
-    front:tt=>{tt.save();tt.translate(70,84);tt.rotate(-.4);rr(tt,-2,2,4,16,2);fi(tt,'#6b4430',1.5);circ(tt,0,-6,8);fi(tt,'rgba(191,230,240,.7)',2.5);tt.restore();}}));
-  SHEETS.traveler=npcSheet('traveler',(t,f)=>drawHuman(t,{skin:'#e0b48a',hair:'#5a3a22',tunic:'#b0503a',pants:'#4a3a2e',boots:'#3a2c22',belt:'#f1c04f',legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.3:-.6,armB:.1,bob:f?-1:0,
-    back:tt=>{rr(tt,12,58,26,44,8);fi(tt,'#8a5a33');rr(tt,14,50,22,12,5);fi(tt,'#a86b3a',2);tt.beginPath();tt.moveTo(16,78);tt.lineTo(36,78);ink(tt,2,'#5a3a22');circ(tt,20,106,6);fi(tt,'#d4483b',2);rr(tt,6,40,6,26,2);fi(tt,'#e9dcc0',1.5);},
-    extra:tt=>{tt.beginPath();tt.moveTo(24,52);tt.quadraticCurveTo(22,18,50,18);tt.quadraticCurveTo(78,18,76,44);tt.lineTo(70,36);tt.quadraticCurveTo(50,28,32,38);tt.closePath();fi(tt,'#7a3a2a');}}));
-  SHEETS.eye=makeSheet(2,96,96,(t,f)=>{for(let k=0;k<3;k++){t.beginPath();t.moveTo(34,48+(k-1)*10);t.quadraticCurveTo(18,40+(k-1)*14+(f?6:-6),6,48+(k-1)*16);ink(t,5,'#4a2a5a');}circ(t,52,48,24);fi(t,'#f4f0e6',3);
-    t.strokeStyle='rgba(200,40,60,.5)';t.lineWidth=1.3;for(let k=0;k<5;k++){t.beginPath();t.moveTo(30,40+k*4);t.lineTo(42,44+k*2);t.stroke();}circ(t,60,48,11);fi(t,'#8a3fb0',2);circ(t,62,48,5);t.fillStyle=INK;t.fill();circ(t,58,44,3);t.fillStyle='#fff';t.fill();});
   SHEETS.unfolded=makeSheet(2,300,360,(t,f)=>{const cx=150,lg=f?10:-10;
     for(const[x,o]of[[122,lg],[178,-lg]]){poly(t,[x-20,250,x+20,250,x+14+o,350,x-26+o,350]);fi(t,'#e9dcc0',5);t.beginPath();t.moveTo(x-6,250);t.lineTo(x-2+o,350);ink(t,2,'rgba(42,33,48,.25)');}
     for(const s2 of[-1,1]){poly(t,[cx+s2*70,120,cx+s2*118,150+(f?-10:10),cx+s2*122,250,cx+s2*96,255,cx+s2*80,170]);fi(t,'#e9dcc0',5);}
@@ -300,9 +287,6 @@ export function buildSheets(){
     for(const ex of[cx-20,cx+18]){t.beginPath();t.ellipse(ex,64,11,8,0,0,6.28);t.fillStyle='#2a1a3a';t.fill();circ(t,ex+2,64,4);t.fillStyle='#e0b0ff';t.fill();}
     t.beginPath();t.moveTo(cx-24,90);t.lineTo(cx-8,84);t.lineTo(cx+8,92);t.lineTo(cx+24,84);ink(t,3);},6);
   SHEETS.wraith=makeSheet(2,96,128,(t,f)=>{const w=f?6:-6;t.beginPath();t.moveTo(20,112);t.quadraticCurveTo(14,40,48,14);t.quadraticCurveTo(82,40,76,112);for(let x=76;x>=20;x-=14){t.quadraticCurveTo(x-7,112+(((x/14)|0)%2?10:-2)+w*.5,x-14,112);}t.closePath();fi(t,'#3a1a4a',3);t.beginPath();t.moveTo(30,60);t.quadraticCurveTo(48,30,66,60);ink(t,2,'rgba(200,150,255,.35)');for(const x of[40,58]){t.beginPath();t.ellipse(x,52,5,7,0,0,6.28);t.fillStyle='#e0b0ff';t.fill();}t.beginPath();t.ellipse(49,72,6,4,0,0,6.28);t.fillStyle='#1a0a24';t.fill();});
-  SHEETS.cinderbat=makeSheet(2,96,64,(t,f)=>batDraw(t,f,'#3a2a24','#2a1e1a','#ff8a3d'));
-  SHEETS.bat=makeSheet(2,96,64,(t,f)=>{const up=f?-16:14;for(const s of[-1,1]){t.beginPath();t.moveTo(48,32);t.quadraticCurveTo(48+s*20,32+up-8,48+s*42,26+up);t.quadraticCurveTo(48+s*32,40+up*.3,48+s*26,34+up*.2);t.quadraticCurveTo(48+s*18,44,48,38);t.closePath();fi(t,'#5a3f7a',2.5);}
-    t.beginPath();t.ellipse(48,36,11,13,0,0,6.28);fi(t,'#6b4c8f');poly(t,[40,26,43,14,47,25]);fi(t,'#6b4c8f',2);poly(t,[49,25,53,14,56,26]);fi(t,'#6b4c8f',2);circ(t,44,34,2.2);t.fillStyle='#f1c04f';t.fill();circ(t,52,34,2.2);t.fill();poly(t,[45,42,47,46,49,42]);t.fillStyle='#fff';t.fill();});
   for(const k of Object.keys(SHEETS))SHEETS[k+'T']=canvasTex(SHEETS[k]);}
 export const INKTINT=new THREE.Vector3(.85,.6,1.15);
 export const markGeo=new THREE.PlaneGeometry(.6,.6),markMat=new THREE.MeshBasicMaterial({transparent:true,alphaTest:.5,depthTest:false});
@@ -314,8 +298,6 @@ export function updateEnemyFx(e,dt){const top=e.y+e.h+(e.d.fly?.15:.3);e.hpShow=
   if(e.warn){if(!e.mark){e.mark=new THREE.Mesh(markGeo,markMat);e.mark.renderOrder=8;scene.add(e.mark);}e.mark.visible=true;const k=(SET.cb&&SET.cb!=='off'?1.3:1)*(SET.tele?1.35:1)*(1+.18*Math.sin(e.t*20));e.mark.scale.set(k,k,1);e.mark.position.set(e.x,top+(e.elite?1.05:.6),.7);}else if(e.mark)e.mark.visible=false;
   const show=!e.d.boss&&e.hpShow>0&&e.hp<e.max;if(show&&!e.bar){const bg=new THREE.Mesh(barBgGeo,barBgMat),fg=new THREE.Mesh(barFgGeo,e.elite?barFgEliteMat:barFgMat);bg.renderOrder=6;fg.renderOrder=7;scene.add(bg,fg);e.bar=[bg,fg];}
   if(e.bar){e.bar[0].visible=e.bar[1].visible=show;if(show){const bw=Math.max(.9,e.w+.2);e.bar[0].scale.x=bw;e.bar[0].position.set(e.x,top+.12,.66);e.bar[1].scale.x=Math.max(.001,(bw-.08)*e.hp/e.max);e.bar[1].position.set(e.x-bw/2+.04,top+.12,.67);}}}
-function batDraw(t,f,c1,c2,eye){const up=f?-16:14;for(const s of[-1,1]){t.beginPath();t.moveTo(48,32);t.quadraticCurveTo(48+s*20,32+up-8,48+s*42,26+up);t.quadraticCurveTo(48+s*32,40+up*.3,48+s*26,34+up*.2);t.quadraticCurveTo(48+s*18,44,48,38);t.closePath();fi(t,c2,2.5);}
-  t.beginPath();t.ellipse(48,36,11,13,0,0,6.28);fi(t,c1);poly(t,[40,26,43,14,47,25]);fi(t,c1,2);poly(t,[49,25,53,14,56,26]);fi(t,c1,2);circ(t,44,34,2.4);t.fillStyle=eye;t.fill();circ(t,52,34,2.4);t.fill();}
 function snowDraw(w,h){return(t,f)=>{const cx=w/2,sq=f?1:0,r=Math.min(w,h)*.4,rx=r*(1+sq*.12),ry=r*(1-sq*.15),cy=h-6-ry;
   t.beginPath();t.ellipse(cx,cy,rx,ry,0,0,6.28);fi(t,'#f6f9fb',3);t.beginPath();t.ellipse(cx-rx*.35,cy-ry*.4,rx*.22,ry*.14,-.5,0,6.28);t.fillStyle='rgba(174,224,242,.6)';t.fill();
   for(const ex of[cx+rx*.12,cx+rx*.42]){circ(t,ex,cy-ry*.14,r*.08+1);t.fillStyle=INK;t.fill();}poly(t,[cx+rx*.3,cy+ry*.04,cx+rx*1.05,cy+ry*.16,cx+rx*.3,cy+ry*.28]);fi(t,'#e0823d',1.5);
@@ -356,7 +338,6 @@ export function buildMoreSheets(){
     circ(t,74,46,14);fi(t,'#2a1e1a',3);for(const[x,y]of[[78,42],[86,44],[80,50]]){circ(t,x,y,2.6);t.fillStyle='#ffd66b';t.fill();}});
   for(const k of['crumple','toadstool','dunefin','scarab','sunkite','snowroll','snowlet','frostpuff','inkwisp','quillfish','cracker','ashspider'])SHEETS[k+'T']=canvasTex(SHEETS[k]);}
 export function buildBiomeSheets(){
-  SHEETS.blot=makeSheet(2,96,80,(t,f)=>slimeDraw('#4a3570')(t,f,96,80));
   SHEETS.foldfox=makeSheet(2,128,96,(t,f)=>{const lg=f?6:-6;for(const[x,o]of[[40,lg],[52,-lg],[80,-lg],[92,lg]]){poly(t,[x-4,62,x+4,62,x+2+o,90,x-4+o,90]);fi(t,x<60?'#b8612a':'#e0823d',2);}
     poly(t,[26,60,40,40,88,38,104,56,90,66,36,68]);fi(t,'#e0823d');poly(t,[60,66,88,40,90,66]);fi(t,'#f4f0e6',2);
     poly(t,[26,58,4,20,12,18,34,48]);fi(t,'#e0823d');poly(t,[4,20,12,18,14,30]);fi(t,'#f4f0e6',2);
@@ -364,8 +345,6 @@ export function buildBiomeSheets(){
     t.beginPath();t.moveTo(40,40);t.lineTo(60,66);t.moveTo(88,38);t.lineTo(74,66);ink(t,1.4,'rgba(42,33,48,.35)');});
   SHEETS.flurry=makeSheet(2,80,80,(t,f)=>{t.translate(40,40);t.rotate(f?.26:0);for(let i=0;i<6;i++){t.save();t.rotate(i/6*Math.PI*2);poly(t,[-4,0,4,0,3,-30,-3,-30]);fi(t,'#f6f9fb',2);poly(t,[0,-20,-8,-28,0,-24,8,-28]);fi(t,'#e6f1f7',1.5);t.restore();}circ(t,0,0,12);fi(t,'#e6f1f7',2.5);circ(t,-4,-2,2);t.fillStyle=INK;t.fill();circ(t,4,-2,2);t.fill();t.beginPath();t.arc(0,3,3,.2,2.9);ink(t,1.5);});
   SHEETS.inksquid=makeSheet(2,96,96,(t,f)=>{for(let k=0;k<4;k++){t.beginPath();t.moveTo(40,40+k*6);t.quadraticCurveTo(20,36+k*8+(f?8:-8),6,44+k*6);ink(t,6,'#4a3570');}t.beginPath();t.ellipse(58,48,28,17,0,0,6.28);fi(t,'#6b4c8f');poly(t,[80,40,94,48,80,56]);fi(t,'#8a5fc0',2);circ(t,64,44,5);fi(t,'#f4f0e6',1.5);circ(t,66,44,2.5);t.fillStyle=INK;t.fill();circ(t,50,40,4);t.fillStyle='rgba(255,255,255,.35)';t.fill();});
-  SHEETS.ashimp=makeSheet(2,96,144,(t,f)=>drawHuman(t,{skin:'#9a3b2a',tunic:'#3a2a24',pants:'#2a1e1a',boots:'#1e1614',legA:f?.4:-.3,legB:f?-.4:.3,armA:-.8,armB:.3,eyeCol:'#ffd66b',noBlush:1,bob:f?1:0,
-    extra:tt=>{poly(tt,[34,34,28,14,40,28]);fi(tt,'#3a2a24',2);poly(tt,[62,30,72,10,68,32]);fi(tt,'#3a2a24',2);},front:tt=>{circ(tt,70,84,7);tt.fillStyle='rgba(255,138,61,.6)';tt.fill();}}));
   SHEETS.crane=makeSheet(2,360,240,(t,f)=>{const cx=170,cy=140,up=f?1:0;const wing=(dx,col)=>{if(up)poly(t,[cx-30+dx,cy-14,cx+40+dx,cy-16,cx-10+dx,cy-126,cx-96+dx,cy-110]);else poly(t,[cx-30+dx,cy+8,cx+40+dx,cy+8,cx-4+dx,cy+96,cx-88+dx,cy+74]);fi(t,col,4);};
     wing(-20,'#b9cfe0');poly(t,[cx-60,cy,cx-156,cy-72,cx-132,cy-38,cx-68,cy+14]);fi(t,'#dce8f0',4);
     poly(t,[cx-72,cy,cx,cy-32,cx+62,cy,cx,cy+32]);fi(t,'#f4f0e6',4);t.beginPath();t.moveTo(cx-72,cy);t.lineTo(cx+62,cy);ink(t,2,'rgba(42,33,48,.3)');
@@ -381,7 +360,7 @@ export function buildBiomeSheets(){
     for(let k=0;k<7;k++){const x=40+k*42;t.beginPath();t.moveTo(x,84);t.bezierCurveTo(x+18,60,x+10,30,x+20,6+(k%2)*14);t.bezierCurveTo(x+30,34,x+40,60,x+36,84);t.closePath();fi(t,'#ff7a2d',3);t.beginPath();t.moveTo(x+10,82);t.quadraticCurveTo(x+20,52,x+22,40);t.quadraticCurveTo(x+30,60,x+28,82);t.fillStyle='#ffd66b';t.fill();}
     t.beginPath();t.ellipse(236,168,40,30,0,0,6.28);fi(t,'#f4f0e6',4);circ(t,240,168,18);fi(t,'#ff8a3d',3);circ(t,242,168,8);t.fillStyle=INK;t.fill();circ(t,234,160,5);t.fillStyle='#fff';t.fill();
     for(const[x,y]of[[44,236],[160,246],[296,234]]){circ(t,x,y,12);t.fillStyle='#2a1e1a';t.fill();}},6);
-  for(const k of['unfolded','wraith','guide','painter','nurse','tinkerer','blot','foldfox','flurry','inksquid','ashimp','crane','lev','levseg','levtail','folio','cinderbat'])SHEETS[k+'T']=canvasTex(SHEETS[k]);}
+  for(const k of['unfolded','wraith','guide','painter','nurse','tinkerer','foldfox','flurry','inksquid','crane','lev','levseg','levtail','folio'])SHEETS[k+'T']=canvasTex(SHEETS[k]);}
 export function spriteMesh(tex,frames,w,h,anchorBottom=true){const g=new THREE.PlaneGeometry(w,h);if(anchorBottom)g.translate(0,h/2,0);const m=new THREE.Mesh(g,spriteMat(tex,frames));scene.add(m);return m;}
 const iconCache={},iconTexCache={};
 function iconCanvas(id){const c=mk(64,64);const[x,y]=cellXY(ITEMS[id].cell);c.getContext('2d').drawImage(atlas,x,y,64,64,0,0,64,64);return c;}

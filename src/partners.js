@@ -4,7 +4,7 @@ import {
   ITEMS,KEYNAME,makeSheet,mk,mouse,nearestEnemy,pickups,player,poly,portraitCache,quests,rr,
   scene,SET,setInvDirty,setTint,SFX,SHEETS,spriteMesh,stat,state,T,tileAt,toast,TP,partnerSpeaker,say,
   chapterCard,moveName,palUp,playerSpeaker,renderQuests,
-  playerCheer,
+  playerCheer,defRig,loopClip,RIGS,rigPic,makeRig,rigFree,rigPlay,rigUpdate,
 } from './game.js';
 
 // ================= partners =================
@@ -26,16 +26,44 @@ export const PORDER=['lumi','snip','smudge','ember'];
 // cheer: seconds of celebration hop left; idle: seconds the player has stood still (idle animations after 5)
 export const pt={x:0,y:0,rot:0,t:0,cd:0,act:null,at:0,target:null,atkT:0,mesh:null,type:null,hudKey:'',cheer:0,idle:0,bub:null,bubLife:0};
 export function partnerCheer(t=1.6){pt.cheer=Math.max(pt.cheer,t);pt.cheerMax=pt.cheer;}
-function drawPartner(t,type,f){const bob=f?2:0;
-  if(type==='lumi'){t.beginPath();t.moveTo(48,8);t.lineTo(48,18);ink(t,2,'#6b4430');rr(t,26,18+bob,44,52,20);fi(t,'#f7d046');for(const x of[36,48,60]){t.beginPath();t.moveTo(x,20+bob);t.quadraticCurveTo(x+(x-48)*.4,44+bob,x,68+bob);ink(t,1.5,'rgba(160,100,20,.5)');}rr(t,34,14+bob,28,7,3);fi(t,'#b33a2f',2);rr(t,34,67+bob,28,7,3);fi(t,'#b33a2f',2);circ(t,43,42+bob,3);t.fillStyle=INK;t.fill();circ(t,55,42+bob,3);t.fill();t.beginPath();t.arc(49,48+bob,4,.3,2.8);ink(t,1.8);circ(t,38,50+bob,3);t.fillStyle='rgba(230,110,110,.45)';t.fill();circ(t,60,50+bob,3);t.fill();}
-  else if(type==='snip'){for(const s of[-1,1]){t.beginPath();t.moveTo(48+s*14,62);t.lineTo(48+s*24,78-bob);ink(t,4,INK);}t.beginPath();t.ellipse(48,56,24,15,0,0,6.28);fi(t,'#d4483b');t.fillStyle='rgba(255,255,255,.3)';t.fillRect(34,46,10,4);
-    t.save();t.translate(76,40-bob);t.rotate(f?-.3:.1);poly(t,[0,0,18,-8,6,2]);fi(t,'#c9ccd4',2);poly(t,[0,0,18,6,6,-2]);fi(t,'#a9adb8',2);circ(t,0,0,4);fi(t,'#d4483b',2);t.restore();t.beginPath();t.moveTo(66,50);t.lineTo(76,40-bob);ink(t,4,'#d4483b');
-    for(const x of[42,54]){t.beginPath();t.moveTo(x,44);t.lineTo(x,34);ink(t,2);circ(t,x,32,4.5);fi(t,'#fbf8f0',2);circ(t,x+1,32,2);t.fillStyle=INK;t.fill();}}
-  else if(type==='smudge'){poly(t,[22,40,28,24,36,40]);fi(t,'#3a2a5a',2);t.beginPath();t.moveTo(20,60);t.quadraticCurveTo(8,50-bob*2,12,40);ink(t,5,'#3a2a5a');for(const x of[34,46,58,68]){rr(t,x-4,64,8,14-(x%2?bob:0),3);fi(t,'#3a2a5a',2);}
-    t.beginPath();t.ellipse(46,56,26,16,0,0,6.28);fi(t,'#3a2a5a');circ(t,70,44,15);fi(t,'#3a2a5a');poly(t,[62,32,58,16,70,30]);fi(t,'#4a3570',2);circ(t,74,42,5);fi(t,'#fbf8f0',1.5);circ(t,75,42,2.4);t.fillStyle=INK;t.fill();circ(t,84,48,3);t.fillStyle='#e8636a';t.fill();circ(t,40,52,6);t.fillStyle='rgba(160,130,220,.35)';t.fill();}
-  else{t.beginPath();t.moveTo(18,50);t.quadraticCurveTo(6,40+bob*3,4,58);t.quadraticCurveTo(12,62,24,58);t.closePath();fi(t,'#ff7a2d',2);poly(t,[22,52,50,38,76,44,56,62,30,64]);fi(t,'#e0823d');poly(t,[36,50,52,f?16:30,60,50]);fi(t,'#ffb45a',2);poly(t,[70,42,86,46,72,50]);fi(t,'#f1c04f',2);circ(t,68,44,2.5);t.fillStyle=INK;t.fill();
-    t.beginPath();t.moveTo(46,34);t.quadraticCurveTo(50,22,56,28);t.fillStyle='#ffd66b';t.fill();}}
-export function buildPartnerSheets(){for(const k of PORDER){SHEETS['p_'+k]=makeSheet(2,96,96,(t,f)=>drawPartner(t,k,f));SHEETS['p_'+k+'T']=canvasTex(SHEETS['p_'+k]);}}
+// Partners are paper rigs (rig.js), 96px frames shown 1.3 units wide around their centre. Each has idle and move clips;
+// Snip's scissor blades are two pieces that snip, Smudge wags, the fliers bob and flap.
+const PS=1.3/96;
+defRig('p_lumi',{w:96,h:96,oy:48,s:PS,parts:[{n:'root',at:[48,9]},
+  {n:'string',at:[48,9],up:'root',wob:0,paint:t=>{t.beginPath();t.moveTo(48,8);t.lineTo(48,18);ink(t,2,'#6b4430');}},
+  {n:'body',at:[48,18],up:'root',wob:.01,paint:t=>{rr(t,26,18,44,52,20);fi(t,'#f7d046');for(const x of[36,48,60]){t.beginPath();t.moveTo(x,20);t.quadraticCurveTo(x+(x-48)*.4,44,x,68);ink(t,1.5,'rgba(160,100,20,.5)');}}},
+  {n:'capT',at:[48,17],up:'body',paint:t=>{rr(t,34,14,28,7,3);fi(t,'#b33a2f',2);}},
+  {n:'capB',at:[48,70],up:'body',paint:t=>{rr(t,34,67,28,7,3);fi(t,'#b33a2f',2);}},
+  {n:'face',at:[49,46],up:'body',wob:0,v:['','blink'],paint:(t,s,v)=>{for(const x of[43,55]){if(v){t.beginPath();t.moveTo(x-3,42);t.lineTo(x+3,42);ink(t,2);}else{circ(t,x,42,3);t.fillStyle=INK;t.fill();}}
+    t.beginPath();t.arc(49,48,4,.3,2.8);ink(t,1.8);circ(t,38,50,3);t.fillStyle='rgba(230,110,110,.45)';t.fill();circ(t,60,50,3);t.fill();}}],
+  clips:{idle:loopClip(2.4,[[0,{root:{r:.06},body:{y:0},face:{sw:''}}],[.6,{body:{y:2}}],[1.2,{root:{r:-.06},body:{y:0}}],[1.8,{body:{y:2}}],[2.05,{face:{sw:'blink'}}],[2.17,{face:{sw:''}}]],'io',.2)}});
+RIGS.p_lumi.clips.fly=RIGS.p_lumi.clips.idle;
+defRig('p_snip',{w:96,h:96,oy:48,s:PS,parts:[{n:'root',at:[48,62]},
+  ...[-1,1].map(s2=>({n:s2<0?'legB':'legA',at:[48+s2*14,62],up:'root',paint:t=>{t.beginPath();t.moveTo(48+s2*14,62);t.lineTo(48+s2*24,78);ink(t,4,INK);}})),
+  {n:'body',at:[48,62],up:'root',wob:.01,paint:t=>{t.beginPath();t.ellipse(48,56,24,15,0,0,6.28);fi(t,'#d4483b');t.fillStyle='rgba(255,255,255,.3)';t.fillRect(34,46,10,4);}},
+  {n:'eyes',at:[48,44],up:'body',v:['','blink'],paint:(t,s,v)=>{for(const x of[42,54]){t.beginPath();t.moveTo(x,44);t.lineTo(x,34);ink(t,2);circ(t,x,32,4.5);fi(t,'#fbf8f0',2);if(v){t.beginPath();t.moveTo(x-3,32);t.lineTo(x+3,32);ink(t,1.6);}else{circ(t,x+1,32,2);t.fillStyle=INK;t.fill();}}}},
+  {n:'arm',at:[66,50],up:'body',paint:t=>{t.beginPath();t.moveTo(66,50);t.lineTo(76,40);ink(t,4,'#d4483b');}},
+  {n:'bladeB',at:[76,40],up:'arm',loc:1,wob:0,paint:t=>{poly(t,[0,0,18,6,6,-2]);fi(t,'#a9adb8',2);}},
+  {n:'bladeA',at:[76,40],up:'arm',loc:1,wob:0,paint:t=>{poly(t,[0,0,18,-8,6,2]);fi(t,'#c9ccd4',2);circ(t,0,0,4);fi(t,'#d4483b',2);}}],
+  clips:{idle:loopClip(3,[[0,{arm:{r:0},bladeA:{r:.05},bladeB:{r:-.05},eyes:{sw:''}}],[1.4,{arm:{r:-.08}}],[2.4,{bladeA:{r:.05},bladeB:{r:-.05}}],[2.5,{bladeA:{r:-.3},bladeB:{r:.3},eyes:{sw:'blink'}}],[2.6,{bladeA:{r:.05},bladeB:{r:-.05},eyes:{sw:''}}]],'io',.15),
+    walk:loopClip(.25,[[0,{legA:{r:-.35},legB:{r:.35},body:{y:0},arm:{r:-.1}}],[.125,{legA:{r:.35},legB:{r:-.35},body:{y:-2},arm:{r:.1}}]],'io',.08),
+    snip:loopClip(.16,[[0,{bladeA:{r:-.35},bladeB:{r:.35},arm:{r:-.25},legA:{r:-.3},legB:{r:.3}}],[.08,{bladeA:{r:.12},bladeB:{r:-.12},arm:{r:.15},legA:{r:.3},legB:{r:-.3}}]],'io',.04)}});
+defRig('p_smudge',{w:96,h:96,oy:48,s:PS,parts:[{n:'root',at:[46,72]},
+  {n:'tail',at:[24,56],up:'body',paint:t=>{poly(t,[22,40,28,24,36,40]);fi(t,'#3a2a5a',2);t.beginPath();t.moveTo(20,60);t.quadraticCurveTo(8,50,12,40);ink(t,5,'#3a2a5a');}},
+  ...[[34,'legB'],[58,'legD'],[46,'legA'],[68,'legC']].map(([x,n])=>({n,at:[x,64],up:'root',paint:t=>{rr(t,x-4,64,8,14,3);fi(t,n==='legB'||n==='legD'?'#2e2148':'#3a2a5a',2);}})),
+  {n:'body',at:[46,66],up:'root',wob:.01,paint:t=>{t.beginPath();t.ellipse(46,56,26,16,0,0,6.28);fi(t,'#3a2a5a');circ(t,40,52,6);t.fillStyle='rgba(160,130,220,.35)';t.fill();}},
+  {n:'head',at:[62,52],up:'body',v:['','blink'],paint:(t,s,v)=>{circ(t,70,44,15);fi(t,'#3a2a5a');circ(t,74,42,5);fi(t,'#fbf8f0',1.5);if(v){t.beginPath();t.moveTo(71,42);t.lineTo(77,42);ink(t,1.8);}else{circ(t,75,42,2.4);t.fillStyle=INK;t.fill();}circ(t,84,48,3);t.fillStyle='#e8636a';t.fill();}},
+  {n:'ear',at:[64,32],up:'head',paint:t=>{poly(t,[62,32,58,16,70,30]);fi(t,'#4a3570',2);}}],
+  clips:{idle:loopClip(2.2,[[0,{tail:{r:.25},ear:{r:0},head:{r:0,sw:''}}],[.35,{tail:{r:-.2}}],[.7,{tail:{r:.25},ear:{r:-.15}}],[1.05,{tail:{r:-.2},ear:{r:0}}],[1.5,{head:{r:.06}}],[1.9,{head:{sw:'blink'}}],[2,{head:{sw:''}}]],'io',.15),
+    walk:loopClip(.3,[[0,{legA:{r:.4},legB:{r:-.4},legC:{r:-.4},legD:{r:.4},body:{y:0},tail:{r:.3},head:{r:.03}}],[.15,{legA:{r:-.4},legB:{r:.4},legC:{r:.4},legD:{r:-.4},body:{y:-2},tail:{r:-.25},head:{r:-.03}}]],'io',.08)}});
+defRig('p_ember',{w:96,h:96,oy:48,s:PS,parts:[{n:'root',at:[48,52]},
+  {n:'tail',at:[22,54],up:'body',paint:t=>{t.beginPath();t.moveTo(18,50);t.quadraticCurveTo(6,43,4,58);t.quadraticCurveTo(12,62,24,58);t.closePath();fi(t,'#ff7a2d',2);}},
+  {n:'body',at:[48,52],up:'root',wob:.01,paint:t=>{poly(t,[22,52,50,38,76,44,56,62,30,64]);fi(t,'#e0823d');poly(t,[70,42,86,46,72,50]);fi(t,'#f1c04f',2);circ(t,68,44,2.5);t.fillStyle=INK;t.fill();}},
+  {n:'crest',at:[50,36],up:'body',paint:t=>{t.beginPath();t.moveTo(46,34);t.quadraticCurveTo(50,22,56,28);t.lineTo(52,37);t.closePath();t.fillStyle='#ffd66b';t.fill();}},
+  {n:'wing',at:[48,50],up:'body',wob:0,paint:t=>{poly(t,[36,50,52,23,60,50]);fi(t,'#ffb45a',2);}}],
+  clips:{fly:loopClip(.5,[[0,{wing:{r:-.3,sy:1.1},body:{y:-2},tail:{r:.18},crest:{r:-.1}}],[.25,{wing:{r:.35,sy:.75},body:{y:2},tail:{r:-.12},crest:{r:.08}}]],'io',.1)}});
+RIGS.p_ember.clips.idle=RIGS.p_ember.clips.fly;
+export function buildPartnerSheets(){for(const k of PORDER){SHEETS['p_'+k]=rigPic('p_'+k,{},'idle',0,'p_'+k);SHEETS['p_'+k+'T']=canvasTex(SHEETS['p_'+k]);}}
 export function pPortrait(k){if(portraitCache['p_'+k])return portraitCache['p_'+k];return portraitCache['p_'+k]=SHEETS['p_'+k].toDataURL?(()=>{const c=mk(96,96);c.getContext('2d').drawImage(SHEETS['p_'+k],0,0,96,96,0,0,96,96);return c.toDataURL();})():'';}
 function unlockPartner(k,quiet){const p=player;if(p.partners.includes(k))return;p.partners.push(k);if(!p.partner)setPartner(k);if(!quiet){recruit(k);}}
 // the recruitment moment: the new partner comes along at once, a card announces them, they hop and say hello and you answer
@@ -56,7 +84,7 @@ export function partnerAbility(){const p=player,k=p.partner;if(state!=='play'||p
 }
 export function updatePartner(dt){const p=player,k=p.partner;
   if(!k||p.dead||state==='title'){if(pt.mesh)pt.mesh.visible=false;$('partnerHud').hidden=true;return;}
-  if(pt.type!==k){if(pt.mesh){scene.remove(pt.mesh);pt.mesh.material.dispose();}pt.mesh=spriteMesh(SHEETS['p_'+k+'T'],2,1.3,1.3,false);pt.mesh.position.z=.16;pt.type=k;pt.x=p.x-p.face;pt.y=p.y+1;pt.cd=Math.min(pt.cd,PARTNERS[k].cd);pt.hudKey='';}
+  if(pt.type!==k){if(pt.rig)rigFree(pt.rig);pt.rig=makeRig('p_'+k,{},'p_'+k);pt.mesh=pt.rig.mesh;pt.mesh.position.z=.16;pt.type=k;pt.x=p.x-p.face;pt.y=p.y+1;pt.cd=Math.min(pt.cd,PARTNERS[k].cd);pt.hudKey='';}
   pt.t+=dt;pt.cd=Math.max(0,pt.cd-dt);const def=PARTNERS[k],bosses=['king','crane','lev','folio'].filter(q=>quests[q]).length;
   let tx=p.x-p.face*1.3,ty=p.y+(def.fly?1.9+Math.sin(pt.t*2.5)*.25:.62);
   if(k==='snip'){pt.atkT-=dt;if(pt.act==='spin'){pt.at-=dt;pt.hitT-=dt;const a=pt.t*9,r=palUp('snip')?1.3:1;tx=p.x+Math.cos(a)*1.8*r;ty=p.y+1+Math.sin(a)*1.4*r;if(pt.hitT<=0){pt.hitT=.25;for(const e of enemies)if(!e.dying&&Math.hypot(e.x-p.x,e.y+e.h/2-p.y-1)<(palUp('snip')?3.6:2.8))hurtEnemy(e,10+bosses*5,e.x>p.x?1:-1,3);}if(Math.random()<dt*20)burst(pt.x,pt.y,['#fbf8f0','#d4483b'],1,2,{grav:0,life:.3});if(pt.at<=0)pt.act=null;}
@@ -66,7 +94,8 @@ export function updatePartner(dt){const p=player,k=p.partner;
   if(k==='smudge'){for(const q of pickups)if(q.t<=0&&Math.hypot(q.x-p.x,q.y-p.y)<9){const dx=p.x-q.x,dy=p.y+.9-q.y,l=Math.hypot(dx,dy)||1;q.x+=dx/l*dt*9;q.y+=dy/l*dt*9;}if(pt.act==='dig'){pt.at-=dt;tx=p.x+Math.cos(pt.digA)*2;ty=p.y+1+Math.sin(pt.digA)*2;if(pt.at<=0)pt.act=null;}}
   const sp=(k==='snip'&&(pt.act||pt.atkT>0))?18:7;pt.x+=(tx-pt.x)*Math.min(1,dt*sp);pt.y+=(ty-pt.y)*Math.min(1,dt*sp);
   const face=pt.act==='spin'?(Math.sin(pt.t*9)>0?1:-1):(Math.abs(tx-pt.x)>.2?(tx>pt.x?1:-1):p.face);pt.rot+=((face>0?0:Math.PI)-pt.rot)*Math.min(1,dt*14);
-  const m=pt.mesh;m.visible=true;m.rotation.y=pt.rot;const moving=Math.abs(tx-pt.x)>.3;const hop=!def.fly&&moving?Math.abs(Math.sin(pt.t*12))*.25:0;m.position.set(pt.x,pt.y+hop,.16);m.material.uniforms.uFrame.value=(def.fly?Math.floor(pt.t*4):moving?Math.floor(pt.t*8):Math.floor(pt.t*1.5))%2;
+  const m=pt.mesh;m.visible=true;m.rotation.y=pt.rot;const moving=Math.abs(tx-pt.x)>.3;const hop=!def.fly&&moving?Math.abs(Math.sin(pt.t*12))*.25:0;m.position.set(pt.x,pt.y+hop,.16);
+  rigPlay(pt.rig,def.fly?'fly':k==='snip'&&(pt.act==='spin'||pt.atkT>0)?'snip':moving&&RIGS[pt.rig.k].clips.walk?'walk':'idle');
   // celebration: hops with a spin and sparkles; idle (player standing still): each partner has its own fidget
   pt.idle=Math.abs(p.vx)<.1&&!pt.act&&!moving?pt.idle+dt:0;let sx=1,sy=1,rz=0;
   if(pt.cheer>0){pt.cheer-=dt;const c=1-Math.max(0,pt.cheer)/pt.cheerMax;m.position.y+=Math.abs(Math.sin(c*Math.PI*3))*.8*(1-c*.6);rz=c<.34?c*3*Math.PI*2:0;sy=1+Math.sin(c*Math.PI*6)*.08;if(Math.random()<dt*14)burst(pt.x,pt.y+.3,['#f1c04f','#fbf8f0','#fff3c0'],1,2.5,{grav:-1,life:.6,bright:1});}
@@ -76,7 +105,7 @@ export function updatePartner(dt){const p=player,k=p.partner;
     else if(k==='smudge'){const h=it%4.5;sy=h<.4?.88:1;sx=h<.4?1.08:1;if(h>.4&&h<.8)m.position.y+=Math.sin((h-.4)/.4*Math.PI)*.45;if(h>=2&&h<3)rz=Math.sin(it*20)*.06;}
     else{const pr=it%5<1.2;sy=pr?1+Math.sin(it*18)*.07:1;rz=pr?Math.sin(it*9)*.1:0;if(pr&&Math.random()<dt*6)burst(pt.x-.3,pt.y,['#ff7a2d','#ffd66b'],1,1,{grav:-2,life:.5,bright:1});}}
   m.scale.set(sx,sy,1);m.rotation.z=rz;
-  if(k==='lumi'||k==='ember')m.material.uniforms.uTint.value.set(1.1,1.08,1.02);else setTint(m.material,pt.x,pt.y);
+  if(k==='lumi'||k==='ember')m.material.uniforms.uTint.value.set(1.1,1.08,1.02);else setTint(m.material,pt.x,pt.y);rigUpdate(pt.rig,dt);
   const hk=k+':'+Math.ceil(pt.cd)+moveName(k);if(hk!==pt.hudKey){pt.hudKey=hk;const H=$('partnerHud');H.hidden=false;H.innerHTML=`<img src="${pPortrait(k)}" alt=""><div><b>${def.name}</b><span>${KEYNAME(SET.bind.ability)}: ${moveName(k)} · ${pt.cd>0?Math.ceil(pt.cd)+'s':'ready'}</span><i><u style="width:${100*(1-pt.cd/(def.cd*(hasBadge('quick')?.7:1)))}%"></u></i></div>`;}}
 export const bpMax=()=>3+['king','crane','lev','folio'].filter(q=>quests[q]).length*3+(player.bpUps||0);
 export const bpUsed=()=>player.badgesOn.reduce((a,k)=>a+BADGES[k][1],0);

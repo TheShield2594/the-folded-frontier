@@ -63,7 +63,7 @@ export function clearSecrets(){for(const o of inkM.values()){scene.remove(o);o.g
 export function updateSecrets(dt){if(!BIO||!BIO.sec)return;if(inkBIO!==BIO){clearSecrets();inkBIO=BIO;}const p=player,s=BIO.sec;
   s.ink.forEach((m,k)=>{const dx=m[0]+.5-p.x,dy=m[1]+.5-(p.y+1),dist=Math.hypot(dx,dy);let o=inkM.get(k);
     if(dist>40){if(o)o.visible=false;return;}
-    if(!o){o=new THREE.Mesh(new THREE.PlaneGeometry(3.4,1.6),new THREE.MeshBasicMaterial({map:inkTexture(m[2]),transparent:true,opacity:0,depthWrite:false,fog:false}));o.position.set(m[0]+.5,m[1]+.7,-.44);o.renderOrder=1;scene.add(o);inkM.set(k,o);}
+    if(!o){o=new THREE.Mesh(new THREE.PlaneGeometry(3.4,1.6),new THREE.MeshBasicMaterial({map:inkTexture(m[2]),transparent:true,opacity:0,depthWrite:false,fog:false}));o.position.set(m[0]+.5,m[1]+.7,-.44);o.renderOrder=-1;scene.add(o);inkM.set(k,o);}
     const mat=o.material;mat.opacity+=((inkLit(m[0],m[1])?.95:0)-mat.opacity)*Math.min(1,dt*3);o.visible=mat.opacity>.01;
     if(mat.opacity>.6&&dist<3.5){if(!near.has(k)){near.add(k);readInk(m);}}else if(dist>7)near.delete(k);});
   // fake walls: the first time you step into one

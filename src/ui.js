@@ -14,6 +14,7 @@ import {
   moveName,museumHTML,palJournal,palQuestTxt,
   MOUNTS,PETORDER,PETS,toggleMount,togglePet,
   C,cellIcon,loreHTML,
+  makeRig,FOLK,
 } from './game.js';
 
 // ================= UI =================
@@ -216,7 +217,7 @@ const SHOPS={painter:[['paint1',40],['paint2',40],['paint3',40],['paint4',40],['
 export const hasNPC=t=>npcs.some(n=>n.type===t&&n.home);
 export function makeNPC(type,x,y,home){const old=npcs.find(n=>n.type===type);if(old){scene.remove(old.mesh);if(old.bub)old.bub.remove();npcs.splice(npcs.indexOf(old),1);}
   const n={type,x,y,w:.78,h:1.82,vx:0,vy:0,face:1,rot:0,t:rand(0,3),timer:2,home,step:1,onGround:false,bubT:rand(2,6)};if(home&&home.key==null)home.key=idx(Math.floor((home.minX+home.maxX)/2),home.y);
-  n.mesh=spriteMesh(SHEETS[type+'T'],2,1.6,2.4);n.mesh.position.z=.12+npcs.length*.004;npcs.push(n);return n;}
+  n.rig=makeRig('human',FOLK[type],type);n.mesh=n.rig.mesh;n.mesh.position.z=.12+npcs.length*.004;npcs.push(n);return n;}
 export function tryMoveIn(r,loud){if(!r.ok){if(loud)toast(r.why,'bad');return;}if(r.bed){if(loud)toast('This room has your bed, so it is your home.','good');return;}
   const taken=npcs.find(n=>n.home&&r.seen.has(n.home.key));if(taken){if(loud)toast(`Nice room! The ${NPCDEF[taken.type].name} lives here.`,'good');return;}
   const next=NPCORDER.find(t=>!hasNPC(t)&&NPCDEF[t].ok());if(!next){if(loud){const wait=NPCORDER.find(t=>!hasNPC(t));toast(wait?`Good room, but nobody is ready to move in. ${NPCDEF[wait].name}: ${NPCDEF[wait].need}`:'Everyone in town already has a home.','good');}return;}

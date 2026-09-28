@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import {
   bossIntro,
   $,BADGES,BIO,blk,burst,clamp,H,heal,hurtPlayer,iconTex,inkMoon,isNight,isSolid,ITEMS,pad,rand,
-  renderQuests,scene,setInvDirty,SFX,shake,SHEETS,sky,spriteMat,spriteMesh,stat,T,tileAt,toast,U,NDL,
+  renderQuests,scene,setInvDirty,FOERIG,makeRig,SFX,shake,SHEETS,sky,spriteMat,spriteMesh,stat,T,tileAt,toast,U,NDL,
   updateCoins,W,
 } from './game.js';
 
@@ -88,7 +88,7 @@ export function bestKill(e){const b=bestiary[e.type]||(bestiary[e.type]={k:0,d:{
   if(b.k===1){const row=BEST.find(r=>r[0]===e.type);toast(`New bestiary entry: ${row?row[1]:e.type}!`,'gold');stat('bestiary');}}
 export const bestDrop=(e,id,n)=>{const b=bestiary[e.type];if(b)b.d[id]=(b.d[id]||0)+n;};
 export function spawnEnemy(type,x,y){const d=EN[type];const e={type,d,x,y,w:d.w,h:d.h,vx:0,vy:0,hp:d.hp,max:d.hp,face:1,rot:0,t:rand(0,2),timer:rand(.5,2),flash:0,dying:0,onGround:false,step:d.step,kb:0,hitCD:0};
-  e.sw=d.fw/60;e.sh=d.fh/60;e.mesh=spriteMesh(SHEETS[d.sheet+'T'],2,e.sw,e.sh,!d.fly&&!d.center);e.mesh.position.z=.1+enemies.length%8*.006;enemies.push(e);if(inkMoon&&isNight()&&!d.boss&&!d.worm){e.inked=true;e.hp=e.max=Math.round(e.hp*1.7);}
+  e.sw=d.fw/60;e.sh=d.fh/60;const fr=FOERIG[d.sheet];if(fr){e.rig=makeRig(fr[0],fr[1],d.sheet);e.mesh=e.rig.mesh;}else e.mesh=spriteMesh(SHEETS[d.sheet+'T'],2,e.sw,e.sh,!d.fly&&!d.center);e.mesh.position.z=.1+enemies.length%8*.006;enemies.push(e);if(inkMoon&&isNight()&&!d.boss&&!d.worm){e.inked=true;e.hp=e.max=Math.round(e.hp*1.7);}
   // an awakened world (awaken.js) makes every foe tougher; the Leviathan's segments share its life, so they are skipped
   if(BIO.awake&&(!d.worm||type==='lev')){e.awake=true;e.hp=e.max=Math.round(e.max*(d.boss?1.5:1.8));}
   if(d.boss){boss=e;$('boss').hidden=false;$('boss').classList.remove('p1','p2');$('boss').querySelector('.bn').textContent=d.name;bossIntro(e);}

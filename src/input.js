@@ -5,7 +5,7 @@ import {
   fireHook,held,hook,initAudio,invOpen,ITEMS,keys,mapOpen,pad,padRebinding,partnerAbility,pause,player,
   pv,quickHeal,rebinding,renderBinds,renderer,saveSettings,scene,SET,setCamDist,setCursor,setInv,
   setInvDirty,setPadRebinding,setRebinding,SFX,stat,stompNice,toggleMap,upx,
-  skipIntro,dlgNext,toggleMount,
+  skipIntro,dlgNext,toggleMount,rigSnap,
 } from './game.js';
 
 // ================= input =================
@@ -42,8 +42,9 @@ const ghosts=[];
 function ghostMat(){return new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,uniforms:{map:{value:null},uFrame:{value:0},uFrames:{value:1},uA:{value:0}},
   vertexShader:`uniform float uFrame;uniform float uFrames;varying vec2 vUv;void main(){vUv=vec2((uv.x+uFrame)/uFrames,uv.y);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
   fragmentShader:`uniform sampler2D map;uniform float uA;varying vec2 vUv;void main(){vec4 t=texture2D(map,vUv);if(t.a<.5)discard;gl_FragColor=vec4(mix(t.rgb,vec3(.98,.95,.88),.6),uA);}`});}
-export function spawnGhost(){const p=player;let g=ghosts.find(g=>g.a<=0);if(!g){if(ghosts.length>=8)return;const m=new THREE.Mesh(p.mesh.geometry,ghostMat());m.renderOrder=3;scene.add(m);g={m,a:0};ghosts.push(g);}
-  const u=g.m.material.uniforms,pu=p.mat.uniforms;u.map.value=pu.map.value;u.uFrame.value=pu.uFrame.value;u.uFrames.value=pu.uFrames.value;g.m.geometry=p.mesh.geometry;
+// an afterimage is a frozen copy of the rig's pose (rigSnap), fading out
+export function spawnGhost(){const p=player;let g=ghosts.find(g=>g.a<=0);if(!g){if(ghosts.length>=8)return;const m=new THREE.Mesh(rigSnap(p.rig),ghostMat());m.renderOrder=-1;scene.add(m);g={m,a:0};ghosts.push(g);}
+  const u=g.m.material.uniforms;u.map.value=p.mat.uniforms.map.value;g.m.geometry=rigSnap(p.rig,g.m.geometry);
   g.m.position.set(p.mesh.position.x,p.mesh.position.y,.13);g.m.rotation.copy(p.mesh.rotation);g.m.scale.copy(p.mesh.scale);g.a=.5;g.m.visible=true;}
 export function updateGhosts(dt){for(const g of ghosts){if(g.a<=0){g.m.visible=false;continue;}g.a-=dt*2.6;g.m.material.uniforms.uA.value=Math.max(0,g.a);}}
 export function updateDashHud(dt){const p=player,el=$('dashCd');if(p.dead||state!=='play'){el.hidden=true;return;}
