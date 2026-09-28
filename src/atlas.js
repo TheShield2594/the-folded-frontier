@@ -147,7 +147,7 @@ export const ORECOL={
   prot:{copper:'#c85a1a',iron:'#f4f1ea',gold:'#f0e442',frostOre:'#56b4e9',inkOre:'#d58cc0',emberOre:'#ffb000',foilOre:'#ffffff'},
   trit:{copper:'#d4483b',iron:'#f4f1ea',gold:'#ff9fbf',frostOre:'#009e8a',inkOre:'#a784e0',emberOre:'#ff5a3d',foilOre:'#ffffff'},
 };
-const ORES=[['copper','#8d8f9a',stoneDeco,'round'],['iron','#8d8f9a',stoneDeco,'square'],['gold','#8d8f9a',stoneDeco,'star'],
+export const ORES=[['copper','#8d8f9a',stoneDeco,'round'],['iron','#8d8f9a',stoneDeco,'square'],['gold','#8d8f9a',stoneDeco,'star'],
   ['frostOre','#8d8f9a',stoneDeco,'shard'],['inkOre','#3d3350',()=>{},'drop'],['emberOre','#5a4a4f',speck(['#3e3236','#6e5c60'],20),'tri'],['foilOre','#4b4e5c',stoneDeco,'hex']];
 export function drawOres(){const pal=ORECOL[SET.cb]||ORECOL.off;for(const[k,base,deco,shape]of ORES){const col=pal[k];blockCell(base,c=>{deco(c);for(let i=0;i<5;i++){const x=10+(i%3)*20+rand(-3,5),y=i<3?rand(10,26):rand(36,52),r=rand(4.5,6.5);nug[shape](c,x,y,r);fi(c,col,2);c.fillStyle='rgba(255,255,255,.6)';circ(c,x-1.5,y-1.5,1.4);c.fill();}},true,C[k]);}}
 drawOres();

@@ -15,11 +15,12 @@ import {
   updateHUD,updateNPC,updateNums,updateOverlays,updatePartner,updateParts,updatePickups,updatePlayer,
   updatePop,updateProjs,updateSky,updateTrail,updateWeather,visited,W,weather,wind,worldClock,worldTime,
   guideEv,updateGuide,cropGrowChance,isFest,newDay,seasonAmbient,updateTown,loadFailed,
-  evDawn,evDusk,perfFrame,perfStart,fcount,updateEvents,updateDlg,palEv,updatePals,buildPetSheets,hidePets,updatePets,updateAwaken,updateLore,updateDiorama,updateTouch,updateSecrets,updateSeasonWorld,
+  evDawn,evDusk,perfFrame,perfStart,fcount,updateEvents,updateDlg,palEv,updatePals,buildPetSheets,hidePets,updatePets,updateAwaken,updateLore,updateDiorama,updateTouch,updateSecrets,updateSeasonWorld,loadArt,
 } from './game.js';
 
 // ================= boot =================
 buildSheets();buildBiomeSheets();buildMoreSheets();buildPartnerSheets();buildPetSheets();buildRigSheets(SHEETS);
+loadArt(); // hand-made art from assets/art/ replaces the drawn cells and sheets it names once the images decode
 drawWarnMark();
 eliteMat.map=canvasTex(makeSheet(1,64,64,t=>{const s=[];for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,r=k%2?11:26;s.push(32+Math.cos(a)*r,34+Math.sin(a)*r);}poly(t,s);fi(t,'#f1c04f',3.5);circ(t,27,28,3);t.fillStyle='#fff8e4';t.fill();},3));eliteMat.needsUpdate=true;
 // the player is a paper rig (rig.js); player.mat is its material, so tints and flashes work as on any sprite

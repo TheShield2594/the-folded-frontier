@@ -1,4 +1,4 @@
-// Smoke tests: boot, new world, save/load through localStorage, seasonal routes and secrets in the save, save code round trip.
+// Smoke tests: boot, new world, save/load through localStorage, seasonal routes and secrets in the save, save code round trip, hand-made art overrides.
 // They check that the game starts and its saves survive, not how it plays. Game state is read
 // through `import('/src/game.js')`, which on the dev server returns the live modules.
 import {test,expect} from '@playwright/test';
@@ -198,4 +198,26 @@ test('?perf shows the performance overlay with world and save numbers',async({pa
   await expect(page.locator('#perfTxt')).toContainText(/Save 0\.\d+M chars/);
   const r=await page.evaluate(async()=>(await import('/src/game.js')).perfReport());
   expect(r).toContain('Small 420×170');
+});
+
+test('hand-made art replaces the atlas cells and sprite sheets it names',async({page})=>{
+  await boot(page);
+  const r=await page.evaluate(async()=>{
+    const g=await import('/src/game.js');await g.artReady;
+    const solid=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.fillStyle='#ff0000';x.fillRect(0,0,w,h);return c;};
+    const px=(cv,x,y)=>[...cv.getContext('2d').getImageData(x,y,1,1).data];
+    const list=g.artList(),[cx,cy]=g.cellXY(g.C.swFe),fv=g.SHEETS.folioT.version,f=g.SHEETS.folio;
+    const cell=g.applyArt('atlas','swFe',solid(64,64)),sheet=g.applyArt('sheets','folio',solid(f.width,f.height));
+    // ores keep their drawn cells in a color-vision mode
+    g.SET.cb='deut';const ore=g.applyArt('atlas','copper',solid(64,64));g.SET.cb='off';
+    return {folio:list.sheets.folio,swFe:list.atlas.swFe,crack:list.atlas['crack.2'],cell,sheet,ore,missing:g.applyArt('sheets','nope',solid(8,8)),
+      cellPx:px(g.atlas,cx+32,cy+32),sheetPx:px(f,f.width/2,f.height/2),bumped:g.SHEETS.folioT.version>fv};
+  });
+  expect(r.folio).toBe('680×280');
+  expect(r.swFe).toBe('64×64');
+  expect(r.crack).toBe('64×64');
+  expect([r.cell,r.sheet,r.ore,r.missing]).toEqual([true,true,false,false]);
+  expect(r.cellPx).toEqual([255,0,0,255]);
+  expect(r.sheetPx).toEqual([255,0,0,255]);
+  expect(r.bumped).toBe(true);
 });

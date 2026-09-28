@@ -22,6 +22,7 @@ export * from './post.js';
 export * from './boss.js';
 export * from './partners.js';
 export * from './pets.js';
+export * from './art.js';
 export * from './map.js';
 export * from './gamepad.js';
 export * from './touch.js';

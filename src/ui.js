@@ -84,7 +84,7 @@ function sideBody(k){
   if(k==='museum')return hasNPC('curator')?museumHTML():`<div class="sideTip"><b>No museum yet</b>The Curator ${NPCDEF.curator.need.replace(/^Arrives/,'arrives')}</div><p class="hint">Fossils, fish, ores and curiosities you find now can all be donated once the museum opens.</p>`;
   if(k==='town'){return NPCORDER.map(t=>{const n=npcs.find(n=>n.type===t&&n.home);const d=NPCDEF[t];return `<div class="npcRow ${n?'home':''}"><img src="${portrait(t)}" alt=""><div><b>${d.name}</b><span>${n?'<span class="ok">Has a home</span>':d.ok()?'Ready to move in. Stand in an empty house and press Check this room.':d.need}</span></div></div>`;}).join('')+`<p class="hint">A house needs walls behind it, a door, a light, a table and a chair, and must not contain your bed.</p><h3 style="margin-top:10px">${townLevel()} · upgrades</h3>`+TOWN.map(u=>`<div class="npcRow tup ${town.f[u.id]?'home':''}"><div><b>${town.f[u.id]?'✓ ':''}${u.n}</b><span>${town.f[u.id]?'<span class="ok">Built</span>':u.need}</span></div></div>`).join('')+`<p class="hint">The town green beside your cabin grows as townsfolk move in and quests are finished.</p>`;}
   return '';}
-const bestCache={};
+export const bestCache={};
 function bestSketch(t){if(bestCache[t])return bestCache[t];const d=EN[t],src=SHEETS[d.sheet],c=mk(64,64),g=c.getContext('2d'),s=Math.min(60/d.fw,60/d.fh);g.drawImage(src,0,0,d.fw,d.fh,32-d.fw*s/2,32-d.fh*s/2,d.fw*s,d.fh*s);return bestCache[t]=c.toDataURL();}
 function renderSide(){if(!side||side.kind==='chest')return;const html=sideHTML();if($('sideBody').dataset.h!==html){$('sideBody').innerHTML=html;$('sideBody').dataset.h=html;}}
 function renderShop(){renderSide();}
