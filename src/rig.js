@@ -476,6 +476,28 @@ defRig('mainspring',{w:240,h:240,oy:120,parts:[{n:'root',at:[cx,cy]},
   {n:'cap',at:[cx,cy],up:'face',wob:0,paint:t=>{circ(t,cx,cy,9);fi(t,'#c9a24a',2.5);}}],
   clips:{idle:blinkAt(osc(2.4,{face:{r:[.015]},brows:{y:[1.5,1]}},.15),'eyes',1.7),wind:still({brows:{y:6},eyes:{sy:.8},face:{sx:1.04,sy:1.04}},.1),
     chime:swk(osc(.3,{face:{sx:[.03,0,1.05],sy:[.03,0,1.05]},brows:{y:[2,0,-4]}},.1),'mouth',[[0,'open']])}});}
+// The Bookmoth (the Hollow Archive's boss), seen from the side like the crane: two pairs of wings cut from book pages
+// (lines of script, a blot for an eyespot) that flap by folding edge-on, a banded body like a book's spine, feathery quill
+// antennae and big eyes that blink
+{const cx=150,cy=120,page=(pts,col,spot)=>t=>{poly(t,pts);fi(t,col,4);t.save();t.clip();t.fillStyle='rgba(42,33,48,.35)';
+    const[x0,y0,x1,y1]=[Math.min(...pts.filter((v,i)=>!(i%2))),Math.min(...pts.filter((v,i)=>i%2)),Math.max(...pts.filter((v,i)=>!(i%2))),Math.max(...pts.filter((v,i)=>i%2))];
+    for(let y=y0+10;y<y1;y+=9)t.fillRect(x0+8,y,(x1-x0)*(.45+.4*Math.abs(Math.sin(y*.7))),2);t.restore();
+    if(spot){circ(t,spot[0],spot[1],spot[2]);fi(t,'#3a2a5a',3);circ(t,spot[0]+2,spot[1]-2,spot[2]*.4);t.fillStyle='#e0b0ff';t.fill();}};
+defRig('bookmoth',{w:300,h:220,oy:110,parts:[{n:'root',at:[cx,cy]},
+  {n:'hindB',at:[cx-6,cy+4],up:'root',paint:page([cx-6,cy+4,cx-92,cy+44,cx-70,cy+80,cx-20,cy+72,cx+14,cy+14],'#cdbfa6')},
+  {n:'wingB',at:[cx-2,cy-12],up:'root',paint:page([cx-2,cy-12,cx-112,cy-96,cx-54,cy-110,cx+2,cy-104,cx+34,cy-22],'#d9ccb4')},
+  {n:'body',at:[cx,cy],up:'root',wob:.006,paint:t=>{t.beginPath();t.ellipse(cx-6,cy+4,62,20,.08,0,6.28);fi(t,'#6b5a78',4);
+    for(const x of[-44,-26,-8,10])t.fillStyle='#c9a24a',t.fillRect(cx+x,cy-12+(x<0?2:0),6,30);t.beginPath();t.ellipse(cx-6,cy+4,62,20,.08,0,6.28);ink(t,4);}},
+  {n:'head',at:[cx+54,cy-4],up:'body',wob:.01,paint:t=>{for(const[a,l]of[[-1.1,58],[-.75,50]]){const ex=cx+60+Math.cos(a)*l,ey=cy-14+Math.sin(a)*l;t.beginPath();t.moveTo(cx+60,cy-14);t.quadraticCurveTo(cx+62+Math.cos(a)*l*.5,cy-30,ex,ey);ink(t,3);
+      for(let k=1;k<6;k++){const u=k/6,px=cx+60+(ex-cx-60)*u,py=cy-14+(ey-cy+14)*u;t.beginPath();t.moveTo(px,py);t.lineTo(px+7,py+3);ink(t,1.6);}}
+    circ(t,cx+66,cy-2,24);fi(t,'#7a6a88',4);}},
+  {n:'eyes',at:[cx+74,cy-6],up:'head',v:['','blink'],paint:(t,s,v)=>{if(v){t.beginPath();t.moveTo(cx+62,cy-6);t.lineTo(cx+86,cy-6);ink(t,4);return;}t.beginPath();t.ellipse(cx+74,cy-6,12,14,0,0,6.28);fi(t,'#2a1a3a',3);circ(t,cx+78,cy-11,4);t.fillStyle='#e0b0ff';t.fill();}},
+  {n:'hindA',at:[cx+2,cy+6],up:'root',paint:page([cx+2,cy+6,cx-76,cy+52,cx-48,cy+86,cx-4,cy+76,cx+24,cy+18],'#e9dcc0',[cx-40,cy+56,9])},
+  {n:'wingA',at:[cx+8,cy-12],up:'root',paint:page([cx+8,cy-12,cx-96,cy-102,cx-30,cy-116,cx+22,cy-108,cx+46,cy-22],'#fbf5e6',[cx-26,cy-74,13])}],
+  clips:{fly:blinkAt(osc(.5,{wingA:{sy:[.85,0,.2]},wingB:{sy:[.85,.5,.2]},hindA:{sy:[.3,0,.85]},hindB:{sy:[.3,.5,.85]},root:{y:[6,1.57]},head:{r:[.04,1]}},.15),'eyes',.3),
+    wind:osc(.16,{wingA:{sy:[.08,0,1.05]},wingB:{sy:[.08,1,1.05]},hindA:{sy:[.05]},hindB:{sy:[.05,1]},root:{r:[.02,0,-.22]}},.12),
+    dive:still({wingA:{sy:.25,r:.4},wingB:{sy:.25,r:.35},hindA:{sy:.5,r:.2},hindB:{sy:.5,r:.2},root:{r:.28},head:{r:.1}},.1),
+    dust:osc(.22,{wingA:{sy:[.6,0,.45]},wingB:{sy:[.6,.6,.45]},hindA:{sy:[.3,0,.8]},hindB:{sy:[.3,.6,.8]},root:{y:[3]}},.1)}});}
 // which rig and skin an enemy sheet name uses (entities.js spawnEnemy); arms: the arm pose a human foe holds
 export const HUMANFOE={
   zombie:{skin:'#a8c79a',hair:'#3e5a3a',tunic:'#6b5b8a',pants:'#4a4058',boots:'#3a3040',eyeCol:'#c0392b',noBlush:1,extra:t=>{t.fillStyle='#2a2130';t.fillRect(40,95,6,10);t.fillRect(52,85,4,8);},clip:'shamble'},
@@ -483,13 +505,18 @@ export const HUMANFOE={
     front:t=>{rr(t,58,70,24,34,8);fi(t,'#8e6a40');circ(t,70,87,5);fi(t,'#f1c04f',2);},clip:'march'},
   sentinel:{skin:'#b08a4a',helm:'#c9a24a',mail:'#b08a4a',greaves:'#8a6a3a',boots:'#4a3a26',pants:'#6b5234',tunic:'#c9a24a',eyeCol:'#8fd0ff',noBlush:1,eyeY:47,
     front:t=>{circ(t,70,87,13);fi(t,'#e0b04a');for(let k=0;k<8;k++){const a=k/8*Math.PI*2;circ(t,70+Math.cos(a)*13,87+Math.sin(a)*13,3);t.fillStyle='#e0b04a';t.fill();}circ(t,70,87,4);fi(t,'#6b5234',2);},clip:'march'},
+  // the Hollow Archive's keeper: a hooded paper librarian with an open ledger and ink-dark eyes
+  warden:{skin:'#e9dcc0',tunic:'#5a3c78',pants:'#3a2a4a',boots:'#2a1e2a',belt:'#c9a24a',eyeCol:'#7a3fb0',noBlush:1,eyeY:51,
+    extra:t=>{t.beginPath();t.moveTo(24,60);t.quadraticCurveTo(20,22,50,20);t.quadraticCurveTo(80,22,76,56);t.lineTo(70,46);t.quadraticCurveTo(50,34,32,48);t.closePath();fi(t,'#3a2a4a');rr(t,40,72,20,40,4);t.fillStyle='rgba(201,162,74,.5)';t.fillRect(48,74,3,36);},
+    front:t=>{t.save();t.translate(68,90);t.rotate(-.2);poly(t,[-14,-10,0,-6,0,10,-14,6]);fi(t,'#f4ecd8',2);poly(t,[0,-6,14,-10,14,6,0,10]);fi(t,'#fbf8f0',2);t.fillStyle='rgba(42,33,48,.45)';for(const y of[-4,0,4]){t.fillRect(-11,y,8,1.2);t.fillRect(3,y-1,8,1.2);}t.restore();},clip:'march',arm:-.7},
   ashimp:{skin:'#9a3b2a',tunic:'#3a2a24',pants:'#2a1e1a',boots:'#1e1614',eyeCol:'#ffd66b',noBlush:1,
     extra:t=>{poly(t,[34,34,28,14,40,28]);fi(t,'#3a2a24',2);poly(t,[62,30,72,10,68,32]);fi(t,'#3a2a24',2);},front:t=>{circ(t,70,84,7);t.fillStyle='rgba(255,138,61,.6)';t.fill();},clip:'march',arm:-.8}};
 export const FOERIG={slime:['slime',{col:'#6cc57a'}],bslime:['slime',{col:'#5aa7e0'}],blot:['slime',{col:'#4a3570'}],king:['king',{col:'#5aa7e0'}],
   bat:['bat',{c1:'#6b4c8f',c2:'#5a3f7a',eye:'#f1c04f',fang:1}],cinderbat:['bat',{c1:'#3a2a24',c2:'#2a1e1a',eye:'#ff8a3d'}],eye:['eye',{}],
-  zombie:['human',HUMANFOE.zombie],knight:['human',HUMANFOE.knight],sentinel:['human',HUMANFOE.sentinel],ashimp:['human',HUMANFOE.ashimp],
+  zombie:['human',HUMANFOE.zombie],knight:['human',HUMANFOE.knight],sentinel:['human',HUMANFOE.sentinel],ashimp:['human',HUMANFOE.ashimp],warden:['human',HUMANFOE.warden],
+  mothling:['bat',{c1:'#e8dcc4',c2:'#b8a0d0',eye:'#2a2130'}],
   // every other foe and boss wears its own rig's colors
   ...Object.fromEntries(['crumple','toadstool','dunefin','scarab','clockbug','sunkite','snowroll','snowlet','frostpuff','flurry','inkwisp','quillfish','inksquid','foldfox','cracker','ashspider','wraith','skyray',
-    'crane','lev','levseg','levtail','folio','unfolded','mainspring'].map(k=>[k,[k,{}]]))};
+    'crane','lev','levseg','levtail','folio','unfolded','mainspring','bookmoth'].map(k=>[k,[k,{}]]))};
 // the enemies' still pictures (bestiary sketches) come from their rigs; the T textures stay for anything that still wants a sheet
 export function buildRigSheets(SHEETS){for(const k in FOERIG){if(SHEETS[k])continue;const[r,s]=FOERIG[k],d=RIGS[r];SHEETS[k]=rigPic(r,s,r==='human'?'idle':['fly','idle','swim'].find(c=>d.clips[c]),0,k);SHEETS[k+'T']=canvasTex(SHEETS[k]);}}

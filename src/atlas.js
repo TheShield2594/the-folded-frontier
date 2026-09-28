@@ -404,5 +404,12 @@ C.needle=sticker(t=>{t.beginPath();t.moveTo(12,54);t.lineTo(50,12);ink(t,6,INK);
   t.beginPath();t.moveTo(46,16);t.bezierCurveTo(60,30,30,40,44,58);ink(t,2.4,THREAD);});
 C.folder=sticker(t=>{t.save();t.translate(32,32);t.rotate(-.78);rr(t,-26,-6,52,12,6);fi(t,'#f0e8d6',2.5);t.beginPath();t.moveTo(-14,-6);t.lineTo(-14,6);ink(t,1.6,'rgba(42,33,48,.4)');t.restore();
   t.setLineDash([4,3]);t.beginPath();t.moveTo(8,20);t.lineTo(26,6);ink(t,1.8,'#6a6070');t.setLineDash([]);});
+// ---- the Hollow Archive (dungeons.js): the ink-sealed shelf in front of the Lost Stacks, and the key that opens it
+C.stacks=blockCell('#2e2446',c=>{c.fillStyle='#5a3a22';c.fillRect(0,0,64,64);for(const y of[4,24,44]){c.fillStyle='#2a1a14';c.fillRect(4,y,56,16);
+  let x=5;for(const[w,col]of[[6,'#d4483b'],[5,'#3f6fa8'],[7,'#e9dcc0'],[5,'#3f7a5f'],[6,'#c9a24a'],[4,'#7a5aa8'],[7,'#d4483b'],[5,'#e9dcc0'],[6,'#3f6fa8']]){if(x+w>59)break;c.fillStyle=col;c.fillRect(x,y+(w%3),w-1,16-(w%3));x+=w;}}
+  c.fillStyle='#8a5a33';for(const y of[20,40,60])c.fillRect(0,y,64,4);c.beginPath();c.moveTo(18,30);for(let k=0;k<=10;k++){const a=k/10*Math.PI*2,r=k%2?11:15;c.lineTo(32+Math.cos(a)*r*1.2,32+Math.sin(a)*r);}c.closePath();c.fillStyle='rgba(58,42,90,.92)';c.fill();
+  circ(c,32,29,4);c.fillStyle='#e0b0ff';c.fill();poly(c,[30,31,34,31,35,40,29,40]);c.fillStyle='#e0b0ff';c.fill();});
+C.archkey=sticker(t=>{t.beginPath();t.moveTo(38,22);t.lineTo(54,46);ink(t,6,INK);t.beginPath();t.moveTo(38,22);t.lineTo(54,46);ink(t,3.4,'#c9a24a');rr(t,44,40,6,10,2);fi(t,'#c9a24a',2);rr(t,50,48,5,8,2);fi(t,'#c9a24a',2);
+  poly(t,[10,10,34,6,38,30,14,34]);fi(t,'#f4ecd8',2.5);for(const y of[14,19,24])t.fillRect(16,y,16,1.6);t.beginPath();t.moveTo(14,34);t.lineTo(10,52);t.lineTo(16,46);t.lineTo(20,54);t.lineTo(22,34);t.closePath();fi(t,'#7a5aa8',2);circ(t,36,26,5);fi(t,'#e0b04a',2);});
 C.hl=sticker(t=>{rr(t,2,2,60,60,8);t.setLineDash([8,5]);ink(t,3,'#fff');t.setLineDash([]);},0);
 if(cellN>(32-4)*16)console.warn('atlas overflow');

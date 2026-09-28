@@ -1,4 +1,4 @@
-// Smoke tests: boot, portraits from the rig, new world, save/load through localStorage, seasonal routes and secrets in the save, the vertical layers and the clocktower, save code round trip, hand-made art overrides.
+// Smoke tests: boot, portraits from the rig, new world, the Hollow Archive, save/load through localStorage, seasonal routes and secrets in the save, the vertical layers and the clocktower, save code round trip, hand-made art overrides.
 // They check that the game starts and its saves survive, not how it plays. Game state is read
 // through `import('/src/game.js')`, which on the dev server returns the live modules.
 import {test,expect} from '@playwright/test';
@@ -255,6 +255,57 @@ test('new worlds get sky islands, the Pressed Deep and the Folded Clocktower, wh
   expect(s.st).toMatchObject({e:1,g:1,m:1,c:1});
   expect(s.oldDeep).toBeNull();
   expect(s.oldDun).toBe('object');
+});
+
+test('new worlds get the Hollow Archive: a seam, a crank and a torn curtain, the Warden, the Bookmoth, and a key to the Lost Stacks',async({page})=>{
+  await boot(page);
+  await newSmallWorld(page);
+  const s=await page.evaluate(async()=>{
+    const g=await import('/src/game.js'),d=g.BIO.dun.arch,P=g.player,T=g.T,out={};
+    // template cell (column, row from the top) to world cell; walk through by calling the dungeon code directly
+    const xy=(c,r)=>[d.x+c,d.y+d.h-1-r],at=(c,r)=>{const[x,y]=xy(c,r);return g.tiles[y*g.W+x];},put=(c,r)=>{const[x,y]=xy(c,r);P.x=x+.5;P.y=y;P.vx=P.vy=0;P.onGround=true;},
+      tick=()=>{for(let k=0;k<4;k++){put(...tick.at);g.updateDungeons(.3);}},wait=ms=>new Promise(r=>setTimeout(r,ms));
+    // the whole template came through the rest of world generation
+    const want={'#':T.SEAL,S:T.SEAM,P:T.RIP,K:T.CRANK,L:T.PEEL,E:T.GATE,G:T.GATE,A:T.GATE,B:T.GATE,r:T.ROPE};let diff=0;
+    g.DUNGEONS.arch.rows.forEach((row,r)=>[...row].forEach((ch,c)=>{if(want[ch]!=null&&at(c,r)!==want[ch])diff++;}));out.diff=diff;out.lay=g.layerAt(...xy(5,40));
+    g.gateAt(...xy(0,4));out.shut=at(0,4)===T.GATE;g.quests.lev=true;g.gateAt(...xy(0,4));out.door=at(0,4);
+    put(9,13);g.trickAt(T.SEAM,...xy(11,12));out.seamNoTool=at(11,12)===T.SEAM;g.addItem('ripper',1);g.trickAt(T.SEAM,...xy(11,12));await wait(600);out.seam=[11,12,13].map(r=>at(11,r));
+    g.crankAt(...xy(16,13));await wait(900);out.gateG=[2,3,4].map(c=>at(c,14));
+    put(6,20);g.addItem('needle',1);g.trickAt(T.RIP,...xy(9,18));await wait(800);out.curtain=[17,18,19,20].map(r=>at(9,r));
+    tick.at=[8,30];tick();const mini=g.enemies.find(e=>e.type==='warden');out.mini=!!mini&&mini.elite;g.hurtEnemy(mini,1e6,1);for(let k=0;k<30;k++)g.updateEnemies(.05);tick();out.gateA=at(11,31);
+    tick.at=[4,45];tick();out.boss=g.boss&&g.boss.type;g.boss.act=null;g.hurtEnemy(g.boss,1e6,1);for(let k=0;k<120;k++)g.updateEnemies(.05);tick();
+    out.quest=!!g.quests.arch;out.B=[43,44,45].map(r=>at(22,r));const[rx,ry]=xy(16,45),rw=g.chests.get(ry*g.W+rx);out.key=!!rw&&rw.some(i=>i&&i.id==='archkey');
+    // the Lost Stacks open only with the key
+    const st=g.BIO.dun.stacks,s0=st[0];out.stacks=st.length;g.stacksAt(s0[0],s0[1]);out.locked=g.tiles[s0[1]*g.W+s0[0]]===T.STACKS;
+    g.addItem('archkey',1);g.stacksAt(s0[0],s0[1]+1);await wait(600);out.open=[0,1,2].map(k=>g.tiles[(s0[1]+k)*g.W+s0[0]]);
+    g.save();const sv=JSON.parse(localStorage.getItem('folded-frontier-save-v1'));out.st=sv.bio.dun.arch.st;out.saved=sv.bio.dun.stacks[0][2];
+    // a save from before the Archive keeps its terrain: it gets neither the Archive nor the Lost Stacks
+    const old=JSON.parse(JSON.stringify(sv));delete old.bio.dun.arch;delete old.bio.dun.stacks;g.loadWorld(old);out.oldArch=g.BIO.dun.arch;out.oldStacks=g.BIO.dun.stacks;out.oldClock=!!g.BIO.dun.clock;
+    out.T={AIR:T.AIR,ROPE:T.ROPE,PLATFORM:T.PLATFORM,SEWN:T.SEWN};return out;
+  });
+  const{AIR,ROPE,PLATFORM,SEWN}=s.T;
+  expect(s.diff).toBe(0);
+  expect(s.lay).toBe('archive');
+  expect(s.shut).toBe(true);
+  expect(s.door).toBe(AIR);
+  expect(s.seamNoTool).toBe(true);
+  expect(s.seam).toEqual([AIR,AIR,AIR]);
+  expect(s.gateG).toEqual([PLATFORM,ROPE,PLATFORM]);
+  expect(s.curtain).toEqual([SEWN,AIR,AIR,AIR]);
+  expect(s.mini).toBe(true);
+  expect(s.gateA).toBe(PLATFORM);
+  expect(s.boss).toBe('bookmoth');
+  expect(s.quest).toBe(true);
+  expect(s.B).toEqual([AIR,AIR,AIR]);
+  expect(s.key).toBe(true);
+  expect(s.stacks).toBe(2);
+  expect(s.locked).toBe(true);
+  expect(s.open).toEqual([AIR,AIR,AIR]);
+  expect(s.st).toMatchObject({e:1,g:1,m:1,c:1});
+  expect(s.saved).toBe(1);
+  expect(s.oldArch).toBeNull();
+  expect(s.oldStacks).toBeNull();
+  expect(s.oldClock).toBe(true);
 });
 
 test('paper tricks: seams tear, torn holes stitch and creases fold, only with their tools, and are saved',async({page})=>{

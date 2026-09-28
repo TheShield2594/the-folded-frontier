@@ -1,13 +1,13 @@
 // Vertical layers: the sky islands above the surface and the Pressed Deep between the caves and the underworld.
 import {
   BIO,chapterCard,chests,clamp,H,idx,makeNoise,meta,mulberry32,pick,player,popUp,randi,reduceMotion,SFX,stat,surf,T,tiles,W,walls,
-  clockNear,inClock,
+  clockNear,dunAt,DUNGEONS,
 } from './game.js';
 
 // ================= layers =================
-// which layer a point is in: 'tower' inside the Folded Clocktower (dungeons.js), 'sky' above the sky floor of a world that has
+// which layer a point is in: inside a dungeon its lay (dungeons.js: 'tower' the Folded Clocktower, 'archive' the Hollow Archive), 'sky' above the sky floor of a world that has
 // islands, 'deep' in the Pressed Deep band, otherwise null. Worlds made before the layers existed have neither (BIO.sky/BIO.deep).
-export function layerAt(x,y){if(!BIO||!BIO.uw)return null;if(inClock(x,y))return 'tower';const s=BIO.sky;if(s&&s.is&&s.is.length&&y>=s.y)return 'sky';
+export function layerAt(x,y){if(!BIO||!BIO.uw)return null;{const k=dunAt(x,y);if(k)return DUNGEONS[k].lay;}const s=BIO.sky;if(s&&s.is&&s.is.length&&y>=s.y)return 'sky';
   const d=BIO.deep;if(d&&y>=d[0]-3&&y<=d[1]+3)return 'deep';return null;}
 export function skyLoot(){const s=[];const add=(id,n)=>s.push({id,n});add('coin',randi(120,260));add('skybar',randi(3,7));add('cloud',randi(20,40));
   add(pick(['kite','beacon','pendant','b_feather','b_quick','magnet']),1);if(Math.random()<.5)add('fstar',randi(3,6));if(Math.random()<.4)add('bpup',1);
