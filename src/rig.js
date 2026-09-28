@@ -149,7 +149,7 @@ export function rigPic(k,skin,clip,t=0,key){const d=RIGS[k],S=rigSkin(k,skin,key
   const P=d.parts,M=R.M;for(const i of d.topo){const p=P[i],L=R.last[i],j=p.pa;let px=p.at[0]+L.x,py=p.at[1]+L.y;if(j>=0){px-=P[j].at[0];py-=P[j].at[1];}
     const c=Math.cos(L.r),s=Math.sin(L.r),la=c*L.sx,lb=s*L.sx,lc=-s*L.sy,ld=c*L.sy,o=i*6;
     if(j<0){M.set([la,lb,lc,ld,px,py],o);}else{const q=j*6,A=M[q],B=M[q+1],C=M[q+2],D=M[q+3];M.set([A*la+C*lb,B*la+D*lb,A*lc+C*ld,B*lc+D*ld,A*px+C*py+M[q+4],B*px+D*py+M[q+5]],o);}}
-  const c=mk(d.w,d.h),t2=c.getContext('2d');for(let i=0;i<P.length;i++){const cs=S.cells[i],cell=cs&&(cs[R.last[i].sw]||cs['']);if(!cell)continue;const o=i*6;
+  const c=mk(d.w,d.h),t2=c.getContext('2d');for(let i=0;i<P.length;i++){const cs=S.cells[i],sw=R.last[i].sw,cell=sw!=='-'&&cs&&(cs[sw]||cs['']);if(!cell)continue;const o=i*6;
     t2.setTransform(M[o],M[o+1],M[o+2],M[o+3],M[o+4],M[o+5]);t2.drawImage(S.img,cell.ax,cell.ay,cell.w,cell.h,cell.l[0],cell.l[1],cell.w,cell.h);}return c;}
 
 // ================= human rig =================
@@ -223,6 +223,231 @@ defRig('eye',{w:96,h:96,oy:48,parts:[{n:'root',at:[52,48]},
   {n:'ball',at:[52,48],up:'root',paint:t=>{circ(t,52,48,24);fi(t,'#f4f0e6',3);t.strokeStyle='rgba(200,40,60,.5)';t.lineWidth=1.3;for(let k=0;k<5;k++){t.beginPath();t.moveTo(30,40+k*4);t.lineTo(42,44+k*2);t.stroke();}}},
   {n:'iris',at:[60,48],up:'ball',wob:0,paint:t=>{circ(t,60,48,11);fi(t,'#8a3fb0',2);circ(t,62,48,5);t.fillStyle=INK;t.fill();circ(t,58,44,3);t.fillStyle='#fff';t.fill();}}],
   clips:{fly:loopClip(.5,[[0,{ten0:{r:.25},ten1:{r:-.1},ten2:{r:-.3},ball:{r:-.03}}],[.25,{ten0:{r:-.2},ten1:{r:.15},ten2:{r:.25},ball:{r:.03}}]],'io',.1)}});
+// ---- the rest of the foes (issue #108): each drawn in its old sheet's frame, split at the joints
+// osc(len, {part: {ch: [amp, phase, base, cycles]}}): a looping sine on each channel (base defaults to 1 for scales)
+function osc(len,spec,bl){const K=[],N=16;for(let k=0;k<N;k++){const u=k/N,v={};for(const p in spec){v[p]={};for(const ch in spec[p]){const[a,o=0,b=ch[0]==='s'?1:0,f=1]=spec[p][ch];v[p][ch]=b+a*Math.sin(u*Math.PI*2*f+o);}}K.push([u*len,v]);}return loopClip(len,K,'lin',bl);}
+// add channels to a clip: a full turn (spin), or held swaps
+const spin=(c,p,turn)=>{((c.tr[p]??={}).r=[[0,0,'lin'],[c.len,turn]]);return c;};
+const swk=(c,p,keys)=>{(c.tr[p]??={}).sw=keys;return c;};
+const blinkAt=(c,p,at)=>swk(c,p,[[0,''],[at,'blink'],[at+.1,''],[c.len,'']]);
+const gearP=(t,x,y,r,n)=>{t.beginPath();for(let k=0;k<n*2;k++){const a=k/(n*2)*Math.PI*2,q=k%2?r*.8:r;t.lineTo(x+Math.cos(a-.1)*q,y+Math.sin(a-.1)*q);t.lineTo(x+Math.cos(a+.1)*q,y+Math.sin(a+.1)*q);}t.closePath();};
+const eyeDot=(t,x,y,r,v)=>{if(v==='blink'){t.beginPath();t.moveTo(x-r,y);t.lineTo(x+r,y);ink(t,2);return;}circ(t,x,y,r);t.fillStyle=INK;t.fill();};
+
+// Forest: the Crumple (a balled-up page that rolls; gameplay spins the mesh) and the Toadstool Lobber (cap on a stem)
+defRig('crumple',{w:80,h:80,oy:40,parts:[{n:'root',at:[40,40]},
+  {n:'body',at:[40,40],up:'root',wob:0,paint:t=>{const pts=[];for(let i=0;i<14;i++){const a=i/14*6.283,r=(i%2?25:31)+((i*7)%5)-2;pts.push(40+Math.cos(a)*r,40+Math.sin(a)*r);}poly(t,pts);fi(t,'#efe6d2',3);
+    t.beginPath();for(let i=0;i<5;i++){const a=i*1.3;t.moveTo(40+Math.cos(a)*6,40+Math.sin(a)*6);t.lineTo(40+Math.cos(a)*26,40+Math.sin(a)*26);}ink(t,1.4,'rgba(42,33,48,.35)');}},
+  {n:'face',at:[52,40],up:'body',v:['','blink'],wob:.02,paint:(t,s,v)=>{for(const ex of[46,58])eyeDot(t,ex,37,3.4,v);t.beginPath();t.moveTo(41,29);t.lineTo(50,32);t.moveTo(63,29);t.lineTo(54,32);ink(t,2.4);t.beginPath();t.moveTo(47,49);t.lineTo(57,47);ink(t,2);}}],
+  clips:{idle:blinkAt(osc(1.4,{body:{sx:[.03],sy:[-.03]},face:{y:[1,1]}},.12),'face',1)}});
+defRig('toadstool',{w:96,h:96,parts:[{n:'root',at:[48,92]},
+  {n:'stem',at:[48,92],up:'root',v:['','blink'],paint:(t,s,v)=>{rr(t,32,48,32,44,12);fi(t,'#f4ecd8',3);for(const ex of[50,59]){if(v){t.beginPath();t.moveTo(ex-3,64);t.lineTo(ex+3,64);ink(t,2);}else{t.beginPath();t.ellipse(ex,64,2.6,4.2,0,0,6.28);t.fillStyle=INK;t.fill();}}t.beginPath();t.arc(55,74,3,.2,2.9);ink(t,2);}},
+  {n:'cap',at:[48,54],up:'stem',paint:t=>{t.beginPath();t.moveTo(8,54);t.bezierCurveTo(8,10,88,10,88,54);t.closePath();fi(t,'#d4483b',3.5);for(const[x,y,r]of[[30,36,6],[52,26,7],[72,38,5],[46,46,4]]){circ(t,x,y,r);t.fillStyle='#fbf5e6';t.fill();}}}],
+  clips:{idle:blinkAt(osc(1.6,{stem:{sy:[.03]},cap:{r:[.03,1]}},.15),'stem',1.2),
+    walk:osc(.5,{root:{r:[.07]},stem:{sy:[.04,1.57,1,2]},cap:{r:[-.07]}},.12),
+    wind:still({stem:{sy:.86,sx:1.06},cap:{r:-.24,sx:1.04}},.15)}});
+
+// Desert: the Dune Fin (a sand shark: fin, tail and a body that leaps), the Shell Scarab and the Sun Kite
+defRig('dunefin',{w:128,h:96,parts:[{n:'root',at:[64,90]},
+  {n:'fin',at:[64,46],up:'body',paint:t=>{poly(t,[48,46,62,6,80,46]);fi(t,'#b98f4a',3);}},
+  {n:'tail',at:[22,66],up:'body',paint:t=>{poly(t,[10,56,24,66,10,82]);fi(t,'#b98f4a',3);}},
+  {n:'body',at:[64,86],up:'root',wob:.008,paint:t=>{t.beginPath();t.moveTo(20,66);t.quadraticCurveTo(50,36,96,48);t.quadraticCurveTo(124,56,122,68);t.quadraticCurveTo(100,90,56,86);t.quadraticCurveTo(28,82,20,66);t.closePath();fi(t,'#e3c77d',3);
+    t.beginPath();t.moveTo(60,82);t.quadraticCurveTo(92,84,118,70);ink(t,1.5,'rgba(42,33,48,.3)');poly(t,[98,72,102,78,106,72,110,77,114,70]);t.fillStyle='#fbf5e6';t.fill();ink(t,1.5);
+    circ(t,104,58,4);t.fillStyle=INK;t.fill();circ(t,105,57,1.4);t.fillStyle='#fff';t.fill();poly(t,[60,84,70,94,74,84]);fi(t,'#b98f4a',2);}}],
+  clips:{swim:osc(.6,{tail:{r:[.3]},fin:{r:[.06,1]},body:{r:[.03,2]}},.1),
+    up:still({body:{r:-.35},tail:{r:.35},fin:{r:.1}},.12),down:still({body:{r:.35},tail:{r:-.25},fin:{r:-.1}},.2),
+    flop:osc(.45,{body:{r:[.12]},tail:{r:[.5,1]},fin:{r:[.15,2]}},.1)}});
+// beetles: the Shell Scarab and the Clockwork Beetle (layers.js) share a body: legs, a head and a shell that lifts to show the soft glowing inside
+function beetleRig(k,o){const legs=[34,52,70].map((x,i)=>({n:'leg'+i,at:[x,60],up:'root',wob:0,paint:t=>{t.beginPath();t.moveTo(x,60);t.lineTo(x-6,76);ink(t,4,o.leg);}}));
+  const parts=[{n:'root',at:[56,74]},...legs,
+    {n:'belly',at:[52,56],up:'root',wob:0,paint:t=>{t.beginPath();t.ellipse(52,55,33,9,0,0,6.28);fi(t,'#ffe58a',2.5);for(const x of[36,52,68]){t.beginPath();t.moveTo(x,49);t.lineTo(x,61);ink(t,1.5,'rgba(176,128,26,.6)');}}},
+    {n:'head',at:[86,54],up:'root',paint:t=>{poly(t,[84,44,104,40,108,52,100,62,84,60]);fi(t,o.head,3);if(o.horn){poly(t,[100,42,110,24,106,44]);fi(t,'#f1c04f',2);}circ(t,98,48,o.horn?2.8:3.2);t.fillStyle='#ffd66b';t.fill();}},
+    {n:'shell',at:[16,64],up:'root',paint:t=>{t.beginPath();t.moveTo(14,64);t.bezierCurveTo(12,14,92,10,90,64);t.closePath();fi(t,o.shell,3.5);if(o.horn){t.beginPath();t.moveTo(52,19);t.lineTo(52,64);ink(t,2.5);}
+      t.beginPath();t.moveTo(14,64);t.lineTo(90,64);ink(t,4,o.band);if(o.horn)for(const[x,y]of[[34,36],[68,34],[40,52],[64,52]]){circ(t,x,y,4);t.fillStyle='rgba(255,255,255,.25)';t.fill();}}}];
+  if(!o.horn)parts.push({n:'gear',at:[52,44],up:'shell',wob:0,paint:t=>{gearP(t,52,44,13,7);fi(t,'#e0b04a',2);circ(t,52,44,4);t.fillStyle='#6b5234';t.fill();}},
+    {n:'key',at:[44,18],up:'shell',wob:0,paint:t=>{t.save();t.translate(44,18);rr(t,-3,-14,6,16,2);fi(t,'#a9adb8',2);t.beginPath();t.ellipse(-8,-16,7,5,0,0,6.28);t.ellipse(8,-16,7,5,0,0,6.28);fi(t,'#c9a24a',2);t.restore();}});
+  const walk=osc(.4,{leg0:{r:[.35]},leg1:{r:[.35,3.14]},leg2:{r:[.35]},shell:{y:[.8,0,0,2]},head:{y:[.8,0,0,2]}},.1),idle=osc(1.6,{shell:{sy:[.015]},head:{r:[.04,1]}},.15),
+    wind=osc(.16,{shell:{r:[.02,0,.06],sy:[.01,0,.94]},head:{r:[.03,0,.15],x:[1,0,-3]},leg0:{r:[.05,0,-.3]},leg1:{r:[.05,1,-.3]},leg2:{r:[.05,2,-.3]}},.1),
+    dash=osc(.18,{leg0:{r:[.45]},leg1:{r:[.45,3.14]},leg2:{r:[.45]},shell:{r:[.02,0,-.04]},head:{r:[.02,0,-.1]}},.06),open=still({shell:{r:-.55},head:{r:-.25,y:2}},.12);
+  // the wind-up key turns (seen edge-on as it goes round) and the gear on the shell spins
+  if(!o.horn){for(const[c,n]of[[walk,1],[idle,.5],[wind,2],[dash,2],[open,.25]]){if(!c.len)Object.assign(c,{len:4,loop:1});spin(c,'gear',Math.PI*2/7*Math.ceil(c.len*n*3));c.tr.key={sx:osc(c.len,{k:{sx:[1,0,0,Math.max(1,Math.round(c.len*n))]}}).tr.k.sx};}}
+  defRig(k,{w:112,h:80,parts,clips:{idle,walk,wind,dash,open}});}
+beetleRig('scarab',{leg:INK,head:'#2c5763',shell:'#3f7a8a',band:'#f1c04f',horn:1});
+beetleRig('clockbug',{leg:'#4a3a26',head:'#6b5234',shell:'#b08a4a',band:'#6b5234'});
+defRig('sunkite',{w:112,h:80,oy:40,parts:[{n:'root',at:[56,40]},
+  {n:'tail',at:[30,40],up:'kite',wob:0,paint:t=>{t.beginPath();t.moveTo(30,40);t.quadraticCurveTo(18,40,8,34);t.quadraticCurveTo(0,30,4,44);ink(t,2.5,'#d4483b');for(const[x,y]of[[18,40],[8,36]]){poly(t,[x-4,y-4,x+4,y+4,x+4,y-4,x-4,y+4]);fi(t,'#f1c04f',1.5);}}},
+  {n:'kite',at:[70,40],up:'root',paint:t=>{poly(t,[30,40,70,6,106,40,70,74]);fi(t,'#f1c04f',3.5);poly(t,[70,6,106,40,70,40]);t.fillStyle='#d4483b';t.fill();ink(t,3);poly(t,[30,40,70,74,70,40]);t.fillStyle='#e0823d';t.fill();ink(t,3);
+    t.beginPath();t.moveTo(30,40);t.lineTo(106,40);t.moveTo(70,6);t.lineTo(70,74);ink(t,1.6,'rgba(42,33,48,.45)');circ(t,80,32,3.4);t.fillStyle=INK;t.fill();circ(t,92,32,3.4);t.fill();t.beginPath();t.arc(86,46,4,.2,2.9);ink(t,2);}}],
+  clips:{fly:osc(.7,{tail:{r:[.28],sy:[.25,1.2]},kite:{r:[.05,1],sx:[.03,2]}},.1),wind:still({kite:{sx:.88,sy:1.08,r:-.1},tail:{r:-.45}},.12),dive:still({kite:{sx:1.06,sy:.94},tail:{r:.4,sy:1.3}},.08)}});
+
+// Snowfield: the Snow Roller and Snowlet (hopping snowballs with a carrot nose), the Frost Puff and the Flurry
+function snowRig(k,w,h){const cx=w/2,r=Math.min(w,h)*.4,cy=h-6-r;
+  defRig(k,{w,h,parts:[{n:'root',at:[cx,h-6]},
+    {n:'body',at:[cx,h-6],up:'root',wob:0,paint:t=>{t.beginPath();t.ellipse(cx,cy,r,r,0,0,6.28);fi(t,'#f6f9fb',3);t.beginPath();t.ellipse(cx-r*.35,cy-r*.4,r*.22,r*.14,-.5,0,6.28);t.fillStyle='rgba(174,224,242,.6)';t.fill();
+      t.beginPath();t.moveTo(cx-r*.6,cy+r*.5);t.quadraticCurveTo(cx,cy+r*.8,cx+r*.5,cy+r*.6);ink(t,1.2,'rgba(42,33,48,.25)');}},
+    {n:'face',at:[cx+r*.3,cy],up:'body',v:['','blink'],wob:.015,paint:(t,s,v)=>{for(const ex of[cx+r*.12,cx+r*.42])eyeDot(t,ex,cy-r*.14,r*.08+1,v);poly(t,[cx+r*.3,cy+r*.04,cx+r*1.05,cy+r*.16,cx+r*.3,cy+r*.28]);fi(t,'#e0823d',1.5);}}],
+    clips:{idle:blinkAt(osc(1.8,{body:{sx:[.02],sy:[-.02]}},.12),'face',1.3),crouch:still({body:{sx:1.12,sy:.85},face:{y:2}},.08),air:still({body:{sx:.93,sy:1.08}},.08)}});}
+snowRig('snowroll',96,96);snowRig('snowlet',64,56);
+defRig('frostpuff',{w:96,h:96,oy:48,parts:[{n:'root',at:[48,48]},
+  {n:'spikes',at:[48,48],up:'root',wob:0,paint:t=>{t.translate(48,48);for(let i=0;i<10;i++){const a=i/10*6.283;poly(t,[Math.cos(a-.16)*24,Math.sin(a-.16)*24,Math.cos(a)*40,Math.sin(a)*40,Math.cos(a+.16)*24,Math.sin(a+.16)*24]);fi(t,'#aee0f2',2);}}},
+  {n:'body',at:[48,48],up:'root',v:['','blink'],paint:(t,s,v)=>{circ(t,48,48,27);fi(t,'#dff2fa',3);circ(t,40,38,7);t.fillStyle='rgba(255,255,255,.7)';t.fill();eyeDot(t,56,45,3.4,v);eyeDot(t,66,45,3.4,v);circ(t,62,57,4);ink(t,2);}}],
+  clips:{fly:blinkAt(spin(osc(3,{body:{sx:[.03,0,1,2],sy:[-.03,0,1,2]}},.12),'spikes',Math.PI*2/10*2),'body',2.2),
+    puff:spin(osc(.3,{body:{sx:[.04,0,1.08],sy:[.04,0,1.08]},spikes:{sx:[.05,1,1.15],sy:[.05,1,1.15]}},.15),'spikes',Math.PI*2/10)}});
+defRig('flurry',{w:80,h:80,oy:40,parts:[{n:'root',at:[40,40]},
+  {n:'arms',at:[40,40],up:'root',wob:0,paint:t=>{t.translate(40,40);for(let i=0;i<6;i++){t.save();t.rotate(i/6*Math.PI*2);poly(t,[-4,0,4,0,3,-30,-3,-30]);fi(t,'#f6f9fb',2);poly(t,[0,-20,-8,-28,0,-24,8,-28]);fi(t,'#e6f1f7',1.5);t.restore();}}},
+  {n:'core',at:[40,40],up:'root',v:['','blink'],paint:(t,s,v)=>{circ(t,40,40,12);fi(t,'#e6f1f7',2.5);if(v){t.beginPath();t.moveTo(34,38);t.lineTo(38,38);t.moveTo(42,38);t.lineTo(46,38);ink(t,1.5);}else{circ(t,36,38,2);t.fillStyle=INK;t.fill();circ(t,44,38,2);t.fill();}t.beginPath();t.arc(40,43,3,.2,2.9);ink(t,1.5);}}],
+  clips:{fly:blinkAt(spin(osc(2,{core:{y:[1.5,0,0,2],r:[.1,1]}},.1),'arms',Math.PI*2/6*2),'core',1.4)}});
+
+// Ink Lake: the Ink Wisp (a flame of ink with a tail and an eye that watches you), the Quillfish and the Ink Squid
+defRig('inkwisp',{w:80,h:96,oy:48,parts:[{n:'root',at:[40,48]},
+  {n:'tail',at:[36,72],up:'body',paint:t=>{t.beginPath();t.moveTo(46,70);t.quadraticCurveTo(30,84,36,94);t.quadraticCurveTo(14,84,20,62);t.closePath();fi(t,'#3a2a5a',3);}},
+  {n:'body',at:[40,60],up:'root',paint:t=>{t.beginPath();t.moveTo(40,8);t.bezierCurveTo(72,36,70,70,44,78);t.quadraticCurveTo(26,82,18,62);t.bezierCurveTo(12,40,30,26,40,8);t.closePath();fi(t,'#3a2a5a',3);
+    t.beginPath();t.moveTo(40,24);t.bezierCurveTo(58,42,58,62,44,70);t.bezierCurveTo(30,64,28,44,40,24);t.fillStyle='#8a5fc0';t.fill();circ(t,48,50,9);fi(t,'#f4f0e6',2);}},
+  {n:'iris',at:[51,50],up:'body',wob:0,paint:t=>{circ(t,51,50,4.5);t.fillStyle=INK;t.fill();circ(t,49,47,1.6);t.fillStyle='#fff';t.fill();}}],
+  clips:{fly:osc(.9,{tail:{r:[.3]},body:{r:[.04,1],sy:[.03,2]}},.1),aim:still({body:{sy:1.08,sx:.93},tail:{r:-.35}},.1),strike:still({body:{r:.25,sx:1.1,sy:.9},tail:{r:.5}},.06)}});
+defRig('quillfish',{w:96,h:72,parts:[{n:'root',at:[52,55]},
+  {n:'tail',at:[20,36],up:'body',paint:t=>{poly(t,[20,36,4,20,8,36,4,52]);fi(t,'#35557f',3);}},
+  {n:'quills',at:[52,26],up:'body',wob:0,paint:t=>{for(let k=0;k<4;k++){const x=36+k*11;poly(t,[x,26,x+4,6+k*2,x+9,24]);fi(t,'#f4f0e6',1.8);}}},
+  {n:'body',at:[52,40],up:'root',paint:t=>{t.beginPath();t.ellipse(52,38,34,17,0,0,6.28);fi(t,'#4a6fa0',3);t.beginPath();t.ellipse(54,44,26,8,0,0,3.14);t.fillStyle='#f4f0e6';t.fill();
+    circ(t,72,32,5);fi(t,'#fbf5e6',1.5);circ(t,74,32,2.4);t.fillStyle=INK;t.fill();t.beginPath();t.moveTo(84,40);t.lineTo(78,42);ink(t,2);}},
+  {n:'fin',at:[54,44],up:'body',paint:t=>{poly(t,[48,42,58,58,62,42]);fi(t,'#35557f',2);}}],
+  clips:{swim:osc(.5,{tail:{r:[.35]},fin:{r:[.3,1]},body:{r:[.03,2]},quills:{sy:[.05,2]}},.1),air:still({body:{r:-.25},quills:{sy:1.25},tail:{r:.3},fin:{r:-.3}},.1),
+    flop:osc(.35,{body:{r:[.15]},tail:{r:[.6,1]},fin:{r:[.4,2]},quills:{sy:[.15,0,1.1]}},.1)}});
+defRig('inksquid',{w:96,h:96,oy:48,parts:[{n:'root',at:[58,48]},
+  ...[0,1,2,3].map(k=>({n:'ten'+k,at:[42,40+k*6],up:'body',wob:0,paint:t=>{t.beginPath();t.moveTo(42,40+k*6);t.quadraticCurveTo(20,36+k*8,6,44+k*6);ink(t,6,'#4a3570');}})),
+  {n:'body',at:[58,48],up:'root',paint:t=>{t.beginPath();t.ellipse(58,48,28,17,0,0,6.28);fi(t,'#6b4c8f');poly(t,[80,40,94,48,80,56]);fi(t,'#8a5fc0',2);circ(t,64,44,5);fi(t,'#f4f0e6',1.5);circ(t,66,44,2.5);t.fillStyle=INK;t.fill();circ(t,50,40,4);t.fillStyle='rgba(255,255,255,.35)';t.fill();}}],
+  clips:{swim:osc(.8,{body:{sx:[.06],sy:[-.05]},ten0:{r:[.3]},ten1:{r:[.3,.8]},ten2:{r:[.3,1.6]},ten3:{r:[.3,2.4]}},.1),
+    dry:osc(1.4,{body:{sy:[.03,0,.94],sx:[.02,0,1.05]},ten0:{r:[.05,0,.35]},ten1:{r:[.05,1,.2]},ten2:{r:[.05,2,-.1]},ten3:{r:[.05,3,-.3]}},.2)}});
+// the Fold Fox (Origami Snowfield): four legs, a folded body, a tail and a head with an ear that twitches
+defRig('foldfox',{w:128,h:96,parts:[{n:'root',at:[64,90]},
+  ...[[40,'legH0'],[52,'legH1'],[80,'legF0'],[92,'legF1']].map(([x,n])=>({n,at:[x,62],up:'body',wob:0,paint:t=>{poly(t,[x-4,62,x+4,62,x+2,90,x-4,90]);fi(t,x<60?'#b8612a':'#e0823d',2);}})),
+  {n:'body',at:[64,60],up:'root',wob:.006,paint:t=>{poly(t,[26,60,40,40,88,38,104,56,90,66,36,68]);fi(t,'#e0823d');poly(t,[60,66,88,40,90,66]);fi(t,'#f4f0e6',2);t.beginPath();t.moveTo(40,40);t.lineTo(60,66);t.moveTo(88,38);t.lineTo(74,66);ink(t,1.4,'rgba(42,33,48,.35)');}},
+  {n:'tail',at:[30,54],up:'body',paint:t=>{poly(t,[26,58,4,20,12,18,34,48]);fi(t,'#e0823d');poly(t,[4,20,12,18,14,30]);fi(t,'#f4f0e6',2);}},
+  {n:'head',at:[96,48],up:'body',paint:t=>{poly(t,[90,40,104,20,110,36,124,48,104,56]);fi(t,'#e0823d');poly(t,[124,48,112,52,116,44]);fi(t,INK,1.5);circ(t,108,38,2.6);t.fillStyle=INK;t.fill();}},
+  {n:'ear',at:[108,24],up:'head',paint:t=>{poly(t,[104,20,108,8,112,26]);fi(t,'#b8612a',2);}}],
+  clips:{idle:swk(osc(2.4,{tail:{r:[.12]},head:{r:[.04,1]},body:{sy:[.012,2]}},.15),'ear',[[0,'']]),
+    run:osc(.45,{legH0:{r:[.5]},legH1:{r:[.5,.6]},legF0:{r:[.5,3.14]},legF1:{r:[.5,3.74]},body:{r:[.05,1.57]},root:{y:[2,1.57,-1,2]},tail:{r:[.2,1]},head:{r:[.05,2]}},.1),
+    wind:still({root:{y:3},body:{r:.1},head:{r:.14},ear:{r:-.3},tail:{r:-.45},legF0:{r:-.5},legF1:{r:-.4},legH0:{r:.4},legH1:{r:.3}},.12),
+    air:still({legF0:{r:-.8},legF1:{r:-.7},legH0:{r:.8},legH1:{r:.7},tail:{r:.25},body:{r:-.12},ear:{r:.3}},.1)}});
+RIGS.foldfox.clips.idle.tr.ear.r=[[0,0,'io'],[1.6,0,'io'],[1.7,-.35,'io'],[1.85,0],[2.4,0]];
+
+// Burnt Underworld: the Firecracker Imp (a lit fuse on legs), the Ash Spider (drops from the ceiling) and the Ink Wraith
+defRig('cracker',{w:80,h:112,parts:[{n:'root',at:[39,108]},
+  ...[[30,'legB'],[48,'legA']].map(([x,n])=>({n,at:[x,90],up:'root',wob:0,paint:t=>{rr(t,x-5,88,10,20,4);fi(t,'#3a2a24',2);}})),
+  {n:'body',at:[39,90],up:'root',paint:t=>{rr(t,18,30,42,62,8);fi(t,'#d4483b',3.5);t.fillStyle='#f1c04f';t.fillRect(20,42,38,6);t.fillRect(20,74,38,6);rr(t,16,24,46,12,5);fi(t,'#ffd66b',3);
+    for(const ex of[44,54]){circ(t,ex,58,3.2);t.fillStyle='#ffd66b';t.fill();ink(t,1.5);}t.beginPath();t.moveTo(38,50);t.lineTo(47,53);t.moveTo(60,50);t.lineTo(51,53);ink(t,2.4);}},
+  {n:'fuse',at:[39,24],up:'body',paint:t=>{t.beginPath();t.moveTo(39,24);t.quadraticCurveTo(34,12,46,6);ink(t,3,'#5a3a22');}},
+  {n:'spark',at:[46,6],up:'fuse',wob:0,paint:t=>{const s=7;poly(t,[46,6-s,48,4,46+s,6,48,8,46,6+s,44,8,46-s,6,44,4]);t.fillStyle='#ffd66b';t.fill();}}],
+  clips:{idle:osc(.3,{spark:{sx:[.25],sy:[.25],r:[.3,1]},body:{sy:[.01,0,1]}},.1),
+    walk:osc(.3,{legA:{r:[.4]},legB:{r:[.4,3.14]},body:{r:[.05,1.57],y:[1,0,0,2]},fuse:{r:[.12,2]},spark:{sx:[.3],sy:[.3,.5]}},.1),
+    fuse:osc(.12,{body:{x:[1.5],sy:[.03,1,.97]},fuse:{r:[.15]},spark:{sx:[.5,0,1.5],sy:[.5,1,1.5]}},.06)}});
+defRig('ashspider',{w:112,h:72,parts:[{n:'root',at:[56,66]},
+  ...[0,1,2,3].map(k=>{const x=40+k*14;return{n:'leg'+k,at:[x,44],up:'root',wob:0,paint:t=>{t.beginPath();t.moveTo(x,44);t.lineTo(x-8,24);t.lineTo(x-14,66);ink(t,4,'#1e1614');}};}),
+  {n:'abdomen',at:[48,44],up:'root',paint:t=>{t.beginPath();t.ellipse(38,42,26,20,0,0,6.28);fi(t,'#3a2a24',3);poly(t,[30,34,38,26,46,34,38,50]);t.fillStyle='#ff8a3d';t.fill();}},
+  {n:'head',at:[64,46],up:'root',paint:t=>{circ(t,74,46,14);fi(t,'#2a1e1a',3);for(const[x,y]of[[78,42],[86,44],[80,50]]){circ(t,x,y,2.6);t.fillStyle='#ffd66b';t.fill();}}}],
+  clips:{idle:osc(1.2,{abdomen:{sy:[.03]},head:{r:[.04,1]}},.12),walk:osc(.3,{leg0:{r:[.3]},leg1:{r:[.3,3.14]},leg2:{r:[.3]},leg3:{r:[.3,3.14]},abdomen:{y:[1,1.57,0,2]}},.08),
+    hang:osc(1.6,{leg0:{r:[.06,0,.5]},leg1:{r:[.06,1,.3]},leg2:{r:[.06,2,-.3]},leg3:{r:[.06,3,-.5]},abdomen:{sy:[.02,0,.95]}},.15),drop:still({leg0:{r:-.45},leg1:{r:-.2},leg2:{r:.2},leg3:{r:.45}},.08)}});
+// the wraith's robe is two pieces: the tattered hem behind (its points ripple) and the hood and body in front
+const hem=w=>t=>{t.beginPath();t.moveTo(20,80);t.lineTo(76,80);t.lineTo(76,112);for(let x=76;x>=20;x-=14){t.quadraticCurveTo(x-7,112+(((x/14)|0)%2?10:-2)+w*.5,x-14,112);}t.closePath();fi(t,'#3a1a4a',3);};
+defRig('wraith',{w:96,h:128,oy:64,parts:[{n:'root',at:[48,64]},
+  {n:'hem',at:[48,84],up:'body',v:['','b'],paint:(t,s,v)=>hem(v?6:-6)(t)},
+  {n:'body',at:[48,60],up:'root',paint:t=>{t.beginPath();t.moveTo(20,100);t.quadraticCurveTo(14,40,48,14);t.quadraticCurveTo(82,40,76,100);t.quadraticCurveTo(48,108,20,100);t.closePath();fi(t,'#3a1a4a',3);
+    t.beginPath();t.moveTo(30,60);t.quadraticCurveTo(48,30,66,60);ink(t,2,'rgba(200,150,255,.35)');t.beginPath();t.ellipse(49,72,6,4,0,0,6.28);t.fillStyle='#1a0a24';t.fill();}},
+  {n:'eyes',at:[49,52],up:'body',v:['','blink'],wob:0,paint:(t,s,v)=>{for(const x of[40,58]){t.beginPath();t.ellipse(x,52,5,v?1.5:7,0,0,6.28);t.fillStyle='#e0b0ff';t.fill();}}}],
+  clips:{fly:swk(blinkAt(osc(1,{hem:{r:[.06],x:[2,1]},body:{r:[.03,2]},eyes:{sy:[.08,0,1,2]}},.12),'eyes',.7),'hem',[[0,''],[.25,'b'],[.5,''],[.75,'b'],[1,'b']])}});
+// the Paper Ray (sky islands): wings that beat above and below a long body, and a thread of a tail
+defRig('skyray',{w:128,h:80,oy:40,parts:[{n:'root',at:[64,44]},
+  {n:'tail',at:[18,44],up:'body',paint:t=>{t.beginPath();t.moveTo(18,44);t.quadraticCurveTo(4,50,2,62);ink(t,2.5,'#6a7fb8');}},
+  {n:'wingT',at:[60,40],up:'body',paint:t=>{t.beginPath();t.moveTo(30,44);t.quadraticCurveTo(52,30,64,6);t.quadraticCurveTo(76,30,96,40);t.closePath();fi(t,'#dfe7fb',3);t.beginPath();t.moveTo(42,40);t.quadraticCurveTo(60,22,64,14);ink(t,1.4,'rgba(42,33,48,.3)');}},
+  {n:'wingB',at:[56,52],up:'body',paint:t=>{t.beginPath();t.moveTo(34,50);t.lineTo(80,54);t.quadraticCurveTo(64,74,40,70);t.quadraticCurveTo(34,60,34,50);t.closePath();fi(t,'#dfe7fb',3);t.beginPath();t.moveTo(46,54);t.quadraticCurveTo(52,62,48,66);ink(t,1.4,'rgba(42,33,48,.3)');}},
+  {n:'body',at:[64,46],up:'root',paint:t=>{t.beginPath();t.moveTo(18,44);t.quadraticCurveTo(50,34,80,36);t.quadraticCurveTo(120,38,124,46);t.quadraticCurveTo(100,56,78,56);t.quadraticCurveTo(46,56,18,44);t.closePath();fi(t,'#dfe7fb',3);
+    t.beginPath();t.moveTo(78,42);t.quadraticCurveTo(100,40,122,46);ink(t,1.4,'rgba(42,33,48,.3)');circ(t,104,42,3.2);t.fillStyle=INK;t.fill();circ(t,113,43,3);t.fill();t.beginPath();t.arc(108,49,3.5,.3,2.8);ink(t,1.8);
+    for(const[x,y]of[[70,44],[86,48]]){circ(t,x,y,3);t.fillStyle='#8fd0ff';t.fill();}}}],
+  clips:{fly:osc(.9,{wingT:{sy:[.35,0,.75]},wingB:{sy:[.35,3.14,.75]},tail:{r:[.2,1]},body:{r:[.03,1.57]}},.1),wind:still({wingT:{sy:1.15},wingB:{sy:.4},tail:{r:-.3}},.12),dive:still({wingT:{sy:.45},wingB:{sy:.45},tail:{r:.4}},.08)}});
+
+// ================= boss rigs =================
+// The Great Crane: a back wing, tail, body, neck, head and the front wing. The wings beat by folding over the shoulder
+// line (sy through 0 is the wing edge-on), which is how the old up/down frames read.
+{const cx=170,cy=140,wing=(dx,col,crease)=>t=>{poly(t,[cx-30+dx,cy-14,cx+40+dx,cy-16,cx-10+dx,cy-126,cx-96+dx,cy-110]);fi(t,col,4);if(crease){t.beginPath();t.moveTo(cx+5+dx,cy-15);t.lineTo(cx-40+dx,cy-112);ink(t,2,'rgba(42,33,48,.25)');}};
+defRig('crane',{w:360,h:240,oy:120,parts:[{n:'root',at:[cx,cy]},
+  {n:'wingB',at:[cx-15,cy-12],up:'body',paint:wing(-20,'#b9cfe0')},
+  {n:'tail',at:[cx-64,cy+4],up:'body',paint:t=>{poly(t,[cx-60,cy,cx-156,cy-72,cx-132,cy-38,cx-68,cy+14]);fi(t,'#dce8f0',4);}},
+  {n:'body',at:[cx,cy],up:'root',wob:.006,paint:t=>{poly(t,[cx-72,cy,cx,cy-32,cx+62,cy,cx,cy+32]);fi(t,'#f4f0e6',4);t.beginPath();t.moveTo(cx-72,cy);t.lineTo(cx+62,cy);ink(t,2,'rgba(42,33,48,.3)');}},
+  {n:'neck',at:[cx+48,cy],up:'body',paint:t=>{poly(t,[cx+40,cy-8,cx+120,cy-80,cx+130,cy-72,cx+56,cy+6]);fi(t,'#f4f0e6',4);}},
+  {n:'head',at:[cx+124,cy-76],up:'neck',paint:t=>{poly(t,[cx+118,cy-84,cx+160,cy-64,cx+126,cy-66]);fi(t,'#f1c04f',3);circ(t,cx+120,cy-86,6);fi(t,'#d4483b',2.5);circ(t,cx+126,cy-74,3);t.fillStyle=INK;t.fill();}},
+  {n:'wingA',at:[cx+19,cy-12],up:'body',paint:wing(14,'#e6f1f7',1)}],
+  clips:{fly:osc(.75,{wingA:{sy:[.95,1.57,.1]},wingB:{sy:[.95,1.97,.1]},neck:{r:[.05,1.57]},head:{r:[.06,2.5]},tail:{r:[.05,1]},root:{y:[5,1.57]}},.15),
+    wind:osc(.2,{wingA:{sy:[.04,0,1.1],r:[.02,0,-.15]},wingB:{sy:[.04,1,1.1],r:[.02,1,-.1]},neck:{r:[.03,0,-.35]},head:{r:[.03,1,-.2]},tail:{r:[.02,0,.1]}},.15),
+    swoop:still({wingA:{sy:.22,r:.35},wingB:{sy:.22,r:.3},neck:{r:.3},head:{r:.15},tail:{r:-.1}},.1),
+    volley:osc(.35,{wingA:{sy:[.35,0,.8]},wingB:{sy:[.35,.4,.8]},neck:{r:[.06]},head:{r:[.08,1]}},.1)}});}
+// The Inkwell Leviathan: a head with a hinged jaw and a crest, body segments with fins, and a tail fluke. Each is its own
+// enemy (gameplay turns them with the worm's angle), so each segment gets its own rig and plays a step behind the one before.
+defRig('lev',{w:180,h:140,oy:70,parts:[{n:'root',at:[90,70]},
+  {n:'jaw',at:[26,104],up:'head',paint:t=>{poly(t,[20,100,120,70,168,82,110,110,24,112]);fi(t,'#3a2a5a',4);}},
+  {n:'head',at:[40,70],up:'root',paint:t=>{poly(t,[20,40,100,22,150,46,172,62,120,70,20,100]);fi(t,'#4a3570',4);for(let k=0;k<5;k++){poly(t,[150-k*10,62,146-k*10,72,142-k*10,62]);t.fillStyle='#f4f0e6';t.fill();}
+    circ(t,118,44,9);fi(t,'#f1c04f',3);circ(t,120,44,4);t.fillStyle=INK;t.fill();}},
+  {n:'crest',at:[78,24],up:'head',paint:t=>{poly(t,[60,24,80,0,96,26]);fi(t,'#8a5fc0',3);}}],
+  clips:{swim:osc(.8,{jaw:{r:[.05,0,.07]},crest:{r:[.1,1]},head:{r:[.02,2]}},.12),wind:osc(.14,{jaw:{r:[.03,0,.34]},crest:{r:[.05,0,-.15]},head:{r:[.02,1,-.05]}},.1),lunge:still({jaw:{r:.2},crest:{r:.22}},.08)}});
+defRig('levseg',{w:140,h:140,oy:70,parts:[{n:'root',at:[70,70]},
+  {n:'finT',at:[86,28],up:'body',paint:t=>{poly(t,[70,24,90,4,104,30]);fi(t,'#8a5fc0',3);}},
+  {n:'body',at:[70,70],up:'root',paint:t=>{circ(t,70,70,50);fi(t,'#4a3570',4);circ(t,70,70,34);ink(t,3,'rgba(160,130,220,.35)');circ(t,56,54,8);t.fillStyle='rgba(255,255,255,.2)';t.fill();}},
+  {n:'finB',at:[50,100],up:'body',paint:t=>{poly(t,[36,98,52,128,62,102]);fi(t,'#8a5fc0',3);}}],
+  clips:{swim:osc(.8,{finT:{r:[.2]},finB:{r:[.2,1.2]},body:{sx:[.03],sy:[-.03]}},.1)}});
+defRig('levtail',{w:140,h:140,oy:70,parts:[{n:'root',at:[70,70]},
+  {n:'fluke',at:[38,70],up:'stalk',paint:t=>{poly(t,[44,46,10,20,30,70,10,120,44,94]);fi(t,'#4a3570',4);poly(t,[10,20,30,70,10,120]);fi(t,'#8a5fc0',3);}},
+  {n:'stalk',at:[104,70],up:'root',paint:t=>{poly(t,[110,70,40,40,30,70,40,100]);fi(t,'#4a3570',4);}}],
+  clips:{swim:osc(.6,{fluke:{sy:[.15],r:[.15,1]},stalk:{r:[.05,2]}},.1)}});
+// The Charred Folio: a burnt book. Flames rise from behind the cover, the right page lifts, a loose page turns over when it
+// casts, and its eye follows you.
+{const FL=[0,1,2,3,4,5,6];const flames=(a,b=1)=>Object.fromEntries(FL.map(k=>['f'+k,{sy:[a,k*1.9,b,3],r:[.05,k*1.3,0,2]}]));
+const pageR=(col,lines)=>t=>{poly(t,[172,96,300,80,300,240,172,250]);fi(t,col,4);if(lines)for(const x of[196,216,256,276])for(let y=110;y<230;y+=16){t.beginPath();t.moveTo(x-8,y);t.lineTo(x+8,y+1);ink(t,1.5,'rgba(42,33,48,.25)');}};
+const folio={idle:osc(1.6,{...flames(.12),pageR:{r:[.025,0,-.025]},pageL:{r:[.012,1]}},.15),
+  turn:{len:.55,bl:.08,tr:{...osc(.55,flames(.18,1.1)).tr,pageR:{r:[[0,-.06]]},turn:{sw:[[0,''],[.55,'']],sx:[[0,1,'io'],[.55,-1]],r:[[0,0,'io'],[.28,-.06,'io'],[.55,0]]}}},
+  fire:osc(.5,{...flames(.15,1.15),eye:{sx:[.03,0,1.15],sy:[.03,0,1.2]},pageR:{r:[.02,0,-.06]}},.1),
+  rain:osc(.5,{...flames(.22,1.35),pageR:{r:[.04,0,-.08]},pageL:{r:[.03,1]}},.1)};
+for(const k of['idle','fire','rain'])swk(folio[k],'turn',[[0,'-']]);
+defRig('folio',{w:340,h:280,oy:140,parts:[{n:'root',at:[170,140]},
+  ...FL.map(k=>{const x=40+k*42;return{n:'f'+k,at:[x+18,84],up:'cover',wob:0,paint:t=>{t.beginPath();t.moveTo(x,84);t.bezierCurveTo(x+18,60,x+10,30,x+20,6+(k%2)*14);t.bezierCurveTo(x+30,34,x+40,60,x+36,84);t.closePath();fi(t,'#ff7a2d',3);
+    t.beginPath();t.moveTo(x+10,82);t.quadraticCurveTo(x+20,52,x+22,40);t.quadraticCurveTo(x+30,60,x+28,82);t.fillStyle='#ffd66b';t.fill();}};}),
+  {n:'cover',at:[170,165],up:'root',wob:.004,paint:t=>{rr(t,20,70,300,190,12);fi(t,'#6b2a1a',5);}},
+  {n:'pageL',at:[168,250],up:'cover',wob:.004,paint:t=>{poly(t,[40,80,168,96,168,250,40,240]);fi(t,'#e9dcc0',4);for(const x of[60,80,100,120,140])for(let y=120;y<230;y+=16){t.beginPath();t.moveTo(x-8,y);t.lineTo(x+8,y+1);ink(t,1.5,'rgba(42,33,48,.25)');}}},
+  {n:'pageR',at:[172,250],up:'cover',wob:.004,paint:pageR('#e9dcc0')},
+  {n:'eye',at:[236,168],up:'pageR',paint:t=>{t.beginPath();t.ellipse(236,168,40,30,0,0,6.28);fi(t,'#f4f0e6',4);}},
+  {n:'iris',at:[240,168],up:'eye',wob:0,paint:t=>{circ(t,240,168,18);fi(t,'#ff8a3d',3);circ(t,242,168,8);t.fillStyle=INK;t.fill();circ(t,234,160,5);t.fillStyle='#fff';t.fill();}},
+  {n:'turn',at:[172,250],up:'cover',wob:0,paint:pageR('#f4ecd8',1)},
+  {n:'soot',at:[170,240],up:'cover',wob:0,paint:t=>{for(const[x,y]of[[44,236],[160,246],[296,234]]){circ(t,x,y,12);t.fillStyle='#2a1e1a';t.fill();}}}],
+  clips:folio});}
+// The Unfolded: a paper giant with legs, two long arms, a creased body and a head whose eyes burn brighter in its last phase
+{const cx=150;
+defRig('unfolded',{w:300,h:360,parts:[{n:'root',at:[cx,350]},
+  ...[[122,'legL'],[178,'legR']].map(([x,n])=>({n,at:[x,252],up:'root',wob:0,paint:t=>{poly(t,[x-20,250,x+20,250,x+14,350,x-26,350]);fi(t,'#e9dcc0',5);t.beginPath();t.moveTo(x-6,250);t.lineTo(x-2,350);ink(t,2,'rgba(42,33,48,.25)');}})),
+  ...[[-1,'armL'],[1,'armR']].map(([s2,n])=>({n,at:[cx+s2*72,126],up:'torso',paint:t=>{poly(t,[cx+s2*70,120,cx+s2*118,150,cx+s2*122,250,cx+s2*96,255,cx+s2*80,170]);fi(t,'#e9dcc0',5);}})),
+  {n:'torso',at:[cx,258],up:'root',wob:.004,paint:t=>{poly(t,[cx-76,110,cx+76,110,cx+60,262,cx-60,262]);fi(t,'#f4f0e6',5);for(let y=130;y<250;y+=16){t.beginPath();t.moveTo(cx-50,y);t.lineTo(cx+50,y+2);ink(t,1.5,'rgba(42,33,48,.2)');}
+    t.beginPath();t.moveTo(cx-76,110);t.lineTo(cx+60,262);t.moveTo(cx+76,110);t.lineTo(cx-60,262);ink(t,2,'rgba(42,33,48,.2)');}},
+  {n:'head',at:[cx,108],up:'torso',v:['','glare'],paint:(t,s,v)=>{poly(t,[cx-50,20,cx+50,20,cx+56,104,cx-56,104]);fi(t,'#f4f0e6',5);poly(t,[cx+50,20,cx+56,104,cx+40,60]);t.fillStyle='#d9ccb4';t.fill();
+    for(const ex of[cx-20,cx+18]){t.beginPath();t.ellipse(ex,64,11,v?6:8,0,0,6.28);t.fillStyle='#2a1a3a';t.fill();circ(t,ex+2,64,v?5:4);t.fillStyle=v?'#ff7ab0':'#e0b0ff';t.fill();}
+    t.beginPath();t.moveTo(cx-24,90);t.lineTo(cx-8,84);t.lineTo(cx+8,92);t.lineTo(cx+24,84);ink(t,3);}}],
+  clips:{idle:osc(2.2,{torso:{sy:[.015]},head:{y:[2,1],r:[.03,2]},armL:{r:[.05]},armR:{r:[-.05]}},.2),
+    walk:osc(1.1,{legL:{r:[.22]},legR:{r:[.22,3.14]},armL:{r:[.15,3.14]},armR:{r:[.15,3.14]},torso:{r:[.02,1.57],y:[3,1.57,0,2]},head:{r:[.03,2]}},.2),
+    wind:still({torso:{y:8,sy:.95},armL:{r:.6},armR:{r:-.6},head:{y:4,r:.05},legL:{r:-.08},legR:{r:.08}},.15),
+    leap:still({armL:{r:2.4},armR:{r:-2.4},legL:{r:.25},legR:{r:-.25},head:{r:-.05}},.12),
+    volley:osc(.28,{armR:{r:[.3,0,-1.6]},armL:{r:[.08,0,.3]},torso:{r:[.02,0,-.03]}},.08),
+    shred:osc(.15,{armL:{r:[.2,0,2.2]},armR:{r:[.2,1.5,-2.2]},torso:{x:[2]}},.1),
+    fold:still({armL:{r:-.55},armR:{r:.55},head:{y:10}},.2)}});}
+// The Mainspring (the Folded Clocktower's boss): the gear rim turns, the hands keep time (gameplay sets them), the pupils
+// follow you and the mouth opens to chime
+{const cx=120,cy=120,hand=(l,w,col)=>t=>{t.save();t.translate(cx,cy);poly(t,[-w,0,0,-l,w,0,0,w*1.5]);fi(t,col,2.5);t.restore();};
+defRig('mainspring',{w:240,h:240,oy:120,parts:[{n:'root',at:[cx,cy]},
+  {n:'rim',at:[cx,cy],up:'root',wob:0,paint:t=>{gearP(t,cx,cy,108,16);fi(t,'#b08a4a',4);gearP(t,cx,cy,96,16);t.fillStyle='rgba(255,230,160,.25)';t.fill();}},
+  {n:'face',at:[cx,cy],up:'root',wob:.004,paint:t=>{circ(t,cx,cy,84);fi(t,'#f4ecd8',4);for(let k=0;k<12;k++){const a=k/12*Math.PI*2;t.beginPath();t.moveTo(cx+Math.cos(a)*70,cy+Math.sin(a)*70);t.lineTo(cx+Math.cos(a)*(k%3?78:80),cy+Math.sin(a)*(k%3?78:80));ink(t,k%3?3:6);}}},
+  {n:'eyes',at:[cx,98],up:'face',v:['','blink'],paint:(t,s,v)=>{for(const[ex,ey]of[[92,98],[148,98]]){t.beginPath();t.ellipse(ex,ey,11,v?3:15,0,0,6.28);fi(t,'#fbf8f0',2.5);}}},
+  {n:'pupils',at:[cx,101],up:'eyes',wob:0,paint:t=>{for(const ex of[96,152]){circ(t,ex,101,6);t.fillStyle=INK;t.fill();}}},
+  {n:'brows',at:[cx,84],up:'face',paint:t=>{t.beginPath();t.moveTo(78,78);t.lineTo(104,88);t.moveTo(162,78);t.lineTo(136,88);ink(t,5);}},
+  {n:'mouth',at:[cx,160],up:'face',v:['','open'],paint:(t,s,v)=>{if(v){t.beginPath();t.ellipse(cx,160,16,12,0,0,6.28);fi(t,'#3a2a24',3);return;}t.beginPath();t.arc(cx,cy+46,16,Math.PI+.4,-.4);ink(t,4);}},
+  {n:'handH',at:[cx,cy],up:'face',wob:0,paint:hand(44,7,'#6b5234')},
+  {n:'handM',at:[cx,cy],up:'face',wob:0,paint:hand(64,5,'#d4483b')},
+  {n:'cap',at:[cx,cy],up:'face',wob:0,paint:t=>{circ(t,cx,cy,9);fi(t,'#c9a24a',2.5);}}],
+  clips:{idle:blinkAt(osc(2.4,{face:{r:[.015]},brows:{y:[1.5,1]}},.15),'eyes',1.7),wind:still({brows:{y:6},eyes:{sy:.8},face:{sx:1.04,sy:1.04}},.1),
+    chime:swk(osc(.3,{face:{sx:[.03,0,1.05],sy:[.03,0,1.05]},brows:{y:[2,0,-4]}},.1),'mouth',[[0,'open']])}});}
 // which rig and skin an enemy sheet name uses (entities.js spawnEnemy); arms: the arm pose a human foe holds
 export const HUMANFOE={
   zombie:{skin:'#a8c79a',hair:'#3e5a3a',tunic:'#6b5b8a',pants:'#4a4058',boots:'#3a3040',eyeCol:'#c0392b',noBlush:1,extra:t=>{t.fillStyle='#2a2130';t.fillRect(40,95,6,10);t.fillRect(52,85,4,8);},clip:'shamble'},
@@ -234,6 +459,9 @@ export const HUMANFOE={
     extra:t=>{poly(t,[34,34,28,14,40,28]);fi(t,'#3a2a24',2);poly(t,[62,30,72,10,68,32]);fi(t,'#3a2a24',2);},front:t=>{circ(t,70,84,7);t.fillStyle='rgba(255,138,61,.6)';t.fill();},clip:'march',arm:-.8}};
 export const FOERIG={slime:['slime',{col:'#6cc57a'}],bslime:['slime',{col:'#5aa7e0'}],blot:['slime',{col:'#4a3570'}],king:['king',{col:'#5aa7e0'}],
   bat:['bat',{c1:'#6b4c8f',c2:'#5a3f7a',eye:'#f1c04f',fang:1}],cinderbat:['bat',{c1:'#3a2a24',c2:'#2a1e1a',eye:'#ff8a3d'}],eye:['eye',{}],
-  zombie:['human',HUMANFOE.zombie],knight:['human',HUMANFOE.knight],sentinel:['human',HUMANFOE.sentinel],ashimp:['human',HUMANFOE.ashimp]};
+  zombie:['human',HUMANFOE.zombie],knight:['human',HUMANFOE.knight],sentinel:['human',HUMANFOE.sentinel],ashimp:['human',HUMANFOE.ashimp],
+  // every other foe and boss wears its own rig's colors
+  ...Object.fromEntries(['crumple','toadstool','dunefin','scarab','clockbug','sunkite','snowroll','snowlet','frostpuff','flurry','inkwisp','quillfish','inksquid','foldfox','cracker','ashspider','wraith','skyray',
+    'crane','lev','levseg','levtail','folio','unfolded','mainspring'].map(k=>[k,[k,{}]]))};
 // the enemies' still pictures (bestiary sketches) come from their rigs; the T textures stay for anything that still wants a sheet
-export function buildRigSheets(SHEETS){for(const k in FOERIG){if(SHEETS[k])continue;const[r,s]=FOERIG[k],d=RIGS[r];SHEETS[k]=rigPic(r,s,r==='human'?'idle':d.clips.fly?'fly':'idle',0,k);SHEETS[k+'T']=canvasTex(SHEETS[k]);}}
+export function buildRigSheets(SHEETS){for(const k in FOERIG){if(SHEETS[k])continue;const[r,s]=FOERIG[k],d=RIGS[r];SHEETS[k]=rigPic(r,s,r==='human'?'idle':['fly','idle','swim'].find(c=>d.clips[c]),0,k);SHEETS[k+'T']=canvasTex(SHEETS[k]);}}
