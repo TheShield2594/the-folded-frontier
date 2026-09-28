@@ -210,7 +210,11 @@ test('hand-made art replaces the atlas cells and sprite sheets it names',async({
     const cell=g.applyArt('atlas','swFe',solid(64,64)),sheet=g.applyArt('sheets','folio',solid(f.width,f.height));
     // ores keep their drawn cells in a color-vision mode
     g.SET.cb='deut';const ore=g.applyArt('atlas','copper',solid(64,64));g.SET.cb='off';
-    return {folio:list.sheets.folio,swFe:list.atlas.swFe,crack:list.atlas['crack.2'],cell,sheet,ore,missing:g.applyArt('sheets','nope',solid(8,8)),
+    // the export stays the drawn art, and names that aren't a whole cell name are rejected
+    const origCell=await new Promise(res=>{const i=new Image();i.onload=()=>{const c=document.createElement('canvas');c.width=64;c.height=64;c.getContext('2d').drawImage(i,0,0);res(px(c,32,32));};
+      const a=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){};i.src=g.artExport('atlas','swFe');HTMLAnchorElement.prototype.click=a;});
+    const bad=['swFe.0','crack.x','crack.-1','crack.99','crack'].map(k=>g.applyArt('atlas',k,solid(64,64)));
+    return {origCell,bad,folio:list.sheets.folio,swFe:list.atlas.swFe,crack:list.atlas['crack.2'],cell,sheet,ore,missing:g.applyArt('sheets','nope',solid(8,8)),
       cellPx:px(g.atlas,cx+32,cy+32),sheetPx:px(f,f.width/2,f.height/2),bumped:g.SHEETS.folioT.version>fv};
   });
   expect(r.folio).toBe('680×280');
@@ -220,4 +224,6 @@ test('hand-made art replaces the atlas cells and sprite sheets it names',async({
   expect(r.cellPx).toEqual([255,0,0,255]);
   expect(r.sheetPx).toEqual([255,0,0,255]);
   expect(r.bumped).toBe(true);
+  expect(r.origCell).not.toEqual([255,0,0,255]);
+  expect(r.bad).toEqual([false,false,false,false,false]);
 });
