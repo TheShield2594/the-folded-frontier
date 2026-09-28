@@ -87,6 +87,7 @@ const MEMORY=[
   ['r_ink','painter guide',()=>worldDay>=3,'{happy}The old explorers wrote in *invisible ink.* {neutral}Hold a torch close to the walls down there, or bring Lumi along.'],
   ['r_temple','angler curator',()=>worldDay>=6||!!quests.lev,'{surprised}They say a temple sleeps under the Ink Lake. {neutral}It wakes for whoever swims there under an *Ink Moon* carrying a ~Moon Lily~.'],
   ['r_legend','angler',()=>angler.caught>=5,'{surprised}Four *legendary* fish swim in this world. {neutral}Old Crease in the forest ponds, Glacier Jaw under winter ice, Magmaw in the lava, and one that only rises under an ~Ink Moon~.'],
+  ['r_arch','curator scout',()=>!!quests.lev,'{neutral}Somewhere out there is a little stone gatehouse, sealed with ink, with a whole *library* dug in under it. {surprised}Since the Leviathan fell, its door has come ~unstuck~. Take a seam ripper and a needle.'],
   ['r_seam','tinkerer guide',()=>!!quests.crane,'{neutral}Seen the *stitched seams* in the deep rock? Something was sewn away behind them. {happy}A seam ripper from the anvil would open them: iron and a few crane plumes.'],
   ['r_rip','tinkerer painter',()=>!!quests.lev,'{sad}Some caves are torn right through the page. Nothing can stand on a tear. {happy}A *golden needle* could sew it shut, gold and an ink heart and some rope.'],
   ['r_fold','curator guide',()=>!!quests.folio,'{surprised}Those *crease marks* on the cave walls? Fold the page along one and you come out at its partner. {neutral}A ~bone folder~ does it. Fossils make good ones.'],

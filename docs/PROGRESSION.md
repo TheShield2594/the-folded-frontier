@@ -84,9 +84,25 @@ Three tools open side pockets in places you already passed (`tricks.js`). Each i
 | Stitch | Golden Needle (4 gold bars, 1 ink heart, 5 rope) | After the Inkwell Leviathan | A torn hole ten tiles across in the floor of a low corridor dug into the rock; stepping in throws you back (no damage: it's a locked door, not a trap). Sewn shut, its top row is a paper bridge to a pocket with a chest. 1–2 per small world |
 | Fold | Bone Folder (a Paper Ammonite, a Folded Trilobite, a cinder) | After the Charred Folio (fossils come from the Pressed Deep) | A crease mark on a cave floor whose partner is in a vault sealed all round, with a treasure chest. The vault's crease folds you back out without the tool. 1 per small world, about W/300 |
 
+## The Hollow Archive
+
+The second hand-built dungeon (`dungeons.js`, issue #81), dug into the rock under a small gatehouse. Its front door opens once the Inkwell Leviathan is defeated, and its puzzle uses two of the paper tricks, so it also needs the Seam Ripper (after the Crane) and the Golden Needle (from the Leviathan's ink heart):
+
+| Floor | What's there |
+|---|---|
+| Reading room | A stitched seam (Seam Ripper) between the rope down and the crank; the crank opens a gate in the floor. A fake wall hides a chest and a Paper Heart |
+| Stacks | A torn curtain across the corridor (Golden Needle sews it shut), then a peel wall and a rope down |
+| Arena | The Stack Warden (mini-boss, always an elite: 832 life, defense 15, contact 39; flings pages when you keep your distance) |
+| Boss chamber | The Bookmoth (boss, 3,000 life, defense 16, contact 36): dives, fans of ink dust, mothlings (up to four), rings of pages after 50%, a storm of dust from the ceiling at 25% |
+
+With the Ink Cutlass (41) the Bookmoth takes about 91 hits, close to the Leviathan (92) and under the Folio (104); with the Frostsilver Blade it is about 125. In Inkstone armor (18) its contact hit does 27. Its reward is the Archive Key, which opens the Lost Stacks: sealed reading rooms in deep caves (2 in a small world, about W/180), each with a chest of treasure. Nothing on the main boss path needs the Archive.
+
+It is only placed when a world is generated, where it takes the spot that cuts the fewest generated structures; it found a spot on every one of 16 seeds tried (small, medium and large). Worlds saved before it existed don't get it or the Lost Stacks.
+
 ## Still needs a human playtest
 
 - Total playtime, fresh start to The Unfolded.
 - Whether any boss's attack patterns (not just its numbers) spike, especially the Leviathan.
 - Whether finding the Ink Lake inkstone, the Snowfield depths and the Underworld is obvious without the map.
 - Whether the Clocktower's puzzle reads without hints, and whether the Mainspring's gear rain in its small chamber is fair.
+- Whether the Hollow Archive's seam and torn curtain read as "come back with a tool", and whether the Bookmoth's dust storm plus mothlings is too busy.

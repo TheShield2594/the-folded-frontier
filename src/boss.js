@@ -7,7 +7,7 @@ import {
 
 // ================= boss presentation =================
 // title cards: [kicker, tagline]; the name comes from EN[type].name
-const BOSSCARD={mainspring:['Heart of the Folded Clocktower','It has been winding itself for a thousand years.'],king:['Sovereign of the Surface','Every hop shakes the page.'],crane:['Guardian of the Folded Pines','A thousand folds, one sharp beak.'],
+const BOSSCARD={mainspring:['Heart of the Folded Clocktower','It has been winding itself for a thousand years.'],bookmoth:['Keeper of the Hollow Archive','It has eaten every word ever written down here.'],king:['Sovereign of the Surface','Every hop shakes the page.'],crane:['Guardian of the Folded Pines','A thousand folds, one sharp beak.'],
   lev:['Terror of the Inkwell','It swims where the ink runs deepest.'],folio:['The Burning Book','Every chapter ends in flame.'],
   unfolded:['The First Page','It remembers the world before it was folded.']};
 export const INTRO_T=2,DEFEAT_T=2.6;

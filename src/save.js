@@ -51,6 +51,9 @@ function migrateSave(d){if(!d||typeof d!=='object'||typeof d.tiles!=='string'||t
   // (planSky) stamped in on this load, but only on untouched natural ground and empty sky, so nothing the player built is covered;
   // a world with no spot that fits goes without. The Pressed Deep needs rows the older world sizes don't have, so those worlds
   // have no deep layer (BIO.deep stays unset) and their underworld stays open to any pickaxe, as before.
+  // The Hollow Archive (issue #81) needs no version step: it is dug too deep into the rock to find untouched room for in a
+  // played world, so saves made before it (v4 or older) are left alone: planDungeons() sets BIO.dun.arch and BIO.dun.stacks to
+  // null on their next load, and they keep their terrain.
   if(d.v<4){const b=d.bio;if(b&&b.dun&&typeof b.dun!=='object')delete b.dun;if(b&&b.sky&&(typeof b.sky!=='object'||!Array.isArray(b.sky.is)))delete b.sky;d.v=4;}
   return d;}
 // Every load cleans the parts that reference game data, so a save that names an item, NPC, partner or badge

@@ -17,7 +17,7 @@ import {
 // Clips: {len seconds, loop, bl blend-in seconds, tr: {part: {r, x, y, sx, sy, sw: keys}}}. Keys are [time, value, easing
 //  to the next key] (EZR names); r is radians (canvas turn: positive is clockwise on screen), x/y design px, sx/sy scale,
 //  sw a variant name that holds until the next key ('-' hides the part).
-// A skin is what a rig wears: an object the paint functions read (for humans, the look o of drawHuman). rigSkin() bakes
+// A skin is what a rig wears: an object the paint functions read (for humans, the look o that render.js HL paints). rigSkin() bakes
 // every part and variant of a skin once into one texture, so armor, clothes, hair and expressions are part swaps and
 // re-bakes, never new frame sheets.
 // At runtime every rig is one mesh with one material: makeRig() builds it, rigPlay() picks a clip (blending from the pose
@@ -40,14 +40,15 @@ export function loopClip(len,keys,ez='io',bl){const tr={};for(const[t,v]of keys)
   for(const p in tr)for(const ch in tr[p]){const a=tr[p][ch];if(a[a.length-1][0]<len)a.push([len,a[0][1]]);}return{len,loop:1,bl,tr};}
 
 // ---- skins: every part and variant drawn once, cropped and packed into one texture
-const PAD=10,BORDER=3,skins=new Map();
+// RF: canvases whose pixels are read back (the crop scan, paper grain) stay in memory, as a GPU readback per piece is slow
+const PAD=10,BORDER=3,skins=new Map(),RF={willReadFrequently:true};
 // a cut-out piece: w x h of src (drawn at dw x dh) with paper grain and the cream paper edge, PAD px of margin all round
-function paperPiece(src,sx,sy,w,h,dw=w,dh=h){const cw=dw+PAD*2,chh=dh+PAD*2,tmp=mk(cw,chh),t=tmp.getContext('2d');t.drawImage(src,sx,sy,w,h,PAD,PAD,dw,dh);grain(t,0,0,cw,chh,12);
+function paperPiece(src,sx,sy,w,h,dw=w,dh=h){const cw=dw+PAD*2,chh=dh+PAD*2,tmp=mk(cw,chh),t=tmp.getContext('2d',RF);t.drawImage(src,sx,sy,w,h,PAD,PAD,dw,dh);grain(t,0,0,cw,chh,12);
   const sil=mk(cw,chh),s=sil.getContext('2d');s.drawImage(tmp,0,0);s.globalCompositeOperation='source-in';s.fillStyle='#fbf5e6';s.fillRect(0,0,cw,chh);
   const out=mk(cw,chh),o=out.getContext('2d');for(let i=0;i<16;i++){const an=i/16*Math.PI*2;o.drawImage(sil,Math.cos(an)*BORDER,Math.sin(an)*BORDER);}o.drawImage(tmp,0,0);return out;}
 export function rigSkin(k,skin,key){const ck=key!=null?k+':'+key:null;if(ck&&skins.has(ck))return skins.get(ck);
   const d=RIGS[k],M=Math.ceil(Math.max(d.w,d.h)*.3),W=d.w+M*2,H=d.h+M*2,pieces=[];
-  for(const p of d.parts){if(p.slot){const[a,b,c,e]=p.slot;pieces.push({p:p.i,v:'',slot:1,x0:M+p.at[0]+a,y0:M+p.at[1]+b,w:c-a,h:e-b});continue;}if(!p.paint)continue;for(const v of p.v){const c=mk(W,H),t=c.getContext('2d');t.translate(M,M);
+  for(const p of d.parts){if(p.slot){const[a,b,c,e]=p.slot;pieces.push({p:p.i,v:'',slot:1,x0:M+p.at[0]+a,y0:M+p.at[1]+b,w:c-a,h:e-b});continue;}if(!p.paint)continue;for(const v of p.v){const c=mk(W,H),t=c.getContext('2d',RF);t.translate(M,M);
     if(p.clip){t.beginPath();t.rect(p.clip[0],p.clip[1],p.clip[2]-p.clip[0],p.clip[3]-p.clip[1]);t.clip();}if(p.loc)t.translate(p.at[0],p.at[1]);
     t.lineJoin='round';t.lineCap='round';p.paint(t,skin,v);
     const a=t.getImageData(0,0,W,H).data;let x0=W,y0=H,x1=-1,y1=-1;for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(a[(y*W+x)*4+3]>8){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
@@ -161,21 +162,26 @@ export function rigSnap(R,geo){const src=R.g.attributes;if(!geo||!geo.userData.r
   else{geo.attributes.position.array.set(src.position.array);geo.attributes.uv.array.set(src.uv.array);geo.attributes.position.needsUpdate=geo.attributes.uv.needsUpdate=true;}
   geo.boundingSphere=R.g.boundingSphere.clone();return geo;}
 // a still picture of a rig (portraits, bestiary sketches, sheets for things that are not animated): design-sized canvas
-export function rigPic(k,skin,clip,t=0,key){const d=RIGS[k],S=rigSkin(k,skin,key),R={d,S,t:0,c:null,ct:0,sp:0,w:1,bl:.1,cur:blankPose(d.parts.length),from:blankPose(d.parts.length),last:blankPose(d.parts.length),
+// skin is a look to bake (shared under key, or baked for this picture alone when key is null) or an already baked skin (R.S);
+// set holds channel values over the clip's pose, {part: {r, sw, ...}} (a townsperson's tool arm, a portrait's expression)
+export function rigPic(k,skin,clip,t=0,key,set){const d=RIGS[k],own=!skin?.cells&&key==null,S=skin?.cells?skin:rigSkin(k,skin,key),R={d,S,t:0,c:null,ct:0,sp:0,w:1,bl:.1,cur:blankPose(d.parts.length),from:blankPose(d.parts.length),last:blankPose(d.parts.length),
   ov:[],ovl:[],ow:new Float32Array(d.parts.length),M:new Float32Array(d.parts.length*6),abs:new Float32Array(d.parts.length),vis:[],shadow:false,g:null,mesh:null};
   samplePose(d,clip||'idle',t,R.cur);for(let i=0;i<R.last.length;i++)Object.assign(R.last[i],R.cur[i]);
+  if(set)for(const pn in set){const i=d.pi[pn];if(i!=null)Object.assign(R.last[i],set[pn]);}
   const P=d.parts,M=R.M;for(const i of d.topo){const p=P[i],L=R.last[i],j=p.pa;let px=p.at[0]+L.x,py=p.at[1]+L.y;if(j>=0){px-=P[j].at[0];py-=P[j].at[1];}
     const c=Math.cos(L.r),s=Math.sin(L.r),la=c*L.sx,lb=s*L.sx,lc=-s*L.sy,ld=c*L.sy,o=i*6;
     if(j<0){M.set([la,lb,lc,ld,px,py],o);}else{const q=j*6,A=M[q],B=M[q+1],C=M[q+2],D=M[q+3];M.set([A*la+C*lb,B*la+D*lb,A*lc+C*ld,B*lc+D*ld,A*px+C*py+M[q+4],B*px+D*py+M[q+5]],o);}}
   const c=mk(d.w,d.h),t2=c.getContext('2d');for(let i=0;i<P.length;i++){if(P[i].slot)continue;const cs=S.cells[i],sw=R.last[i].sw,cell=sw!=='-'&&cs&&(cs[sw]||cs['']);if(!cell)continue;const o=i*6;
-    t2.setTransform(M[o],M[o+1],M[o+2],M[o+3],M[o+4],M[o+5]);t2.drawImage(S.img,cell.ax,cell.ay,cell.w,cell.h,cell.l[0],cell.l[1],cell.w,cell.h);}return c;}
+    t2.setTransform(M[o],M[o+1],M[o+2],M[o+3],M[o+4],M[o+5]);t2.drawImage(S.img,cell.ax,cell.ay,cell.w,cell.h,cell.l[0],cell.l[1],cell.w,cell.h);}if(own)S.tex.dispose();return c;}
 
 // ================= human rig =================
-// The player, townsfolk and human-shaped foes. Each part bakes the drawHuman layers (render.js HL) that belong to it, in
-// HUMAN_ORDER's order; limbs are drawn around their joint. `extra` accessories split at the neck: above it they ride the
-// head, below it the body. The head swaps between expressions.
+// The player, townsfolk and human-shaped foes. Each part bakes the human layers (render.js HL) that belong to it, in
+// the order its hl() lists give; limbs are drawn around their joint. `extra` accessories split at the neck: above it they ride the
+// head, below it the body. The head swaps between expressions: blink, happy, hurt and ko in play, and the dialogue
+// portraits' surprised, sad and angry, which add brows (facePic in render.js).
 const hl=(...L)=>(t,o)=>{for(const[p,l]of L)HL[l](t,p,o,LIMB[p]?LIMB[p][2]:1);};
-const headV=(t,o,v)=>hl(['head','body'],['head','hair'],['head','armor'],['head','face'],['head','hat'])(t,v?Object.assign({},o,v==='blink'?{blink:1}:{face:v}):o);
+const BROW={surprised:1,sad:1,angry:1};
+const headV=(t,o,v)=>hl(['head','body'],['head','hair'],['head','armor'],['head','face'],['head','hat'])(t,v?Object.assign({},o,v==='blink'?{blink:1}:{face:v,brow:BROW[v]}):o);
 defRig('human',{w:96,h:144,parts:[
   {n:'root',at:[48,138]},
   {n:'cape',at:[44,70],up:'torso',paint:hl(['back','cape']),wob:.03},
@@ -185,7 +191,7 @@ defRig('human',{w:96,h:144,parts:[
   {n:'pack',at:[44,84],up:'torso',paint:hl(['back','acc'])},
   {n:'torso',at:[48,110],up:'root',paint:hl(['torso','shirt'],['torso','armor'],['torso','pants']),wob:.008},
   {n:'legA',at:LIMB.legA,up:'root',loc:1,paint:hl(['legA','pants'],['legA','armor'],['legA','boots'])},
-  {n:'head',at:[50,72],up:'torso',paint:headV,v:['','blink','happy','hurt','ko'],wob:.01},
+  {n:'head',at:[50,72],up:'torso',paint:headV,v:['','blink','happy','hurt','ko','surprised','sad','angry'],wob:.01},
   {n:'scarf',at:[40,72],up:'torso',paint:hl(['neck','cape']),wob:.012},
   {n:'hacc',at:[50,72],up:'head',paint:hl(['head','acc']),clip:[-60,-60,160,67],wob:0},
   {n:'bacc',at:[48,90],up:'torso',paint:hl(['head','acc']),clip:[-60,67,160,220],wob:0},
@@ -470,6 +476,28 @@ defRig('mainspring',{w:240,h:240,oy:120,parts:[{n:'root',at:[cx,cy]},
   {n:'cap',at:[cx,cy],up:'face',wob:0,paint:t=>{circ(t,cx,cy,9);fi(t,'#c9a24a',2.5);}}],
   clips:{idle:blinkAt(osc(2.4,{face:{r:[.015]},brows:{y:[1.5,1]}},.15),'eyes',1.7),wind:still({brows:{y:6},eyes:{sy:.8},face:{sx:1.04,sy:1.04}},.1),
     chime:swk(osc(.3,{face:{sx:[.03,0,1.05],sy:[.03,0,1.05]},brows:{y:[2,0,-4]}},.1),'mouth',[[0,'open']])}});}
+// The Bookmoth (the Hollow Archive's boss), seen from the side like the crane: two pairs of wings cut from book pages
+// (lines of script, a blot for an eyespot) that flap by folding edge-on, a banded body like a book's spine, feathery quill
+// antennae and big eyes that blink
+{const cx=150,cy=120,page=(pts,col,spot)=>t=>{poly(t,pts);fi(t,col,4);t.save();t.clip();t.fillStyle='rgba(42,33,48,.35)';
+    const[x0,y0,x1,y1]=[Math.min(...pts.filter((v,i)=>!(i%2))),Math.min(...pts.filter((v,i)=>i%2)),Math.max(...pts.filter((v,i)=>!(i%2))),Math.max(...pts.filter((v,i)=>i%2))];
+    for(let y=y0+10;y<y1;y+=9)t.fillRect(x0+8,y,(x1-x0)*(.45+.4*Math.abs(Math.sin(y*.7))),2);t.restore();
+    if(spot){circ(t,spot[0],spot[1],spot[2]);fi(t,'#3a2a5a',3);circ(t,spot[0]+2,spot[1]-2,spot[2]*.4);t.fillStyle='#e0b0ff';t.fill();}};
+defRig('bookmoth',{w:300,h:220,oy:110,parts:[{n:'root',at:[cx,cy]},
+  {n:'hindB',at:[cx-6,cy+4],up:'root',paint:page([cx-6,cy+4,cx-92,cy+44,cx-70,cy+80,cx-20,cy+72,cx+14,cy+14],'#cdbfa6')},
+  {n:'wingB',at:[cx-2,cy-12],up:'root',paint:page([cx-2,cy-12,cx-112,cy-96,cx-54,cy-110,cx+2,cy-104,cx+34,cy-22],'#d9ccb4')},
+  {n:'body',at:[cx,cy],up:'root',wob:.006,paint:t=>{t.beginPath();t.ellipse(cx-6,cy+4,62,20,.08,0,6.28);fi(t,'#6b5a78',4);
+    for(const x of[-44,-26,-8,10])t.fillStyle='#c9a24a',t.fillRect(cx+x,cy-12+(x<0?2:0),6,30);t.beginPath();t.ellipse(cx-6,cy+4,62,20,.08,0,6.28);ink(t,4);}},
+  {n:'head',at:[cx+54,cy-4],up:'body',wob:.01,paint:t=>{for(const[a,l]of[[-1.1,58],[-.75,50]]){const ex=cx+60+Math.cos(a)*l,ey=cy-14+Math.sin(a)*l;t.beginPath();t.moveTo(cx+60,cy-14);t.quadraticCurveTo(cx+62+Math.cos(a)*l*.5,cy-30,ex,ey);ink(t,3);
+      for(let k=1;k<6;k++){const u=k/6,px=cx+60+(ex-cx-60)*u,py=cy-14+(ey-cy+14)*u;t.beginPath();t.moveTo(px,py);t.lineTo(px+7,py+3);ink(t,1.6);}}
+    circ(t,cx+66,cy-2,24);fi(t,'#7a6a88',4);}},
+  {n:'eyes',at:[cx+74,cy-6],up:'head',v:['','blink'],paint:(t,s,v)=>{if(v){t.beginPath();t.moveTo(cx+62,cy-6);t.lineTo(cx+86,cy-6);ink(t,4);return;}t.beginPath();t.ellipse(cx+74,cy-6,12,14,0,0,6.28);fi(t,'#2a1a3a',3);circ(t,cx+78,cy-11,4);t.fillStyle='#e0b0ff';t.fill();}},
+  {n:'hindA',at:[cx+2,cy+6],up:'root',paint:page([cx+2,cy+6,cx-76,cy+52,cx-48,cy+86,cx-4,cy+76,cx+24,cy+18],'#e9dcc0',[cx-40,cy+56,9])},
+  {n:'wingA',at:[cx+8,cy-12],up:'root',paint:page([cx+8,cy-12,cx-96,cy-102,cx-30,cy-116,cx+22,cy-108,cx+46,cy-22],'#fbf5e6',[cx-26,cy-74,13])}],
+  clips:{fly:blinkAt(osc(.5,{wingA:{sy:[.85,0,.2]},wingB:{sy:[.85,.5,.2]},hindA:{sy:[.3,0,.85]},hindB:{sy:[.3,.5,.85]},root:{y:[6,1.57]},head:{r:[.04,1]}},.15),'eyes',.3),
+    wind:osc(.16,{wingA:{sy:[.08,0,1.05]},wingB:{sy:[.08,1,1.05]},hindA:{sy:[.05]},hindB:{sy:[.05,1]},root:{r:[.02,0,-.22]}},.12),
+    dive:still({wingA:{sy:.25,r:.4},wingB:{sy:.25,r:.35},hindA:{sy:.5,r:.2},hindB:{sy:.5,r:.2},root:{r:.28},head:{r:.1}},.1),
+    dust:osc(.22,{wingA:{sy:[.6,0,.45]},wingB:{sy:[.6,.6,.45]},hindA:{sy:[.3,0,.8]},hindB:{sy:[.3,.6,.8]},root:{y:[3]}},.1)}});}
 // which rig and skin an enemy sheet name uses (entities.js spawnEnemy); arms: the arm pose a human foe holds
 export const HUMANFOE={
   zombie:{skin:'#a8c79a',hair:'#3e5a3a',tunic:'#6b5b8a',pants:'#4a4058',boots:'#3a3040',eyeCol:'#c0392b',noBlush:1,extra:t=>{t.fillStyle='#2a2130';t.fillRect(40,95,6,10);t.fillRect(52,85,4,8);},clip:'shamble'},
@@ -477,13 +505,18 @@ export const HUMANFOE={
     front:t=>{rr(t,58,70,24,34,8);fi(t,'#8e6a40');circ(t,70,87,5);fi(t,'#f1c04f',2);},clip:'march'},
   sentinel:{skin:'#b08a4a',helm:'#c9a24a',mail:'#b08a4a',greaves:'#8a6a3a',boots:'#4a3a26',pants:'#6b5234',tunic:'#c9a24a',eyeCol:'#8fd0ff',noBlush:1,eyeY:47,
     front:t=>{circ(t,70,87,13);fi(t,'#e0b04a');for(let k=0;k<8;k++){const a=k/8*Math.PI*2;circ(t,70+Math.cos(a)*13,87+Math.sin(a)*13,3);t.fillStyle='#e0b04a';t.fill();}circ(t,70,87,4);fi(t,'#6b5234',2);},clip:'march'},
+  // the Hollow Archive's keeper: a hooded paper librarian with an open ledger and ink-dark eyes
+  warden:{skin:'#e9dcc0',tunic:'#5a3c78',pants:'#3a2a4a',boots:'#2a1e2a',belt:'#c9a24a',eyeCol:'#7a3fb0',noBlush:1,eyeY:51,
+    extra:t=>{t.beginPath();t.moveTo(24,60);t.quadraticCurveTo(20,22,50,20);t.quadraticCurveTo(80,22,76,56);t.lineTo(70,46);t.quadraticCurveTo(50,34,32,48);t.closePath();fi(t,'#3a2a4a');rr(t,40,72,20,40,4);t.fillStyle='rgba(201,162,74,.5)';t.fillRect(48,74,3,36);},
+    front:t=>{t.save();t.translate(68,90);t.rotate(-.2);poly(t,[-14,-10,0,-6,0,10,-14,6]);fi(t,'#f4ecd8',2);poly(t,[0,-6,14,-10,14,6,0,10]);fi(t,'#fbf8f0',2);t.fillStyle='rgba(42,33,48,.45)';for(const y of[-4,0,4]){t.fillRect(-11,y,8,1.2);t.fillRect(3,y-1,8,1.2);}t.restore();},clip:'march',arm:-.7},
   ashimp:{skin:'#9a3b2a',tunic:'#3a2a24',pants:'#2a1e1a',boots:'#1e1614',eyeCol:'#ffd66b',noBlush:1,
     extra:t=>{poly(t,[34,34,28,14,40,28]);fi(t,'#3a2a24',2);poly(t,[62,30,72,10,68,32]);fi(t,'#3a2a24',2);},front:t=>{circ(t,70,84,7);t.fillStyle='rgba(255,138,61,.6)';t.fill();},clip:'march',arm:-.8}};
 export const FOERIG={slime:['slime',{col:'#6cc57a'}],bslime:['slime',{col:'#5aa7e0'}],blot:['slime',{col:'#4a3570'}],king:['king',{col:'#5aa7e0'}],
   bat:['bat',{c1:'#6b4c8f',c2:'#5a3f7a',eye:'#f1c04f',fang:1}],cinderbat:['bat',{c1:'#3a2a24',c2:'#2a1e1a',eye:'#ff8a3d'}],eye:['eye',{}],
-  zombie:['human',HUMANFOE.zombie],knight:['human',HUMANFOE.knight],sentinel:['human',HUMANFOE.sentinel],ashimp:['human',HUMANFOE.ashimp],
+  zombie:['human',HUMANFOE.zombie],knight:['human',HUMANFOE.knight],sentinel:['human',HUMANFOE.sentinel],ashimp:['human',HUMANFOE.ashimp],warden:['human',HUMANFOE.warden],
+  mothling:['bat',{c1:'#e8dcc4',c2:'#b8a0d0',eye:'#2a2130'}],
   // every other foe and boss wears its own rig's colors
   ...Object.fromEntries(['crumple','toadstool','dunefin','scarab','clockbug','sunkite','snowroll','snowlet','frostpuff','flurry','inkwisp','quillfish','inksquid','foldfox','cracker','ashspider','wraith','skyray',
-    'crane','lev','levseg','levtail','folio','unfolded','mainspring'].map(k=>[k,[k,{}]]))};
+    'crane','lev','levseg','levtail','folio','unfolded','mainspring','bookmoth'].map(k=>[k,[k,{}]]))};
 // the enemies' still pictures (bestiary sketches) come from their rigs; the T textures stay for anything that still wants a sheet
 export function buildRigSheets(SHEETS){for(const k in FOERIG){if(SHEETS[k])continue;const[r,s]=FOERIG[k],d=RIGS[r];SHEETS[k]=rigPic(r,s,r==='human'?'idle':['fly','idle','swim'].find(c=>d.clips[c]),0,k);SHEETS[k+'T']=canvasTex(SHEETS[k]);}}

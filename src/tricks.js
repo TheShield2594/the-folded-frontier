@@ -88,7 +88,7 @@ export function trickAt(t,x,y){if(t===T.SEAM)tearSeam(x,y);else if(t===T.RIP)sti
 // a torn hole has no page to stand on: stepping into one throws you back to where you last stood. It is a locked door,
 // not a trap, so it costs no life
 let safe=null,ripT=0,trBIO=null;
-export function updateTricks(dt){const p=player;ripT-=dt;if(trBIO!==BIO){trBIO=BIO;safe=null;}if(p.dead||!BIO||!BIO.trick||!BIO.trick.rip.length)return;
+export function updateTricks(dt){const p=player;ripT-=dt;if(trBIO!==BIO){trBIO=BIO;safe=null;}if(p.dead||!BIO||!BIO.uw)return;
   const x0=Math.floor(p.x-p.w/2),x1=Math.floor(p.x+p.w/2),y0=Math.floor(p.y),y1=Math.floor(p.y+p.h);let inRip=false,nearRip=false;
   for(let y=y0-1;y<=y1;y++)for(let x=x0-1;x<=x1+1;x++){if(tiles[idx(x,y)]!==T.RIP)continue;nearRip=true;if(x>=x0&&x<=x1&&y>=y0)inRip=true;}
   if(!inRip){if(p.onGround&&!nearRip)safe={x:p.x,y:p.y};return;}
