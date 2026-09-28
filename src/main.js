@@ -3,7 +3,7 @@
 import * as THREE from 'three';
 import {
   reduceMotion,
-  $,AC,ambient,angler,biomeAt,BIONAME,buildBiomeSheets,buildChunk,buildMoreSheets,buildPartnerSheets,
+  $,AC,ambient,angler,biomeAt,BIONAME,buildChunk,buildPartnerSheets,
   buildSheets,camera,camT,canvasTex,chapterCard,checkAch,checkRitual,checkRoom,circ,clamp,clouds,
   computeLightStrip,crops,fullMoon,updateBossFx,rareGrowChance,drawWarnMark,curBio,CW,dirty,drawMap,eliteMat,explored,fi,H,handlePad,hasNPC,hitStop,
   inkMoon,invDirty,invOpen,isNight,lightDirty,loadSave,loadWorld,lx0,lx1,makeSheet,mapOpen,markChunk,
@@ -19,7 +19,7 @@ import {
 } from './game.js';
 
 // ================= boot =================
-buildSheets();buildBiomeSheets();buildMoreSheets();buildPartnerSheets();buildPetSheets();buildRigSheets(SHEETS);
+buildSheets();buildPartnerSheets();buildPetSheets();buildRigSheets(SHEETS);
 loadArt(); // hand-made art from assets/art/ replaces the drawn cells and sheets it names once the images decode
 drawWarnMark();
 eliteMat.map=canvasTex(makeSheet(1,64,64,t=>{const s=[];for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,r=k%2?11:26;s.push(32+Math.cos(a)*r,34+Math.sin(a)*r);}poly(t,s);fi(t,'#f1c04f',3.5);circ(t,27,28,3);t.fillStyle='#fff8e4';t.fill();},3));eliteMat.needsUpdate=true;

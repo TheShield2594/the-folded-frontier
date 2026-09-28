@@ -756,7 +756,7 @@ export function updateEnemies(dt){const p=player;tickFuses(dt);for(let i=enemies
     else if(!fromAbove){const hp0=p.hp;hurtPlayer(edmg(e)*(e.act==='dash'?1.3:1),e.x,e,e.elem||d.elem);if(e.trait==='vampiric'&&p.hp<hp0){const h=Math.round((hp0-p.hp)*1.5);e.hp=Math.min(e.max,e.hp+h);e.hpShow=3;floatText(e.x,e.y+e.h+.3,'+'+h,'weak');burst(e.x,e.y+e.h/2,['#d4483b','#ff9aa8'],8,2,{grav:-2});}}}
   // mesh
   const m=e.mesh;e.rot+=((e.face>0?0:Math.PI)-e.rot)*Math.min(1,dt*14);m.rotation.y=e.rot;
-  if(e.rig)foeClip(e);else{let fr=0;if(d.slimy)fr=e.onGround&&e.timer<.25?1:0;else fr=Math.floor(e.t*(d.fly?8:5))%2;e.mesh.material.uniforms.uFrame.value=fr;}
+  foeClip(e,dt);
   if(d.fly)m.position.set(e.x,e.y+e.h/2,m.position.z);else m.position.set(e.x,e.y-.1,m.position.z);if(e.tele)m.position.x+=Math.sin(e.t*75)*.05*(d.boss?2.5:1);
   if(!d.fly&&!e.onGround&&d.slimy){const s=clamp(1+e.vy*.02,.85,1.2);m.scale.set(1/s,s,1);}else m.scale.set(1,1,1);
   if(e.folded)m.scale.set(1.2,.25,1);if(d.worm){m.rotation.y=0;const a=e.ang||0;m.rotation.z=a;m.scale.set(1,Math.cos(a)<0?-1:1,1);}
@@ -767,22 +767,42 @@ export function updateEnemies(dt){const p=player;tickFuses(dt);for(let i=enemies
   else if(e.type==='dunefin'&&e.burrow)m.position.y-=e.sh*.72;
   else if(e.type==='frostpuff'){const k=1+(e.inf||0)*.45;m.scale.set(k,k,1);}
   else if(e.type==='inkwisp'&&e.act==='fade'){const k=Math.max(.05,e.at/.5);m.scale.set(k,k,1);}
-  else if((e.type==='scarab'||e.type==='clockbug')&&e.act==='open')m.scale.set(1.08,.8,1);
   else if(e.type==='ashspider'){const hang=e.act==='hang'||e.act==='drop';m.rotation.z=hang?Math.PI:0;if(hang)m.position.y=e.y+e.h+.1;
     if(hang&&!e.thread){e.thread=new THREE.Mesh(threadGeo,new THREE.MeshBasicMaterial({color:0xd8cfc0}));e.thread.renderOrder=2;scene.add(e.thread);}
     if(e.thread){const len=(e.hangY??e.y+e.h)-(e.y+e.h);e.thread.visible=hang&&len>.05;e.thread.position.set(e.x,e.y+e.h,.09);e.thread.scale.y=Math.max(.01,len);}}
   if(e.elite)m.scale.multiplyScalar((traitOf(e)||{}).sz||1.2);
   if(d.boss||e.parent)bossLook(e,m,dt);
-  setTint(m.material,e.x,e.y+e.h/2);if(e.inked)m.material.uniforms.uTint.value.multiply(INKTINT);if(e.elite){m.material.uniforms.uTint.value.multiply(ELITE_TINT);if(e.trait)traitFx(e,m,dt);else if(Math.random()<dt*4)burst(e.x+rand(-e.w/2,e.w/2),e.y+rand(0,e.h),['#f1c04f','#fff3c0'],1,.6,{grav:-1,life:.6,bright:1});}if(e.st)statusFx(e,m,dt);m.material.uniforms.uFlash.value=e.flash>0?.8:(e.warn?.15+.12*Math.sin(e.t*28):0);teleOutline(m,SET.tele&&(e.tele||e.warn)&&!e.burrow,e.t);if(e.rig)rigUpdate(e.rig,dt);updateEnemyFx(e,dt);}
+  setTint(m.material,e.x,e.y+e.h/2);if(e.inked)m.material.uniforms.uTint.value.multiply(INKTINT);if(e.elite){m.material.uniforms.uTint.value.multiply(ELITE_TINT);if(e.trait)traitFx(e,m,dt);else if(Math.random()<dt*4)burst(e.x+rand(-e.w/2,e.w/2),e.y+rand(0,e.h),['#f1c04f','#fff3c0'],1,.6,{grav:-1,life:.6,bright:1});}if(e.st)statusFx(e,m,dt);m.material.uniforms.uFlash.value=e.flash>0?.8:(e.warn?.15+.12*Math.sin(e.t*28):0);teleOutline(m,SET.tele&&(e.tele||e.warn)&&!e.burrow,e.t);rigUpdate(e.rig,dt);updateEnemyFx(e,dt);}
   if(boss){$('boss').querySelector('i').style.width=clamp(boss.hp/boss.max*100,0,100)+'%';}}
-// rigged foes (rig.js FOERIG) pick a clip from what they are doing: humans walk their gait and wince when hit, slimes crouch
-// before a hop, fliers flap, and the floating eye's iris follows you
-function foeClip(e){const R=e.rig,p=player;
-  if(R.k==='human'){const H=HUMANFOE[e.type]||{},walk=Math.abs(e.vx)>.3;rigPlay(R,walk?H.clip||'march':'idle',{sp:clamp(Math.abs(e.vx)/2.2,.6,1.8)});
-    if(H.arm!=null)rigSet(R,'armA',{r:H.arm});if(e.type==='zombie'&&!walk){rigSet(R,'armA',{r:-1.45});rigSet(R,'armB',{r:-1.3});}if(e.flash>0||e.stun>0)rigSet(R,'head',{sw:'hurt',snap:1});}
-  else if(R.k==='slime'||R.k==='king')rigPlay(R,e.onGround&&e.timer<.25?'crouch':'idle');
-  else rigPlay(R,'fly',{sp:e.stun>0?.3:1});
-  if(R.k==='eye'){const dx=p.x-e.x,dy=p.y+1-(e.y+e.h/2),l=Math.hypot(dx,dy)||1;rigSet(R,'iris',{x:dx/l*5*e.face,y:-dy/l*5});}}
+// every foe is a rig (rig.js FOERIG) and picks a clip from what it is doing: humans walk their gait and wince when hit, slimes
+// and snowballs crouch before a hop, fliers flap, beetles lift their shells, eyes follow you, and bosses pose for each attack
+function foeClip(e,dt){const R=e.rig,p=player,a=e.act,mv=Math.abs(e.vx)>.3,look=(pt,k,y=0)=>{const dx=p.x-e.x,dy=p.y+1-(e.y+e.h/2),l=Math.hypot(dx,dy)||1;rigSet(R,pt,{x:dx/l*k*e.face,y:-dy/l*k+y});};
+  switch(R.k){
+  case'human':{const H=HUMANFOE[e.type]||{};rigPlay(R,mv?H.clip||'march':'idle',{sp:clamp(Math.abs(e.vx)/2.2,.6,1.8)});
+    if(H.arm!=null)rigSet(R,'armA',{r:H.arm});if(e.type==='zombie'&&!mv){rigSet(R,'armA',{r:-1.45});rigSet(R,'armB',{r:-1.3});}if(e.flash>0||e.stun>0)rigSet(R,'head',{sw:'hurt',snap:1});break;}
+  case'slime':case'king':case'snowroll':case'snowlet':rigPlay(R,e.onGround&&e.timer<.25?'crouch':e.onGround?'idle':'air');break;
+  case'crumple':rigPlay(R,'idle',{sp:1+Math.min(3,Math.abs(e.vx)/2.5)});break;
+  case'toadstool':rigPlay(R,a==='wind'?'wind':mv&&e.onGround?'walk':'idle');break;
+  case'dunefin':rigPlay(R,a==='leap'?(e.vy>0?'up':'down'):a==='exposed'?'flop':'swim',{sp:a==='rise'?3:a==='under'?1.5:1});break;
+  case'scarab':case'clockbug':rigPlay(R,a==='wind'?'wind':a==='dash'?'dash':a==='open'?'open':mv?'walk':'idle');break;
+  case'sunkite':case'skyray':rigPlay(R,a==='wind'||a==='dive'?a:'fly',{sp:a==='climb'?1.6:1});break;
+  case'frostpuff':rigPlay(R,a==='puff'?'puff':'fly');break;
+  case'inkwisp':rigPlay(R,a==='aim'||a==='strike'?a:'fly');look('iris',2.5);break;
+  case'quillfish':{const wet=TP[tileAt(Math.floor(e.x),Math.floor(e.y+e.h/2))].liq;rigPlay(R,wet?'swim':e.onGround?'flop':'air');break;}
+  case'inksquid':rigPlay(R,TP[tileAt(Math.floor(e.x),Math.floor(e.y+e.h/2))].liq?'swim':'dry');break;
+  case'foldfox':rigPlay(R,a==='wind'?'wind':!e.onGround?'air':Math.abs(e.vx)>.5?'run':'idle',{sp:clamp(Math.abs(e.vx)/3.5,.7,1.6)});break;
+  case'cracker':rigPlay(R,a==='fuse'?'fuse':mv?'walk':'idle');break;
+  case'ashspider':rigPlay(R,a==='hang'?'hang':a==='drop'||!e.onGround?'drop':mv?'walk':'idle');break;
+  // bosses: the crane beats its wings harder in a storm, the Leviathan's body follows its head a beat behind, the Folio turns a
+  // page to cast and watches you, the Unfolded glares in its last phase, the Mainspring keeps (fast) time
+  case'crane':rigPlay(R,a==='wind'||a==='swoop'||a==='volley'?a:a==='phase'||a==='intro'?'wind':'fly',{sp:a==='storm'?2.2:(e.phase||0)>=1?1.3:1});break;
+  case'lev':rigPlay(R,a==='wind'||a==='lunge'?a:'swim');break;
+  case'levseg':case'levtail':{const b=e.parent||e;e.si??=b.segs?b.segs.indexOf(e):0;rigPlay(R,'swim',{t:(b.t||0)-e.si*.09});break;}
+  case'folio':rigPlay(R,a==='wind'?'turn':a==='fire'||a==='rain'?a:'idle');look('iris',9);break;
+  case'unfolded':rigPlay(R,a==='wind'||a==='leap'||a==='volley'||a==='shred'||a==='fold'?a:mv&&e.onGround?'walk':'idle',{sp:clamp(Math.abs(e.vx)/2.2,.7,1.4)});if((e.phase||0)>=2)rigSet(R,'head',{sw:'glare',snap:1});break;
+  case'mainspring':{const ph=e.phase||0,k=a==='wind'||a==='dash'?5:1+ph*.6;e.clk=(e.clk||0)+dt*k;rigPlay(R,a==='chime'?'chime':a==='wind'||a==='dash'?'wind':'idle');
+    rigSet(R,'handM',{r:e.clk*2.4,snap:1});rigSet(R,'handH',{r:e.clk*.2+.8,snap:1});rigSet(R,'rim',{r:e.clk*.25,snap:1});look('pupils',4);break;}
+  default:rigPlay(R,'fly',{sp:e.stun>0?.3:1});if(R.k==='eye')look('iris',5);}}
 export function updateNPC(dt){for(const n of npcs){n.t+=dt;n.timer-=dt;const h=n.home||n.roam;if(n.timer<=0){n.timer=rand(1.5,4);const r=Math.random();n.want=r<.45?0:(r<.72?-1:1);}
   const near=Math.abs(player.x-n.x)<3&&Math.abs(player.y-n.y)<2.5&&!player.dead;
   let want=near?0:(n.want||0);if(near)n.face=player.x>n.x?1:-1;if(h){if(n.x<h.minX+.7)want=1;if(n.x>h.maxX+.3)want=-1;}n.vx=want*1.6;if(want)n.face=want;n.vy-=50*dt;collide(n,dt);

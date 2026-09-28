@@ -179,6 +179,31 @@ test('elite traits and the meteor shower, eclipse and migration events run',asyn
   expect(r.paid).toBe(true);
 });
 
+test('every foe and boss is a paper rig that poses for what it is doing',async({page})=>{
+  await boot(page);
+  await newSmallWorld(page);
+  const r=await page.evaluate(async()=>{
+    const g=await import('/src/game.js'),p=g.player,out={noRig:[],clips:{},pics:[]};
+    const clear=()=>{for(const e of g.enemies)g.removeEnemy(e);g.enemies.length=0;g.setBoss(null);};
+    // each foe spawns on its rig and is stepped through its AI states; the clip it plays in each is recorded
+    const ACTS=[null,'wind','dash','open','dive','puff','aim','strike','fuse','hang','leap','exposed','swoop','volley','lunge','fire','shred','fold','chime'];
+    for(const k of Object.keys(g.EN)){if(g.EN[k].worm&&k!=='lev')continue;const e=g.spawnEnemy(k,p.x+5,p.y+3);if(!e.rig||e.rig.k!==g.FOERIG[g.EN[k].sheet][0])out.noRig.push(k);
+      const seen=new Set();for(const a of ACTS){for(const o of g.enemies){o.act=a;o.at=5;o.shots=3;o.next='fire';o.st2=1;}g.updateEnemies(1/30);seen.add(e.rig.c);}
+      out.clips[k]=[...seen].sort();for(const o of g.enemies)if(o.parent&&!o.rig)out.noRig.push(o.type);clear();
+      // the bestiary sketch is a still of the rig
+      const s=g.SHEETS[g.EN[k].sheet];if(!s||s.width!==g.EN[k].fw||s.height!==g.EN[k].fh)out.pics.push(k);}
+    // the Mainspring's hands keep time
+    const m=g.spawnEnemy('mainspring',p.x+5,p.y+4);m.act=null;g.updateEnemies(1/30);const h0=m.rig.abs[m.rig.d.pi.handM];for(let i=0;i<10;i++)g.updateEnemies(1/30);out.tick=m.rig.abs[m.rig.d.pi.handM]!==h0;clear();
+    out.sheets=['crumple','crane','folio','unfolded','wraith'].filter(k=>g.SHEETS[k+'T']&&g.SHEETS[k+'T'].image.width===g.EN[k].fw*2);
+    return out;});
+  expect(r.noRig).toEqual([]);
+  expect(r.pics).toEqual([]);
+  expect(r.sheets).toEqual([]);
+  expect(r.tick).toBe(true);
+  for(const[k,c]of[['scarab','open'],['clockbug','open'],['toadstool','wind'],['dunefin','flop'],['sunkite','dive'],['frostpuff','puff'],['inkwisp','strike'],['foldfox','wind'],['cracker','fuse'],['ashspider','hang'],
+    ['crane','swoop'],['lev','lunge'],['folio','turn'],['unfolded','shred'],['mainspring','chime']])expect(r.clips[k],k).toContain(c);
+});
+
 test('new worlds get sky islands, the Pressed Deep and the Folded Clocktower, which can be cleared and is saved',async({page})=>{
   await boot(page);
   await newSmallWorld(page);
@@ -277,18 +302,18 @@ test('hand-made art replaces the atlas cells and sprite sheets it names',async({
     const g=await import('/src/game.js');await g.artReady;
     const solid=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.fillStyle='#ff0000';x.fillRect(0,0,w,h);return c;};
     const px=(cv,x,y)=>[...cv.getContext('2d').getImageData(x,y,1,1).data];
-    const list=g.artList(),[cx,cy]=g.cellXY(g.C.swFe),fv=g.SHEETS.folioT.version,f=g.SHEETS.folio;
-    const cell=g.applyArt('atlas','swFe',solid(64,64)),sheet=g.applyArt('sheets','folio',solid(f.width,f.height));
+    const list=g.artList(),[cx,cy]=g.cellXY(g.C.swFe),fv=g.SHEETS.stagT.version,f=g.SHEETS.stag;
+    const cell=g.applyArt('atlas','swFe',solid(64,64)),sheet=g.applyArt('sheets','stag',solid(f.width,f.height));
     // ores keep their drawn cells in a color-vision mode
     g.SET.cb='deut';const ore=g.applyArt('atlas','copper',solid(64,64));g.SET.cb='off';
     // the export stays the drawn art, and names that aren't a whole cell name are rejected
     const origCell=await new Promise(res=>{const i=new Image();i.onload=()=>{const c=document.createElement('canvas');c.width=64;c.height=64;c.getContext('2d').drawImage(i,0,0);res(px(c,32,32));};
       const a=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){};i.src=g.artExport('atlas','swFe');HTMLAnchorElement.prototype.click=a;});
     const bad=['swFe.0','crack.x','crack.-1','crack.99','crack'].map(k=>g.applyArt('atlas',k,solid(64,64)));
-    return {origCell,bad,folio:list.sheets.folio,swFe:list.atlas.swFe,crack:list.atlas['crack.2'],cell,sheet,ore,missing:g.applyArt('sheets','nope',solid(8,8)),
-      cellPx:px(g.atlas,cx+32,cy+32),sheetPx:px(f,f.width/2,f.height/2),bumped:g.SHEETS.folioT.version>fv};
+    return {origCell,bad,stag:list.sheets.stag,swFe:list.atlas.swFe,crack:list.atlas['crack.2'],cell,sheet,ore,missing:g.applyArt('sheets','nope',solid(8,8)),
+      cellPx:px(g.atlas,cx+32,cy+32),sheetPx:px(f,f.width/2,f.height/2),bumped:g.SHEETS.stagT.version>fv};
   });
-  expect(r.folio).toBe('680×280');
+  expect(r.stag).toBe('480×112');
   expect(r.swFe).toBe('64×64');
   expect(r.crack).toBe('64×64');
   expect([r.cell,r.sheet,r.ore,r.missing]).toEqual([true,true,false,false]);
