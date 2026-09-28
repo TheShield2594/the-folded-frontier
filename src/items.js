@@ -2,8 +2,8 @@
 import {C,METAL} from './game.js';
 
 // ================= tiles =================
-export const T={MURAL:63,RARE:62,FOIL:61,PEEL:55,SKETCH:56,SIGN:57,PEDESTAL:58,RUBBLE:59,ALTAR:60,CROP:52,ALCHEMY:53,PAINT5:54,PAINT1:39,PAINT2:40,PAINT3:41,PAINT4:42,BANR:43,BANB:44,BANG:45,LANTERNP:46,SHELF:47,CANDLE:48,POT:49,CLOCK:50,ARMCHAIR:51,SNOW:28,ICE:29,FROST:30,INKSTONE:31,INKORE:32,ASH:33,EMBERORE:34,ROPE:35,INK:36,LAVA:37,BLOOM:38,AIR:0,GRASS:1,DIRT:2,STONE:3,PLANK:4,TRUNK:5,COPPER:6,IRON:7,GOLD:8,SAND:9,TORCH:10,DOOR:11,TABLE:12,CHAIR:13,CHEST:14,BENCH:15,BRICK:16,GLASS:17,PLATFORM:18,FURNACE:19,ANVIL:20,BED:21,HEART:22,TUFT:23,FLOWER:24,MUSH:25,CORE:26,FLOWER2:27};
-export const TP=[];export const SOLID=new Uint8Array(64),OPAQUE=new Uint8Array(64),LB=new Uint8Array(64),LIGHT=new Uint8Array(64);
+export const T={FAKE:64,DRIFT:65,THIN:66,SEAL:67,MURAL:63,RARE:62,FOIL:61,PEEL:55,SKETCH:56,SIGN:57,PEDESTAL:58,RUBBLE:59,ALTAR:60,CROP:52,ALCHEMY:53,PAINT5:54,PAINT1:39,PAINT2:40,PAINT3:41,PAINT4:42,BANR:43,BANB:44,BANG:45,LANTERNP:46,SHELF:47,CANDLE:48,POT:49,CLOCK:50,ARMCHAIR:51,SNOW:28,ICE:29,FROST:30,INKSTONE:31,INKORE:32,ASH:33,EMBERORE:34,ROPE:35,INK:36,LAVA:37,BLOOM:38,AIR:0,GRASS:1,DIRT:2,STONE:3,PLANK:4,TRUNK:5,COPPER:6,IRON:7,GOLD:8,SAND:9,TORCH:10,DOOR:11,TABLE:12,CHAIR:13,CHEST:14,BENCH:15,BRICK:16,GLASS:17,PLATFORM:18,FURNACE:19,ANVIL:20,BED:21,HEART:22,TUFT:23,FLOWER:24,MUSH:25,CORE:26,FLOWER2:27};
+export const TP=[];export const SOLID=new Uint8Array(128),OPAQUE=new Uint8Array(128),LB=new Uint8Array(128),LIGHT=new Uint8Array(128);
 function def(id,o){TP[id]=Object.assign({hard:.5,pick:0,drop:null,light:0,solid:false,col:'#888'},o);SOLID[id]=o.solid?1:0;OPAQUE[id]=o.solid&&id!==T.DOOR?1:0;LB[id]=OPAQUE[id]&&id!==T.GLASS?1:0;LIGHT[id]=o.light||0;}
 def(T.AIR,{hard:0,col:'#000'});
 def(T.GRASS,{solid:1,hard:.35,drop:'dirt',cell:C.grassF,top:C.grassT,col:'#6dbb4a',name:'Grass'});
@@ -62,6 +62,12 @@ def(T.PEDESTAL,{solid:1,hard:99,pick:99,cell:C.pedestal,col:'#6c6e79'});
 def(T.RUBBLE,{hard:.2,drop:'stone',cell:C.rubble,col:'#8d8f9a',floor:1,repl:1});
 def(T.ALTAR,{hard:99,pick:99,cell:C.altar,col:'#b06ad0',light:6});
 def(T.FOIL,{solid:1,hard:3.4,pick:6,drop:'foilore',cell:C.foilOre,light:3,col:'#e4dcf0'});
+// secrets: a fake wall draws like stone (meta 0), brick (1) or dirt (2) and blocks light, but you walk through it; the temple seal only opens by ritual
+def(T.FAKE,{hard:.8,drop:'stone',cell:C.stone,col:'#8d8f9a'});OPAQUE[T.FAKE]=LB[T.FAKE]=1;
+def(T.SEAL,{solid:1,hard:99,pick:99,cell:C.seal,col:'#4a3570',light:3});
+// seasonal: snow drifts pile on open ground in winter, thin ice covers open ink; both melt away at the thaw (seasons.js)
+def(T.DRIFT,{hard:.01,cell:C.drift,col:'#f4f8fb',floor:1,repl:1});
+def(T.THIN,{solid:1,hard:.3,cell:C.thinIce,col:'#cfe8f5'});
 def(T.PLATFORM,{hard:.25,drop:'platform',cell:C.platform,col:'#c98f4f'});
 export const WALLCELL=[0,C.wDirt,C.wWood,C.wStone,C.wRed,C.wBlue,C.wGreen,C.wYellow],WALLCOL=['#000','#4e3824','#5e4128','#55576a','#6a2e28','#2e4262','#3a583a','#806832'],WALLDROP=[null,null,'woodwall','stonewall','wallred','wallblue','wallgreen','wallyellow'];
 
@@ -230,9 +236,16 @@ item('rodember',{name:'Emberite Rod',cell:C.rodEm,rod:1,fpow:50,lava:1,max:1,val
 item('fly',{name:'Paper Fly',cell:C.fly,bait:10,value:1,desc:'Basic bait. Used up when you land a catch.'});
 item('glowlure',{name:'Glow Lure',cell:C.glowlure,bait:25,value:3,desc:'Better bait. Fish can see it from the deep.'});
 item('moonlure',{name:'Moon Lure',cell:C.moonlure,bait:45,value:8,desc:'The best bait. Rare fish follow it anywhere.'});
-const FISH={minnow:['Paper Minnow','Common in any ink pool.'],koi:['Crane Koi','Folded from a paper crane. Lives in the Origami Snowfield.'],inkfish:['Inkfish','Only the Ink Lake is deep enough for it.'],
-  sandsole:['Sandpaper Sole','Hides in ink pools in the Sandpaper Dunes.'],nightkoi:['Moonlit Koi','Rises in any ink pool at night.'],goldfin:['Golden Fin','Rare. Needs strong bait and a good rod.'],lavafish:['Lava Snapper','Swims in the lava of the Burnt Underworld.']};
-for(const k in FISH)item(k,{name:FISH[k][0],cell:C[k],fish:1,value:k==='goldfin'?60:k==='lavafish'?25:k==='minnow'?3:10,desc:FISH[k][1]+' Cook it at a furnace, or bring it to the Angler.'});
+// fish: [name, where, value, smallest and largest size in cm, legendary]
+export const FISH={minnow:['Paper Minnow','Common in any ink pool.',3,4,14],koi:['Crane Koi','Folded from a paper crane. Lives in the Origami Snowfield.',10,20,60],inkfish:['Inkfish','Only the Ink Lake is deep enough for it.',10,18,55],
+  sandsole:['Sandpaper Sole','Hides in ink pools in the Sandpaper Dunes.',10,15,45],nightkoi:['Moonlit Koi','Rises in any ink pool at night.',10,20,65],goldfin:['Golden Fin','Rare. Needs strong bait and a good rod.',60,12,35],lavafish:['Lava Snapper','Swims in the lava of the Burnt Underworld.',25,25,70],
+  blossomtrout:['Blossom Trout','Bites only in spring, when petals fall on the water.',14,18,50],sunperch:['Sun Perch','Basks near the top of the water in summer, by day.',14,12,38],maplecarp:['Maple Carp','Fattens up in fall. Its scales turn red with the leaves.',14,25,75],
+  icepike:['Icicle Pike','Only bites in winter, through a hole in the ice.',16,30,90],stormeel:['Storm Eel','Only bites in the rain or a Paper Storm.',22,40,110],
+  oldcrease:['Old Crease','Legendary. A carp folded a thousand times, hiding in forest ponds.',250,90,160,1],glacierjaw:['Glacier Jaw','Legendary. Swims under the snowfield ice in winter.',300,110,190,1],
+  moonscale:['Moonscale','Legendary. Surfaces in the Ink Lake only under an Ink Moon.',400,120,210,1],magmaw:['Magmaw','Legendary. The king of the lava, too hot for any rod but Emberite.',450,140,240,1]};
+for(const k in FISH){const f=FISH[k];item(k,{name:f[0],cell:C[k],fish:1,leg:f[5]||0,max:f[5]?99:999,value:f[2],desc:f[1]+(f[5]?' It fights hard: keep clicking as it thrashes. The Curator would give it a tank.':' Cook it at a furnace, or bring it to the Angler.')});}
+item('goldleaf',{name:'Golden Leaf',cell:C.goldleaf,value:6,desc:'Drifts down from forest trees in fall. Gilded Lures are made from it.'});
+item('leaflure',{name:'Gilded Lure',cell:C.leaflure,bait:35,value:5,desc:'Good bait, glittering with fall gold.'});
 item('soggy',{name:'Soggy Paper',cell:C.soggy,value:0,desc:'Not a fish. Better bait and rods catch less of this.'});
 item('fcrate',{name:'Fishing Crate',cell:C.fcrate,use:'crate',max:99,value:25,desc:'Use it to open. Coins, bars, bait, and sometimes something special.'});
 item('grilledfish',{name:'Grilled Fish',cell:C.grilled,use:'buff',buff:'fed',dur:480,max:30,value:8,desc:'Well Fed for 8 minutes.'});
@@ -297,7 +310,7 @@ export const RECIPES=[
  ['shfr',1,[['frostbar',12]],'anvil'],['shik',1,[['inkbar',12],['inksac',2]],'anvil'],['shem',1,[['emberbar',14],['cinder',1]],'anvil'],
  ['rodwood',1,[['wood',10],['rope',5]],'bench'],['rodiron',1,[['ironbar',8],['rope',10]],'anvil'],['rodfrost',1,[['frostbar',10],['plume',2]],'anvil'],['rodember',1,[['emberbar',12],['cinder',1]],'anvil'],
  ['fly',5,[['paper',1],['gel',1]],null],['glowlure',3,[['mushroom',1],['gel',2]],'bench'],['moonlure',3,[['moonink',1],['fstar',1]],'bench'],
- ['grilledfish',1,[['minnow',2]],'furnace'],['grilledfish',1,[['koi',1]],'furnace'],['grilledfish',1,[['inkfish',1]],'furnace'],['grilledfish',1,[['sandsole',1]],'furnace'],['grilledfish',1,[['nightkoi',1]],'furnace'],['grilledfish',2,[['lavafish',1]],'furnace'],
+ ['grilledfish',1,[['minnow',2]],'furnace'],['grilledfish',1,[['koi',1]],'furnace'],['grilledfish',1,[['inkfish',1]],'furnace'],['grilledfish',1,[['sandsole',1]],'furnace'],['grilledfish',1,[['nightkoi',1]],'furnace'],['grilledfish',2,[['lavafish',1]],'furnace'],['grilledfish',1,[['blossomtrout',1]],'furnace'],['grilledfish',1,[['sunperch',1]],'furnace'],['grilledfish',1,[['maplecarp',1]],'furnace'],['grilledfish',1,[['icepike',1]],'furnace'],['grilledfish',1,[['stormeel',1]],'furnace'],['leaflure',3,[['goldleaf',2],['fly',3]],'bench'],
  ['potfish',1,[['minnow',1],['sunpetal',1],['glass',1]],'alchemy'],
  ['manacrystal',1,[['fstar',5]],null],['manapotion',2,[['gel',2],['fstar',1]],'bench'],
  ['pet_frog',1,[['paper',12],['gel',6]],'bench'],['stag',1,[['paper',40],['goldbar',8],['plume',3]],'anvil'],

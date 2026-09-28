@@ -34,5 +34,6 @@ export * from './events.js';
 export * from './pals.js';
 export * from './awaken.js';
 export * from './lore.js';
+export * from './secrets.js';
 export * from './perf.js';
 export * from './save.js';

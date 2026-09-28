@@ -10,7 +10,7 @@ import {
   popUp,projs,pt,pv,questDone,quests,rand,randi,removeEnemy,removeItem,rollWeather,scene,SEEDIDS,selItem,SET,
   setBoss,setInv,shoulderAt,setInvDirty,setTile,setTint,SFX,sh,shieldItem,SOIL,SOLID,spawnEnemy,spawnGhost,
   spriteMat,stat,state,surf,surfAvg,syncPartners,T,talkTo,threadGeo,tileAt,tiles,toast,tone,TP,U,
-  palEv,partnerCheer,
+  palEv,partnerCheer,FISH,season,festival,worldDay,hasNPC,META,
   updateCoins,updateDashHud,updateDrawHud,updateEnemyFx,updateGhosts,upx,W,WALLCOL,WALLDROP,walls,
   worldClock,worldTime,digFossil,evKill,fcount,npcLine,plain,
   guideEv,dismount,MOUNTS,petS,toggleMount,togglePet,NDL,emit,loreChest,readMural,PF,lookColors,SHEETS,canvasTex,
@@ -21,12 +21,13 @@ export function reachOK(tx,ty,r=6){r+=hasAcc('reach')?2:0;return Math.hypot(tx+.
 export function breakTile(x,y,drop=true){const i=idx(x,y),t=tiles[i];if(t===T.AIR)return;const d=TP[t];
   if(t===T.CROP){const m=meta[i],ty=Math.min(4,m>>2),st=m&3;setTile(x,y,T.AIR);if(drop){if(st>=2){dropItem(HERBS[ty][0],randi(1,2),x+.5,y+.5);dropItem(SEEDIDS[ty],randi(1,3),x+.5,y+.5);stat('harvests');fcount('harvest');}else dropItem(SEEDIDS[ty],1,x+.5,y+.5);}burst(x+.5,y+.5,['#5aa83c','#86d15f'],6,3);SFX.dig();return true;}
   if(t===T.RARE){const m=meta[i],ty=Math.min(3,m>>2),st=m&3;setTile(x,y,T.AIR);if(drop){if(st>=2){dropItem(RARE[ty][0],1,x+.5,y+.5);dropItem(RSEEDS[ty],randi(1,2),x+.5,y+.5);stat('harvests');fcount('harvest');}else dropItem(RSEEDS[ty],1,x+.5,y+.5);}burst(x+.5,y+.5,[RARECOL[ty],'#86d15f'],6,3);SFX.dig();return true;}
+  if(t===T.THIN){setTile(x,y,T.INK);burst(x+.5,y+.5,['#cfe8f5','#fbf8f0','#8fb8d0'],10,4);SFX.brk();supportCheck(x,y);return true;}
   if(drop&&t===T.TUFT&&Math.random()<.07)dropItem('seed_sun',1,x+.5,y+.5);if(drop&&t===T.BLOOM&&Math.random()<.12)dropItem('seed_frost',1,x+.5,y+.5);
   if(t===T.CHEST){const box=chests.get(i);if(box&&box.some(Boolean)){toast('Empty the chest before breaking it.','bad');return false;}chests.delete(i);}
   if(t===T.TRUNK){let by=y;while(tileAt(x,by-1)===T.TRUNK)by--;let ty=by,n=0;while(tileAt(x,ty)===T.TRUNK){setTile(x,ty,T.AIR);burst(x+.5,ty+.5,['#7b5234','#5a3a22'],4,3);n++;ty++;}
     burst(x+.5,ty+2,['#5aa83c','#86d15f','#3f7a2b'],30,6,{grav:6,life:1.6});dropItem('wood',n+3,x+.5,by+1);SFX.brk();questDone('tree');stat('trees');supportCheck(x,by);return true;}
   if(t===T.DOOR){const top=meta[i]&2;const oy=top?y-1:y+1;if(tileAt(x,oy)===T.DOOR)setTile(x,oy,T.AIR);}
-  setTile(x,y,T.AIR);if(drop&&d.drop)dropItem(d.drop,1,x+.5,y+.5);if(drop)digFossil(x,y,t);
+  const dId=t===T.FAKE&&meta[i]?['stone','brick','dirt'][meta[i]]:d.drop;setTile(x,y,T.AIR);if(drop&&dId)dropItem(dId,1,x+.5,y+.5);if(drop)digFossil(x,y,t);
   burst(x+.5,y+.5,[d.col,sh(d.col,.75),sh(d.col,1.2)],OPAQUE[t]?12:6,4.5);SFX.brk();supportCheck(x,y);return true;}
 function supportCheck(x,y){const dn=tileAt(x,y-1);if(dn!==T.AIR&&TP[dn]&&TP[dn].hang&&!(isSolid(x,y)||tileAt(x,y)===T.PLATFORM||(TP[dn].wallok&&walls[idx(x,y-1)])))breakTile(x,y-1);const up=tileAt(x,y+1);if(up===T.TRUNK){breakTile(x,y+1);return;}if(up!==T.AIR&&TP[up].floor&&!isSolid(x,y)&&!(up===T.DOOR&&(meta[idx(x,y+1)]&2)))breakTile(x,y+1);
   for(const[dx,dy]of[[0,1],[-1,0],[1,0],[0,-1]]){const nx=x+dx,ny=y+dy;if(tileAt(nx,ny)===T.TORCH&&!torchSupported(nx,ny))breakTile(nx,ny);}}
@@ -219,32 +220,58 @@ function castMagic(it){const p=player;if(p.mana<it.mana){const k=p.inv.findIndex
   else{const n=it.count||1;for(let i=0;i<n;i++){const aa=a+(n>1?(i-(n-1)/2)*.3:0);fireProj(it.proj,ox,oy,Math.cos(aa)*it.spd,Math.sin(aa)*it.spd,it.dmg,{src:'magic'});}}
   SFX.cast();burst(ox+Math.cos(a)*.6,oy+Math.sin(a)*.6,['#9fc3ff','#fff3c0'],5,2,{grav:0,life:.4,up:0});return true;}
 export function spawnFallingStar(){const p=player;const x=clamp(p.x+rand(-45,45),5,W-5);if(p.y<surf[clamp(Math.floor(p.x),0,W-1)]-25)return;const y=Math.min(H-2,Math.max(surf[Math.floor(x)]+22,camera.position.y+16));fireProj('fall',x,y,rand(-5,5),-15,20,{src:'star'});SFX.star();}
-// fishing. bob.state: 0 reeled in, 1 flying, 2 floating (waiting), 3 biting (click now), 4 resting on the ground (nothing bites)
-export const bob={state:0,x:0,y:0,vx:0,vy:0,t:0,wait:0,bite:0,liq:0,small:false,rod:null};let bobMesh=null,lineObj=null;const tipV=new THREE.Vector3();
-export let angler={caught:0,done:0,day:0,q:null,qday:-1,seen:{}};
-// catch tables by biome (lava has its own): [item, weight, min fishing power, night only]
-const CATCH={forest:[['minnow',60],['nightkoi',14,20,1],['goldfin',3,35]],snow:[['koi',40],['minnow',30],['nightkoi',14,20,1],['goldfin',3,35]],desert:[['sandsole',45],['minnow',25],['nightkoi',10,20,1],['goldfin',4,35]],
-  lake:[['inkfish',55],['minnow',15],['nightkoi',12,20,1],['goldfin',4,35]],under:[['minnow',40],['goldfin',3,35]],lava:[['lavafish',60],['emberore',20],['goldfin',3,50]]};
+// fishing. bob.state: 0 reeled in, 1 flying, 2 floating (waiting), 3 biting (click now), 4 resting on the ground (nothing bites),
+// 5 fighting a legendary fish (click each time it thrashes). The catch is rolled when the fish bites (bob.catch).
+export const bob={state:0,x:0,y:0,vx:0,vy:0,t:0,wait:0,bite:0,liq:0,small:false,rod:null,catch:null,fight:null};let bobMesh=null,lineObj=null;const tipV=new THREE.Vector3();
+// rec: the record book, the biggest of each fish in cm; fest: today's festival fishing contest {d: world day, id, cm, sc: score, got: prize taken}
+export const newAngler=()=>({caught:0,done:0,day:0,q:null,qday:-1,seen:{},rec:{},fest:null});
+export let angler=newAngler();
+// catch tables by biome (lava has its own): [item, weight, min fishing power, night only, condition (a CATCHIF key)]
+const CATCHIF={spring:()=>season().k==='spring',sunday:()=>season().k==='summer'&&!isNight(),fall:()=>season().k==='fall',winter:()=>season().k==='winter',
+  storm:()=>weather==='rain'||wev.k==='storm',inkmoon:()=>inkMoon&&isNight()};
+const SEASONAL=[['blossomtrout',16,0,0,'spring'],['sunperch',16,0,0,'sunday'],['maplecarp',16,0,0,'fall'],['icepike',16,15,0,'winter'],['stormeel',14,20,0,'storm']];
+export const CATCH={forest:[['minnow',60],['nightkoi',14,20,1],['goldfin',3,35],...SEASONAL,['oldcrease',1.2,55]],snow:[['koi',40],['minnow',30],['nightkoi',14,20,1],['goldfin',3,35],...SEASONAL,['glacierjaw',1.5,60,0,'winter']],
+  desert:[['sandsole',45],['minnow',25],['nightkoi',10,20,1],['goldfin',4,35],...SEASONAL.filter(c=>c[4]!=='winter')],
+  lake:[['inkfish',55],['minnow',15],['nightkoi',12,20,1],['goldfin',4,35],...SEASONAL,['moonscale',4,50,1,'inkmoon']],under:[['minnow',40],['goldfin',3,35]],lava:[['lavafish',60],['emberore',20],['goldfin',3,50],['magmaw',1.5,70]]};
 function bestBait(){let bi=-1,bv=0;player.inv.forEach((s,i)=>{if(s&&ITEMS[s.id].bait>bv){bv=ITEMS[s.id].bait;bi=i;}});return bi;}
 export function countBait(){let c=0;for(const s of player.inv)if(s&&ITEMS[s.id].bait)c+=s.n;return c;}
 function fishPower(rod){const bi=bestBait();let pw=(rod?rod.fpow:0)+(bi>=0?ITEMS[player.inv[bi].id].bait:0)+(hasBuff('fishing')?15:0)+(hasBadge('lure')?15:0)+(hasAcc('tackle')?10:0);
   if(weather==='rain'&&bob.y>surf[clamp(Math.floor(bob.x),0,W-1)]-12)pw*=1.15;return Math.round(pw);}
 function rollCatch(pw){const lava=bob.liq===T.LAVA;if(Math.random()<Math.min(.12,.03+pw*.0012))return 'fcrate';if(Math.random()<Math.max(.03,.32-pw*.006))return lava?'ash':'soggy';
-  const night=isNight(),list=(CATCH[lava?'lava':biomeAt(bob.x,bob.y)]||CATCH.forest).filter(([,w,mp,nt])=>pw>=(mp||0)&&(!nt||night));let r=Math.random()*list.reduce((a,c)=>a+c[1],0);for(const c of list){r-=c[1];if(r<=0)return c[0];}return list[0][0];}
+  const night=isNight(),list=(CATCH[lava?'lava':biomeAt(bob.x,bob.y)]||CATCH.forest).filter(([,w,mp,nt,c])=>pw>=(mp||0)&&(!nt||night)&&(!c||CATCHIF[c]()));let r=Math.random()*list.reduce((a,c)=>a+c[1],0);for(const c of list){r-=c[1];if(r<=0)return c[0];}return list[0][0];}
 const biteWait=pw=>rand(5,12)*clamp(70/(40+pw),.35,1.6);
 function reelIn(msg){if(player.swing&&player.swing.tool===bob.rod)player.swing=null;bob.state=0;if(msg)toast(msg,'bad');}
-function fishClick(it){const p=player;if(bob.state===3){landFish(it);return;}if(bob.state){reelIn();SFX.reel();return;}
+function fishClick(it){const p=player;if(bob.state===3){if(ITEMS[bob.catch]&&ITEMS[bob.catch].leg)startFight();else landFish(it);return;}if(bob.state===5){fightClick();return;}if(bob.state){reelIn();SFX.reel();return;}
   if(bestBait()<0){toast('You need bait to fish. Craft Paper Flies from paper and gel, or buy some from the Merchant.','bad');return;}
   const{ox,oy,a}=aimFrom(),sp=clamp(Math.hypot(mouse.wx-ox,mouse.wy-oy)*1.5,7,17);p.face=Math.cos(a)>=0?1:-1;
-  Object.assign(bob,{state:1,x:ox+Math.cos(a)*.8,y:oy+Math.sin(a)*.8,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp+3,t:0,rod:it.id,small:false});SFX.fcast();}
+  Object.assign(bob,{state:1,x:ox+Math.cos(a)*.8,y:oy+Math.sin(a)*.8,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp+3,t:0,rod:it.id,small:false,catch:null,fight:null});SFX.fcast();}
 function bobLand(t){const rod=ITEMS[bob.rod],lava=t===T.LAVA;bob.liq=t;bob.vx=bob.vy=0;SFX.splash();burst(bob.x,bob.y+.4,lava?['#ff7a2d','#ffd66b']:['#3a2a5a','#a894d0','#fbf8f0'],8,3,{up:2});
   if(lava&&!rod.lava){burst(bob.x,bob.y+.5,['#ff8a3d','#ffd66b'],10,3,{grav:-4,bright:1});SFX.sizzle();reelIn('Your line burns up in the lava! Only an Emberite Rod can fish there.');return;}
   bob.small=flood(Math.floor(bob.x),Math.floor(bob.y),tt=>tt===t,25).length<25;if(bob.small)toast('This pool is too small for fish. Find one with at least 25 tiles of liquid.','bad');
   bob.state=2;bob.wait=biteWait(fishPower(rod));}
-function landFish(it){const p=player,bi=bestBait();if(bi<0){reelIn('Out of bait.');return;}const id=rollCatch(fishPower(it));
+// a fish's size in cm: stronger rods and bait pull the roll toward the big end
+export function fishSize(id,pw){const f=FISH[id];if(!f)return 0;return Math.round(f[3]+(f[4]-f[3])*Math.pow(Math.random(),1.8-Math.min(1.1,pw/80)));}
+// legendary fish fight: every so often it thrashes (the bobber jerks); click during a thrash to pull. Enough pulls land it;
+// clicking while it is still, or running out of time, lets it go
+function startFight(){const f=bob.fight={need:randi(5,7),t:12,thr:0,next:.5,slack:0};bob.state=5;SFX.bite();shake(.15);floatText(bob.x,bob.y+1,'!!','crit');
+  if(!angler.seen[bob.catch]&&!META.stats.legend)toast('A legendary fish! Click each time it thrashes, and hold still when it does not.','gold');}
+function fightClick(){const f=bob.fight;if(f.thr>0){f.need--;f.thr=0;f.next=rand(.5,1.1);SFX.reel();burst(bob.x,bob.y+.3,['#a894d0','#fbf8f0','#f1c04f'],8,4,{up:3});floatText(bob.x,bob.y+.9,f.need?'pull!':'landed!','nice');if(f.need<=0)landFish(ITEMS[bob.rod]);}
+  else{f.slack++;floatText(bob.x,bob.y+.9,'slack','miss');if(f.slack>=3)fightLost('The line snapped! It got away.');}}
+function fightLost(msg){const bi=bestBait();if(bi>=0){const s=player.inv[bi];s.n--;if(!s.n)player.inv[bi]=null;setInvDirty(true);}reelIn(`${ITEMS[bob.catch].name}: ${msg}`);}
+function landFish(it){const p=player,bi=bestBait();if(bi<0){reelIn('Out of bait.');return;}const pw=fishPower(it),id=bob.catch||rollCatch(pw);
   if(!(hasAcc('tackle')&&Math.random()<.3)){const s=p.inv[bi];s.n--;if(!s.n)p.inv[bi]=null;setInvDirty(true);}
-  const left=addItem(id,1);if(left)dropItem(id,left,p.x,p.y+1);SFX.catch();burst(bob.x,bob.y+.2,bob.liq===T.LAVA?['#ff7a2d','#ffd66b']:['#3a2a5a','#a894d0','#fbf8f0'],14,5,{up:3});floatText(bob.x,bob.y+1,ITEMS[id].name,'crit');
-  if(ITEMS[id].fish){stat('fish');angler.caught++;if(!angler.seen[id]){angler.seen[id]=1;toast(`New catch: ${ITEMS[id].name}!`,'gold');}}reelIn();}
+  const left=addItem(id,1);if(left)dropItem(id,left,p.x,p.y+1);SFX.catch();burst(bob.x,bob.y+.2,bob.liq===T.LAVA?['#ff7a2d','#ffd66b']:['#3a2a5a','#a894d0','#fbf8f0'],14,5,{up:3});
+  if(ITEMS[id].fish){const cm=fishSize(id,pw),rec=angler.rec[id]||0;floatText(bob.x,bob.y+1,`${ITEMS[id].name} · ${cm} cm`,'crit');stat('fish');angler.caught++;
+    if(!angler.seen[id]){angler.seen[id]=1;toast(`New catch: ${ITEMS[id].name}, ${cm} cm!`,'gold');}else if(cm>rec)toast(`New record: ${ITEMS[id].name}, ${cm} cm (was ${rec} cm)!`,'gold');if(cm>rec)angler.rec[id]=cm;
+    if(ITEMS[id].leg){stat('legend');playerCheer(1.4);partnerCheer(1.4);shake(.3);toast(`You landed ${ITEMS[id].name}, a legendary fish!`,'gold');}
+    const fe=festival();if(fe&&hasNPC('angler')){const sc=contestScore(id,cm),f=angler.fest&&angler.fest.d===worldDay?angler.fest:(angler.fest={d:worldDay,id:null,cm:0,sc:0,got:0});if(!f.got&&sc>f.sc){Object.assign(f,{id,cm,sc});toast(`Contest entry: ${ITEMS[id].name}, ${cm} cm (${sc} points). Show the Angler!`,'good');}}}
+  else floatText(bob.x,bob.y+1,ITEMS[id].name,'crit');reelIn();}
+// festival fishing contest: a catch scores by how big it is for its kind, legendaries score extra
+export const contestScore=(id,cm)=>{const f=FISH[id];return Math.round(100*(cm-f[3]+1)/(f[4]-f[3]+1)*(f[5]?1.5:1));};
+export const CONTEST=[[120,[['moonlure',10],['fcrate',2],['coin',400]]],[70,[['glowlure',8],['fcrate',1],['coin',200]]],[0,[['fly',10],['coin',80]]]];
+export function contestClaim(){const f=angler.fest;if(!festival()||!f||f.d!==worldDay||f.got||!f.id)return;f.got=1;const[,r]=CONTEST.find(c=>f.sc>=c[0]),p=player;
+  for(const[id,n]of r){if(id==='coin'){addItem('coin',n);continue;}const l=addItem(id,n);if(l)dropItem(id,l,p.x,p.y+1);}SFX.nice();playerCheer(1.2);stat('contests');
+  toast(`The Angler judges your ${ITEMS[f.id].name} (${f.cm} cm): ${f.sc} points! Prize: ${r.map(([id,n])=>id==='coin'?n+' coins':`${ITEMS[id].name} ×${n}`).join(', ')}.`,'gold');}
 export function updateFishing(dt){const p=player,it=selItem();
   if(bob.state&&(p.dead||!it||it.id!==bob.rod))reelIn();else if(bob.state&&Math.hypot(bob.x-p.x,bob.y-p.y)>30)reelIn('Your line ran out. Stay closer to the bobber.');
   if(!bobMesh){bobMesh=new THREE.Mesh(new THREE.PlaneGeometry(.5,.5),spriteMat(iconTex('bobber')));bobMesh.renderOrder=5;scene.add(bobMesh);
@@ -255,12 +282,14 @@ export function updateFishing(dt){const p=player,it=selItem();
       if(TP[t]&&TP[t].liq){bobLand(t);break;}if(isSolid(tx,ty)||tileAt(tx,ty)===T.PLATFORM&&bob.vy<0){bob.x=ox;bob.y=oy;bob.vx=bob.vy=0;bob.state=4;break;}}}
   else if(bob.state===4){if(!isSolid(Math.floor(bob.x),Math.floor(bob.y-.3))&&tileAt(Math.floor(bob.x),Math.floor(bob.y-.3))!==T.PLATFORM)bob.state=1;}
   else{const tx=Math.floor(bob.x);let ty=Math.floor(bob.y);if(tileAt(tx,ty)!==bob.liq){if(tileAt(tx,ty-1)===bob.liq)ty--;else{bob.state=1;bob.vx=bob.vy=0;}}
-    if(bob.state>=2){while(tileAt(tx,ty+1)===bob.liq)ty++;const sy=ty+1-.12+Math.sin(bob.t*3)*.05-(bob.state===3?.28:0);bob.y+=(sy-bob.y)*Math.min(1,dt*10);
-      if(bob.state===2&&!bob.small){bob.wait-=dt;if(bob.wait<=0){bob.state=3;bob.bite=.85+fishPower(rod)*.004;SFX.bite();floatText(bob.x,bob.y+.9,'!','nice');burst(bob.x,bob.y+.3,bob.liq===T.LAVA?['#ff7a2d','#ffd66b']:['#a894d0','#fbf8f0'],10,3,{up:3});}}
-      else if(bob.state===3){bob.bite-=dt;if(bob.bite<=0){bob.state=2;bob.wait=biteWait(fishPower(rod));const bi=bestBait();if(bi>=0&&Math.random()<.35){const s=p.inv[bi];s.n--;if(!s.n)p.inv[bi]=null;setInvDirty(true);toast('Something stole your bait!','bad');}else floatText(bob.x,bob.y+.9,'got away','miss');}}}}
+    if(bob.state>=2){while(tileAt(tx,ty+1)===bob.liq)ty++;const sy=ty+1-.12+Math.sin(bob.t*3)*.05-(bob.state===3?.28:0);bob.y+=(sy-bob.y-(bob.state===5&&bob.fight.thr>0?.25:0))*Math.min(1,dt*10);
+      if(bob.state===2&&!bob.small){bob.wait-=dt;if(bob.wait<=0){const pw=fishPower(rod);bob.state=3;bob.catch=rollCatch(pw);bob.bite=ITEMS[bob.catch].leg?.5:.85+pw*.004;SFX.bite();floatText(bob.x,bob.y+.9,'!','nice');burst(bob.x,bob.y+.3,bob.liq===T.LAVA?['#ff7a2d','#ffd66b']:['#a894d0','#fbf8f0'],10,3,{up:3});}}
+      else if(bob.state===5){const f=bob.fight;f.t-=dt;if(f.thr>0){f.thr-=dt;bob.x+=Math.sin(bob.t*50)*dt*2;if(f.thr<=0)f.next=rand(.5,1.1);}else{f.next-=dt;if(f.next<=0){f.thr=.42;SFX.bite();floatText(bob.x,bob.y+.9,'!','nice');burst(bob.x,bob.y+.3,['#a894d0','#fbf8f0'],8,3,{up:3});}}
+        if(f.t<=0)fightLost('It wore you out and got away.');}
+      else if(bob.state===3){bob.bite-=dt;if(bob.bite<=0){bob.state=2;bob.catch=null;bob.wait=biteWait(fishPower(rod));const bi=bestBait();if(bi>=0&&Math.random()<.35){const s=p.inv[bi];s.n--;if(!s.n)p.inv[bi]=null;setInvDirty(true);toast('Something stole your bait!','bad');}else floatText(bob.x,bob.y+.9,'got away','miss');}}}}
   if(!bob.state){bobMesh.visible=lineObj.visible=false;return;}
   // hold the rod up toward the bobber while the line is out
-  p.face=bob.x>=p.x?1:-1;const ca=bob.state===1&&bob.t<.3?lerp(2.7,1.1,EZ.o2(bob.t/.3)):bob.state===3?1.1+Math.sin(bob.t*40)*.1:1.1,aim=p.face>0?ca:Math.PI-ca;if(!p.swing||p.swing.tool!==bob.rod)p.swing={t:0,dur:1,tool:bob.rod,aim};else{p.swing.t=0;p.swing.aim=aim;}
+  p.face=bob.x>=p.x?1:-1;const ca=bob.state===1&&bob.t<.3?lerp(2.7,1.1,EZ.o2(bob.t/.3)):bob.state===3||bob.state===5&&bob.fight.thr>0?1.1+Math.sin(bob.t*40)*.1:1.1,aim=p.face>0?ca:Math.PI-ca;if(!p.swing||p.swing.tool!==bob.rod)p.swing={t:0,dur:1,tool:bob.rod,aim};else{p.swing.t=0;p.swing.aim=aim;}
   bobMesh.visible=lineObj.visible=true;bobMesh.position.set(bob.x,bob.y+.1,.46);bobMesh.rotation.z=bob.state===1?bob.t*8:Math.sin(bob.t*2.4)*.15;setTint(bobMesh.material,bob.x,bob.y);
   let tx0=p.x+p.face*.9,ty0=p.y+2.2;if(toolMesh&&toolPivot.visible){toolPivot.updateMatrixWorld(true);toolMesh.localToWorld(tipV.set(1.08,1.08,0));tx0=tipV.x;ty0=tipV.y;}
   const pos=lineObj.geometry.attributes.position,bx=bob.x,by=bob.y+.32,sag=bob.state===1?0:Math.min(1.6,Math.hypot(bx-tx0,by-ty0)*.12);
@@ -271,8 +300,10 @@ function openCrate(){const p=player,x=p.x,y=p.y+1.2,g=(id,n)=>dropItem(id,n,x,y)
   SFX.door();SFX.coin();burst(x,y,['#a86b3a','#f1c04f','#fbf8f0'],16,5);stat('crates');}
 // the Angler asks for one fish a day and pays out coins, bait and a prize at each milestone
 export const ANGLER_POOL=['minnow','koi','inkfish','sandsole','nightkoi'],ANGLER_REWARD={1:['glowlure',8],3:['b_lure',1],5:['tackle',1],7:['fcrate',3],10:['bpup',1],15:['moonlure',15],20:['rodember',1]};
-export const ANGLER_WHERE={minnow:'any ink pool',koi:'ink in the Origami Snowfield',inkfish:'the Ink Lake',sandsole:'ink in the Sandpaper Dunes',nightkoi:'any ink pool, at night',goldfin:'anywhere, with strong bait and a good rod',lavafish:'the lava of the Burnt Underworld, with an Emberite Rod'};
-export function anglerQuest(){if(angler.qday===angler.day)return null;if(!angler.q){const pool=ANGLER_POOL.filter(f=>f!==angler.last);if(angler.done>=3)pool.push('goldfin');if(quests.folio)pool.push('lavafish');angler.q=pick(pool);}return angler.q;}
+export const ANGLER_WHERE={minnow:'any ink pool',koi:'ink in the Origami Snowfield',inkfish:'the Ink Lake',sandsole:'ink in the Sandpaper Dunes',nightkoi:'any ink pool, at night',goldfin:'anywhere, with strong bait and a good rod',lavafish:'the lava of the Burnt Underworld, with an Emberite Rod',
+  blossomtrout:'any ink pool in spring',sunperch:'any ink pool on a summer day',maplecarp:'any ink pool in fall',icepike:'a hole in the ice, in winter',stormeel:'any ink pool while it rains'};
+const SEASONFISH={spring:'blossomtrout',summer:'sunperch',fall:'maplecarp',winter:'icepike'};
+export function anglerQuest(){if(angler.qday===angler.day)return null;if(!angler.q){const pool=ANGLER_POOL.filter(f=>f!==angler.last);if(angler.done>=3)pool.push('goldfin');if(quests.folio)pool.push('lavafish');if(angler.done>=2)pool.push(SEASONFISH[season().k]);angler.q=pick(pool);}return angler.q;}
 export function anglerTurnIn(){const q=anglerQuest(),p=player;if(!q)return;if(countItem(q)<1){toast(`Bring me a ${ITEMS[q].name}. Try ${ANGLER_WHERE[q]}.`,'bad');return;}
   removeItem(q,1);angler.done++;angler.last=q;angler.q=null;angler.qday=angler.day;const give=(id,n)=>{const l=addItem(id,n);if(l)dropItem(id,l,p.x,p.y+1);};
   const c=Math.min(400,50+angler.done*15),m=ANGLER_REWARD[angler.done];give('coin',c);give(angler.done>=4?'glowlure':'fly',randi(4,8));if(Math.random()<.35)give(pick(['fcrate','potfish','grilledfish']),1);if(m)give(m[0],m[1]);

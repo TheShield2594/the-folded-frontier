@@ -1,4 +1,4 @@
-// Smoke tests: boot, new world, save/load through localStorage, save code round trip.
+// Smoke tests: boot, new world, save/load through localStorage, seasonal routes and secrets in the save, save code round trip.
 // They check that the game starts and its saves survive, not how it plays. Game state is read
 // through `import('/src/game.js')`, which on the dev server returns the live modules.
 import {test,expect} from '@playwright/test';
@@ -120,6 +120,28 @@ test('saves to localStorage and continues the same world after a reload',async({
   await expect(page.locator('#contBtn')).toBeVisible();
   const after=await clickAndSnap(page,'contBtn');
   expect(after).toEqual({...before,state:'play'});
+});
+
+test('seasonal routes undo themselves over a year, and secrets and records are saved',async({page})=>{
+  await boot(page);
+  await newSmallWorld(page);
+  const s=await page.evaluate(async()=>{
+    const g=await import('/src/game.js'),count=t=>{let n=0;for(let i=0;i<g.N;i++)if(g.tiles[i]===t)n++;return n;};
+    const start=g.tiles.slice(),day=g.worldDay,seen={};
+    // walk the seasons one at a time from summer back round to the season the world started in
+    for(const d of[5,10,15,20]){g.setWorldDay(day+d);g.seasonWorld();seen[g.season().k]={thin:count(g.T.THIN),drift:count(g.T.DRIFT)};}
+    let diff=0;for(let i=0;i<g.N;i++)if(g.tiles[i]!==start[i])diff++;
+    g.setWorldDay(day);g.angler.rec.minnow=12;g.save();
+    const d=JSON.parse(localStorage.getItem('folded-frontier-save-v1'));
+    return {seen,diff,sea:d.bio.sea,sec:d.bio.sec,rec:d.angler.rec};
+  });
+  expect(s.seen.winter.thin).toBeGreaterThan(0);
+  expect(s.seen.summer.thin+s.seen.summer.drift).toBe(0);
+  expect(s.diff).toBe(0);
+  expect(s.sea.po.length+s.sea.fl.length).toBeGreaterThan(0);
+  expect(s.sec.fake.length).toBeGreaterThan(0);
+  expect(s.sec.ink.length).toBeGreaterThan(0);
+  expect(s.rec).toEqual({minnow:12});
 });
 
 test('save code round trip loads the same world',async({page})=>{
