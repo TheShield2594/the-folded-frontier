@@ -240,6 +240,56 @@ test('new worlds get sky islands, the Pressed Deep and the Folded Clocktower, wh
   expect(s.oldDun).toBe('object');
 });
 
+test('paper tricks: seams tear, torn holes stitch and creases fold, only with their tools, and are saved',async({page})=>{
+  await boot(page);
+  await newSmallWorld(page);
+  const r=await page.evaluate(async()=>{
+    const g=await import('/src/game.js'),p=g.player,t=g.BIO.trick,out={n:[t.seam.length,t.rip.length,t.fold.length]};
+    const at=(x,y)=>g.tiles[g.idx(x,y)];
+    // without the tool nothing happens
+    const s=t.seam[0],rp=t.rip[0],f=t.fold[0];g.tearSeam(s[0],s[1]);g.stitchRip(rp[0],rp[1]);const x0=p.x;g.foldAt(f[0],f[1]);
+    out.locked=[at(s[0],s[1])===g.T.SEAM,at(rp[0],rp[1])===g.T.RIP,p.x===x0];
+    // stepping into a torn hole throws you back out
+    p.x=rp[0]+.5;p.y=rp[1]+.3;p.vx=p.vy=0;p.inv_t=0;g.updateTricks(1/30);out.thrown=at(Math.floor(p.x),Math.floor(p.y))!==g.T.RIP&&p.hp<p.max;
+    // the guide hints at a trick the first time it is usable: carrying the tool near its spot
+    g.SET.hints=true;g.setTut({s:99,seen:{peel:1,pop:1,flat:1}});g.addItem('ripper',1);p.x=s[0]-2+.5;p.y=s[1];for(let y=s[1]-6;y<=s[1]+6;y++)for(let x=s[0]-6;x<=s[0]+6;x++)g.explored[y*g.W+x]=1;g.updateGuide(1);out.hint=document.getElementById('gdT').textContent;g.SET.hints=false;
+    g.addItem('needle',1);g.addItem('folder',1);
+    g.tearSeam(s[0],s[1]);g.stitchRip(rp[0],rp[1]);g.foldAt(f[0],f[1]);out.folded=[Math.floor(p.x),p.y]+''===[f[2],f[3]]+'';g.foldAt(f[2],f[3]);out.back=[Math.floor(p.x),p.y]+''===[f[0],f[1]]+'';
+    // the seam and the tear open over a moment
+    await new Promise(r=>setTimeout(r,2500));
+    out.open=[0,1,2].every(k=>at(s[0],s[1]+k)===g.T.AIR);out.sewn=at(rp[0],rp[1])===g.T.SEWN&&at(rp[0],rp[1]-1)===g.T.AIR;out.flags=[s[2],rp[2]];
+    g.save();out.saved=JSON.parse(localStorage.getItem('folded-frontier-save-v1')).bio.trick;
+    return out;});
+  expect(r.n.every(n=>n>=1)).toBe(true);
+  expect(r.locked).toEqual([true,true,true]);
+  expect(r.thrown).toBe(true);
+  expect(r.hint).toBe('Tear the seam');
+  expect(r.folded).toBe(true);
+  expect(r.back).toBe(true);
+  expect(r.open).toBe(true);
+  expect(r.sewn).toBe(true);
+  expect(r.flags).toEqual([1,1]);
+  expect(r.saved.seam[0][2]).toBe(1);
+  expect(r.saved.rip[0][2]).toBe(1);
+});
+
+test('the held weapon and the raised shield are pieces of the player rig',async({page})=>{
+  await boot(page);
+  await newSmallWorld(page);
+  const r=await page.evaluate(async()=>{
+    const g=await import('/src/game.js'),p=g.player,R=p.rig,pi=R.d.pi,out={};
+    // a sword cut: the held piece carries the sword's icon and turns with the blade
+    g.setState('frozen');p.swing={t:.12,dur:.3,tool:'coppersword',hit:new Set(),dmg:1,kb:1,sword:true,heavy:false,combo:0,from:1.6};
+    g.updatePlayer(1e-4);out.held=R.hs[pi.held]===g.iconTex('coppersword').image;const a0=R.abs[pi.held];p.swing.t=.24;g.updatePlayer(1e-4);out.turns=R.abs[pi.held]!==a0;
+    // the piece is drawn (its quad has size) and hides when the swing ends
+    const pos=R.g.attributes.position.array,q=(R.d.parts.length+pi.held*2+1)*12,size=()=>Math.abs(pos[q]-pos[q+3])+Math.abs(pos[q+1]-pos[q+7]);out.drawn=size()>0;
+    p.swing=null;g.updatePlayer(1e-4);out.hidden=size()===0;
+    // blocking raises the shield piece
+    p.acc[0]={id:'buckler',n:1};g.mouse.r=true;g.updatePlayer(1e-4);out.shield=R.hs[pi.shield]===g.iconTex('buckler').image;g.mouse.r=false;g.updatePlayer(1e-4);out.lowered=!R.hs[pi.shield];
+    g.setState('play');return out;});
+  expect(r).toEqual({held:true,turns:true,drawn:true,hidden:true,shield:true,lowered:true});
+});
+
 test('save code round trip loads the same world',async({page})=>{
   await boot(page);
   await newSmallWorld(page);

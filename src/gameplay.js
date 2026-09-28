@@ -13,7 +13,7 @@ import {
   palEv,partnerCheer,FISH,season,festival,worldDay,hasNPC,META,
   updateCoins,updateDashHud,updateDrawHud,updateEnemyFx,updateGhosts,upx,W,WALLCOL,WALLDROP,walls,
   worldClock,worldTime,digFossil,evKill,fcount,npcLine,plain,clockRoom,layerAt,crankAt,gateAt,
-  guideEv,dismount,MOUNTS,petS,toggleMount,togglePet,NDL,emit,loreChest,readMural,PF,lookColors,SHEETS,canvasTex,fullSet,setOn,setMul,SETS,
+  guideEv,trickAt,dismount,MOUNTS,petS,toggleMount,togglePet,NDL,emit,loreChest,readMural,PF,lookColors,SHEETS,canvasTex,fullSet,setOn,setMul,SETS,
 } from './game.js';
 
 // ================= gameplay =================
@@ -398,6 +398,7 @@ function interact(){const tx=Math.floor(mouse.wx),ty=Math.floor(mouse.wy);
   if(t===T.CRANK){crankAt(tx,ty);return;}
   if(t===T.GATE){gateAt(tx,ty);return;}
   if(t===T.SKETCH){popSketch(tx,ty);return;}
+  if(t===T.SEAM||t===T.RIP||t===T.CREASE){trickAt(t,tx,ty);return;}
   if(t===T.SIGN){signAt(tx,ty);return;}
   if(t===T.MURAL){readMural(tx,ty);SFX.rustle(.2,.5);return;}
   if(t===T.ALTAR){toast('"Five small flames upon the stones, beneath a moon of ink, will wake the one who was unfolded."');SFX.pick();return;}

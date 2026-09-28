@@ -15,7 +15,7 @@ import {
   updateHUD,updateNPC,updateNums,updateOverlays,updatePartner,updateParts,updatePickups,updatePlayer,
   updatePop,updateProjs,updateSky,updateTrail,updateWeather,visited,W,weather,wind,worldClock,worldTime,
   guideEv,updateGuide,cropGrowChance,isFest,newDay,seasonAmbient,updateTown,loadFailed,
-  evDawn,evDusk,perfFrame,perfStart,fcount,updateEvents,updateDlg,palEv,updatePals,buildPetSheets,hidePets,updatePets,updateAwaken,updateLore,updateDiorama,updateTouch,updateSecrets,updateSeasonWorld,loadArt,updateLayers,updateDungeons,
+  evDawn,evDusk,perfFrame,perfStart,fcount,updateEvents,updateTricks,updateDlg,palEv,updatePals,buildPetSheets,hidePets,updatePets,updateAwaken,updateLore,updateDiorama,updateTouch,updateSecrets,updateSeasonWorld,loadArt,updateLayers,updateDungeons,
 } from './game.js';
 
 // ================= boot =================
@@ -38,7 +38,7 @@ function frame(now){requestAnimationFrame(frame);perfStart();const pf0=performan
     updatePlayer(gdt);updateGuide(dt);updateFishing(gdt);updateEnemies(gdt);updateNPC(gdt);updatePartner(gdt);updatePals(dt);updatePets(gdt);updatePickups(gdt);updateProjs(gdt);spawnLogic(gdt);updateTrail(gdt);
     liqT-=gdt;if(liqT<=0){liqT=.09;simLiquids();}ambient(gdt);seasonAmbient(gdt);bioT-=dt;if(bioT<=0){bioT=.6;const b=biomeAt(player.x,player.y);if(b!==curBio){if(!visited.has(b)){visited.add(b);chapterCard(b);if(!reduceMotion())popUp();}else if(curBio)toast(`Entered the ${BIONAME[b]}`);setCurBio(b);stat('v_'+b);}}
     cropT-=gdt;if(cropT<=0){cropT=1.5;for(const i of crops){const rare=tiles[i]===T.RARE;if(tiles[i]!==T.CROP&&!rare){crops.delete(i);continue;}const m=meta[i];if((m&3)<2&&Math.random()<(rare?rareGrowChance(i,Math.min(3,m>>2)):cropGrowChance(i,Math.min(4,m>>2)))){meta[i]=m+1;markChunk(i%W,(i/W)|0);}}}
-    ritualT-=gdt;if(ritualT<=0){ritualT=2;checkRitual();}updateAwaken(gdt);updateLore(gdt);updateSecrets(gdt);updateSeasonWorld(gdt);updateLayers(gdt);updateDungeons(gdt);
+    ritualT-=gdt;if(ritualT<=0){ritualT=2;checkRitual();}updateAwaken(gdt);updateLore(gdt);updateSecrets(gdt);updateTricks(gdt);updateSeasonWorld(gdt);updateLayers(gdt);updateDungeons(gdt);
     townT-=dt;if(townT<=0&&!player.dead){townT=3;updateTown();}
     if(isNight()){starT-=gdt;if(starT<=0){starT=rand(10,22)/(isFest('summer')?4:1);spawnFallingStar();}}
     setRevealT(revealT-(dt));if(revealT<=0){setRevealT(.25);reveal(player.x,player.y+1,15);const px=Math.floor(player.x);if(player.y>surf[clamp(px,0,W-1)]-20)for(let x=Math.max(0,px-26);x<=Math.min(W-1,px+26);x++)for(let y=Math.max(0,surf[x]-3);y<H;y++)explored[y*W+x]=1;}achT-=dt;if(achT<=0){achT=2;checkAch();}

@@ -74,6 +74,16 @@ Added after the audit above, which was made on 640 × 220 medium worlds. Worlds 
 
 With a Frostsilver Blade (32) the Mainspring takes about 75 hits, between the Crane (58) and the Leviathan (92). Nothing on the main boss path needs the layers: they are side routes that pay out in cogs, skyglass, fossils and the wings. Worlds saved before the layers keep their terrain: they get the clocktower and sky islands where those fit on untouched ground, and no Pressed Deep.
 
+## Paper tricks
+
+Three tools open side pockets in places you already passed (`tricks.js`). Each is crafted at an anvil from a boss's materials, so they come one per boss and send you back into earlier caves. None of the spots is on the way forward: each hides a chest.
+
+| Trick | Tool (anvil recipe) | Earliest | What it opens |
+|---|---|---|---|
+| Tear | Seam Ripper (4 iron bars, 2 crane plumes) | After the Great Crane | A stitched seam in a cave wall (unbreakable) with a small brick pocket and a chest behind it. 2 per small world, about W/200 |
+| Stitch | Golden Needle (4 gold bars, 1 ink heart, 5 rope) | After the Inkwell Leviathan | A torn hole ten tiles across in the floor of a low corridor dug into the rock; stepping in throws you back (6 damage). Sewn shut, its top row is a paper bridge to a pocket with a chest. 1–2 per small world |
+| Fold | Bone Folder (a Paper Ammonite, a Folded Trilobite, a cinder) | After the Charred Folio (fossils come from the Pressed Deep) | A crease mark on a cave floor whose partner is in a vault sealed all round, with a treasure chest. 1 per small world, about W/300 |
+
 ## Still needs a human playtest
 
 - Total playtime, fresh start to The Unfolded.

@@ -1,6 +1,6 @@
 // The storybook intro for new worlds and the first-night tutorial (plus hints for paper mechanics).
 import {
-  reduceMotion,
+  reduceMotion,countItem,TRICKS,
   $,circ,enclosure,explored,grain,H,held,ink,invOpen,isNight,KEYNAME,META,pad,PADNAME,player,poly,rr,touch,
   saveSettings,SET,SFX,setState,SOLID,state,T,tileAt,toast,W,worldTime,
 } from './game.js';
@@ -49,12 +49,15 @@ const STEPS=[
 const PAPER={
   peel:{t:'Peel the page',x:()=>`That stone has a curling corner. ${INTER()} it to peel the wall away and see what is behind it.`},
   pop:{t:'Pop it out',x:()=>`A dashed sketch is a bridge or stairs waiting to be made. ${INTER()} it to pop it out of the page.`},
+  tear:{t:'Tear the seam',x:()=>`That rock is stitched shut. With the Seam Ripper in your backpack, ${INTER()} the seam to tear it open.`},
+  stitch:{t:'Stitch it shut',x:()=>`The page is torn through here. With the Golden Needle in your backpack, ${INTER()} the tear to sew it into a paper bridge.`},
+  fold:{t:'Fold the page',x:()=>`A crease mark folds the page onto its partner somewhere else. With the Bone Folder in your backpack, ${INTER()} the crease to step through.`},
   flat:{t:'Fold flat',x:()=>PAD()?'Hold down on the stick to fold flat and crawl through one-tile gaps. Flattening also dodges hits.':`Hold ${K('flat')} to fold flat and crawl through one-tile gaps. Flattening also dodges hits.`},
 };
 const g={};let cardKey='',scanT=0,paperT=0,paperOn=null;
 export function setTut(v){g.init=false;paperOn=null;cardKey='';return tut=v;}
 function nextStep(skip){tut.s++;g.init=false;if(tut.s===STEPS.length){if(skip)toast('Guide finished. Hints still pop up for new paper tricks.');else{toast('You made it through your first night! That is the end of the guide. Hints still pop up for new paper tricks.','gold');SFX.nice();}}}
-// gameplay calls this for things the guide waits on: 'craft', 'dawn', 'peel', 'pop', 'flat'
+// gameplay calls this for things the guide waits on: 'craft', 'dawn', 'peel', 'pop', 'flat', and the paper tricks 'tear', 'stitch', 'fold' (tricks.js)
 export function guideEv(ev){if(paperOn===ev){paperOn=null;tut.seen[ev]=1;}const st=STEPS[tut.s];if(st&&st.ev===ev)nextStep();}
 function nearTile(r,test){const px=Math.floor(player.x),py=Math.floor(player.y+1);for(let y=Math.max(0,py-r);y<=Math.min(H-1,py+r);y++)for(let x=Math.max(0,px-r);x<=Math.min(W-1,px+r);x++)if(explored[y*W+x]&&test(tileAt(x,y)))return true;return false;}
 function flatGap(){const p=player;if(!p.onGround||p.flat)return false;const d=held('right')&&!held('left')?1:held('left')&&!held('right')?-1:0;if(!d)return false;const tx=Math.floor(p.x+d*(p.w/2+.35)),fy=Math.floor(p.y+.05);
@@ -64,8 +67,9 @@ function hideCard(){$('guide').hidden=true;cardKey='';}
 export function updateGuide(dt){if(!SET.hints||state!=='play'||player.dead){hideCard();return;}
   if(tut.s<STEPS.length&&isNight()&&tut.s<STEPS.length-1){tut.s=STEPS.length-1;g.init=false;}
   if(held('jump'))g.jumped=true;
-  scanT-=dt;if(scanT<=0&&!paperOn){scanT=.4;for(const k of['peel','pop','flat']){if(tut.seen[k])continue;
-    if(k==='peel'?nearTile(5,t=>t===T.PEEL):k==='pop'?nearTile(6,t=>t===T.SKETCH):flatGap()){paperOn=k;tut.seen[k]=1;paperT=16;SFX.rustle(.15,.4);break;}}}
+  scanT-=dt;if(scanT<=0&&!paperOn){scanT=.4;for(const k of['peel','pop','flat','tear','stitch','fold']){if(tut.seen[k])continue;
+    // the paper tricks from tools (TRICKS) show once you carry the tool near a spot that needs it, the first time it is usable
+    const tk=TRICKS[k];if(tk?countItem(tk.item)>0&&nearTile(6,t=>t===tk.tile):k==='peel'?nearTile(5,t=>t===T.PEEL):k==='pop'?nearTile(6,t=>t===T.SKETCH):flatGap()){paperOn=k;tut.seen[k]=1;paperT=16;SFX.rustle(.15,.4);break;}}}
   if(paperOn){paperT-=dt;if(paperT<=0){paperOn=null;}else{const P=PAPER[paperOn];showCard('p'+paperOn+PAD(),'Paper trick',P.t,P.x(),true);return;}}
   const st=STEPS[tut.s];if(!st){hideCard();return;}
   if(!g.init){g.init=true;if(st.start)st.start(g);}
