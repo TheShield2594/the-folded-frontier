@@ -56,6 +56,8 @@ Damage to an enemy is `dmg − def/2` and damage to the player is `dmg − defen
 | Charred Folio | Ink Cutlass (41) | 104 | Inkstone (18) | 31 |
 | The Unfolded | Emberite Greatsword (54) | 126 | Emberite (24) | 32 |
 
+**Endgame armor sets.** After the Folio, the three sets (Emberite bars plus a boss material each) are the alternatives to Emberite armor for The Unfolded. They trade defense for a full-set bonus that suits a style: Crease Warden (melee, 24 defense, the same as Emberite, +20% melee damage and 1 life per hit, so about 105 Greatsword hits instead of 126), Skystring (ranged, 19 defense, contact hit 35) and Inkweaver (magic, 16 defense, contact hit 36). The two lighter sets are for players who keep their distance.
+
 Warhammers take about 40% fewer hits at every step. Paper Hearts (17–18 per medium world, +20 life each, capped at 400) keep pace with the rising damage.
 
 The curve rises steadily with no wall. The steepest step is the Leviathan (58 → 92 hits), because its tier's weapons need its own ink hearts, so it is fought with the Crane-tier blade. That is worth watching in a real playtest; if it drags, lowering its life to about 2,000 would bring it to 80 hits.

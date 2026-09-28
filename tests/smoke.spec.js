@@ -262,3 +262,52 @@ test('hand-made art replaces the atlas cells and sprite sheets it names',async({
   expect(r.origCell).not.toEqual([255,0,0,255]);
   expect(r.bad).toEqual([false,false,false,false,false]);
 });
+
+// Weapon moves (#78) and armor sets (#37) run through the real update code with the frame loop paused,
+// stepping updatePlayer()/updateProjs() by hand, since software WebGL barely moves game time.
+test('weapon moves and armor sets',async({page})=>{
+  await boot(page);
+  await newSmallWorld(page);
+  const r=await page.evaluate(async()=>{
+    const g=await import('/src/game.js'),p=g.player,m=g.mouse,st=k=>g.META.stats[k]||0,dt=1/30;g.setState('pause');
+    const hold=(id,n=1)=>{p.inv[p.sel]={id,n};},step=(k=1)=>{for(let i=0;i<k;i++){g.updatePlayer(dt);m.lp=false;}},press=()=>{m.l=true;m.lp=true;step();},let_go=()=>{m.l=false;step();};
+    const out={};m.wx=p.x+4;m.wy=p.y+1;
+    // every recipe names real items, and every new item has an atlas cell
+    out.badRecipe=g.RECIPES.filter(r=>!g.ITEMS[r[0]]||r[2].some(([i])=>!g.ITEMS[i])).map(r=>r[0]);
+    out.noCell=['helm_warden','mail_sky','legs_weave','inkarrow','piercearrow','bouncearrow'].filter(id=>!(g.ITEMS[id].cell>=0));
+    // warhammer: holding at the top of the swing charges it; letting go slams with a shockwave
+    hold('hamem');const sw0=st('shockwaves');press();step(40);out.charged=!!(p.swing&&p.swing.charged);let_go();step(20);out.shock=st('shockwaves')-sw0;
+    // sword: a swing inside the counter window after a parry is a counter-slash
+    step(10);hold('embersword');p.counterT=.5;press();out.counter=!!(p.swing&&p.swing.counter);let_go();step(20);
+    // bow: letting go right as the draw fills is a Perfect shot
+    hold('goldbow');p.inv[20]={id:'arrow',n:50};const pf0=st('perfects');m.l=true;step();let k=0;while(!(p.draw&&p.draw.full)&&k++<60)step();let_go();out.perfect=st('perfects')-pf0;step(10);
+    // magic: casting again as the rune ring closes is a Rune cast at half the mana
+    hold('inktome');p.maxMana=200;p.mana=200;const rn0=st('runes');press();out.rune=!!p.rune;let_go();g.setWorldClock(p.rune.at);p.placeT=0;const mana=p.mana;press();out.runes=st('runes')-rn0;out.runeCost=mana-p.mana;let_go();
+    // ricochet arrows glance off one foe toward another the shot never pointed at
+    const x=Math.floor(p.x),y=g.surf[x]+18;for(const e of g.enemies.slice())g.removeEnemy(e);
+    const a=g.spawnEnemy('slime',x+4,y),b=g.spawnEnemy('slime',x+4,y+5),ha=a.hp,hb=b.hp;
+    g.fireProj('rarrow',x+1,y+a.h/2,25,0,20,{src:'ranged'});for(let i=0;i<90;i++)g.updateProjs(1/60);out.ric=[a.hp<ha,b.hp<hb];
+    // a cracked foe loses its armor
+    const s=g.spawnEnemy('slime',x+8,y),t=g.spawnEnemy('slime',x+10,y);g.makeElite(s,'armored');g.makeElite(t,'armored');t.broke=g.worldClock+6;
+    const hs=s.hp,ht=t.hp;g.hurtEnemy(s,40,1,0);g.hurtEnemy(t,40,1,0);out.crack=[hs-s.hp,ht-t.hp];
+    // a full set turns its bonus on, and the tooltip says so
+    p.armor=[{id:'helm_weave',n:1},{id:'mail_weave',n:1},null];out.part=[g.fullSet(),g.setMul('magic')];p.armor[2]={id:'legs_weave',n:1};out.full=[g.fullSet(),g.setMul('magic'),g.setMul('melee')];
+    const el=document.querySelector('.slot[data-kind="armor"][data-i="0"]');el.dispatchEvent(new MouseEvent('mouseover',{bubbles:true,clientX:20,clientY:20}));out.tip=document.getElementById('tip').textContent;
+    g.setState('play');return out;
+  });
+  expect(r.badRecipe).toEqual([]);
+  expect(r.noCell).toEqual([]);
+  expect(r.charged).toBe(true);
+  expect(r.shock).toBe(1);
+  expect(r.counter).toBe(true);
+  expect(r.perfect).toBe(1);
+  expect(r.rune).toBe(true);
+  expect(r.runes).toBe(1);
+  expect(r.runeCost).toBe(3);
+  expect(r.ric).toEqual([true,true]);
+  expect(r.crack[1]).toBeGreaterThan(r.crack[0]*1.5);
+  expect(r.part).toEqual([null,1]);
+  expect(r.full).toEqual(['weave',1.2,1]);
+  expect(r.tip).toContain('Inkweaver set');
+  expect(r.tip).toContain('3/3 worn');
+});

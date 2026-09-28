@@ -1,5 +1,5 @@
 // Tiles (T, TP and lookup arrays), items, badges and recipes.
-import {C,METAL} from './game.js';
+import {C,METAL,SETCOL} from './game.js';
 
 // ================= tiles =================
 export const T={FAKE:64,DRIFT:65,THIN:66,SEAL:67,MURAL:63,RARE:62,FOIL:61,PEEL:55,SKETCH:56,SIGN:57,PEDESTAL:58,RUBBLE:59,ALTAR:60,CROP:52,ALCHEMY:53,PAINT5:54,PAINT1:39,PAINT2:40,PAINT3:41,PAINT4:42,BANR:43,BANB:44,BANG:45,LANTERNP:46,SHELF:47,CANDLE:48,POT:49,CLOCK:50,ARMCHAIR:51,SNOW:28,ICE:29,FROST:30,INKSTONE:31,INKORE:32,ASH:33,EMBERORE:34,ROPE:35,INK:36,LAVA:37,BLOOM:38,AIR:0,GRASS:1,DIRT:2,STONE:3,PLANK:4,TRUNK:5,COPPER:6,IRON:7,GOLD:8,SAND:9,TORCH:10,DOOR:11,TABLE:12,CHAIR:13,CHEST:14,BENCH:15,BRICK:16,GLASS:17,PLATFORM:18,FURNACE:19,ANVIL:20,BED:21,HEART:22,TUFT:23,FLOWER:24,MUSH:25,CORE:26,FLOWER2:27};
@@ -117,12 +117,20 @@ item('ironsword',{name:'Iron Sword',cell:C.swFe,dmg:17,kb:6,dur:.32,max:1,value:
 item('goldsword',{name:'Gold Broadsword',cell:C.swAu,dmg:25,kb:7,dur:.3,max:1,value:60});
 const MNAME={cu:'Copper',fe:'Iron',au:'Gold',fr:'Frostsilver',ik:'Inkstone',em:'Emberite',fo:'Foilite'},MDEF={cu:[1,2,1],fe:[2,3,2],au:[3,5,3],fr:[4,6,4],ik:[5,8,5],em:[7,10,7],fo:[9,13,9]};
 for(const m in METAL){item('helm'+m,{name:MNAME[m]+' Helmet',cell:C['helm'+m],slot:0,def:MDEF[m][0],max:1,value:15,color:METAL[m]});item('mail'+m,{name:MNAME[m]+' Chainmail',cell:C['mail'+m],slot:1,def:MDEF[m][1],max:1,value:20,color:METAL[m]});item('legs'+m,{name:MNAME[m]+' Greaves',cell:C['legs'+m],slot:2,def:MDEF[m][2],max:1,value:15,color:METAL[m]});}
+// endgame armor sets (#37): armor like the metal sets, and wearing all three pieces of one set adds its bonus (setOn() in entities.js)
+export const SETS={warden:{name:'Crease Warden',kind:'Melee',bonus:'+20% melee damage, and every melee hit restores 1 life.',parts:['Helm','Plate','Greaves'],def:[7,10,7]},
+  sky:{name:'Skystring',kind:'Ranged',bonus:'+20% ranged damage, bows draw 30% faster, and 1 shot in 4 uses no ammo.',parts:['Hood','Vest','Leggings'],def:[5,8,6]},
+  weave:{name:'Inkweaver',kind:'Magic',bonus:'+20% magic damage, spells cost 25% less mana, and mana refills twice as fast.',parts:['Hat','Robe','Leggings'],def:[4,7,5]}};
+for(const k in SETS){const S=SETS[k];['helm','mail','legs'].forEach((pc,i)=>item(pc+'_'+k,{name:S.name+' '+S.parts[i],cell:C[pc+'_'+k],slot:i,def:S.def[i],set:k,max:1,value:[70,95,80][i],color:SETCOL[k]}));}
 item('woodbow',{name:'Wooden Bow',cell:C.bowW,ranged:1,ammo:'arrow',dmg:6,ut:.45,spd:21,max:1,value:10,desc:'Fires arrows from your backpack. Hold to keep shooting.'});
 item('goldbow',{name:'Gold Bow',cell:C.bowG,ranged:1,ammo:'arrow',dmg:14,ut:.32,spd:28,max:1,value:60,desc:'Fast, hard-hitting arrows.'});
 item('launcher',{name:'Plane Launcher',cell:C.launch,ranged:1,ammo:'paper',dmg:10,ut:.28,spd:15,max:1,value:50,desc:'Folds Paper Sheets into planes that curve toward enemies.'});
 item('arrow',{name:'Wooden Arrow',cell:C.arrow,ammoOf:'arrow',adm:4,proj:'arrow'});
 item('firearrow',{name:'Flaming Arrow',cell:C.farrow,ammoOf:'arrow',adm:8,proj:'firearrow',value:2,desc:'Lights up tunnels as it flies, and burns what it hits.'});
 item('waterarrow',{name:'Soaking Arrow',cell:C.warrow,ammoOf:'arrow',adm:6,proj:'warrow',value:2,desc:'Soaks what it hits. Puts out fire, and fire creatures hate it.'});
+item('inkarrow',{name:'Inkblot Arrow',cell:C.iarrow,ammoOf:'arrow',adm:7,proj:'iarrow',value:2,desc:'Stains what it hits with slowing ink.'});
+item('piercearrow',{name:'Needle Arrow',cell:C.parrow,ammoOf:'arrow',adm:5,proj:'parrow',value:2,desc:'A thin, hard tip that passes through two enemies.'});
+item('bouncearrow',{name:'Ricochet Arrow',cell:C.rarrow,ammoOf:'arrow',adm:5,proj:'rarrow',value:2,desc:'Glances off an enemy it hits toward the next one nearby, twice, and bounces off walls once.'});
 item('paper',{name:'Paper Sheet',cell:C.paper,ammoOf:'paper',adm:2,proj:'plane',desc:'Ammo for the Plane Launcher.'});
 item('inktome',{name:'Ink Bolt',cell:C.tomeInk,magic:1,mana:5,dmg:15,ut:.4,spd:17,proj:'ink',max:1,value:40,desc:'Flings bouncing blots of ink.'});
 item('cranetome',{name:'Crane Swarm',cell:C.tomeCrane,magic:1,mana:10,dmg:11,ut:.55,spd:13,proj:'crane',count:3,max:1,value:90,desc:'Releases three paper cranes that hunt enemies.'});
@@ -223,7 +231,7 @@ item('lantern',{name:"Miner's Lantern",cell:C.lantern,acc:'light',max:1,value:60
 item('ribbon',{name:'Royal Ribbon',cell:C.ribbon,acc:'speed',max:1,value:120,desc:'+20% run speed and higher jumps.'});
 // warhammers: slow overhead slams, big damage and knockback, briefly stagger what they hit
 const HAMS={cu:[19,11,.62,20],fe:[27,12,.6,45],au:[40,13,.58,90],fr:[52,13.5,.56,135,'water'],ik:[66,14,.55,195,'ink'],em:[86,15,.56,270,'fire'],fo:[108,16,.54,360]};
-for(const m in HAMS){const[dmg,kb,dur,value,elem]=HAMS[m];item('ham'+m,{name:MNAME[m]+' Warhammer',cell:C['ham'+m],dmg,kb,dur,heavy:1,elem,max:1,value,desc:'Slow, heavy slams that knock enemies flying and stagger them.'});}
+for(const m in HAMS){const[dmg,kb,dur,value,elem]=HAMS[m];item('ham'+m,{name:MNAME[m]+' Warhammer',cell:C['ham'+m],dmg,kb,dur,heavy:1,elem,max:1,value,desc:'Slow, heavy slams that knock enemies flying and stagger them. Hold at the top of the swing to charge: a full charge sends a shockwave along the ground that cracks shells and armor.'});}
 // shields go in an accessory slot: hold right-click (or the Block key) to block, raise it just before a hit to parry
 item('shwood',{name:'Wooden Shield',cell:C.shwood,acc:'def',v:1,block:.35,max:1,value:8});
 const SHS={cu:[2,.4,20],fe:[3,.45,40],au:[4,.5,80],fr:[5,.55,120],ik:[6,.6,170],em:[8,.65,240],fo:[10,.7,320]};
@@ -303,7 +311,7 @@ export const RECIPES=[
  ['pendant',1,[['moonink',12],['goldbar',2],['lens',1]],'anvil'],['paint5',1,[['moonink',3],['paper',1]],'bench'],
  ['woodbow',1,[['wood',10]],'bench'],['arrow',5,[['wood',1],['stone',1]],null],['firearrow',5,[['arrow',5],['torch',1]],null],['paper',10,[['wood',2]],'bench'],
  ['goldbow',1,[['goldbar',10]],'anvil'],['launcher',1,[['ironbar',12],['lens',3]],'anvil'],
- ['waterarrow',5,[['arrow',5],['ice',1]],null],
+ ['waterarrow',5,[['arrow',5],['ice',1]],null],['inkarrow',5,[['arrow',5],['inksac',1]],null],['piercearrow',5,[['arrow',5],['ironbar',1]],'anvil'],['bouncearrow',5,[['arrow',5],['gel',2]],null],
  ['hamcu',1,[['copperbar',12],['wood',4]],'anvil'],['hamfe',1,[['ironbar',14],['wood',4]],'anvil'],['hamau',1,[['goldbar',16],['wood',4]],'anvil'],
  ['hamfr',1,[['frostbar',16],['plume',2]],'anvil'],['hamik',1,[['inkbar',16],['inkheart',1]],'anvil'],['hamem',1,[['emberbar',18],['cinder',2]],'anvil'],
  ['shwood',1,[['wood',12]],'bench'],['shcu',1,[['copperbar',8],['wood',4]],'anvil'],['shfe',1,[['ironbar',9],['wood',4]],'anvil'],['shau',1,[['goldbar',10],['wood',4]],'anvil'],
@@ -316,7 +324,10 @@ export const RECIPES=[
  ['pet_frog',1,[['paper',12],['gel',6]],'bench'],['stag',1,[['paper',40],['goldbar',8],['plume',3]],'anvil'],
  ['foilbar',1,[['foilore',4]],'furnace'],['foilpick',1,[['foilbar',18],['moonink',6]],'anvil'],['foilsaber',1,[['foilbar',16]],'anvil'],
  ['helmfo',1,[['foilbar',12]],'anvil'],['mailfo',1,[['foilbar',18]],'anvil'],['legsfo',1,[['foilbar',14]],'anvil'],
- ['hamfo',1,[['foilbar',18],['wood',4]],'anvil'],['shfo',1,[['foilbar',14]],'anvil'],
+ ['hamfo',1,[['foilbar',18],['wood',4]],'anvil'],
+ ['helm_warden',1,[['emberbar',10],['cinder',2]],'anvil'],['mail_warden',1,[['emberbar',16],['cinder',3]],'anvil'],['legs_warden',1,[['emberbar',12],['cinder',2]],'anvil'],
+ ['helm_sky',1,[['emberbar',8],['plume',4],['batwing',4]],'anvil'],['mail_sky',1,[['emberbar',12],['plume',6],['batwing',6]],'anvil'],['legs_sky',1,[['emberbar',10],['plume',5],['batwing',4]],'anvil'],
+ ['helm_weave',1,[['emberbar',8],['inkheart',2],['fstar',8]],'anvil'],['mail_weave',1,[['emberbar',12],['inkheart',3],['fstar',12]],'anvil'],['legs_weave',1,[['emberbar',10],['inkheart',2],['fstar',10]],'anvil'],['shfo',1,[['foilbar',14]],'anvil'],
  ['inktome',1,[['fstar',5],['gel',8],['mushroom',3]],'bench'],['cranetome',1,[['fstar',10],['goldbar',8],['batwing',4]],'anvil'],['starstaff',1,[['fstar',20],['goldbar',12]],'anvil'],
 ];
 export const SHOP=[['rodwood',40],['fly',3],['tmap',150],['seed_sun',5],['seed_wheat',5],['bucket',60],['b_stomp',60],['b_dip',150],['b_heartf',120],['torch',5],['rope',1],['hook',200],['potion',25],['arrow',1],['paper',1],['manapotion',20],['woodbow',30],['shuriken',3],['glass',4],['bed',60],['crown',180],['lantern',300],['glider',450]];

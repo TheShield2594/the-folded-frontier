@@ -143,6 +143,11 @@ export const niceW=()=>(hasBadge('nice')?1.7:1)*(pad.active?1.3:1);
 export const NICE_WIN=.12,NICE_LATE=.09;export const inNiceWin=s=>s&&s.sword&&!s.early&&s.dur-s.t<NICE_WIN*niceW()&&s.dur-s.t>0;
 const accHas=(it,k)=>Array.isArray(it.acc)?it.acc.includes(k):it.acc===k;
 export function defense(){let d=0;for(const s of player.armor)if(s)d+=ITEMS[s.id].def;for(const s of player.acc)if(s&&accHas(ITEMS[s.id],'def'))d+=ITEMS[s.id].v;if(hasBadge('defend'))d+=3;if(hasBuff('iron'))d+=8;if(hasBuff('ghost'))d+=6;if(hasBuff('fed'))d+=2;if(player.st&&player.st.soak>0)d-=4;return Math.max(0,d);}
+// armor sets (SETS in items.js): pieces of set k worn, the set whose bonus is on (all three pieces), and the damage multiplier it gives a kind of attack
+export const setCount=k=>player.armor.filter(s=>s&&ITEMS[s.id].set===k).length;
+export const fullSet=()=>{const s=player.armor[0],k=s&&ITEMS[s.id].set;return k&&setCount(k)===3?k:null;};
+export const setOn=k=>fullSet()===k;
+export const setMul=kind=>({melee:'warden',ranged:'sky',magic:'weave'}[kind]===fullSet()?1.2:1);
 export const hasAcc=k=>player.acc.some(s=>s&&accHas(ITEMS[s.id],k));
 export function shieldItem(){let b=null;for(const s of player.acc)if(s){const it=ITEMS[s.id];if(it.block&&(!b||it.block>b.block))b=it;}return b;}
 export function selItem(){const s=player.inv[player.sel];return s?ITEMS[s.id]:null;}
