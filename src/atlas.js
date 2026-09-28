@@ -411,5 +411,17 @@ C.stacks=blockCell('#2e2446',c=>{c.fillStyle='#5a3a22';c.fillRect(0,0,64,64);for
   circ(c,32,29,4);c.fillStyle='#e0b0ff';c.fill();poly(c,[30,31,34,31,35,40,29,40]);c.fillStyle='#e0b0ff';c.fill();});
 C.archkey=sticker(t=>{t.beginPath();t.moveTo(38,22);t.lineTo(54,46);ink(t,6,INK);t.beginPath();t.moveTo(38,22);t.lineTo(54,46);ink(t,3.4,'#c9a24a');rr(t,44,40,6,10,2);fi(t,'#c9a24a',2);rr(t,50,48,5,8,2);fi(t,'#c9a24a',2);
   poly(t,[10,10,34,6,38,30,14,34]);fi(t,'#f4ecd8',2.5);for(const y of[14,19,24])t.fillRect(16,y,16,1.6);t.beginPath();t.moveTo(14,34);t.lineTo(10,52);t.lineTo(16,46);t.lineTo(20,54);t.lineTo(22,34);t.closePath();fi(t,'#7a5aa8',2);circ(t,36,26,5);fi(t,'#e0b04a',2);});
+// ---- the Origami Observatory (dungeons.js): its star-chart shell, the telescope, the Star Vaults' sealed door, and the lens that opens it
+C.dome=blockCell('#2a3160',c=>{c.strokeStyle='rgba(143,160,224,.45)';c.lineWidth=1.4;c.beginPath();c.moveTo(0,32);c.lineTo(64,32);c.moveTo(32,0);c.lineTo(32,64);c.stroke();c.beginPath();c.arc(32,32,22,0,6.28);c.stroke();
+  for(const[x,y,r]of[[12,12,2.2],[50,18,1.6],[20,48,1.8],[46,50,2.4],[40,8,1.2],[8,34,1.2]]){poly(c,starPts(x,y,r*2.2,r));c.fillStyle='#fff3c0';c.fill();}
+  c.beginPath();c.moveTo(12,12);c.lineTo(20,48);c.lineTo(46,50);ink(c,1,'rgba(255,243,192,.45)');});
+C.scope=sticker(t=>{t.beginPath();t.moveTo(22,60);t.lineTo(32,40);t.lineTo(42,60);ink(t,4,INK);t.beginPath();t.moveTo(22,60);t.lineTo(32,40);t.lineTo(42,60);ink(t,2,'#8a5a33');
+  t.save();t.translate(32,36);t.rotate(-.7);rr(t,-8,-28,16,40,5);fi(t,'#c9a24a',2.5);rr(t,-10,-32,20,8,3);fi(t,'#6b5234',2);t.fillStyle='rgba(255,255,255,.35)';t.fillRect(-4,-22,3,26);t.restore();
+  circ(t,32,40,5);fi(t,'#6b5234',2);poly(t,starPts(50,12,7,3));t.fillStyle='#fff3c0';t.fill();});
+C.stardoor=blockCell('#3a4a8a',c=>{c.fillStyle='#232a58';c.fillRect(8,0,48,64);c.strokeStyle='#c9a24a';c.lineWidth=2.4;c.strokeRect(8,1,48,62);
+  for(let k=0;k<5;k++){const a=-Math.PI/2+k*Math.PI*2/5;c.beginPath();c.moveTo(32,32);c.lineTo(32+Math.cos(a)*22,32+Math.sin(a)*22);c.strokeStyle='rgba(255,243,192,.4)';c.lineWidth=1.4;c.stroke();}
+  poly(c,starPts(32,32,13,6));c.fillStyle='#f7d046';c.fill();ink(c,1.6,'#6b5234');circ(c,32,32,3);c.fillStyle='#232a58';c.fill();});
+C.starlens=sticker(t=>{circ(t,30,30,22);fi(t,'#c9a24a',3);circ(t,30,30,16);t.fillStyle='#9fb4f0';t.fill();ink(t,2);poly(t,starPts(30,30,9,4));t.fillStyle='#fff3c0';t.fill();
+  t.beginPath();t.moveTo(24,20);t.quadraticCurveTo(28,17,33,18);ink(t,2.4,'rgba(255,255,255,.8)');t.beginPath();t.moveTo(46,46);t.lineTo(58,58);ink(t,8,INK);t.beginPath();t.moveTo(46,46);t.lineTo(58,58);ink(t,4.5,'#6b5234');});
 C.hl=sticker(t=>{rr(t,2,2,60,60,8);t.setLineDash([8,5]);ink(t,3,'#fff');t.setLineDash([]);},0);
 if(cellN>(32-4)*16)console.warn('atlas overflow');

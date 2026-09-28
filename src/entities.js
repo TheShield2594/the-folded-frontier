@@ -12,7 +12,7 @@ export const player={buffs:{},partners:[],partner:null,badges:[],badgesOn:[],bpU
   onGround:false,coyote:0,jbuf:0,jumpAge:9,usedDouble:false,swing:null,lastSwingEnd:-9,niceNext:false,inv_t:0,spawn:{x:0,y:0},regenT:0,potT:0,mineP:0,mineTile:-1,placeT:0,walkT:0,dead:false,deadT:0,stompWin:0,stompTarget:null,dashT:0,dashCD:0,dashI:0,dashDir:1,airDashed:false,ghostT:0,dashPing:0,sheetDirty:true,mesh:null,mat:null,prevY:0};
 export let enemies=[],pickups=[],projs=[],npcs=[],boss=null;
 export let worldTime=7.5,quests={},hintT=0;
-export const QUESTS=[['tree','Chop down a tree'],['bar','Smelt a bar at a furnace'],['house','Build a house for the Merchant'],['heart','Find and use a Paper Heart'],['iron','Forge iron gear at an anvil'],['king','Defeat the King Slime'],['crane','Defeat the Great Crane'],['clock','Conquer the Folded Clocktower'],['lev','Defeat the Inkwell Leviathan'],['arch','Conquer the Hollow Archive'],['folio','Defeat the Charred Folio'],['unfolded','Solve the riddle of the ink shrine']];
+export const QUESTS=[['tree','Chop down a tree'],['bar','Smelt a bar at a furnace'],['house','Build a house for the Merchant'],['heart','Find and use a Paper Heart'],['iron','Forge iron gear at an anvil'],['king','Defeat the King Slime'],['crane','Defeat the Great Crane'],['clock','Conquer the Folded Clocktower'],['lev','Defeat the Inkwell Leviathan'],['arch','Conquer the Hollow Archive'],['folio','Defeat the Charred Folio'],['obs','Conquer the Origami Observatory'],['unfolded','Solve the riddle of the ink shrine']];
 export function questDone(k){if(quests[k])return;quests[k]=true;const q=QUESTS.find(q=>q[0]===k);toast(`Quest complete: ${q[1]}`,'gold');SFX.nice();renderQuests();}
 
 export function boxHits(x,y,w,h,prevY,drop){const x0=Math.floor(x-w/2),x1=Math.floor(x+w/2-1e-6),y0=Math.floor(y),y1=Math.floor(y+h-1e-6);
@@ -75,6 +75,9 @@ export const EN={
   warden:{w:.85,h:1.85,hp:320,dmg:28,def:15,sheet:'warden',fw:96,fh:144,coins:[60,90],drops:[['moonink',2,4,1],['inkbar',3,6,1]],col:['#5a3c78','#e9dcc0'],name:'Stack Warden',step:1},
   mothling:{w:.8,h:.6,hp:45,dmg:24,def:6,fly:1,sheet:'mothling',fw:96,fh:64,coins:[2,6],drops:[],col:['#e8dcc4','#b8a0d0']},
   bookmoth:{w:3.4,h:2.4,hp:3000,dmg:36,def:16,fly:1,noclip:1,sheet:'bookmoth',fw:300,fh:220,boss:1,name:'The Bookmoth',quest:'arch',coins:[550,700],drops:[['moonink',5,9,1],['inkbar',6,10,1],['fstar',4,8,1],['moontome',1,1,.35],['b_dip',1,1,.5]],col:['#e8dcc4','#7a5aa8','#c9a24a']},
+  // the Origami Observatory (dungeons.js): the keeper of its charts (the mini-boss, always an elite) and the Starfold under the dome
+  gazer:{w:.85,h:1.85,hp:400,dmg:30,def:19,sheet:'gazer',fw:96,fh:144,coins:[80,120],drops:[['fstar',3,6,1],['skybar',3,6,1]],col:['#2a3160','#f7d046'],name:'Stargazer',step:1},
+  starfold:{w:3.4,h:3.4,hp:4200,dmg:42,def:21,fly:1,noclip:1,sheet:'starfold',fw:260,fh:260,boss:1,name:'The Starfold',quest:'obs',coins:[1000,1300],drops:[['fstar',8,14,1],['skybar',6,10,1],['emberbar',4,8,1],['b_nice',1,1,.5]],col:['#f7d046','#2a3160','#fbf8f0']},
   king:{w:4.4,h:3.3,hp:750,dmg:26,def:6,sheet:'king',fw:340,fh:280,boss:1,name:'King Slime',quest:'king',slimy:1,coins:[250,320],drops:[['b_nice',1,1,1],['ribbon',1,1,1],['gel',20,35,1],['goldbar',5,10,1],['starstaff',1,1,.6],['fstar',5,10,1]],col:['#5aa7e0','#8fcaf0','#f1c04f']},
 };
 // damage types: weak takes ×1.5, resists take ×.5. Fire burns (damage over time), ink stains (slows), water soaks (takes +25% damage, hits 25% softer).
@@ -84,7 +87,7 @@ export const ELEM={fire:{name:'Fire',st:'Burning',col:['#ff8a3d','#ffd66b'],icon
  ['foldfox','fire','water'],['flurry','fire','water','water'],['snowroll','fire','water','water'],['snowlet','fire','water','water'],['frostpuff','fire','water','water'],
  ['blot','water','ink','ink'],['inksquid','water','ink','ink'],['inkwisp','water','ink','ink'],['quillfish','','ink','ink'],['wraith','water','ink','ink'],
  ['cinderbat','water','fire','fire'],['ashimp','water','fire','fire'],['cracker','water','fire','fire'],['ashspider','water','fire','fire'],
- ['skyray','fire','water'],['clockbug','water','fire'],['sentinel','water'],['mainspring','water','fire'],['warden','fire','ink','ink'],['mothling','fire'],['bookmoth','fire','ink','ink'],
+ ['skyray','fire','water'],['clockbug','water','fire'],['sentinel','water'],['mainspring','water','fire'],['warden','fire','ink','ink'],['mothling','fire'],['bookmoth','fire','ink','ink'],['gazer','ink','water'],['starfold','ink','fire','fire'],
  ['king','fire','water'],['crane','fire','water'],['lev','water','ink','ink'],['levseg','water','ink','ink'],['levtail','water','ink','ink'],['folio','water','fire','fire'],['unfolded','fire','ink','ink']
 ].forEach(([k,w,r,el])=>{Object.assign(EN[k],{weak:w||null,res:r||null,elem:el||null});});
 // bestiary: order, display names and where each enemy lives (segments of the Leviathan are part of it)
@@ -93,8 +96,8 @@ export const BEST=[['slime','Green Slime','Forest, by day'],['bslime','Blue Slim
   ['foldfox','Fold Fox','Origami Snowfield'],['flurry','Flurry','Origami Snowfield'],['snowroll','Snow Roller','Origami Snowfield'],['snowlet','Snowlet','Origami Snowfield, from Snow Rollers'],['frostpuff','Frost Puff','Origami Snowfield'],
   ['blot','Ink Blot','Ink Lake'],['inksquid','Ink Squid','Ink Lake, in the ink'],['inkwisp','Ink Wisp','Ink Lake'],['quillfish','Quillfish','Ink Lake, in the ink'],
   ['cinderbat','Cinder Bat','Burnt Underworld'],['ashimp','Ash Imp','Burnt Underworld'],['cracker','Firecracker Imp','Burnt Underworld'],['ashspider','Ash Spider','Burnt Underworld ceilings'],['wraith','Ink Wraith','Surface, under the Ink Moon'],
-  ['skyray','Paper Ray','Sky islands'],['clockbug','Clockwork Beetle','The Pressed Deep'],['sentinel','Clockwork Sentinel','Mini-boss · the Folded Clocktower'],['warden','Stack Warden','Mini-boss · the Hollow Archive'],['mothling','Mothling','The Hollow Archive, from the Bookmoth'],
-  ['king','King Slime','Boss · summoned on the surface'],['crane','Great Crane','Boss · Origami Snowfield'],['mainspring','The Mainspring','Boss · the Folded Clocktower'],['lev','Inkwell Leviathan','Boss · Ink Lake'],['bookmoth','The Bookmoth','Boss · the Hollow Archive'],['folio','Charred Folio','Boss · Burnt Underworld'],['unfolded','The Unfolded','Secret boss · the ink shrine']];
+  ['skyray','Paper Ray','Sky islands'],['clockbug','Clockwork Beetle','The Pressed Deep'],['sentinel','Clockwork Sentinel','Mini-boss · the Folded Clocktower'],['warden','Stack Warden','Mini-boss · the Hollow Archive'],['mothling','Mothling','The Hollow Archive, from the Bookmoth'],['gazer','Stargazer','Mini-boss · the Origami Observatory'],
+  ['king','King Slime','Boss · summoned on the surface'],['crane','Great Crane','Boss · Origami Snowfield'],['mainspring','The Mainspring','Boss · the Folded Clocktower'],['lev','Inkwell Leviathan','Boss · Ink Lake'],['bookmoth','The Bookmoth','Boss · the Hollow Archive'],['folio','Charred Folio','Boss · Burnt Underworld'],['starfold','The Starfold','Boss · the Origami Observatory'],['unfolded','The Unfolded','Secret boss · the ink shrine']];
 export let bestiary={};
 export function bestKill(e){const b=bestiary[e.type]||(bestiary[e.type]={k:0,d:{}});b.k++;if(e.elite)b.e=(b.e||0)+1;
   if(e.trait&&TRAITS[e.trait]){const tr=b.tr||(b.tr={});if(!tr[e.trait]&&!Object.values(bestiary).some(o=>o.tr&&o.tr[e.trait]))toast(`New elite trait in the bestiary: ${TRAITS[e.trait].n}!`,'gold');tr[e.trait]=(tr[e.trait]||0)+1;}
