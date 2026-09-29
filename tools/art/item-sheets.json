@@ -1,0 +1,184 @@
+{
+ "bars": {
+  "cells": [
+   "barCu",
+   "barFe",
+   "barAu",
+   "barFr",
+   "barIk",
+   "barEm",
+   "barFo",
+   "barSky"
+  ],
+  "prompt": "Metal bars icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Copper Bar: a chunky trapezoid ingot of warm copper (#c8743a) with darker copper edges\n2. Iron Bar: a chunky ingot of cool grey iron (#8f98a3)\n3. Gold Bar: a chunky ingot of rich gold (#f1c04f) with a small shine\n4. Frostsilver Bar: a pale icy silver-blue ingot (#cfe3ee) with a few tiny ice crystals\n5. Inkstone Bar: a dark violet-black ingot (#3a2d4a) with ink drips and a thin glowing purple seam (#b58cf0)\n6. Emberite Bar: a charcoal ingot (#3b3034) with glowing ember-orange cracks (#ff7a2d)\n7. Foilite Bar: a shimmering folded-foil ingot, silver with soft rainbow sheen on its creased facets\n8. Skyglass Bar: a translucent sky-blue glass ingot with a little white cloud wisp inside\n\nOrientation: every item faces the viewer, upright and centred, filling most of its cell.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no numbers, no shadow, no ground."
+ },
+ "mats": {
+  "cells": [
+   "gel",
+   "lens",
+   "batwing",
+   "fstar",
+   "inksac",
+   "moonink",
+   "cog",
+   "goldleaf"
+  ],
+  "prompt": "Crafting materials icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Gel: a wobbly blob of green slime jelly (#6cc57a) with a shine\n2. Lens: a round glass lens in a dark ink rim, pale blue glass\n3. Bat Wing: a folded dark paper bat wing with crisp fold lines\n4. Fallen Star: a small glowing yellow five-pointed star (#f1c04f) with a tiny sparkle\n5. Ink Sac: a glossy dark purple sac with a drop of ink dripping from it\n6. Moon Ink: a small corked vial of glowing violet ink with a tiny crescent moon on it\n7. Ancient Cog: a worn old brass cog with chipped teeth\n8. Golden Leaf: a gilded autumn leaf, shining gold with a curled stem\n\nOrientation: every item faces the viewer, upright and centred, filling most of its cell.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no numbers, no shadow, no ground."
+ },
+ "boss": {
+  "cells": [
+   "plume",
+   "inkheart",
+   "cinder",
+   "crown",
+   "charm",
+   "inkwell",
+   "bookmark",
+   "heart"
+  ],
+  "prompt": "Boss drops and summoning items icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Crane Plume: a white origami feather folded from paper, with crisp creases\n2. Ink Heart: a glossy black-violet heart dripping ink\n3. Cinder Core: a glowing ember-orange orb wrapped in charred paper\n4. Gel Crown: a wobbly green jelly crown with three rounded points\n5. Crane Charm: a small red paper crane charm hanging from a red string loop\n6. Bottomless Inkwell: a round glass inkwell full of swirling dark ink, with a dripping nib resting on it\n7. Burnt Bookmark: a scorched ribbon bookmark with smouldering ember edges\n8. Paper Heart: a plump red folded paper heart with one sparkle\n\nOrientation: every item faces the viewer, upright and centred, filling most of its cell.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no numbers, no shadow, no ground."
+ },
+ "potions": {
+  "cells": [
+   "potion",
+   "mpot",
+   "potSwift",
+   "potNight",
+   "potFire",
+   "potIron",
+   "potRegen",
+   "potFish"
+  ],
+  "prompt": "Potions icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Healing Potion: a round-bottomed flask of red potion with a cork and a small paper label with a heart\n2. Mana Potion: a round-bottomed flask of blue potion with a cork and a paper label with a star\n3. Swiftness Potion: a flask of bright green potion with a paper label showing a feather\n4. Night Vision Potion: a flask of deep indigo potion with a paper label showing an eye\n5. Fire Resistance Potion: a flask of orange potion with a paper label showing a flame\n6. Ironskin Potion: a flask of grey metallic potion with a paper label showing a shield\n7. Regeneration Potion: a flask of pink potion with a paper label showing a leaf\n8. Fishing Potion: a flask of teal potion with a paper label showing a little fish\n\nOrientation: every item faces the viewer, upright and centred, filling most of its cell.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no numbers, no shadow, no ground."
+ },
+ "food": {
+  "cells": [
+   "potLunar",
+   "potThunder",
+   "potGhost",
+   "sunTart",
+   "bread",
+   "grilled",
+   "mcrys",
+   "bpUp"
+  ],
+  "prompt": "Tonics, food and upgrades icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Moonlit Tonic: a tall slender bottle of glowing violet tonic with a crescent moon stopper\n2. Thunder Tonic: a tall bottle of crackling yellow tonic with a lightning-bolt stopper\n3. Ghostcap Draught: a tall bottle of pale ghostly green draught with a little mushroom stopper\n4. Sunfruit Tart: a round golden fruit tart with a crimped crust\n5. Paper Bread: a plump loaf of bread with folded-paper score lines\n6. Grilled Fish: a cooked fish with grill marks on a wooden skewer\n7. Mana Crystal: a faceted glowing blue crystal\n8. BP Up: a small gold badge pin set with a round blue gem shaped like a plus sign\n\nOrientation: every item faces the viewer, upright and centred, filling most of its cell.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no numbers, no shadow, no ground."
+ },
+ "hammers": {
+  "cells": [
+   "hamcu",
+   "hamfe",
+   "hamau",
+   "hamfr",
+   "hamik",
+   "hamem",
+   "hamfo",
+   "swFo"
+  ],
+  "prompt": "Warhammers icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Copper Warhammer: a chunky copper hammer head with rivets on a wooden handle\n2. Iron Warhammer: a heavy grey iron hammer head on a wooden handle\n3. Gold Warhammer: an ornate gold hammer head with an engraved swirl on a wooden handle\n4. Frostsilver Warhammer: a pale icy silver-blue hammer head with ice crystals on a wooden handle\n5. Inkstone Warhammer: a dark violet-black stone hammer head with ink drips and a glowing purple seam, dark handle\n6. Emberite Warhammer: a charcoal hammer head with glowing ember cracks, dark handle\n7. Foilite Warhammer: a shimmering folded-foil hammer head with rainbow sheen, silver handle\n8. Foilite Saber: a light curved saber with a shimmering folded-foil blade and rainbow sheen, silver guard\n\nOrientation: every item lies diagonally at 45 degrees with the handle at the bottom-left and the head or tip at the top-right, like the weapons in the reference image.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no numbers, no shadow, no ground."
+ },
+ "tools2": {
+  "cells": [
+   "hamik",
+   "hamem",
+   "pickFo",
+   "swSky",
+   "hook",
+   "skyhook",
+   "crowbar",
+   "wellnib"
+  ],
+  "prompt": "Tools and weapons icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Inkstone Warhammer: a WARHAMMER, NOT a pickaxe: a heavy rectangular block-shaped hammer head of dark violet-black stone (#3a2d4a) with ink drips and a glowing purple seam (#b58cf0), on a dark wooden handle\n2. Emberite Warhammer: a WARHAMMER, NOT a pickaxe: a heavy rectangular block-shaped hammer head of charcoal (#3b3034) with glowing ember-orange cracks (#ff7a2d), on a dark wooden handle\n3. Foilite Pickaxe: a pickaxe with a curved shimmering folded-foil head with rainbow sheen, silver handle\n4. Skyglass Saber: a light curved saber with a translucent sky-blue glass blade and a white cloud-shaped guard\n5. Grappling Hook: a three-pronged iron grappling hook with a coil of rope\n6. Skyglass Hook: a three-pronged grappling hook with sky-blue glass prongs and a white rope\n7. Crowbar: a sturdy red-painted iron crowbar with a curved claw end\n8. Well Nib: a huge fountain-pen nib of dark metal dripping violet ink\n\nOrientation: every item lies diagonally at 45 degrees with the handle or tail at the bottom-left and the head or tip at the top-right, like the weapons in the reference image.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no numbers, no shadow, no ground."
+ },
+ "shields": {
+  "cells": [
+   "shcu",
+   "shfe",
+   "shau",
+   "shfr",
+   "shik",
+   "shem",
+   "shfo",
+   "patch"
+  ],
+  "prompt": "Shields icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Copper Shield: a round copper shield (#c8743a) with rivets round the rim\n2. Iron Shield: a kite-shaped grey iron shield (#8f98a3) with a raised centre boss\n3. Gold Shield: an ornate round gold shield (#f1c04f) with an engraved swirl and a red gem\n4. Frostsilver Shield: a pale icy silver-blue kite shield (#cfe3ee) with ice crystals on the rim\n5. Inkstone Shield: a dark violet-black stone shield (#3a2d4a) with ink drips and a glowing purple seam\n6. Emberite Shield: a charcoal shield (#3b3034) with glowing ember cracks and a flame-shaped boss\n7. Foilite Shield: a shimmering folded-foil shield with rainbow sheen on its creased facets\n8. Stitched Patch: a small round cloth patch shield stitched together from scraps with visible stitches\n\nOrientation: every shield faces the viewer, upright and centred, filling most of its cell.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no numbers, no shadow, no ground."
+ },
+ "fishing": {
+  "cells": [
+   "rodW",
+   "rodFe",
+   "rodFr",
+   "rodEm",
+   "fly",
+   "glowlure",
+   "moonlure",
+   "leaflure"
+  ],
+  "prompt": "Fishing rods and bait icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Wooden Fishing Rod: a thin curved wooden rod with a small reel (no fishing line)\n2. Iron Fishing Rod: a thin curved grey iron rod with a gold tip and a reel (no fishing line)\n3. Frostsilver Rod: a thin curved pale icy rod with a white tip and a reel\n4. Emberite Rod: a thin curved charcoal rod glowing orange at the tip, with a reel\n5. Paper Fly: a tiny folded paper fly bait with two wings\n6. Glow Lure: a small round fishing lure with a glowing yellow bulb and a hook\n7. Moon Lure: a crescent-moon shaped silver fishing lure with a hook, softly glowing\n8. Gilded Lure: a fishing lure shaped like a golden leaf, with a hook\n\nOrientation: the four rods lie diagonally with the handle at the bottom-left and the curved tip at the top-right; the four baits face the viewer, centred, a little smaller.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no numbers, no shadow, no ground."
+ },
+ "ammo": {
+  "cells": [
+   "arrow",
+   "farrow",
+   "warrow",
+   "iarrow",
+   "parrow",
+   "rarrow",
+   "paper",
+   "bobber"
+  ],
+  "prompt": "Arrows and ammo icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Wooden Arrow: a wooden arrow with a grey iron tip and cream fletching\n2. Flaming Arrow: a wooden arrow with an orange flaming tip\n3. Soaking Arrow: a wooden arrow with a blue water-drop tip\n4. Inkblot Arrow: a wooden arrow with a dark violet ink-blot tip\n5. Needle Arrow: a slim arrow with a long needle-thin silver tip\n6. Ricochet Arrow: a wooden arrow with a pale cyan bouncy rounded tip\n7. Paper Sheet: a single crisp sheet of cream paper with one folded corner\n8. Bobber: a red and white round fishing bobber\n\nOrientation: the six arrows lie diagonally with the fletching at the bottom-left and the tip at the top-right; the paper sheet and the bobber face the viewer.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no numbers, no shadow, no ground."
+ },
+ "fish1": {
+  "cells": [
+   "minnow",
+   "koi",
+   "inkfish",
+   "sandsole",
+   "nightkoi",
+   "goldfin",
+   "lavafish",
+   "blossomtrout"
+  ],
+  "prompt": "Fish icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Paper Minnow: a small silvery folded-paper fish\n2. Crane Koi: a white and red koi folded like an origami crane\n3. Inkfish: a dark violet fish with ink-drop spots\n4. Sandpaper Sole: a flat tan flatfish with sandpaper-grain skin\n5. Moonlit Koi: a deep blue koi with pale glowing moon spots\n6. Golden Fin: a gleaming gold fish with fancy fins\n7. Lava Snapper: a charcoal fish with glowing orange lava cracks\n8. Blossom Trout: a pink trout with little cherry-blossom spots\n\nOrientation: every fish is in strict side view facing right, filling most of its cell.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no numbers, no shadow, no ground."
+ },
+ "fish2": {
+  "cells": [
+   "sunperch",
+   "maplecarp",
+   "icepike",
+   "stormeel",
+   "oldcrease",
+   "glacierjaw",
+   "moonscale",
+   "magmaw"
+  ],
+  "prompt": "Fish icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Sun Perch: a bright yellow-orange perch with a sun-ray pattern\n2. Maple Carp: a red-orange carp with maple-leaf shaped scales\n3. Icicle Pike: a long slim pale-blue pike with icicle fins\n4. Storm Eel: a slate-grey eel with yellow lightning stripes\n5. Old Crease: a legendary huge carp folded a thousand times, cream paper covered in creases, with a wise old eye\n6. Glacier Jaw: a legendary icy fish with a huge jaw of ice teeth\n7. Moonscale: a legendary dark violet fish with glowing silver crescent scales\n8. Magmaw: a legendary molten fish, charcoal with glowing lava cracks and a huge mouth\n\nOrientation: every fish is in strict side view facing right, filling most of its cell.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no numbers, no shadow, no ground."
+ },
+ "acc": {
+  "cells": [
+   "kite",
+   "toolbelt",
+   "magnet",
+   "pendant",
+   "glider",
+   "lantern",
+   "ribbon",
+   "clockwings"
+  ],
+  "prompt": "Accessories icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Kite Ribbon: a small red diamond paper kite with a long ribbon tail\n2. Tool Belt: a brown leather tool belt holding a little hammer and wrench\n3. Paper Magnet: a red and silver horseshoe magnet folded from paper\n4. Moon Pendant: a silver crescent-moon pendant on a thin chain, softly glowing\n5. Paper Glider: a white folded paper glider plane\n6. Miner's Lantern: a small brass lantern with a warm glowing flame\n7. Royal Ribbon: a regal purple ribbon rosette with gold trim\n8. Clockwork Wings: a pair of brass and cream paper wings with little gears\n\nOrientation: every item faces the viewer, upright and centred, filling most of its cell.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no numbers, no shadow, no ground."
+ },
+ "keys": {
+  "cells": [
+   "starlens",
+   "archkey",
+   "ripper",
+   "needle",
+   "folder",
+   "bucket",
+   "bucketInk",
+   "bucketLava"
+  ],
+  "prompt": "Keys, paper-trick tools and buckets icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Star Lens: a large round telescope lens in a brass ring with a star glint\n2. Archive Key: an old ornate brass key with a book-shaped bow\n3. Seam Ripper: a small sewing seam ripper with a red handle and a forked silver tip\n4. Golden Needle: a golden sewing needle with a loop of red thread\n5. Bone Folder: a smooth cream bone folder, a flat tapered paper-folding tool\n6. Bucket: an empty wooden bucket with an iron handle\n7. Ink Bucket: a wooden bucket full of dark violet ink\n8. Lava Bucket: a wooden bucket full of glowing orange lava\n\nOrientation: every item faces the viewer, upright and centred, filling most of its cell.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no numbers, no shadow, no ground."
+ }
+}
