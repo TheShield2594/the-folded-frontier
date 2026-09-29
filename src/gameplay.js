@@ -15,6 +15,7 @@ import {
   worldClock,worldTime,digFossil,evKill,fcount,npcLine,plain,clockRoom,dunRoom,stacksAt,vaultAt,crateAt,wellAt,layerAt,crankAt,gateAt,
   guideEv,trickAt,dismount,MOUNTS,petS,toggleMount,togglePet,NDL,emit,loreChest,readMural,PF,lookColors,SHEETS,canvasTex,fullSet,setOn,setMul,SETS,
   openPack,openBinder,
+  makeRig,rigFree,playerLook,playerRigKind
 } from './game.js';
 
 // ================= gameplay =================
@@ -493,7 +494,7 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();se
   for(const k of['hurtT','parryT','landT','cheerT','counterT'])if(p[k]>0)p[k]-=dt;if(p.onGround)p.airHits=0;if(p.swing||Math.abs(p.vx)>.5||!p.onGround)p.cheerT=0;
   let c='idle',ct=null;const sp=p.swing&&!p.blocking&&(p.swing.sword||p.swing.tool)?swingPose(p.swing):null;if(sp)c=FCLIP[sp.f]||'hold';else if(p.parryT>0)c='parry';else if(p.blocking)c='block';else if(p.swing&&(p.swing.sword||p.swing.tool))c='hold';
   else if(p.hurtT>0)c='hurt';else if(p.flat)c='flat';else if(p.dashT>0)c='dash';else if(p.climb){c='climb';ct=p.climbT||0;}else if(!p.onGround)c=p.vy>0?'jump':'fall';else if(p.landT>0)c='land';
-  else if(Math.abs(p.vx)>.5){p.walkT+=dt*Math.abs(p.vx)*1.3;c='walk';ct=p.walkT%4/4;}else if(p.cheerT>0)c='cheer';else p.walkT=0;
+  else if(Math.abs(p.vx)>.5){p.walkT+=dt*Math.abs(p.vx)*1.3;c='walk';const sd=p.rig.d.stride||4;ct=p.walkT%sd/sd;}else if(p.cheerT>0)c='cheer';else p.walkT=0;
   if(p.mount&&!sp&&!p.blocking){c='idle';ct=null;}if(c==='reel0'||c==='reel1')c='reel';
   rigPlay(p.rig,c,{t:ct});m.position.set(p.x,p.y-.08+(p.rideY||0),.15);setTint(p.mat,p.x,p.y+1);statusOverlay(dt);p.mat.uniforms.uFlash.value=p.inv_t>0&&!(p.inv_t>1.3)?(Math.floor(p.inv_t*14)%2?.6:0):0;
   const sq=(p.onGround?(p.squash>0?1-p.squash*.9:1):clamp(1+p.vy*.006,.92,1.08))*(sp?sp.sq:1);m.scale.set(1/Math.sqrt(sq),sq,1);if(p.flat)m.scale.set(1.3,.42,1);if(p.cheerT>0&&!reduceMotion())m.position.y+=Math.abs(Math.sin(p.cheerT*10))*.12;
@@ -521,9 +522,12 @@ function swingPose(s,k=clamp(s.t/s.dur,0,1)){const p=player;if(s.aim!=null){cons
 function aimFrame(s,k){const it=ITEMS[s.tool]||{};if(s.draw!=null)return PF.bow;
   if(it.rod)return bob.state===1&&bob.t<.3?PF.fcast:bob.state===3?PF.reel0+(Math.floor(bob.t*12)&1):PF.reel0;
   if(it.magic)return PF.cast;if(it.ammo==='arrow')return k<.7?PF.bowrel:PF.bow;return 9;}
-const ARML=.367;
+const armL=()=>player.rig.d.arml;
+// the player's rig kind can change once the hero's paintings load (art.js): swap the rig in place, keeping where it stands
+export function syncPlayerRig(){const p=player,k=playerRigKind();if(!p.rig||p.rig.k===k)return;const o=p.rig.mesh,vis=o.visible;rigFree(p.rig);
+  p.rig=makeRig(k,playerLook(),null);p.mat=p.rig.mat;p.mesh=p.rig.mesh;p.mesh.position.copy(o.position);p.mesh.rotation.copy(o.rotation);p.mesh.visible=vis;}
 // live: from the rig's posed shoulder (the arm the player sees); otherwise from the pose's numbers (the trail's curve)
-function swingHand(sp,sq=1,live){const p=player,[sx,sy]=live?rigJoint(p.rig,'armA'):shoulderAt(sp.f),l=ARML*sp.sc;return[p.x+p.face*(sx+Math.cos(sp.arm)*l),p.y-.08+(p.rideY||0)+sy*sq+Math.sin(sp.arm)*l];}
+function swingHand(sp,sq=1,live){const p=player,[sx,sy]=live?rigJoint(p.rig,'armA'):shoulderAt(sp.f),l=armL()*sp.sc;return[p.x+p.face*(sx+Math.cos(sp.arm)*l),p.y-.08+(p.rideY||0)+sy*sq+Math.sin(sp.arm)*l];}
 function swingTip(s,k){const p=player,sp=swingPose(s,k),[hx,hy]=swingHand(sp),r=1.5*(s.heavy?1.2:1);return[hx+p.face*Math.cos(sp.blade)*r,hy+Math.sin(sp.blade)*r];}
 // the moment a cut starts its strike: step into it, and the finisher kicks up dust and a little shake
 function swingStep(s,k){const p=player,w=SWKEYS[s.combo][0][0];if(s.stepped||k<w)return;s.stepped=true;
@@ -582,7 +586,7 @@ export function updateTrail(dt){const p=player,s=p.swing;
   if(!s||!s.sword||p.dead||p.blocking||s.heavy&&s.t<s.dur*.36){trailMesh.visible=false;return;}
   const k=clamp(s.t/s.dur,0,1),span=s.heavy?.22:.3,ts=s.heavy?1.2:1,sp0=swingPose(s,k),[sx,sy]=shoulderAt(sp0.f),top=p.y-.08+(p.rideY||0)+sy;
   trailMat.uniforms.uC.value.set(s.nice?0xffd66b:TRCOL[s.elem]||0xfffaf0);let any=0;
-  for(let i=0;i<TR;i++){const u=i/(TR-1),kk=Math.max(0,k-span*(1-u)),sp=swingPose(s,kk),l=ARML*sp.sc,hx=p.x+p.face*(sx+Math.cos(sp.arm)*l),hy=top+Math.sin(sp.arm)*l;
+  for(let i=0;i<TR;i++){const u=i/(TR-1),kk=Math.max(0,k-span*(1-u)),sp=swingPose(s,kk),l=armL()*sp.sc,hx=p.x+p.face*(sx+Math.cos(sp.arm)*l),hy=top+Math.sin(sp.arm)*l;
     const dx=p.face*Math.cos(sp.blade),dy=Math.sin(sp.blade),a=u**1.4*clamp((Math.abs(sp.v)-4)/16,0,1)*(s.combo===2?.95:.8);if(a>.02)any=1;
     trailPos.set([hx+dx*.35*ts,hy+dy*.35*ts,.3,hx+dx*1.6*ts,hy+dy*1.6*ts,.3],i*6);trailA[i*2]=a*.1;trailA[i*2+1]=a;}
   trailMesh.visible=!!any;trailGeo.attributes.position.needsUpdate=true;trailGeo.attributes.aA.needsUpdate=true;}

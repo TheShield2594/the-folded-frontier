@@ -27,10 +27,16 @@ import {
 // Paper touches: each part wobbles a little (not with reduced motion), casts a soft drop shadow on the parts behind it,
 // and the turn to face the other way (mesh.rotation.y) shades the paper as it goes edge-on.
 export const RIGS={};
+// bend: a limb painted as one picture over two bones (the part and its bend joint, an elbow or knee) is cut into SEG strips
+// along its length, and each strip row follows the upper bone above the joint and the lower one below it, blended over bw
+// design px around the joint, so the limb curves at the elbow instead of breaking into two stickers
+const SEG=8;
 export const EZR={lin:x=>x,io:x=>x<.5?2*x*x:1-(2-2*x)**2/2,o2:x=>1-(1-x)**2,i2:x=>x*x};
-export function defRig(k,d){d.kind=k;d.ox??=d.w/2;d.oy??=d.h;d.s??=1/60;d.pi={};d.clips??={};
+export function defRig(k,d){d.kind=k;d.ox??=d.w/2;d.oy??=d.h;d.s??=1/60;d.res??=1;d.pi={};d.clips??={};
   d.parts.forEach((p,i)=>{d.pi[p.n]=i;p.i=i;p.v??=[''];p.wob??=p.paint?.018:0;});
-  for(const p of d.parts)p.pa=p.up!=null?d.pi[p.up]:-1;
+  for(const p of d.parts){p.pa=p.up!=null?d.pi[p.up]:-1;p.bi=p.bend!=null?d.pi[p.bend]:-1;p.ns=p.bi>=0?SEG:1;}
+  // quads: every part's outline strip first (drawn behind the whole figure), then per part its shadow strip and itself
+  let nq=0;for(const p of d.parts){p.oo=nq;nq+=p.ns;}d.NQ=nq;let o=nq;for(const p of d.parts){p.os=o;p.om=o+p.ns;o+=p.ns*2;}
   // pose order: parents before children
   const done=new Set();d.topo=[];const add=p=>{if(done.has(p.i))return;if(p.pa>=0)add(d.parts[p.pa]);done.add(p.i);d.topo.push(p.i);};d.parts.forEach(add);
   return RIGS[k]=d;}
@@ -41,11 +47,13 @@ export function loopClip(len,keys,ez='io',bl){const tr={};for(const[t,v]of keys)
 
 // ---- skins: every part and variant drawn once, cropped and packed into one texture
 // RF: canvases whose pixels are read back (the crop scan, paper grain) stay in memory, as a GPU readback per piece is slow
-const PAD=10,BORDER=3,skins=new Map(),RF={willReadFrequently:true};
+const PAD=10,BORDER=3,EDGE=[1.4,4],skins=new Map(),RF={willReadFrequently:true};
+// res: texels per design px for a rig drawn from big paintings (the hero), so it stays crisp when the camera zooms;
+// edge: the rig's pieces get no paper edge of their own, the outline pass draws one cream edge round the whole figure
 // hand-made parts (art.js, assets/art/rigs/): RIGART['slime.body'], or 'human@guide.head.happy' for one skin key and variant.
 // A picture is fitted to the bounds the drawn part covers, so the pivot and joints stay put; setRigArt() re-bakes every skin.
 export const RIGART={};let rigGen=0;
-export function setRigArt(){skins.clear();return++rigGen;}
+export function setRigArt(){skins.clear();for(const k in HREF)delete HREF[k];return++rigGen;}
 // the merged pieces a skin uses: {part: [joined parts]} from the art names, the skin key's own first
 function rigMerge(k,key){const out={};for(const pre of key!=null?[k+'@'+key+'.',k+'.']:[k+'.']){for(const n in RIGART){if(!n.startsWith(pre))continue;const ps=n.slice(pre.length).split('.')[0].split('+');
   if(ps.length>1&&!out[ps[0]])out[ps[0]]=ps.slice(1);}if(Object.keys(out).length)break;}return out;}
@@ -53,18 +61,18 @@ function rigMerge(k,key){const out={};for(const pre of key!=null?[k+'@'+key+'.',
 const rigFrames=(k,key,n)=>{const pre=[k+(key!=null?'@'+key:'')+'.'+n+'.',k+'.'+n+'.'];return Object.keys(RIGART).filter(a=>pre.some(q=>a.startsWith(q))).map(a=>a.slice(a.lastIndexOf('.')+1));};
 const rigArtFor=(k,key,n,v)=>{const t=n+(v?'.'+v:'');return(key!=null&&RIGART[k+'@'+key+'.'+t])||RIGART[k+'.'+t];};
 // a cut-out piece: w x h of src (drawn at dw x dh) with paper grain and the cream paper edge, PAD px of margin all round
-function paperPiece(src,sx,sy,w,h,dw=w,dh=h){const cw=dw+PAD*2,chh=dh+PAD*2,tmp=mk(cw,chh),t=tmp.getContext('2d',RF);t.drawImage(src,sx,sy,w,h,PAD,PAD,dw,dh);grain(t,0,0,cw,chh,12);
-  const sil=mk(cw,chh),s=sil.getContext('2d');s.drawImage(tmp,0,0);s.globalCompositeOperation='source-in';s.fillStyle='#fbf5e6';s.fillRect(0,0,cw,chh);
-  const out=mk(cw,chh),o=out.getContext('2d');for(let i=0;i<16;i++){const an=i/16*Math.PI*2;o.drawImage(sil,Math.cos(an)*BORDER,Math.sin(an)*BORDER);}o.drawImage(tmp,0,0);return out;}
+function paperPiece(src,sx,sy,w,h,dw=w,dh=h,bd=BORDER){const cw=dw+PAD*2,chh=dh+PAD*2,tmp=mk(cw,chh),t=tmp.getContext('2d',RF);t.drawImage(src,sx,sy,w,h,PAD,PAD,dw,dh);grain(t,0,0,cw,chh,12);
+  if(!bd)return tmp;const sil=mk(cw,chh),s=sil.getContext('2d');s.drawImage(tmp,0,0);s.globalCompositeOperation='source-in';s.fillStyle='#fbf5e6';s.fillRect(0,0,cw,chh);
+  const out=mk(cw,chh),o=out.getContext('2d');for(let i=0;i<16;i++){const an=i/16*Math.PI*2;o.drawImage(sil,Math.cos(an)*bd,Math.sin(an)*bd);}o.drawImage(tmp,0,0);return out;}
 export function rigSkin(k,skin,key){const ck=key!=null?k+':'+key:null;if(ck&&skins.has(ck))return skins.get(ck);
-  const d=RIGS[k],M=Math.ceil(Math.max(d.w,d.h)*.3),W=d.w+M*2,H=d.h+M*2,pieces=[];
+  const d=RIGS[k],M=Math.ceil(Math.max(d.w,d.h)*.3),rs=d.res,W=(d.w+M*2)*rs,H=(d.h+M*2)*rs,pieces=[];
   // merged art (<rig>[@key].<part>+<part>...): one painted piece covers the first part and the ones joined to it (a body
   // painted with its arms or wings on; <part>+all joins every other part, root+all is a whole cut-out moved by its root),
   // as tall as all their drawn bounds together; the joined parts stop drawing
   const mg=rigMerge(k,key),mn={};for(const n in mg){mn[n]=[n,...mg[n]].join('+');if(mg[n][0]==='all')mg[n]=d.parts.filter(q=>q.n!==n).map(q=>q.n);}const gone=new Set(Object.values(mg).flat());
   const draw=(t,p,v)=>{t.save();if(p.clip){t.beginPath();t.rect(p.clip[0],p.clip[1],p.clip[2]-p.clip[0],p.clip[3]-p.clip[1]);t.clip();}if(p.loc)t.translate(p.at[0],p.at[1]);
     t.lineJoin='round';t.lineCap='round';p.paint(t,skin,v);t.restore();};
-  for(const p of d.parts){if(gone.has(p.n))continue;if(p.slot){const[a,b,c,e]=p.slot;pieces.push({p:p.i,v:'',slot:1,x0:M+p.at[0]+a,y0:M+p.at[1]+b,w:c-a,h:e-b});continue;}if(!p.paint&&!mg[p.n])continue;for(const v of mg[p.n]?[...new Set([...p.v,...rigFrames(k,key,mn[p.n])])]:p.v){const c=mk(W,H),t=c.getContext('2d',RF);t.translate(M,M);
+  for(const p of d.parts){if(gone.has(p.n))continue;if(p.slot){const[a,b,c,e]=p.slot;pieces.push({p:p.i,v:'',slot:1,x0:(M+p.at[0]+a)*rs,y0:(M+p.at[1]+b)*rs,w:(c-a)*rs,h:(e-b)*rs});continue;}if(!p.paint&&!mg[p.n])continue;for(const v of mg[p.n]?[...new Set([...p.v,...rigFrames(k,key,mn[p.n])])]:p.v){const c=mk(W,H),t=c.getContext('2d',RF);t.setTransform(rs,0,0,rs,M*rs,M*rs);
     if(p.paint)draw(t,p,v);if(mg[p.n])for(const n of mg[p.n]){const q=d.parts[d.pi[n]];if(q.paint)draw(t,q,'');}
     const a=t.getImageData(0,0,W,H).data;let x0=W,y0=H,x1=-1,y1=-1;for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(a[(y*W+x)*4+3]>8){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
     if(x1<0)continue;const art=rigArtFor(k,key,mn[p.n]||p.n,v);let pc=c;
@@ -78,11 +86,26 @@ export function rigSkin(k,skin,key){const ck=key!=null?k+':'+key:null;if(ck&&ski
   const AH=y+row,img=mk(AW,Math.max(1,AH)),o=img.getContext('2d'),cells=d.parts.map(()=>({}));
   for(const q of pieces){const cw=q.w+PAD*2,chh=q.h+PAD*2;
     // the cream paper edge every cut-out piece has (makeSheet gives whole sprites the same); a slot stays empty until rigHold
-    if(!q.slot)o.drawImage(paperPiece(q.c,q.x0,q.y0,q.w,q.h),q.ax,q.ay);
+    if(!q.slot)o.drawImage(paperPiece(q.c,q.x0,q.y0,q.w,q.h,q.w,q.h,d.edge?0:BORDER*rs),q.ax,q.ay);
     // the design rect this cell covers at rest (pivot-relative), and its uv rect
-    const dx=q.x0-M-PAD,dy=q.y0-M-PAD,P=d.parts[q.p];
-    cells[q.p][q.v]={l:[dx-P.at[0],dy-P.at[1],dx+cw-P.at[0],dy+chh-P.at[1]],uv:[q.ax/AW,1-(q.ay+chh)/AH,(q.ax+cw)/AW,1-q.ay/AH],ax:q.ax,ay:q.ay,w:cw,h:chh,iw:q.w,ih:q.h};}
+    const dx=(q.x0-PAD)/rs-M,dy=(q.y0-PAD)/rs-M,P=d.parts[q.p];
+    cells[q.p][q.v]={l:[dx-P.at[0],dy-P.at[1],dx+cw/rs-P.at[0],dy+chh/rs-P.at[1]],uv:[q.ax/AW,1-(q.ay+chh)/AH,(q.ax+cw)/AW,1-q.ay/AH],ax:q.ax,ay:q.ay,w:cw,h:chh,iw:q.w,ih:q.h};}
   const S={img,cells,tex:canvasTex(img),key:ck,gen:rigGen,whole:!!mg[d.parts[0].n]};if(ck)skins.set(ck,S);return S;}
+
+// a design point (x, y from the part's pivot) posed: through the part's matrix, or for a bent limb blended between its
+// upper and lower bone around the joint
+const smooth=(a,b,x)=>{const u=Math.min(1,Math.max(0,(x-a)/(b-a)));return u*u*(3-2*u);};
+function skinPt(P,M,p,x,y,out){const o=p.i*6;if(p.bi<0){out[0]=M[o]*x+M[o+2]*y+M[o+4];out[1]=M[o+1]*x+M[o+3]*y+M[o+5];return out;}
+  const b=P[p.bi],ex=b.at[0]-p.at[0],ey=b.at[1]-p.at[1],bw=p.bw??7,w=smooth(ey-bw,ey+bw,y),q=b.i*6,lx=x-ex,ly=y-ey;
+  out[0]=(M[o]*x+M[o+2]*y+M[o+4])*(1-w)+(M[q]*lx+M[q+2]*ly+M[q+4])*w;out[1]=(M[o+1]*x+M[o+3]*y+M[o+5])*(1-w)+(M[q+1]*lx+M[q+3]*ly+M[q+5])*w;return out;}
+const SP=[0,0];
+// one triangle of a picture cell drawn onto a canvas: tri holds [design x, design y, canvas x, canvas y] per corner
+function picTri(t,img,cell,l,tri){const sx=cell.w/(l[2]-l[0]),sy=cell.h/(l[3]-l[1]),[a,b,c]=tri,u=q=>cell.ax+(q[0]-l[0])*sx,v=q=>cell.ay+(q[1]-l[1])*sy;
+  const x0=u(a),y0=v(a),x1=u(b),y1=v(b),x2=u(c),y2=v(c),den=(x1-x0)*(y2-y0)-(x2-x0)*(y1-y0);if(!den)return;
+  const m11=((b[2]-a[2])*(y2-y0)-(c[2]-a[2])*(y1-y0))/den,m12=((b[3]-a[3])*(y2-y0)-(c[3]-a[3])*(y1-y0))/den,m21=((c[2]-a[2])*(x1-x0)-(b[2]-a[2])*(x2-x0))/den,m22=((c[3]-a[3])*(x1-x0)-(b[3]-a[3])*(x2-x0))/den;
+  const cx=(a[2]+b[2]+c[2])/3,cy=(a[3]+b[3]+c[3])/3,g=q=>{const dx=q[2]-cx,dy=q[3]-cy,d=Math.hypot(dx,dy)||1;return[q[2]+dx/d*.6,q[3]+dy/d*.6];};
+  t.save();t.setTransform(1,0,0,1,0,0);t.beginPath();t.moveTo(...g(a));t.lineTo(...g(b));t.lineTo(...g(c));t.closePath();t.clip();
+  t.setTransform(m11,m12,m21,m22,a[2]-m11*x0-m21*y0,a[3]-m12*x0-m22*y0);t.drawImage(img,0,0);t.restore();}
 
 // ---- clips
 function chan(K,t,len,loop){if(loop&&len>0){t%=len;if(t<0)t+=len;}if(t<=K[0][0])return K[0][1];
@@ -99,14 +122,20 @@ function samplePose(d,c,t,out){for(const o of out){o.r=o.x=o.y=0;o.sx=o.sy=1;o.s
 // never fight in depth at any angle of the turn; between objects the transparent pass sorts back to front. It still tests
 // depth, so opaque things in front (the held tool, the shield) cover it.
 export function rigMat(tex){return new THREE.ShaderMaterial({side:THREE.DoubleSide,transparent:true,depthWrite:false,forceSinglePass:true,
-  uniforms:{map:{value:tex},uFrame:{value:0},uFrames:{value:1},uTint:{value:new THREE.Vector3(1,1,1)},uFlash:{value:0},uOut:{value:new THREE.Vector4(0,0,0,0)},uPx:{value:new THREE.Vector2()},
+  uniforms:{map:{value:tex},uFrame:{value:0},uFrames:{value:1},uTint:{value:new THREE.Vector3(1,1,1)},uFlash:{value:0},uOut:{value:new THREE.Vector4(0,0,0,0)},uPx:{value:new THREE.Vector2()},uEdge:{value:new THREE.Vector2()},
     uCr:{value:new THREE.Vector3()},uSh:{value:new THREE.Vector2(.028,-.034)},uBack:{value:0},uPF:{value:new THREE.Vector4(-1,0,-1,0)}},
   vertexShader:`attribute vec2 aQ;attribute vec4 aCell;attribute float aSh;attribute float aP;uniform vec2 uSh;varying vec2 vUv;varying vec2 vQ;varying vec4 vCell;varying float vSh;varying float vP;
     void main(){vUv=uv;vQ=aQ;vCell=aCell;vSh=aSh;vP=aP;vec3 p=position;if(aSh>.5&&aSh<1.5)p.xy+=uSh;gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.);}`,
-  fragmentShader:`uniform sampler2D map;uniform vec3 uTint;uniform float uFlash;uniform vec4 uOut;uniform vec2 uPx;uniform vec3 uCr;uniform float uBack;uniform vec4 uPF;varying vec2 vUv;varying vec2 vQ;varying vec4 vCell;varying float vSh;varying float vP;
+  fragmentShader:`uniform sampler2D map;uniform vec3 uTint;uniform float uFlash;uniform vec4 uOut;uniform vec2 uPx;uniform vec2 uEdge;uniform vec3 uCr;uniform float uBack;uniform vec4 uPF;varying vec2 vUv;varying vec2 vQ;varying vec4 vCell;varying float vSh;varying float vP;
     void main(){vec4 t=texture2D(map,vUv);
-    if(vSh>1.5){if(uOut.a<=0.)discard;float a=t.a;for(int i=0;i<8;i++){float an=float(i)*.785398;a=max(a,texture2D(map,clamp(vUv+vec2(cos(an),sin(an))*uPx,vCell.xy,vCell.zw)).a);}
-      if(a<.5)discard;gl_FragColor=vec4(uOut.rgb,1.);return;}
+    if(vSh>1.5){if(uOut.a>0.){float a=t.a;for(int i=0;i<8;i++){float an=float(i)*.785398;a=max(a,texture2D(map,clamp(vUv+vec2(cos(an),sin(an))*uPx,vCell.xy,vCell.zw)).a);}
+        if(a<.5)discard;gl_FragColor=vec4(uOut.rgb,1.);return;}
+      // edge rigs: one ink line and cream paper edge round the whole figure (these quads draw behind every part)
+      if(uEdge.y<=0.)discard;vec2 ts=1./vec2(textureSize(map,0));float ai=t.a,ac=t.a;
+      for(int i=0;i<12;i++){float an=float(i)*.5236;vec2 d=vec2(cos(an),sin(an))*ts;
+        ai=max(ai,max(texture2D(map,clamp(vUv+d*uEdge.x*.5,vCell.xy,vCell.zw)).a,texture2D(map,clamp(vUv+d*uEdge.x,vCell.xy,vCell.zw)).a));
+        ac=max(ac,max(texture2D(map,clamp(vUv+d*uEdge.y*.5,vCell.xy,vCell.zw)).a,texture2D(map,clamp(vUv+d*uEdge.y,vCell.xy,vCell.zw)).a));}
+      if(ac<.5)discard;gl_FragColor=vec4(ai>=.5?vec3(.165,.129,.188)*uTint:vec3(.984,.961,.902)*uTint,1.);return;}
     if(t.a<.5)discard;
     if(vSh>.5){gl_FragColor=vec4(.1,.07,.13,.2);return;}
     float cd=9.,cw=0.;if(uCr.x>0.){vec2 q=vQ;cd=abs(q.x*.9+q.y-1.05+.035*sin(q.y*47.));if(uCr.x>1.5)cd=min(cd,abs(q.x-q.y*.7-.12+.03*sin(q.x*53.+1.)));
@@ -117,15 +146,15 @@ export function rigMat(tex){return new THREE.ShaderMaterial({side:THREE.DoubleSi
 
 // ---- instances
 // makeRig(kind, skin, key): key names a shared skin (townsfolk of one type share one texture); null bakes a private one
-export function makeRig(k,skin,key,o={}){const d=RIGS[k],n=d.parts.length,Q=n*3,g=new THREE.BufferGeometry();
+export function makeRig(k,skin,key,o={}){const d=RIGS[k],n=d.parts.length,Q=d.NQ*3,g=new THREE.BufferGeometry();
   const A=(sz)=>new THREE.BufferAttribute(new Float32Array(Q*4*sz),sz);
   g.setAttribute('position',A(3));g.setAttribute('uv',A(2));g.setAttribute('aQ',A(2));g.setAttribute('aCell',A(4));g.setAttribute('aSh',A(1));g.setAttribute('aP',A(1));
   for(const nm of['position','uv','aQ','aCell'])g.attributes[nm].setUsage(THREE.DynamicDrawUsage);
-  const I=[],PI=[];for(let q=0;q<Q;q++){const b=q*4;I.push(b,b+1,b+2,b,b+2,b+3);}for(let i=0;i<n;i++){const b=(n+i*2+1)*4;PI.push(b,b+1,b+2,b,b+2,b+3);}g.setIndex(I);
-  // quad q: 0..n-1 outlines, then per part a shadow and the part itself
-  for(let i=0;i<n;i++)for(let v=0;v<4;v++){g.attributes.aSh.array[i*4+v]=2;g.attributes.aSh.array[(n+i*2)*4+v]=1;for(const q of[i,n+i*2,n+i*2+1])g.attributes.aP.array[q*4+v]=i;}
+  const I=[],PI=[];for(let q=0;q<Q;q++){const b=q*4;I.push(b,b+1,b+2,b,b+2,b+3);}for(const p of d.parts)for(let s=0;s<p.ns;s++){const b=(p.om+s)*4;PI.push(b,b+1,b+2,b,b+2,b+3);}g.setIndex(I);
+  // quads (defRig): all the outline strips, then per part its shadow strip and itself
+  for(const p of d.parts)for(let s=0;s<p.ns;s++)for(let v=0;v<4;v++){g.attributes.aSh.array[(p.oo+s)*4+v]=2;g.attributes.aSh.array[(p.os+s)*4+v]=1;for(const q of[p.oo+s,p.os+s,p.om+s])g.attributes.aP.array[q*4+v]=p.i;}
   const r=Math.max(d.w,d.h)*d.s;g.boundingSphere=new THREE.Sphere(new THREE.Vector3((d.w/2-d.ox)*d.s,(d.oy-d.h/2)*d.s,0),r);
-  const S=rigSkin(k,skin,key),mat=rigMat(S.tex),mesh=new THREE.Mesh(g,mat);if(o.add!==false)scene.add(mesh);
+  const S=rigSkin(k,skin,key),mat=rigMat(S.tex),mesh=new THREE.Mesh(g,mat);if(o.add!==false)scene.add(mesh);if(d.edge)mat.uniforms.uEdge.value.set(EDGE[0]*d.res,EDGE[1]*d.res);
   const R={d,k,S,mesh,mat,g,PI,t:Math.random()*9,c:null,ct:0,sp:1,w:1,bl:.1,cur:blankPose(n),from:blankPose(n),last:blankPose(n),ov:new Array(n).fill(null),ovl:new Array(n).fill(null),ow:new Float32Array(n),
     M:new Float32Array(n*6),abs:new Float32Array(n),vis:new Array(n).fill(''),shadow:o.shadow!==false,hs:new Array(n).fill(null),hk:new Array(n).fill(null)};
   R.sk=skin;R.key=key;rigPlay(R,o.clip||'idle');rigUpdate(R,0);return R;}
@@ -149,7 +178,7 @@ export function rigPt(R,p,x,y){const i=R.d.pi[p],d=R.d,M=R.M,o=i*6;return[(M[o]*
 const slotCut=new WeakMap();
 export function rigHold(R,p,src){const i=R.d.pi[p];if(i==null||R.S.key)return;if(R.hs[i]===src&&R.hk[i]===R.S)return;R.hs[i]=src;R.hk[i]=R.S;if(!src)return;
   const cell=R.S.cells[i][''];if(!cell)return;let m=slotCut.get(src);if(!m)slotCut.set(src,m={});const k=cell.iw+'x'+cell.ih;
-  const pc=m[k]||(m[k]=paperPiece(src,0,0,src.width,src.height,cell.iw,cell.ih)),t=R.S.img.getContext('2d');
+  const pc=m[k]||(m[k]=paperPiece(src,0,0,src.width,src.height,cell.iw,cell.ih,BORDER*R.d.res)),t=R.S.img.getContext('2d');
   t.clearRect(cell.ax,cell.ay,cell.w,cell.h);t.drawImage(pc,cell.ax,cell.ay);R.S.tex.needsUpdate=true;}
 export function rigUpdate(R,dt){if(R.S.gen!==rigGen&&R.mesh)rigReskin(R,R.sk,R.key);const d=R.d,n=d.parts.length,rm=reduceMotion();R.t+=dt;R.ct+=dt*R.sp;R.w=Math.min(1,R.w+dt/Math.max(.001,R.bl));
   samplePose(d,R.c,R.ct,R.cur);const w=EZR.io(R.w);
@@ -165,14 +194,16 @@ export function rigUpdate(R,dt){if(R.S.gen!==rigGen&&R.mesh)rigReskin(R,R.sk,R.k
     else if(p.rigid){const q=j*6,a=R.abs[j]+r,ca=Math.cos(a),sa=Math.sin(a);M[o]=ca*L.sx;M[o+1]=sa*L.sx;M[o+2]=-sa*L.sy;M[o+3]=ca*L.sy;M[o+4]=M[q]*px+M[q+2]*py+M[q+4];M[o+5]=M[q+1]*px+M[q+3]*py+M[q+5];R.abs[i]=a;}
     else{const q=j*6,A=M[q],B=M[q+1],C=M[q+2],D=M[q+3];M[o]=A*la+C*lb;M[o+1]=B*la+D*lb;M[o+2]=A*lc+C*ld;M[o+3]=B*lc+D*ld;M[o+4]=A*px+C*py+M[q+4];M[o+5]=B*px+D*py+M[q+5];R.abs[i]=R.abs[j]+r;}}
   const pos=R.g.attributes.position.array,uv=R.g.attributes.uv.array,aq=R.g.attributes.aQ.array,ac=R.g.attributes.aCell.array;let uvDirty=false;
-  for(let i=0;i<n;i++){const cs=R.S.cells[i],L=R.last[i],cell=L.sw!=='-'&&(!P[i].slot||R.hs[i])&&cs&&(cs[L.sw]||cs['']),o=i*6,qs=[i,n+i*2,n+i*2+1];
-    if(!cell){for(const q of qs)pos.fill(0,q*12,q*12+12);continue;}
-    const l=cell.l,X=[l[0],l[2],l[2],l[0]],Y=[l[3],l[3],l[1],l[1]];
-    for(let v=0;v<4;v++){const x=M[o]*X[v]+M[o+2]*Y[v]+M[o+4],y=M[o+1]*X[v]+M[o+3]*Y[v]+M[o+5],wx=(x-d.ox)*d.s,wy=(d.oy-y)*d.s;
-      for(const q of qs){const b=q*4+v;pos[b*3]=wx;pos[b*3+1]=wy;aq[b*2]=x/d.w;aq[b*2+1]=1-y/d.h;}}
-    if(!R.shadow)pos.fill(0,(n+i*2)*12,(n+i*2)*12+12);
-    if(R.vis[i]!==cell){R.vis[i]=cell;uvDirty=true;const u=cell.uv,U=[u[0],u[2],u[2],u[0]],V=[u[1],u[1],u[3],u[3]];
-      for(const q of qs)for(let v=0;v<4;v++){const b=q*4+v;uv[b*2]=U[v];uv[b*2+1]=V[v];ac[b*4]=u[0];ac[b*4+1]=u[1];ac[b*4+2]=u[2];ac[b*4+3]=u[3];}}}
+  for(let i=0;i<n;i++){const p=P[i],ns=p.ns,cs=R.S.cells[i],L=R.last[i],cell=L.sw!=='-'&&(!p.slot||R.hs[i])&&cs&&(cs[L.sw]||cs['']);
+    if(!cell){for(const q0 of[p.oo,p.os,p.om])pos.fill(0,q0*12,(q0+ns)*12);continue;}
+    const l=cell.l,X=[l[0],l[2],l[2],l[0]];
+    for(let sg=0;sg<ns;sg++){const ya=l[1]+(l[3]-l[1])*sg/ns,yb=l[1]+(l[3]-l[1])*(sg+1)/ns,Y=[yb,yb,ya,ya],qs=[p.oo+sg,p.os+sg,p.om+sg];
+      for(let v=0;v<4;v++){skinPt(P,M,p,X[v],Y[v],SP);const x=SP[0],y=SP[1],wx=(x-d.ox)*d.s,wy=(d.oy-y)*d.s;
+        for(const q of qs){const b=q*4+v;pos[b*3]=wx;pos[b*3+1]=wy;aq[b*2]=x/d.w;aq[b*2+1]=1-y/d.h;}}}
+    if(!R.shadow)pos.fill(0,p.os*12,(p.os+ns)*12);
+    if(R.vis[i]!==cell){R.vis[i]=cell;uvDirty=true;const u=cell.uv,U=[u[0],u[2],u[2],u[0]];
+      for(let sg=0;sg<ns;sg++){const va=u[3]+(u[1]-u[3])*sg/ns,vb=u[3]+(u[1]-u[3])*(sg+1)/ns,V=[vb,vb,va,va];
+        for(const q of[p.oo+sg,p.os+sg,p.om+sg])for(let v=0;v<4;v++){const b=q*4+v;uv[b*2]=U[v];uv[b*2+1]=V[v];ac[b*4]=u[0];ac[b*4+1]=u[1];ac[b*4+2]=u[2];ac[b*4+3]=u[3];}}}}
   R.g.attributes.position.needsUpdate=true;R.g.attributes.aQ.needsUpdate=true;if(uvDirty){R.g.attributes.uv.needsUpdate=true;R.g.attributes.aCell.needsUpdate=true;}
   // edge-on in the turn: the paper darkens a little as it flips over
   const cf=Math.cos(R.mesh.rotation.y);R.mat.uniforms.uBack.value=1-Math.abs(cf);R.mat.uniforms.uSh.value.set(cf<0?-.028:.028,-.034);}
@@ -183,7 +214,7 @@ export function rigSnap(R,geo){const src=R.g.attributes;if(!geo||!geo.userData.r
 // a still picture of a rig (portraits, bestiary sketches, sheets for things that are not animated): design-sized canvas
 // skin is a look to bake (shared under key, or baked for this picture alone when key is null) or an already baked skin (R.S);
 // set holds channel values over the clip's pose, {part: {r, sw, ...}} (a townsperson's tool arm, a portrait's expression)
-export function rigPic(k,skin,clip,t=0,key,set){const d=RIGS[k],own=!skin?.cells&&key==null,S=skin?.cells?skin:rigSkin(k,skin,key),R={d,S,t:0,c:null,ct:0,sp:0,w:1,bl:.1,cur:blankPose(d.parts.length),from:blankPose(d.parts.length),last:blankPose(d.parts.length),
+export function rigPic(k,skin,clip,t=0,key,set,sc=1){const d=RIGS[k],own=!skin?.cells&&key==null,S=skin?.cells?skin:rigSkin(k,skin,key),R={d,S,t:0,c:null,ct:0,sp:0,w:1,bl:.1,cur:blankPose(d.parts.length),from:blankPose(d.parts.length),last:blankPose(d.parts.length),
   ov:[],ovl:[],ow:new Float32Array(d.parts.length),M:new Float32Array(d.parts.length*6),abs:new Float32Array(d.parts.length),vis:[],shadow:false,g:null,mesh:null};
   samplePose(d,clip||'idle',t,R.cur);for(let i=0;i<R.last.length;i++)Object.assign(R.last[i],R.cur[i]);
   if(set)for(const pn in set){const i=d.pi[pn];if(i!=null)Object.assign(R.last[i],set[pn]);}
@@ -192,8 +223,16 @@ export function rigPic(k,skin,clip,t=0,key,set){const d=RIGS[k],own=!skin?.cells
     if(j<0){M.set([la,lb,lc,ld,px,py],o);}else{const q=j*6,A=M[q],B=M[q+1],C=M[q+2],D=M[q+3];M.set([A*la+C*lb,B*la+D*lb,A*lc+C*ld,B*lc+D*ld,A*px+C*py+M[q+4],B*px+D*py+M[q+5]],o);}}
   // a whole painted cut-out can be wider or taller than the rig's frame: the picture grows to fit it
   const wc=S.whole&&S.cells[0][''],pad=wc?Math.ceil(Math.max(0,-(P[0].at[0]+wc.l[0]),P[0].at[0]+wc.l[2]-d.w,-(P[0].at[1]+wc.l[1]))):0;
-  const c=mk(d.w+pad*2,d.h+pad),t2=c.getContext('2d');for(let i=0;i<P.length;i++){if(P[i].slot)continue;const cs=S.cells[i],sw=R.last[i].sw,cell=sw!=='-'&&cs&&(cs[sw]||cs['']);if(!cell)continue;const o=i*6;
-    t2.setTransform(M[o],M[o+1],M[o+2],M[o+3],M[o+4]+pad,M[o+5]+pad);t2.drawImage(S.img,cell.ax,cell.ay,cell.w,cell.h,cell.l[0],cell.l[1],cell.w,cell.h);}if(own)S.tex.dispose();c.whole=!!wc;return c;}
+  const c=mk(Math.ceil((d.w+pad*2)*sc),Math.ceil((d.h+pad)*sc)),t2=c.getContext('2d');for(let i=0;i<P.length;i++){const p=P[i];if(p.slot)continue;const cs=S.cells[i],sw=R.last[i].sw,cell=sw!=='-'&&cs&&(cs[sw]||cs['']);if(!cell)continue;const o=i*6,l=cell.l,lw=l[2]-l[0],lh=l[3]-l[1];
+    if(p.bi<0){t2.setTransform(M[o]*sc,M[o+1]*sc,M[o+2]*sc,M[o+3]*sc,(M[o+4]+pad)*sc,(M[o+5]+pad)*sc);t2.drawImage(S.img,cell.ax,cell.ay,cell.w,cell.h,l[0],l[1],lw,lh);continue;}
+    // a bent limb: each strip as two triangles, each on its own exact affine, clipped a hair wide so no seam shows
+    for(let sg=0;sg<p.ns;sg++){const ya=l[1]+lh*sg/p.ns,yb=l[1]+lh*(sg+1)/p.ns,Q=[[l[0],ya],[l[2],ya],[l[2],yb],[l[0],yb]].map(([x,y])=>{const w=skinPt(P,M,p,x,y,[0,0]);return[x,y,(w[0]+pad)*sc,(w[1]+pad)*sc];});
+      for(const tri of[[Q[0],Q[1],Q[2]],[Q[0],Q[2],Q[3]]])picTri(t2,S.img,cell,l,tri);}}
+  // the whole figure's paper edge (edge rigs): the silhouette grown a few px in cream, under the picture
+  if(d.edge){const ring=(col,r)=>{const e=mk(c.width,c.height),et=e.getContext('2d');et.drawImage(c,0,0);et.globalCompositeOperation='source-in';et.fillStyle=col;et.fillRect(0,0,e.width,e.height);
+      const o=mk(c.width,c.height),ot=o.getContext('2d');for(const k of[.5,1])for(let i=0;i<16;i++){const an=i/16*Math.PI*2;ot.drawImage(e,Math.cos(an)*r*k,Math.sin(an)*r*k);}return o;};
+    const o2=mk(c.width,c.height),ot=o2.getContext('2d');ot.drawImage(ring('#fbf5e6',EDGE[1]*sc),0,0);ot.drawImage(ring(INK,EDGE[0]*sc),0,0);ot.drawImage(c,0,0);if(own)S.tex.dispose();o2.whole=!!wc;return o2;}
+  if(own)S.tex.dispose();c.whole=!!wc;return c;}
 
 // ================= human rig =================
 // The player, townsfolk and human-shaped foes. Each part bakes the human layers (render.js HL) that belong to it, in
@@ -224,7 +263,7 @@ function hlArt(t,p,l,o,k){const st=LSTY[l]?LSTY[l](o,p):'';if(st==='-')return fa
   t.save();t.setTransform(1,0,0,1,0,0);t.drawImage(pc,x0,y0);t.restore();return true;}
 const BROW={surprised:1,sad:1,angry:1};
 const headV=(t,o,v)=>hl(['head','body'],['head','hair'],['head','armor'],['head','face'],['head','hat'])(t,v?Object.assign({},o,v==='blink'?{blink:1}:{face:v,brow:BROW[v]}):o);
-defRig('human',{w:96,h:144,parts:[
+defRig('human',{w:96,h:144,arml:22/60,sho:[7,56],parts:[
   {n:'root',at:[48,138]},
   {n:'cape',at:[44,70],up:'torso',paint:hl(['back','cape']),wob:.03},
   {n:'hairB',at:[36,42],up:'head',paint:hl(['back','hair']),wob:.03},
@@ -269,6 +308,96 @@ HC.patk=loopClip(.5,[[0,{root:{r:0,x:0,sw:'wind'}}],[.18,{root:{r:.08,x:3,sw:'at
 HC.pthrow=loopClip(.36,[[0,{root:{r:-.05,sy:.97,sw:'wind'}}],[.1,{root:{r:.08,sy:1.02,x:2,sw:'atk'}}],[.3,{root:{r:0,sy:1,x:0,sw:'atk'}}],[.36,{root:{r:0,sy:1,x:0,sw:''}}]],'io',.05);HC.pthrow.loop=0;
 HC.phurt=still({root:{r:-.1,x:-3,sw:'hurt'}},.04);
 HC.march=loopClip(.8,[[0,poseCh({legA:-.3,legB:.3,armA:-.4,armB:.2})],[.4,poseCh({legA:.35,legB:-.35,armA:-.4,armB:.2,bob:1})]],'io',.15);
+
+// ================= hero rig =================
+// The player as the painted hero (assets/art/rigs/H.<piece>[.<variant>]): a head per expression, the tunic, one arm and one
+// leg, painted whole at high resolution and placed by their own joints rather than fitted to drawn shapes. Arms and legs
+// bend (bend: the elbow and knee bones fore/shin), so each limb stays one painting that curves; the pieces have no paper
+// edge of their own (edge), the outline pass draws one ink line and cream edge round the whole figure. The head sits
+// behind the tunic so the neck goes into the collar. Part names match the human rig, so gameplay (armA, held, shield) and
+// every clip work on either; the player falls back to the drawn human rig until the paintings have loaded (heroReady).
+// HPIC: [picture, x, y, w, h] the rect it fills around the part's pivot, in design px; HDIM darkens the far limbs.
+const HPIC={head:['H.head',-16.2,-37.4,34.1,38.7],torso:['H.torso',-17,-23,34.3,40],arm:['H.arm',-6.8,-2.6,13.6,43.1],leg:['H.leg',-9.5,-3.8,19,56]};
+const HDIM={armB:.72,legB:.78};
+// a hero picture's name (H.<piece>[.<variant>]) that some part paints
+export const heroArt=k=>Object.values(HPIC).some(h=>k===h[0]||k.startsWith(h[0]+'.'));
+export const heroReady=()=>['H.head','H.torso','H.arm','H.leg'].every(k=>RIGART[k]),playerRigKind=()=>heroReady()?'hero':'human';
+const heroPart=(k,dim=1)=>(t,o,v)=>{const[n,x,y,w,h]=HPIC[k],nv=RIGART[n+(v?'.'+v:'')]?n+(v?'.'+v:''):n,img=RIGART[nv];if(!img)return;
+  t.drawImage(heroTint(img,RIGART[nv+'.mask'],o,dim),x,y,w,h);};
+// the look's colours on a painting: its mask (H.<piece>.mask) weighs each pixel as tunic (red) or skin (green); the tunic
+// takes the shirt colour with the painted shading (luminance against the region's mean), skin is scaled channel by channel
+// so the blush and warm shadows stay; dim darkens the far limbs. Cached per picture and colours.
+// the painted tunic and skin colours every piece is measured against: the torso's tunic and the head's skin, so a
+// small or shaded region (a hand in shadow) takes the same colour as the rest of the body
+const HREF={};function heroRef(n,ch){const k=n+ch;if(HREF[k])return HREF[k];const img=RIGART[n],mq=RIGART[n+'.mask'];if(!img||!mq)return null;
+  const W=img.width,H=img.height,c=mk(W,H),t=c.getContext('2d',RF);t.drawImage(img,0,0);const a=t.getImageData(0,0,W,H).data;t.clearRect(0,0,W,H);t.drawImage(mq,0,0,W,H);const q=t.getImageData(0,0,W,H).data;
+  const s=[0,0,0,0];for(let i=0;i<a.length;i+=4){const w=q[i+ch]/255;if(w>.5){s[0]+=a[i]*w;s[1]+=a[i+1]*w;s[2]+=a[i+2]*w;s[3]+=w;}}return HREF[k]=s[3]?s.slice(0,3).map(x=>x/s[3]):null;}
+const HTC=new WeakMap(),hexv=c=>[1,3,5].map(i=>parseInt(c.slice(i,i+2),16));
+function heroTint(img,mk2,o,dim){let m=HTC.get(img);if(!m)HTC.set(img,m={});const key=o.tunic+o.skin+dim;if(m[key])return m[key];
+  const W=img.width,H=img.height,c=mk(W,H),t=c.getContext('2d',RF);t.drawImage(img,0,0);if(!mk2&&dim===1)return m[key]=c;
+  const id=t.getImageData(0,0,W,H),a=id.data;let q=null;if(mk2){const c2=mk(W,H),t2=c2.getContext('2d',RF);t2.drawImage(mk2,0,0,W,H);q=t2.getImageData(0,0,W,H).data;}
+  const T=o.tunic?hexv(o.tunic):null,Sk=o.skin?hexv(o.skin):null,lu=(r,g,b)=>.3*r+.59*g+.11*b,rt=heroRef('H.torso',0),rs=heroRef('H.head',1),lt=rt&&lu(...rt);
+  for(let i=0;i<a.length;i+=4){let r=a[i],g=a[i+1],b=a[i+2];
+    if(q){const wt=q[i]/255,ws=q[i+1]/255;
+      if(wt>0&&T&&rt){const k=lu(r,g,b)/lt;r+=(T[0]*k-r)*wt;g+=(T[1]*k-g)*wt;b+=(T[2]*k-b)*wt;}
+      if(ws>0&&Sk&&rs){r+=(r*Sk[0]/rs[0]-r)*ws;g+=(g*Sk[1]/rs[1]-g)*ws;b+=(b*Sk[2]/rs[2]-b)*ws;}}
+    const f=1-dim;a[i]=Math.min(255,r*dim+58*f*.5);a[i+1]=Math.min(255,g*dim+40*f*.5);a[i+2]=Math.min(255,b*dim+76*f*.5);}
+  t.putImageData(id,0,0);return m[key]=c;}
+const ELB=18,KNEE=26,HAND=35;
+defRig('hero',{w:96,h:144,res:3,edge:1,arml:HAND/60,sho:[-5,67],stride:2.5,parts:[
+  {n:'root',at:[48,138]},
+  {n:'armB',at:[40,71],up:'torso',loc:1,paint:heroPart('arm',HDIM.armB),bend:'foreB'},
+  {n:'foreB',at:[40,71+ELB],up:'armB'},
+  {n:'legB',at:[44,86],up:'root',loc:1,paint:heroPart('leg',HDIM.legB),bend:'shinB',bw:6},
+  {n:'shinB',at:[44,86+KNEE],up:'legB'},
+  {n:'legA',at:[52,86],up:'root',loc:1,paint:heroPart('leg'),bend:'shinA',bw:6},
+  {n:'shinA',at:[52,86+KNEE],up:'legA'},
+  {n:'head',at:[50,67],up:'torso',loc:1,paint:heroPart('head'),v:['','blink','happy','hurt','ko','surprised','sad','angry'],wob:.01},
+  {n:'torso',at:[48,88],up:'root',loc:1,paint:heroPart('torso'),wob:.006},
+  {n:'armA',at:[43,71],up:'torso',loc:1,paint:heroPart('arm'),bend:'foreA'},
+  {n:'foreA',at:[43,71+ELB],up:'armA'},
+  {n:'held',at:[43,71+HAND],up:'foreA',slot:[-8,-67,67,8],rigid:1,wob:0},
+  {n:'shield',at:[62,100],up:'root',slot:[-30,-30,30,30],rigid:1,wob:0}]});
+// The hero's own animation set. hp(o) turns a pose into channels: thighs legA/legB and knees kA/kB (the shin's bend,
+// positive folds the foot back), upper arms armA/armB and elbows eA/eB (negative bends the forearm forward), lean and
+// bob (the root), sq squash (root sy, with sx the other way so the volume holds), br the chest's breath, hr the head's
+// tilt, face an expression. noArm leaves the front arm to gameplay, straight at the elbow so the weapon lines up.
+const hp=o=>{const sq=o.sq??1,v={root:{r:o.lean||0,y:o.bob||0,x:o.x||0,sy:sq,sx:1/Math.sqrt(sq)},legA:{r:o.legA||0},legB:{r:o.legB||0},shinA:{r:o.kA??.08},shinB:{r:o.kB??.08},
+  armB:{r:o.armB||0},foreB:{r:o.eB??-.15},torso:{sy:o.br||1},head:{r:o.hr||0,sw:o.face||(o.blink?'blink':'')}};
+  if(!o.noArm){v.armA={r:o.armA||0};v.foreA={r:o.eA??-.15};}else v.foreA={r:0};return v;};
+const HPOSE={hold:{legA:-.22,kA:.3,legB:.22,kB:.18,armA:-1.6,eA:-.2,armB:.25},
+  jump:{legA:-.75,kA:1.1,legB:.3,kB:.95,armA:-.7,eA:-1.1,armB:1.1,eB:-.5,lean:-.04,sq:1.04,hr:-.06},
+  fall:{legA:-.25,kA:.4,legB:.3,kB:.6,armA:-1.25,eA:-.7,armB:2.2,eB:-.6,sq:1.02,hr:.05},
+  land:{legA:-.6,kA:1.15,legB:-.2,kB:.85,armA:-.55,eA:-.5,armB:.6,eB:-.3,lean:.14,bob:5,sq:.92},
+  dash:{legA:-1.05,kA:.55,legB:.95,kB:.95,armA:1,eA:-.25,armB:1.3,eB:-.2,lean:.24,sq:.97},
+  hurt:{legA:.3,kA:.45,legB:-.45,kB:.2,armA:-.95,eA:-.55,armB:-.6,eB:-.4,lean:-.22,x:-2,bob:1,face:'hurt',hr:-.12},
+  death:{legA:.6,kA:.5,legB:-.2,kB:.3,armA:.4,eA:-.3,armB:.7,lean:-.17,bob:4,face:'ko'},
+  flat:{legA:-.75,legB:.75,armA:-1.9,armB:1.9,blink:1},
+  mine0:{legA:-.35,kA:.45,legB:.35,kB:.3,armB:.6,lean:-.1,bob:1,noArm:1},mine1:{legA:-.45,kA:.55,legB:.4,kB:.35,armB:-.55,lean:.2,bob:3.5,noArm:1},
+  bow:{legA:-.45,kA:.4,legB:.45,kB:.25,armB:-1.35,eB:0,lean:-.06,noArm:1},bowrel:{legA:-.45,kA:.4,legB:.45,kB:.25,armB:.75,lean:.04,noArm:1},
+  cast:{legA:-.4,kA:.35,legB:.3,kB:.3,armB:-2.3,eB:-.3,lean:-.1,bob:-1,noArm:1},
+  block:{legA:-.5,kA:.6,legB:.5,kB:.4,armA:-1.5,eA:-.6,armB:-.3,lean:-.08,bob:2.5,sq:.97},parry:{legA:-.6,kA:.5,legB:.45,kB:.3,armA:-2.2,eA:-.2,armB:.6,lean:.12,face:'happy'},
+  fcast:{legA:-.4,kA:.35,legB:.4,kB:.25,armB:.45,lean:.15,noArm:1},reel0:{legA:-.3,kA:.35,legB:.3,kB:.25,armB:-1.1,eB:-.5,lean:-.12,noArm:1},reel1:{legA:-.3,kA:.4,legB:.3,kB:.3,armB:-.8,eB:-.6,lean:-.16,bob:1,noArm:1},
+  climb0:{legA:-.9,kA:1.4,legB:.1,kB:.2,armA:-2.9,eA:-.15,armB:-2.2,eB:-.5},climb1:{legA:.1,kA:.2,legB:-.9,kB:1.4,armA:-2.2,eA:-.5,armB:-2.9,eB:-.15},
+  cheer0:{legA:-.15,kA:.3,legB:.15,kB:.3,armA:-2.95,eA:-.25,armB:2.8,eB:-.3,bob:-3,sq:1.04,face:'happy',hr:-.08},cheer1:{legA:-.1,kA:.15,legB:.1,kB:.15,armA:-2.7,eA:-.45,armB:2.5,eB:-.5,face:'happy'},
+  sw0:{legA:-.25,kA:.35,legB:.25,kB:.2,armB:.25,noArm:1},sw1:{legA:-.1,kA:.55,legB:.5,kB:.45,armB:.9,eB:-.3,lean:-.13,bob:1.5,sq:.97,noArm:1},
+  sw2:{legA:-.45,kA:.35,legB:.35,kB:.25,armB:-.6,eB:-.4,lean:.07,noArm:1},sw3:{legA:-.75,kA:.5,legB:.55,kB:.15,armB:-1.1,eB:-.5,lean:.17,bob:3.5,noArm:1}};
+{const HR=RIGS.hero.clips;HR.hold=still(hp(HPOSE.hold),.07);
+  for(const k in HPOSE)HR[k]=still(hp(HPOSE[k]),/^sw/.test(k)?.05:.07);
+  for(const k of['hurt','parry','land'])HR[k].bl=.04;HR.death.bl=.08;
+  HR.fall.bl=.18;HR.jump.bl=.06;
+  // idle: breathing (the chest swells, the head rides up a hair), arms settle, a blink
+  HR.idle=loopClip(2.8,[[0,hp({legA:-.05,legB:.06,kA:.08,kB:.1,armA:.06,armB:-.08,eA:-.15,eB:-.18})],[1.4,hp({legA:-.05,legB:.06,kA:.12,kB:.14,armA:.1,armB:-.03,eA:-.2,eB:-.22,br:1.02,bob:.6,hr:-.02})]],'io',.18);
+  HR.idle.tr.head.sw=[[0,''],[2,'blink'],[2.12,''],[2.8,'']];
+  // walk: one stride per cycle; knees fold on the leg swinging through, the body drops on each contact and rises at
+  // the pass, the arms swing against the legs with the elbows bending on the forward swing, a small forward lean
+  {const K=[],N=16;for(let i=0;i<N;i++){const ph=i/N,s=Math.sin(ph*Math.PI*2),c=Math.cos(ph*Math.PI*2);
+      K.push([ph,hp({legA:-.5*s,legB:.5*s,kA:.1+.85*Math.max(0,c)**1.4,kB:.1+.85*Math.max(0,-c)**1.4,armA:.55*s,armB:-.55*s,
+        eA:-.15-.55*Math.max(0,-s),eB:-.15-.55*Math.max(0,s),lean:.06,bob:2.2*Math.abs(s)-1.2,hr:.02*Math.abs(c)})]);}
+    HR.walk=loopClip(1,K,'lin',.12);delete HR.walk.tr.head.sw;}
+  const mk2=(a,b,len,bl)=>loopClip(len,[[0,hp(HPOSE[a])],[len/2,hp(HPOSE[b])]],'io',bl);
+  HR.climb=mk2('climb0','climb1',2,.1);HR.cheer=mk2('cheer0','cheer1',.4,.08);HR.reel=mk2('reel0','reel1',.17,.06);
+  for(const k in HC)if(!HR[k])HR[k]=HC[k];}
 
 // ================= creature rigs =================
 // Slimes (and the King Slime): a jelly body that squashes, a shine, eyes that blink and the king's crown.

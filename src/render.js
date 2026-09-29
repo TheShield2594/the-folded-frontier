@@ -4,7 +4,7 @@ import {
   reduceMotion,$,atlas,ATH,ATW,blk,buildDiorama,C,canopyCell,cellXY,circ,computeLight,CS,fi,grain,H,idx,INK,ink,isOpaque,ITEMS,LB,lightAt,meta,mk,
   LIGHT,mulberry32,N,OPAQUE,pick,player,poly,rand,rr,seed,SET,sh,sky,stamp,surfAvg,T,tileAt,tiles,TP,W,
   WALLCELL,walls,markFg,
-  buildMarks,rigPic,
+  buildMarks,rigPic,playerRigKind,
 } from './game.js';
 
 // ================= three setup =================
@@ -212,7 +212,7 @@ const MOREPOSE={land:{legA:.55,legB:-.5,armA:-.55,armB:.55,bob:4},dash:{legA:-.9
   cheer0:{legA:.2,legB:-.2,armA:-2.8,armB:2.8,bob:-3,wave:4,face:'happy'},cheer1:{legA:-.1,legB:.1,armA:-2.5,armB:2.5,wave:-3,face:'happy'}};
 export const PF={idle:0,walk:2,jump:6,fall:7,hold:8,swing:9};for(const k in MOREPOSE){PF[k]=POSES.length;POSES.push(MOREPOSE[k]);}
 // the front shoulder in pose f in world units from the bottom of the player mesh (the swing trail's curve; the live arm reads the rig)
-export function shoulderAt(f){const o=POSES[f]||{},l=o.lean||0,x=7*Math.cos(l)+56*Math.sin(l),y=7*Math.sin(l)-56*Math.cos(l)+138+(o.bob||0);return[x/60,(144-y)/60];}
+export function shoulderAt(f){const o=POSES[f]||{},l=o.lean||0,[sx,sy]=player.rig?.d.sho||[7,56],x=sx*Math.cos(l)+sy*Math.sin(l),y=sx*Math.sin(l)-sy*Math.cos(l)+138+(o.bob||0);return[x/60,(144-y)/60];}
 // Player customization (New World dialog, saved as p.look): each field is an index into its list, so a save can't carry a bad value.
 // hat and cape take the accent color; the straw hat keeps its own straw.
 export const LOOK={hairS:['short','long','spiky','bun','pony','curly'],hair:['#5a3526','#2a2130','#a86b3a','#e0b04f','#c9503a','#e8e2d6','#5a6fb0','#d97aa0'],
@@ -228,13 +228,13 @@ export function playerLook(look=player.look,a=player.armor||[]){const eq={};if(a
 const PACK=Object.assign(tt=>{tt.beginPath();tt.moveTo(38,74);tt.lineTo(58,104);ink(tt,3.5,'#6b4430');rr(tt,24,92,16,16,4);fi(tt,'#b9874f',2);},{art:'pack'});
 // Still pictures of humans come from the human rig (rigPic), so a portrait is the same paper cut-out as the one in the world.
 // lookPic(look): the player standing in a given look, for the New World dialog's preview (a new world starts with no armor)
-export function lookPic(look){return rigPic('human',playerLook(look,[]),'idle',0);}
+export function lookPic(look){return rigPic(playerRigKind(),playerLook(look,[]),'idle',0);}
 // folkPose(k): a townsperson standing as in town, holding their tool
 const folkPose=k=>{const o=FOLK[k];return{armA:{r:o.arm},armB:{r:o.armB??.1}};};
 // facePic(k, expr): an NPC type (or 'player', in the skin the player's rig wears now) standing, with the head swapped to
 // the expression (happy, surprised, sad, angry; null for the plain face), for dialogue portraits
 export function facePic(k,expr){const pl=k==='player';if(!pl&&!FOLK[k])return null;
-  return rigPic('human',pl?player.rig?.S||playerLook():FOLK[k],'idle',0,pl?null:k,Object.assign(pl?{}:folkPose(k),{head:{sw:expr||''},root:{sw:expr||''}}));}
+  return rigPic(pl?player.rig?.k||'human':'human',pl?player.rig?.S||playerLook():FOLK[k],'idle',0,pl?null:k,Object.assign(pl?{}:folkPose(k),{head:{sw:expr||''},root:{sw:expr||''}}));}
 // Townsfolk looks (the human layers' o): their rigs wear these (rig.js), and SHEETS[k] is the still picture for portraits.
 // arm: the front arm angle they stand with (holding their tool), armB the back arm's.
 export const FOLK={
