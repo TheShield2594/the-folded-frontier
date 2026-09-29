@@ -282,14 +282,17 @@ def blobs(img, thr=16, join=12, min_frac=.25):
             out.append(Image.fromarray(np.dstack([a.astype(np.uint8), (mask * 255).astype(np.uint8)])[sl], 'RGBA'))
     return out
 
-def frame_set(figs, name, frames, tiles=2.4, h=320, out='assets/art/rigs'):
+def frame_set(figs, name, frames, tiles=2.4, h=320, out='assets/art/rigs', fit=()):
     """Whole-body animation frames of one character (figs from blobs(), all from one render so they share a scale) to
     <name>.webp (frames['']) and <name>.<frame>.webp, all on one canvas: feet on its bottom edge and the hips (the middle
     of the lower half of the figure) on its centre line, so swapping frames in the game doesn't make the figure jump.
-    tiles: the figure's height in game tiles (for the ink line)."""
+    tiles: the figure's height in game tiles (for the ink line). fit: frames the render drew at a different scale, resized
+    to the standing frame's height."""
     ppt = figs[frames['']].height / tiles; st = {}
     for v, i in frames.items():
-        im, _ = restyle(figs[i], ppt, border=False); a = np.asarray(im)[..., 3] > 8; cl, cn = ndimage.label(a); cs = ndimage.sum(a, cl, range(1, cn + 1))
+        f = figs[i]
+        if v in fit: k = figs[frames['']].height / f.height; f = f.resize((round(f.width * k), round(f.height * k)), Image.LANCZOS)
+        im, _ = restyle(f, ppt, border=False); a = np.asarray(im)[..., 3] > 8; cl, cn = ndimage.label(a); cs = ndimage.sum(a, cl, range(1, cn + 1))
         keep = np.isin(cl, [j + 1 for j in range(cn) if cs[j] >= .03 * cs.max()]); im = Image.fromarray(np.dstack([np.asarray(im)[..., :3], np.asarray(im)[..., 3] * keep]).astype(np.uint8), 'RGBA'); a = keep; ys, xs = np.where(a)
         im = im.crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1)); a = np.asarray(im)[..., 3] > 8
         low = a[a.shape[0] // 2:]; cx = np.where(low)[1].mean(); st[v] = (im, cx)

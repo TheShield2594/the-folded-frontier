@@ -29,8 +29,9 @@ function portrait(k,e){const key=k+':'+e;if(PICS[key])return PICS[key];const c=m
   else{const s=facePic(k,e==='neutral'?null:e);if(s&&s.whole){const[x,y,z]=headBox(s);t.drawImage(s,x,y,z,z,0,2,96,96);}else if(s)t.drawImage(s,12,8,76,76,0,2,96,96);}
   if(e!=='neutral')emote(t,80,18,e);return PICS[key]=c;}
 // a whole painted cut-out (rig.js root+all): a square around the head, the top of the figure, centred on it
-function headBox(s){const W=s.width,H=s.height,a=s.getContext('2d').getImageData(0,0,W,H).data;let y0=H,y1=0;for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(a[(y*W+x)*4+3]>40){if(y<y0)y0=y;y1=y;}
-  const z=Math.round((y1-y0)*.52);let sx=0,n=0;for(let y=y0;y<y0+z*.8;y++)for(let x=0;x<W;x++)if(a[(y*W+x)*4+3]>40){sx+=x;n++;}
+function headBox(s){const W=s.width,H=s.height,a=s.getContext('2d').getImageData(0,0,W,H).data;let y0=H,y1=0,x0=W,x1=0;for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(a[(y*W+x)*4+3]>40){if(y<y0)y0=y;y1=y;if(x<x0)x0=x;if(x>x1)x1=x;}
+  // everyone faces right, so the face is toward the front: a backpack or cape behind the head doesn't pull the crop off it
+  const z=Math.round((y1-y0)*.52),xa=x0+(x1-x0)*.3;let sx=0,n=0;for(let y=y0;y<y0+z*.8;y++)for(let x=Math.ceil(xa);x<W;x++)if(a[(y*W+x)*4+3]>40){sx+=x;n++;}
   return[Math.round((n?sx/n:W/2)-z/2),Math.max(0,y0-2),z];}
 export function clearPlayerPics(){for(const k in PICS)if(k.startsWith('player:'))delete PICS[k];}
 // speakers: {k (voice/portrait key), name, at() -> world point above their head, or null for a box without a tail}
