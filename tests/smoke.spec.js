@@ -627,6 +627,20 @@ test('trading cards: chests and packs give them, a binder files them, a full pag
   expect(s.old).toBe(0);
 });
 
+// Atlas cells are allocated in order around the two bands of 256px tree canopies; none may land in a band or past the atlas.
+test('atlas cells stay clear of the canopy regions',async({page})=>{
+  await boot(page);
+  const r=await page.evaluate(async()=>{
+    const g=await import('/src/game.js'),bad=[],regions=[...g.C.canopy,...g.C.canopyFall,g.C.canopyWinter,g.C.canopySpring];
+    for(const k in g.C){if(k.startsWith('canopy'))continue;const v=g.C[k];const cs=Array.isArray(v)?v.map((c,i)=>[k+'.'+i,c]):[[k,v]];
+      for(const[n,c]of cs){if(typeof c!=='number')continue;const[x,y]=g.cellXY(c);
+        if(y+64>g.ATH||regions.some(([rx,ry])=>x<rx+256&&x+64>rx&&y<ry+256&&y+64>ry))bad.push(n);}}
+    return {bad,cards:g.cellXY(g.C.card_unfolded)[1]};
+  });
+  expect(r.bad).toEqual([]);
+  expect(r.cards).toBeGreaterThanOrEqual(2048);
+});
+
 // The dev server globs the art from tests/fixtures/art/ (FF_ART_DIR in playwright.config.js), so this covers
 // finding the files, reading their paths and the loadArt() call at boot.
 test('art files are found and painted in at boot',async({page})=>{

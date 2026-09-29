@@ -1,7 +1,7 @@
 // three.js renderer, scene and camera, chunk meshes, procedural sprite sheets and particles.
 import * as THREE from 'three';
 import {
-  reduceMotion,$,atlas,blk,buildDiorama,C,canopyCell,cellXY,circ,computeLight,CS,fi,grain,H,idx,INK,ink,isOpaque,ITEMS,LB,lightAt,meta,mk,
+  reduceMotion,$,atlas,ATH,ATW,blk,buildDiorama,C,canopyCell,cellXY,circ,computeLight,CS,fi,grain,H,idx,INK,ink,isOpaque,ITEMS,LB,lightAt,meta,mk,
   LIGHT,mulberry32,N,OPAQUE,pick,player,poly,rand,rr,seed,SET,sh,sky,stamp,surfAvg,T,tileAt,tiles,TP,W,
   WALLCELL,walls,markFg,
   buildMarks,rigPic,
@@ -24,12 +24,12 @@ export const atlasTex=new THREE.CanvasTexture(atlas);atlasTex.anisotropy=rendere
 // dynamic lights (uDL: x, y, radius, strength; uDLC: color), filled each frame by updateDynLights().
 // uHdr is 1 while post-processing renders to a float target, letting lights and emissive tiles go past 1 for bloom.
 export const NDL=16;
-export const nmapC=mk(1024,2048);export const nmapTex=new THREE.CanvasTexture(nmapC);nmapTex.minFilter=THREE.LinearMipmapLinearFilter;
+export const nmapC=mk(ATW,ATH);export const nmapTex=new THREE.CanvasTexture(nmapC);nmapTex.minFilter=THREE.LinearMipmapLinearFilter;
 export const U={map:{value:atlasTex},nmap:{value:nmapTex},uSky:{value:new THREE.Vector3(1,1,1)},uP:{value:new THREE.Vector3(0,0,4)},uGlow:{value:.35},uSun:{value:new THREE.Vector4(0,.6,.8,0)},uHdr:{value:0},
   uDL:{value:Array.from({length:NDL},()=>new THREE.Vector4(0,0,1,0))},uDLC:{value:Array.from({length:NDL},()=>new THREE.Vector3())}};
 // height from the art (ink sinks, paper and highlights rise, transparent edges drop away), blurred once, then a Sobel-style
 // slope per pixel. Rebuilt when atlas cells are redrawn (applyCB).
-export function buildNormals(){const w=1024,h=2048,src=atlas.getContext('2d').getImageData(0,0,w,h).data,H0=new Float32Array(w*h),H1=new Float32Array(w*h);
+export function buildNormals(){const w=ATW,h=ATH,src=atlas.getContext('2d').getImageData(0,0,w,h).data,H0=new Float32Array(w*h),H1=new Float32Array(w*h);
   for(let i=0,j=0;i<w*h;i++,j+=4)H0[i]=src[j+3]/255*(.3+.7*(src[j]*.3+src[j+1]*.55+src[j+2]*.15)/255);
   for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x;H1[i]=(H0[i-w-1]+H0[i-w]+H0[i-w+1]+H0[i-1]+H0[i]*2+H0[i+1]+H0[i+w-1]+H0[i+w]+H0[i+w+1])*.1;}
   const g=nmapC.getContext('2d'),out=g.createImageData(w,h),d=out.data,k=2.4;
@@ -90,7 +90,7 @@ export function buildBackdrop(){buildDiorama();buildMarks();
 // ================= chunk meshes =================
 export let CW=Math.ceil(W/CS),CHH=Math.ceil(H/CS);export let chunks=[],liqChunks=[];export const dirty=new Set();
 export function cellUV(c){const[x,y]=cellXY(c);return regionUV(x,y,64,64);}
-function regionUV(px,py,w,h){const e=.6/1024,f=.6/2048;return[px/1024+e,1-(py+h)/2048+f,(px+w)/1024-e,1-py/2048-f];}
+function regionUV(px,py,w,h){const e=.6/ATW,f=.6/ATH;return[px/ATW+e,1-(py+h)/ATH+f,(px+w)/ATW-e,1-py/ATH-f];}
 // emissive tiles (anything that gives light, apart from liquids) glow in the world shader: face shade 3 + glow
 const EMIS=(t,shd)=>LIGHT[t]&&!TP[t].liq?3+LIGHT[t]/16:shd;
 export function buildChunk(cx,cy){markFg(cx);const P=[],UV=[],L=[],I=[];let vc=0;const LP={P:[],UV:[],L:[],I:[],vc:0};
