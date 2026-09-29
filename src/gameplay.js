@@ -528,7 +528,7 @@ export function syncPlayerRig(){const p=player,k=playerRigKind();if(!p.rig||p.ri
   p.rig=makeRig(k,playerLook(),null);p.mat=p.rig.mat;p.mesh=p.rig.mesh;p.mesh.position.copy(o.position);p.mesh.rotation.copy(o.rotation);p.mesh.visible=vis;}
 // live: from the rig's posed shoulder (the arm the player sees); otherwise from the pose's numbers (the trail's curve)
 function swingHand(sp,sq=1,live){const p=player,[sx,sy]=live?rigJoint(p.rig,'armA'):shoulderAt(sp.f),l=armL()*sp.sc;return[p.x+p.face*(sx+Math.cos(sp.arm)*l),p.y-.08+(p.rideY||0)+sy*sq+Math.sin(sp.arm)*l];}
-function swingTip(s,k){const p=player,sp=swingPose(s,k),[hx,hy]=swingHand(sp),r=1.5*(s.heavy?1.2:1);return[hx+p.face*Math.cos(sp.blade)*r,hy+Math.sin(sp.blade)*r];}
+function swingTip(s,k){const p=player,sp=swingPose(s,k),[hx,hy]=swingHand(sp),r=1.5*(p.rig.d.blade||1)*(s.heavy?1.2:1);return[hx+p.face*Math.cos(sp.blade)*r,hy+Math.sin(sp.blade)*r];}
 // the moment a cut starts its strike: step into it, and the finisher kicks up dust and a little shake
 function swingStep(s,k){const p=player,w=SWKEYS[s.combo][0][0];if(s.stepped||k<w)return;s.stepped=true;
   if(p.onGround&&!p.blocking){p.vx=p.face*Math.max(p.vx*p.face,LUNGE[s.combo]);if(s.combo===2)emit('dust',p.x-p.face*.3,p.y+.05);}if(s.combo===2){shake(.1);if(!ITEMS[s.tool].wave)fireProj('wave',p.x+p.face*.9,p.y+1+(p.rideY||0),p.face*20,0,Math.round(s.dmg*.4),{src:'melee',life:.22,elem:s.elem});}}
@@ -588,7 +588,7 @@ export function updateTrail(dt){const p=player,s=p.swing;
   trailMat.uniforms.uC.value.set(s.nice?0xffd66b:TRCOL[s.elem]||0xfffaf0);let any=0;
   for(let i=0;i<TR;i++){const u=i/(TR-1),kk=Math.max(0,k-span*(1-u)),sp=swingPose(s,kk),l=armL()*sp.sc,hx=p.x+p.face*(sx+Math.cos(sp.arm)*l),hy=top+Math.sin(sp.arm)*l;
     const dx=p.face*Math.cos(sp.blade),dy=Math.sin(sp.blade),a=u**1.4*clamp((Math.abs(sp.v)-4)/16,0,1)*(s.combo===2?.95:.8);if(a>.02)any=1;
-    trailPos.set([hx+dx*.35*ts,hy+dy*.35*ts,.3,hx+dx*1.6*ts,hy+dy*1.6*ts,.3],i*6);trailA[i*2]=a*.1;trailA[i*2+1]=a;}
+    const bl=ts*(p.rig.d.blade||1);trailPos.set([hx+dx*.35*bl,hy+dy*.35*bl,.3,hx+dx*1.6*bl,hy+dy*1.6*bl,.3],i*6);trailA[i*2]=a*.1;trailA[i*2+1]=a;}
   trailMesh.visible=!!any;trailGeo.attributes.position.needsUpdate=true;trailGeo.attributes.aA.needsUpdate=true;}
 let aimHand=[0,0];
 // while swinging or aiming, gameplay holds the rig's front arm: pinned on screen from the shoulder toward the weapon's grip
@@ -599,7 +599,7 @@ function updateArm(sp){const p=player;if(!sp||p.dead||p.flat)return;rigSet(p.rig
 function updateTool(sp){const p=player,s=p.swing,R=p.rig;if(!s||!s.tool||p.dead){rigHold(R,'held',null);return;}rigHold(R,'held',iconTex(s.tool).image);
   const k=clamp(s.t/s.dur,0,1),ang=sp?sp.blade:s.aim!=null?(p.face>0?s.aim:Math.PI-s.aim):lerp(1.9,-.5,Math.sin(k*Math.PI*.5)),ts=s.heavy?1.2:1,o={r:Math.PI/4-ang,sx:ts,sy:ts,abs:1,snap:1};
   // the aimed item sits behind the hand along the aim (the held piece is rigid, but its pivot rides the stretched arm)
-  if(s.aim!=null)o.y=-(.55+.2*(1-k))*60/(sp?sp.sc:1);rigSet(R,'held',o);
+  if(s.aim!=null)o.y=-(.55+.2*(1-k))*60*(R.d.blade||1)/(sp?sp.sc:1);rigSet(R,'held',o);
   const f=inNiceWin(s)||s.draw>=1?.55+.2*Math.sin(worldClock*30):s.nice?.35:s.draw?s.draw*.25:0,u=R.mat.uniforms.uPF.value;u.x=R.d.pi.held;u.y=f;}
 // a nocked arrow slides back along the bow while drawing
 let nockMesh=null,nockId=null;

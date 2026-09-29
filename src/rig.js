@@ -343,8 +343,8 @@ function heroTint(img,mk2,o,dim){let m=HTC.get(img);if(!m)HTC.set(img,m={});cons
       if(ws>0&&Sk&&rs){r+=(r*Sk[0]/rs[0]-r)*ws;g+=(g*Sk[1]/rs[1]-g)*ws;b+=(b*Sk[2]/rs[2]-b)*ws;}}
     const f=1-dim;a[i]=Math.min(255,r*dim+58*f*.5);a[i+1]=Math.min(255,g*dim+40*f*.5);a[i+2]=Math.min(255,b*dim+76*f*.5);}
   t.putImageData(id,0,0);return m[key]=c;}
-const ELB=18,KNEE=26,HAND=35;
-defRig('hero',{w:96,h:144,res:3,edge:1,arml:HAND/60,sho:[-5,67],stride:2.5,parts:[
+const ELB=18,KNEE=26,HAND=35,BL=.62; // BL: the held item's size against the drawn human's (the hero's arms are longer, its weapons smaller)
+defRig('hero',{w:96,h:144,res:3,edge:1,arml:HAND/60,sho:[-5,67],stride:2.5,blade:BL,parts:[
   {n:'root',at:[48,138]},
   {n:'armB',at:[40,71],up:'torso',loc:1,paint:heroPart('arm',HDIM.armB),bend:'foreB'},
   {n:'foreB',at:[40,71+ELB],up:'armB'},
@@ -356,8 +356,8 @@ defRig('hero',{w:96,h:144,res:3,edge:1,arml:HAND/60,sho:[-5,67],stride:2.5,parts
   {n:'torso',at:[48,88],up:'root',loc:1,paint:heroPart('torso'),wob:.006},
   {n:'armA',at:[43,71],up:'torso',loc:1,paint:heroPart('arm'),bend:'foreA'},
   {n:'foreA',at:[43,71+ELB],up:'armA'},
-  {n:'held',at:[43,71+HAND],up:'foreA',slot:[-8,-67,67,8],rigid:1,wob:0},
-  {n:'shield',at:[62,100],up:'root',slot:[-30,-30,30,30],rigid:1,wob:0}]});
+  {n:'held',at:[43,71+HAND-3],up:'foreA',slot:[-8,-67,67,8].map(v=>v*BL),rigid:1,wob:0},
+  {n:'shield',at:[62,100],up:'root',slot:[-22,-22,22,22],rigid:1,wob:0}]});
 // The hero's own animation set. hp(o) turns a pose into channels: thighs legA/legB and knees kA/kB (the shin's bend,
 // positive folds the foot back), upper arms armA/armB and elbows eA/eB (negative bends the forearm forward), lean and
 // bob (the root), sq squash (root sy, with sx the other way so the volume holds), br the chest's breath, hr the head's
