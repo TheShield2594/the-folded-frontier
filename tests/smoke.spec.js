@@ -1,4 +1,4 @@
-// Smoke tests: boot, portraits from the rig, new world, the Hollow Archive, save/load through localStorage, seasonal routes and secrets in the save, the vertical layers and the clocktower, save code round trip, hand-made art overrides.
+// Smoke tests: boot, portraits from the rig, new world, the Hollow Archive, save/load through localStorage, seasonal routes and secrets in the save, the vertical layers and the clocktower, save code round trip, hand-made art loaded from files at boot and applied directly.
 // They check that the game starts and its saves survive, not how it plays. Game state is read
 // through `import('/src/game.js')`, which on the dev server returns the live modules.
 import {test,expect} from '@playwright/test';
@@ -480,6 +480,35 @@ test('?perf shows the performance overlay with world and save numbers',async({pa
   await expect(page.locator('#perfTxt')).toContainText(/Save 0\.\d+M chars/);
   const r=await page.evaluate(async()=>(await import('/src/game.js')).perfReport());
   expect(r).toContain('Small 420×200');
+});
+
+// The dev server globs the art from tests/fixtures/art/ (FF_ART_DIR in playwright.config.js), so this covers
+// finding the files, reading their paths and the loadArt() call at boot. A dev server already running on the
+// test port without FF_ART_DIR loads no pictures here.
+test('art files are found and painted in at boot',async({page})=>{
+  const warns=[];page.on('console',m=>{if(m.type()==='warning'&&m.text().startsWith('art:'))warns.push(m.text());});
+  await boot(page);
+  const r=await page.evaluate(async()=>{
+    const g=await import('/src/game.js'),n=await g.artReady;
+    const px=(cv,x,y)=>[...cv.getContext('2d').getImageData(x,y,1,1).data];
+    const cell=k=>{const[x,y]=g.cellXY(k);return px(g.atlas,x+32,y+32);},f=g.SHEETS.stag;
+    return {n,swFe:cell(g.C.swFe),crack:cell(g.C.crack[1]),crack0:cell(g.C.crack[0]),heart:cell(g.C.heart),stag:px(f,f.width/2,f.height/2),
+      loaded:Object.keys(g.artImg.atlas).sort(),sheets:Object.keys(g.artImg.sheets)};
+  });
+  expect(r.n,'pictures applied (is a dev server without FF_ART_DIR running on the test port?)').toBe(4);
+  expect(r.loaded).toEqual(['crack.1','heart','swFe']);
+  expect(r.sheets).toEqual(['stag']);
+  expect(r.swFe).toEqual([255,0,255,255]);
+  expect(r.crack).toEqual([0,255,0,255]);
+  expect(r.crack0).not.toEqual([0,255,0,255]);
+  // heart.png is 32×32: scaled into the cell, with a warning
+  expect(r.heart).toEqual([0,0,255,255]);
+  expect(r.stag).toEqual([0,255,255,255]);
+  // a name with no cell and a folder that isn't atlas/ or sheets/ are skipped with warnings, not errors
+  expect(warns.some(w=>w.includes('no atlas cell "noSuchCell"'))).toBe(true);
+  expect(warns.some(w=>w.includes('atlas/heart is 32×32'))).toBe(true);
+  expect(warns.some(w=>w.includes('ignoring')&&w.includes('misc/stray.png'))).toBe(true);
+  expect(warns).toHaveLength(3);
 });
 
 test('hand-made art replaces the atlas cells and sprite sheets it names',async({page})=>{
