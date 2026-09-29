@@ -411,6 +411,27 @@ C.stacks=blockCell('#2e2446',c=>{c.fillStyle='#5a3a22';c.fillRect(0,0,64,64);for
   circ(c,32,29,4);c.fillStyle='#e0b0ff';c.fill();poly(c,[30,31,34,31,35,40,29,40]);c.fillStyle='#e0b0ff';c.fill();});
 C.archkey=sticker(t=>{t.beginPath();t.moveTo(38,22);t.lineTo(54,46);ink(t,6,INK);t.beginPath();t.moveTo(38,22);t.lineTo(54,46);ink(t,3.4,'#c9a24a');rr(t,44,40,6,10,2);fi(t,'#c9a24a',2);rr(t,50,48,5,8,2);fi(t,'#c9a24a',2);
   poly(t,[10,10,34,6,38,30,14,34]);fi(t,'#f4ecd8',2.5);for(const y of[14,19,24])t.fillRect(16,y,16,1.6);t.beginPath();t.moveTo(14,34);t.lineTo(10,52);t.lineTo(16,46);t.lineTo(20,54);t.lineTo(22,34);t.closePath();fi(t,'#7a5aa8',2);circ(t,36,26,5);fi(t,'#e0b04a',2);});
+// ---- trading cards (cards.js, issue #67): a card in the 64×64 cell, framed by rarity (0 common, 1 rare, 2 halo, 3 full art).
+// Each rarity also has its own corner mark (dot, diamond, ring, star) so it reads without color. pic(t, x, y, w, h) paints the
+// picture; without one the card shows its back. The faces are painted at boot once the sprite sheets exist (paintCards).
+const CARDCOL=['#f4ecd8','#9fbfee','#f1c04f','#f4d8e4'];
+export function cardFace(t,r,pic,bg='#fbf8f0'){const x=9,y=2,w=46,h=60;
+  if(r===2){const g=t.createLinearGradient(x,y,x+w,y+h);['#ff9aa8','#ffd66b','#9fe0a0','#8fcaf0','#c8a0f0'].forEach((c,i)=>g.addColorStop(i/4,c));rr(t,x-2,y-1,w+4,h+2,7);t.strokeStyle=g;t.lineWidth=3.5;t.stroke();}
+  if(r===3&&pic){rr(t,x,y,w,h,5);t.save();t.clip();t.fillStyle=bg;t.fillRect(x,y,w,h);pic(t,x,y,w,h,1);t.restore();rr(t,x,y,w,h,5);ink(t,3,'#c9a24a');rr(t,x,y,w,h,5);ink(t,1.2,INK);}
+  else{rr(t,x,y,w,h,5);fi(t,CARDCOL[r],2.5);rr(t,x+5,y+5,w-10,h-22,3);t.save();t.clip();t.fillStyle=pic?bg:'#3a4a8a';t.fillRect(x,y,w,h);
+    if(pic)pic(t,x+5,y+5,w-10,h-22,0);else{poly(t,starPts(32,y+24,13,6));t.fillStyle=CARDCOL[r];t.fill();}t.restore();rr(t,x+5,y+5,w-10,h-22,3);ink(t,1.6);
+    t.fillStyle='rgba(42,33,48,.45)';t.fillRect(x+8,y+h-14,w-16,2.4);t.fillRect(x+8,y+h-9,w-24,2.4);}
+  const mx=x+w-7,my=y+h-7;t.fillStyle=INK;if(r===0){circ(t,mx,my,2.6);fi(t,'#fbf8f0',1.4);}else if(r===1){poly(t,[mx,my-4.5,mx+4.5,my,mx,my+4.5,mx-4.5,my]);fi(t,'#5a8fe0',1.4);}
+  else if(r===2){circ(t,mx,my,4);ink(t,2.6,INK);circ(t,mx,my,4);ink(t,1.4,'#fff3c0');}else{poly(t,starPts(mx,my,5.5,2.4));fi(t,'#f7d046',1.2);}}
+export function cardCell(r){return sticker(t=>cardFace(t,r));}
+// repaints a cell that is already allocated (the card faces, once the sheets they picture exist)
+export function repaintCell(c,draw){const[x,y]=cellXY(c);A.clearRect(x,y,64,64);stickerAt(x,y,64,64,draw);}
+C.binder=sticker(t=>{rr(t,8,6,46,54,5);fi(t,'#5a3c78',3);rr(t,12,10,38,46,3);fi(t,'#7a5aa8',1.6);for(const y of[16,32,48]){circ(t,10,y,3.2);fi(t,'#c9a24a',1.6);}
+  t.save();t.translate(33,31);t.rotate(-.12);rr(t,-10,-14,20,28,3);fi(t,'#fbf8f0',2);poly(t,starPts(0,-2,7,3));t.fillStyle='#f1c04f';t.fill();t.restore();});
+C.cardpack=sticker(t=>{poly(t,[14,8,50,8,52,56,12,56]);fi(t,'#d4483b',3);t.beginPath();for(let x=14;x<=50;x+=6){t.lineTo(x,8);t.lineTo(x+3,4);}ink(t,2);
+  rr(t,20,20,24,26,3);fi(t,'#fbf8f0',2);poly(t,starPts(32,33,9,4));t.fillStyle='#f1c04f';t.fill();t.fillStyle='rgba(255,255,255,.35)';t.fillRect(17,12,4,40);});
+C.cardpackg=sticker(t=>{poly(t,[14,8,50,8,52,56,12,56]);fi(t,'#c9a24a',3);t.beginPath();for(let x=14;x<=50;x+=6){t.lineTo(x,8);t.lineTo(x+3,4);}ink(t,2);
+  rr(t,20,20,24,26,3);fi(t,'#2a3160',2);poly(t,starPts(32,33,10,4.5));t.fillStyle='#fff3c0';t.fill();for(const[x,y]of[[18,14],[46,50],[46,16]]){poly(t,starPts(x,y,4,1.6));t.fillStyle='#fff';t.fill();}});
 // ---- the Origami Observatory (dungeons.js): its star-chart shell, the telescope, the Star Vaults' sealed door, and the lens that opens it
 C.dome=blockCell('#2a3160',c=>{c.strokeStyle='rgba(143,160,224,.45)';c.lineWidth=1.4;c.beginPath();c.moveTo(0,32);c.lineTo(64,32);c.moveTo(32,0);c.lineTo(32,64);c.stroke();c.beginPath();c.arc(32,32,22,0,6.28);c.stroke();
   for(const[x,y,r]of[[12,12,2.2],[50,18,1.6],[20,48,1.8],[46,50,2.4],[40,8,1.2],[8,34,1.2]]){poly(c,starPts(x,y,r*2.2,r));c.fillStyle='#fff3c0';c.fill();}

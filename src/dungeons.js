@@ -3,7 +3,7 @@
 // Stacks; the Origami Observatory floats among the sky islands, and its lens opens the Star Vaults; the Sunken Inkwell Temple is
 // dug in under the Ink Lake's shore. The Scrapworks' Crowbar opens the Supply Crates and the Temple's Well Nib the Ink Wells.
 import {
-  $,BIO,boss,burst,chapterCard,hurtPlayer,chests,countItem,EN,enemies,H,idx,makeElite,meta,mulberry32,pick,player,quests,randi,
+  $,BIO,boss,burst,cardId,chapterCard,hurtPlayer,chests,countItem,EN,enemies,H,idx,makeElite,meta,mulberry32,pick,player,quests,randi,
   removeEnemy,resetBossFx,setBoss,setTile,SFX,shake,SOLID,spawnEnemy,SPAWNX,stat,surf,T,tiles,toast,tone,W,walls,
 } from './game.js';
 
@@ -277,6 +277,8 @@ function lootFor(key,kind){const s=[];const add=(id,n)=>s.push({id,n});
   else if(kind==='C'){add('coin',randi(60,140));add('potion',randi(2,4));add('torch',randi(10,20));add('rope',randi(20,40));add(pick(['goldbar','frostbar']),randi(3,6));if(Math.random()<.5)add(pick(['potiron','potregen','potswift']),randi(1,2));}
   else if(kind==='c'){add('coin',randi(150,300));add('cog',randi(3,5));add('bpup',1);add(pick(['b_quick','b_close','b_last','toolbelt']),1);}
   else{add('clockwings',1);add('coin',randi(300,450));add('skyore',randi(8,14));add('cog',randi(4,8));}
+  // a trading card: often in the plain chests, always in the secret chest and the reward (issue #67)
+  if(kind!=='C'||Math.random()<.5)add(cardId(kind==='C'?1:2),1);
   while(s.length<20)s.push(null);return s;}
 // stamp a template with its ground row on ground level L at column x0 (fills dirt under the ground row's neighbours, clears
 // a way in on the left)
@@ -332,7 +334,7 @@ function placeSky(k,r){const dg=DUNGEONS[k],rows=dg.rows,w=rows[0].length,h=rows
 // the Star Vaults: small rooms sealed in star-chart paper, floating in the high sky, their door a star seal (T.STARDOOR) facing the
 // nearest island with a cloud ledge outside it, their shell unbreakable (T.DOME), so the Star Lens is the only way in
 function vaultLoot(){const s=[];const add=(id,n)=>s.push({id,n});add('coin',randi(350,550));add('bpup',1);add('skybar',randi(6,12));add('fstar',randi(6,10));
-  add(pick(['kite','beacon','pendant','b_feather','glider','magnet']),1);if(Math.random()<.5)add(pick(['b_quick','b_close','b_last','b_nice']),1);while(s.length<20)s.push(null);return s;}
+  add(pick(['kite','beacon','pendant','b_feather','glider','magnet']),1);if(Math.random()<.5)add(pick(['b_quick','b_close','b_last','b_nice']),1);add(cardId(2),1);while(s.length<20)s.push(null);return s;}
 function planVaults(rng){const s=BIO.sky,out=[];if(!s||!s.is||!s.is.length)return out;const n=Math.max(2,Math.round(W/180));
   for(let t=0;t<800&&out.length<n;t++){const x0=12+Math.floor(rng()*(W-36)),y0=s.y+6+Math.floor(rng()*Math.max(1,H-18-s.y));
     if(out.some(o=>Math.abs(o[0]-x0)<40)||!openSky(x0-4,x0+15,y0-3,y0+9))continue;
@@ -346,7 +348,7 @@ function planVaults(rng){const s=BIO.sky,out=[];if(!s||!s.is||!s.is.length)retur
 // cave floor, their shell unbreakable (T.SEAL), so the Archive Key is the only way in. Each holds a chest of treasure.
 const ROCK=new Set([T.STONE,T.DIRT,T.COPPER,T.IRON,T.GOLD,T.ICE,T.SNOW,T.SAND,T.FROST,T.INKSTONE,T.INKORE]);
 function stacksLoot(){const s=[];const add=(id,n)=>s.push({id,n});add('coin',randi(250,450));add('bpup',1);add(pick(['b_quick','b_close','b_last','b_dip','b_nice']),1);
-  add(pick(['moonink','inkbar','goldbar']),randi(6,12));add(pick(['moontome','moonbow','kite','beacon','quilt','magnet','glider']),1);if(Math.random()<.6)add('fstar',randi(3,6));while(s.length<20)s.push(null);return s;}
+  add(pick(['moonink','inkbar','goldbar']),randi(6,12));add(pick(['moontome','moonbow','kite','beacon','quilt','magnet','glider']),1);if(Math.random()<.6)add('fstar',randi(3,6));add(cardId(2),1);while(s.length<20)s.push(null);return s;}
 // sealed rooms in the rock beside a cave floor (the Lost Stacks, the Supply Crates, the Ink Wells): 11 wide and 6 tall, a door of
 // o.door facing the floor, a shell of o.shell, the props o.deco ([column, tile]) and a chest at column 7. o.at(x, y) says which
 // cave floors may take one, o.rock which tiles may be carved; away from the town and the lake, spread out, o.n of them
@@ -364,12 +366,12 @@ function planRooms(rng,o){const out=[],lx=BIO.lake?BIO.lake[0]:-1e4,spots=[],RK=
 const planStacks=rng=>planRooms(rng,{n:Math.max(2,Math.round(W/180)),at:(x,y)=>y>=BIO.uw+12&&y<=surf[x]-20,shell:T.SEAL,door:T.STACKS,deco:[[3,T.SHELF],[4,T.SHELF],[9,T.SHELF],[10,T.SHELF],[6,T.CANDLE]],loot:stacksLoot});
 // the Supply Crates: nailed-shut storerooms in the shallow caves, above the Pressed Deep (the Scrapworks' Crowbar opens them)
 function crateLoot(){const s=[];const add=(id,n)=>s.push({id,n});add('coin',randi(80,160));add(pick(['copperbar','ironbar','goldbar']),randi(5,10));add('torch',randi(10,20));add('rope',randi(15,30));
-  add(pick(['potion','potiron','potswift','potregen']),randi(2,3));if(Math.random()<.35)add('bpup',1);if(Math.random()<.5)add(pick(['b_stomp','b_dip','b_heartf','glider','hook']),1);while(s.length<20)s.push(null);return s;}
+  add(pick(['potion','potiron','potswift','potregen']),randi(2,3));if(Math.random()<.35)add('bpup',1);if(Math.random()<.5)add(pick(['b_stomp','b_dip','b_heartf','glider','hook']),1);if(Math.random()<.5)add(cardId(1),1);while(s.length<20)s.push(null);return s;}
 const planCrates=rng=>planRooms(rng,{n:Math.max(3,Math.round(W/140)),at:(x,y)=>y<=surf[x]-10&&y>=surf[x]-50&&y>(BIO.deep?BIO.deep[1]+6:BIO.uw+12),shell:T.SCRAP,door:T.CRATE,deco:[[3,T.POT],[4,T.POT],[9,T.POT],[5,T.TORCH]],loot:crateLoot});
 // the Ink Wells: sealed grottos in the caverns of the Pressed Deep and the caves just above and below it (the Temple's Well Nib
 // opens them); worlds with no Deep get none
 function wellLoot(){const s=[];const add=(id,n)=>s.push({id,n});add('coin',randi(500,800));add('bpup',1);add('foilbar',randi(4,8));add('moonink',randi(8,14));
-  add(pick(['b_quick','b_close','b_last','b_dip','b_nice']),1);if(Math.random()<.6)add('fstar',randi(4,8));while(s.length<20)s.push(null);return s;}
+  add(pick(['b_quick','b_close','b_last','b_dip','b_nice']),1);if(Math.random()<.6)add('fstar',randi(4,8));add(cardId(2),1);while(s.length<20)s.push(null);return s;}
 const ROCKD=new Set([...ROCK,T.DEEP,T.ASH,T.EMBERORE]);
 const planWells=rng=>BIO.deep?planRooms(rng,{n:Math.max(2,Math.round(W/180)),at:(x,y)=>y>=BIO.deep[0]-10&&y<=BIO.deep[1]+10,rock:ROCKD,shell:T.SEAL,door:T.WELLDOOR,deco:[[3,T.CANDLE],[9,T.CANDLE],[5,T.SHELF]],loot:wellLoot}):[];
 // a sealed door (a column of tile t) that an item opens, cell by cell; list is its BIO.dun list ([x, y, opened]), st the stat

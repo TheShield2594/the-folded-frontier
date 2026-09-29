@@ -22,7 +22,7 @@ export const EVENTS={storm:['Paper Storm','Parcels are falling from the sky. Gra
 // [id, min, max, weight]
 const STORM_LOOT=[['paper',3,8,30],['coin',8,25,20],['seed_sun',2,4,8],['seed_wheat',2,4,8],['rope',5,12,8],['fstar',1,1,6],['potion',1,2,6],['plume',1,1,3],['paint1',1,1,2],['paint2',1,1,2],['paint3',1,1,2],['paint4',1,1,2],['tmap',1,1,1]];
 const ARMY_LOOT=['b_money','b_close','b_spike','b_flowerf','bpup','potiron','potregen','goldbar'];
-const TRAVEL=[['b_money',450],['b_close',320],['b_spike',260],['b_flowerf',280],['bpup',520],['moonlure',15],['fcrate',90],['paint5',140],['potnight',45],['potfire',70],['magnet',220],['seed_ember',14],['seed_ink',12],['seed_frost',10],['moonink',40],['seed_moon',30],['seed_thunder',25],['seed_sunf',20],['spore_ghost',20]];
+const TRAVEL=[['cardpackg',450],['b_money',450],['b_close',320],['b_spike',260],['b_flowerf',280],['bpup',520],['moonlure',15],['fcrate',90],['paint5',140],['potnight',45],['potfire',70],['magnet',220],['seed_ember',14],['seed_ink',12],['seed_frost',10],['moonink',40],['seed_moon',30],['seed_thunder',25],['seed_sunf',20],['spore_ghost',20]];
 function wpick(list){let s=0;for(const r of list)s+=r[3];let v=Math.random()*s;for(const r of list){v-=r[3];if(v<=0)return r;}return list[0];}
 const give=(id,n)=>{const l=addItem(id,n);if(l)dropItem(id,l,player.x,player.y+1);};
 const onSurface=()=>player.y>surf[clamp(Math.floor(player.x),0,W-1)]-12;

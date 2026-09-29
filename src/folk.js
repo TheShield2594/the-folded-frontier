@@ -13,7 +13,7 @@ export const newFolk=()=>({q:{},heard:{},met:{},n:{},mus:{},col:{},ink:{}});
 export let folk=newFolk();
 export function fcount(k,n=1){folk.n[k]=(folk.n[k]||0)+n;}
 const give=(id,n)=>{if(id==='coin'){addItem('coin',n);return;}const l=addItem(id,n);if(l)dropItem(id,l,player.x,player.y+1);};
-const rewardTxt=r=>r.map(([id,n])=>id==='coin'?`${n} coins`:`${ITEMS[id].name}${n>1?' ×'+n:''}`).join(', ');
+export const rewardTxt=r=>r.map(([id,n])=>id==='coin'?`${n} coins`:`${ITEMS[id].name}${n>1?' ×'+n:''}`).join(', ');
 const camps=()=>(BIO.camps||[]).filter(c=>c.done).length;
 const donated=()=>Object.keys(folk.mus).length;
 const bosses=()=>['king','crane','lev','folio','unfolded'].filter(k=>quests[k]).length;

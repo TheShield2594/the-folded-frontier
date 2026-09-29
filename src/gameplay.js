@@ -14,6 +14,7 @@ import {
   updateCoins,updateDashHud,updateDrawHud,updateEnemyFx,updateGhosts,upx,W,WALLCOL,WALLDROP,walls,
   worldClock,worldTime,digFossil,evKill,fcount,npcLine,plain,clockRoom,dunRoom,stacksAt,vaultAt,crateAt,wellAt,layerAt,crankAt,gateAt,
   guideEv,trickAt,dismount,MOUNTS,petS,toggleMount,togglePet,NDL,emit,loreChest,readMural,PF,lookColors,SHEETS,canvasTex,fullSet,setOn,setMul,SETS,
+  openPack,openBinder,
 } from './game.js';
 
 // ================= gameplay =================
@@ -149,6 +150,8 @@ function useItem(it,dt,pressed){const tx=Math.floor(mouse.wx),ty=Math.floor(mous
   if(it.use==='throw'){p.placeT-=dt;if(p.placeT>0)return;p.placeT=.28;throwStar();return;}
   if(it.use&&mouse.lp){if(it.use==='tmap'){const left=(BIO.treasure||[]).filter(([x,y])=>!(BIO.shown=BIO.shown||[]).some(([a,b])=>a===x&&b===y)&&tiles[idx(x,y)]===T.CHEST);if(!left.length){toast('Every treasure on this map has already been found.','bad');return;}left.sort((a,b)=>Math.hypot(a[0]-p.x,a[1]-p.y)-Math.hypot(b[0]-p.x,b[1]-p.y));const tg=left[0];BIO.shown.push(tg);consumeSel();const dx=Math.round((tg[0]-p.x)*2),dy=Math.round((p.y-tg[1])*2);toast(`X marks the spot: ${Math.abs(dx)} ft ${dx<0?'west':'east'} and ${Math.abs(dy)} ft ${dy>0?'down':'up'}. It is on your map (M).`,'gold');SFX.pick();return;}
     if(it.use==='crate'){consumeSel();openCrate();return;}
+    if(it.use==='pack'){consumeSel();openPack(it.pack);return;}
+    if(it.use==='binder'){openBinder();return;}
     if(it.use==='buff'){consumeSel();p.buffs[it.buff]=it.dur;SFX.potion();toast(`${BUFFS[it.buff][0]}: ${BUFFS[it.buff][2]}`,'good');burst(p.x,p.y+1,['#fbf8f0','#9be27d'],10,3,{grav:-2});return;}
     if(it.use==='mana'){if(player.maxMana>=200){toast('Your mana is already at its limit.','bad');return;}consumeSel();player.maxMana+=20;player.mana=Math.min(player.maxMana,player.mana+20);SFX.nice();toast('Max mana +20!','good');}
     else if(it.use==='bpup'){if(player.bpUps>=5){toast('You already have every BP Up.','bad');return;}consumeSel();player.bpUps++;toast('Badge Points +1!','good');SFX.nice();}

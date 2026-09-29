@@ -40,5 +40,6 @@ export * from './secrets.js';
 export * from './tricks.js';
 export * from './layers.js';
 export * from './dungeons.js';
+export * from './cards.js';
 export * from './perf.js';
 export * from './save.js';
