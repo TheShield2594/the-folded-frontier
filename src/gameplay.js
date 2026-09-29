@@ -366,7 +366,9 @@ export function updateWeather(dt){weatherT-=dt;if(weatherT<=0){const r=weather!=
 // and spells, light-giving partners and pets, fallen stars, a torch in the player's hand, and light tiles near the
 // camera (LTILE: color, radius, strength), which flicker unless reduced motion is on. The tile scan runs 4 times a second of real time (el).
 const LTILE={[T.TORCH]:[1,.72,.38,7,.32,1],[T.CANDLE]:[1,.8,.5,5,.26,1],[T.LANTERNP]:[1,.62,.55,6,.28,.4],[T.FURNACE]:[1,.55,.25,6,.3,1],[T.ALTAR]:[.75,.45,1,6,.35,.3],
-  [T.LAVA]:[1,.45,.15,7,.42,.5],[T.EMBERORE]:[1,.5,.2,3,.28,.6],[T.FOIL]:[.82,.76,1,3,.3,.2],[T.MUSH]:[1,.62,.32,3,.18,.2],[T.HEART]:[1,.42,.5,3,.24,.3],[T.ALCHEMY]:[.6,1,.7,3,.2,.3]};
+  [T.LAVA]:[1,.45,.15,7,.42,.5],[T.EMBERORE]:[1,.5,.2,3,.28,.6],[T.FOIL]:[.82,.76,1,3,.3,.2],[T.MUSH]:[1,.62,.32,3,.18,.2],[T.HEART]:[1,.42,.5,3,.24,.3],[T.ALCHEMY]:[.6,1,.7,3,.2,.3],
+  // the dungeons' glowing doors and the Observatory's telescope
+  [T.STACKS]:[.75,.5,1,3,.22,.3],[T.SCOPE]:[1,.85,.5,4,.22,.2],[T.STARDOOR]:[1,.9,.5,4,.26,.3],[T.WELLDOOR]:[.6,.45,1,4,.26,.3]};
 let lScan=0,lTiles=[];
 function scanLights(){lTiles=[];const cx=Math.floor(camera.position.x),cy=Math.floor(camera.position.y-3);
   for(let y=Math.max(0,cy-20);y<=Math.min(H-1,cy+20);y++)for(let x=Math.max(0,cx-32);x<=Math.min(W-1,cx+32);x++){const t=tiles[y*W+x],d=LTILE[t];if(!d)continue;

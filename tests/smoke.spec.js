@@ -583,8 +583,7 @@ test('?perf shows the performance overlay with world and save numbers',async({pa
 });
 
 // The dev server globs the art from tests/fixtures/art/ (FF_ART_DIR in playwright.config.js), so this covers
-// finding the files, reading their paths and the loadArt() call at boot. A dev server already running on the
-// test port without FF_ART_DIR loads no pictures here.
+// finding the files, reading their paths and the loadArt() call at boot.
 test('art files are found and painted in at boot',async({page})=>{
   const warns=[];page.on('console',m=>{if(m.type()==='warning'&&m.text().startsWith('art:'))warns.push(m.text());});
   await boot(page);
@@ -595,7 +594,7 @@ test('art files are found and painted in at boot',async({page})=>{
     return {n,swFe:cell(g.C.swFe),crack:cell(g.C.crack[1]),crack0:cell(g.C.crack[0]),heart:cell(g.C.heart),stag:px(f,f.width/2,f.height/2),
       loaded:Object.keys(g.artImg.atlas).sort(),sheets:Object.keys(g.artImg.sheets)};
   });
-  expect(r.n,'pictures applied (is a dev server without FF_ART_DIR running on the test port?)').toBe(4);
+  expect(r.n,'pictures applied from tests/fixtures/art/').toBe(4);
   expect(r.loaded).toEqual(['crack.1','heart','swFe']);
   expect(r.sheets).toEqual(['stag']);
   expect(r.swFe).toEqual([255,0,255,255]);
