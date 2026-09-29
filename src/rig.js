@@ -498,6 +498,53 @@ defRig('bookmoth',{w:300,h:220,oy:110,parts:[{n:'root',at:[cx,cy]},
     wind:osc(.16,{wingA:{sy:[.08,0,1.05]},wingB:{sy:[.08,1,1.05]},hindA:{sy:[.05]},hindB:{sy:[.05,1]},root:{r:[.02,0,-.22]}},.12),
     dive:still({wingA:{sy:.25,r:.4},wingB:{sy:.25,r:.35},hindA:{sy:.5,r:.2},hindB:{sy:.5,r:.2},root:{r:.28},head:{r:.1}},.1),
     dust:osc(.22,{wingA:{sy:[.6,0,.45]},wingB:{sy:[.6,.6,.45]},hindA:{sy:[.3,0,.8]},hindB:{sy:[.3,.6,.8]},root:{y:[3]}},.1)}});}
+// The Starfold (the Origami Observatory's boss): a paper star folded from two layers of points, each point a light and a shaded
+// face meeting at its crease. Gameplay turns the layers against each other; the whole star folds shut edge-on to cross the sky
+{const cx=130,cy=130,ray=(R,r,rot,c1,c2)=>t=>{for(let k=0;k<5;k++){const a=rot-Math.PI/2+k*Math.PI*2/5,b1=a-Math.PI/5,b2=a+Math.PI/5,tip=[cx+Math.cos(a)*R,cy+Math.sin(a)*R];
+    poly(t,[cx,cy,cx+Math.cos(b1)*r,cy+Math.sin(b1)*r,...tip]);fi(t,c1,3.5);poly(t,[cx,cy,...tip,cx+Math.cos(b2)*r,cy+Math.sin(b2)*r]);fi(t,c2,3.5);}};
+defRig('starfold',{w:260,h:260,oy:130,parts:[{n:'root',at:[cx,cy]},
+  {n:'back',at:[cx,cy],up:'root',wob:0,paint:ray(98,52,Math.PI/5,'#3a4a8a','#232a58')},
+  {n:'rays',at:[cx,cy],up:'root',wob:0,paint:ray(122,54,0,'#fbe9a0','#e0b84a')},
+  {n:'face',at:[cx,cy],up:'root',wob:.004,paint:t=>{circ(t,cx,cy,48);fi(t,'#fbf5e6',4);t.beginPath();t.moveTo(cx-44,cy+18);t.lineTo(cx+44,cy-18);ink(t,1.4,'rgba(42,33,48,.22)');}},
+  {n:'eyes',at:[cx,cy-8],up:'face',v:['','blink'],paint:(t,s,v)=>{for(const ex of[cx-17,cx+17]){if(v){t.beginPath();t.moveTo(ex-9,cy-8);t.lineTo(ex+9,cy-8);ink(t,4);continue;}
+    t.beginPath();t.ellipse(ex,cy-8,8,11,0,0,6.28);t.fillStyle=INK;t.fill();circ(t,ex+3,cy-12,3);t.fillStyle='#fff3c0';t.fill();}}},
+  {n:'mouth',at:[cx,cy+20],up:'face',v:['','open'],paint:(t,s,v)=>{if(v){t.beginPath();t.ellipse(cx,cy+20,12,9,0,0,6.28);fi(t,'#2a3160',3);return;}t.beginPath();t.arc(cx,cy+10,13,.5,Math.PI-.5);ink(t,3.5);}}],
+  clips:{idle:blinkAt(osc(2,{face:{y:[3]},rays:{sx:[.03],sy:[.03,1.57]}},.15),'eyes',1.4),
+    wind:still({face:{sx:1.08,sy:.92},rays:{sx:1.1,sy:1.1},back:{sx:1.12,sy:1.12}},.1),
+    fold:osc(.5,{root:{sx:[.45,1.57,.55]}},.08),
+    shoot:swk(osc(.3,{face:{sx:[.04,0,1.04],sy:[.04,0,1.04]}},.08),'mouth',[[0,'open']])}});}
+// The Pulper (the Great Scrapworks' boss): a riveted cardboard mill on stubby legs, a hopper on top spilling scraps, two rollers
+// for a mouth that gameplay spins, and one grumpy gauge for an eye
+{const cx=140,cy=120;
+defRig('pulper',{w:280,h:230,oy:228,parts:[{n:'root',at:[cx,226]},
+  {n:'legB',at:[cx-50,196],up:'root',paint:t=>{rr(t,cx-66,188,30,38,6);fi(t,'#6b5234',3.5);}},
+  {n:'legA',at:[cx+50,196],up:'root',paint:t=>{rr(t,cx+36,188,30,38,6);fi(t,'#6b5234',3.5);}},
+  {n:'body',at:[cx,150],up:'root',wob:.004,paint:t=>{rr(t,cx-104,70,208,126,14);fi(t,'#9a7a52',4.5);t.fillStyle='#b8966a';for(let y=82;y<190;y+=18)t.fillRect(cx-98,y,196,7);
+    for(const[x,y]of[[-92,82],[92,82],[-92,182],[92,182]]){circ(t,cx+x,y,5);t.fillStyle='#8d8f9a';t.fill();ink(t,1.6);}rr(t,cx-70,136,140,48,10);fi(t,'#3a3040',3.5);}},
+  {n:'hopper',at:[cx,70],up:'body',paint:t=>{poly(t,[cx-80,20,cx+80,20,cx+50,74,cx-50,74]);fi(t,'#8e6a40',4);for(const[x,y,r]of[[-40,14,.3],[10,8,-.4],[46,16,.2],[-10,18,.8]]){t.save();t.translate(cx+x,y);t.rotate(r);rr(t,-12,-8,24,16,2);fi(t,'#fbf8f0',2);t.restore();}}},
+  {n:'rollA',at:[cx-32,160],up:'body',wob:0,paint:t=>{circ(t,cx-32,160,20);fi(t,'#a9adb8',3);for(let k=0;k<6;k++){const a=k/6*Math.PI*2;t.beginPath();t.moveTo(cx-32,160);t.lineTo(cx-32+Math.cos(a)*18,160+Math.sin(a)*18);ink(t,2.4,'#5a5c68');}}},
+  {n:'rollB',at:[cx+32,160],up:'body',wob:0,paint:t=>{circ(t,cx+32,160,20);fi(t,'#a9adb8',3);for(let k=0;k<6;k++){const a=k/6*Math.PI*2;t.beginPath();t.moveTo(cx+32,160);t.lineTo(cx+32+Math.cos(a)*18,160+Math.sin(a)*18);ink(t,2.4,'#5a5c68');}}},
+  {n:'gauge',at:[cx,106],up:'body',v:['','blink'],paint:(t,s,v)=>{circ(t,cx,106,24);fi(t,'#f4ecd8',4);if(v){t.beginPath();t.moveTo(cx-16,106);t.lineTo(cx+16,106);ink(t,4);return;}
+    t.beginPath();t.moveTo(cx,106);t.lineTo(cx+14,94);ink(t,3.5,'#d4483b');circ(t,cx,106,4);t.fillStyle=INK;t.fill();t.beginPath();t.moveTo(cx-22,84);t.lineTo(cx+6,92);ink(t,5);}}],
+  clips:{idle:blinkAt(osc(1.2,{body:{sy:[.015,0,1]},hopper:{r:[.02]}},.15),'gauge',.9),
+    walk:osc(.6,{legA:{r:[.25]},legB:{r:[.25,3.14]},body:{y:[3,0,0,2]},hopper:{r:[.04]}},.12),
+    wind:still({body:{sy:.9,sx:1.06},hopper:{r:-.12},legA:{r:-.2},legB:{r:.2}},.12),
+    shred:osc(.2,{body:{sx:[.03,0,1.03]},hopper:{r:[.08]}},.08)}});}
+// The Grand Nib (the Sunken Inkwell Temple's boss): a gold pen nib hanging point down, its slit running from the breather hole
+// (its eye, which blinks) to the point, with a bead of ink at the tip that swells before it writes
+{const cx=120,cy=140;
+defRig('nib',{w:240,h:280,oy:140,parts:[{n:'root',at:[cx,cy]},
+  {n:'collar',at:[cx,40],up:'root',paint:t=>{rr(t,cx-62,14,124,40,10);fi(t,'#3a2a5a',4);t.fillStyle='#6b4c8f';t.fillRect(cx-54,24,108,8);}},
+  {n:'body',at:[cx,cy],up:'root',wob:.004,paint:t=>{poly(t,[cx-70,50,cx+70,50,cx+56,150,cx,262,cx-56,150]);fi(t,'#c9a24a',4.5);
+    poly(t,[cx-70,50,cx-10,50,cx-6,150,cx,262,cx-56,150]);t.fillStyle='rgba(255,243,192,.35)';t.fill();
+    for(const s of[-1,1]){t.beginPath();t.moveTo(cx+s*44,70);t.bezierCurveTo(cx+s*46,110,cx+s*30,150,cx+s*12,190);ink(t,2,'rgba(107,82,52,.6)');}
+    t.beginPath();t.moveTo(cx,128);t.lineTo(cx,258);ink(t,3.5);}},
+  {n:'eye',at:[cx,112],up:'body',v:['','blink'],paint:(t,s,v)=>{if(v){t.beginPath();t.moveTo(cx-16,112);t.lineTo(cx+16,112);ink(t,4);return;}t.beginPath();t.ellipse(cx,112,16,18,0,0,6.28);fi(t,'#1c1520',3);circ(t,cx+5,106,5);t.fillStyle='#8fcaf0';t.fill();}},
+  {n:'drop',at:[cx,262],up:'body',paint:t=>{t.beginPath();t.moveTo(cx,256);t.bezierCurveTo(cx+14,266,cx+10,280,cx,280);t.bezierCurveTo(cx-10,280,cx-14,266,cx,256);fi(t,'#3a2a5a',2.5);}}],
+  clips:{idle:blinkAt(osc(2,{root:{r:[.05]},drop:{sy:[.15,0,1]}},.15),'eye',1.3),
+    wind:still({root:{r:0},body:{sy:.92},drop:{sx:1.4,sy:1.4}},.1),
+    dive:still({root:{r:0},body:{sy:1.08,sx:.94}},.08),
+    write:osc(.4,{root:{r:[.3]},drop:{sy:[.3,0,1.1]}},.1)}});}
 // which rig and skin an enemy sheet name uses (entities.js spawnEnemy); arms: the arm pose a human foe holds
 export const HUMANFOE={
   zombie:{skin:'#a8c79a',hair:'#3e5a3a',tunic:'#6b5b8a',pants:'#4a4058',boots:'#3a3040',eyeCol:'#c0392b',noBlush:1,extra:t=>{t.fillStyle='#2a2130';t.fillRect(40,95,6,10);t.fillRect(52,85,4,8);},clip:'shamble'},
@@ -509,14 +556,28 @@ export const HUMANFOE={
   warden:{skin:'#e9dcc0',tunic:'#5a3c78',pants:'#3a2a4a',boots:'#2a1e2a',belt:'#c9a24a',eyeCol:'#7a3fb0',noBlush:1,eyeY:51,
     extra:t=>{t.beginPath();t.moveTo(24,60);t.quadraticCurveTo(20,22,50,20);t.quadraticCurveTo(80,22,76,56);t.lineTo(70,46);t.quadraticCurveTo(50,34,32,48);t.closePath();fi(t,'#3a2a4a');rr(t,40,72,20,40,4);t.fillStyle='rgba(201,162,74,.5)';t.fillRect(48,74,3,36);},
     front:t=>{t.save();t.translate(68,90);t.rotate(-.2);poly(t,[-14,-10,0,-6,0,10,-14,6]);fi(t,'#f4ecd8',2);poly(t,[0,-6,14,-10,14,6,0,10]);fi(t,'#fbf8f0',2);t.fillStyle='rgba(42,33,48,.45)';for(const y of[-4,0,4]){t.fillRect(-11,y,8,1.2);t.fillRect(3,y-1,8,1.2);}t.restore();},clip:'march',arm:-.7},
+  // the Origami Observatory's keeper: a star-chart robe, a tall folded hat with stars on it and a brass astrolabe
+  gazer:{skin:'#dfe6f7',tunic:'#2a3160',pants:'#1e2448',boots:'#141833',belt:'#c9a24a',eyeCol:'#f7d046',noBlush:1,eyeY:51,
+    extra:t=>{poly(t,[22,42,78,42,60,2]);fi(t,'#2a3160',3);t.beginPath();t.moveTo(41,42);t.lineTo(60,2);ink(t,1.4,'rgba(143,160,224,.6)');t.beginPath();t.ellipse(50,42,32,6,0,0,6.28);fi(t,'#3a4a8a',2.5);
+      for(const[x,y,r]of[[50,26,4],[62,16,3],[40,36,2.6]]){const pts=[];for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,d=i%2?r*.45:r;pts.push(x+Math.cos(a)*d,y+Math.sin(a)*d);}poly(t,pts);t.fillStyle='#f7d046';t.fill();}},
+    front:t=>{circ(t,70,88,12);fi(t,'#c9a24a',2.5);circ(t,70,88,7);ink(t,1.6,'#6b5234');t.beginPath();t.moveTo(60,92);t.lineTo(80,84);ink(t,2.4);circ(t,70,88,2.5);t.fillStyle=INK;t.fill();},clip:'march',arm:-.7},
+  // the Great Scrapworks' foreman: a hard hat, overalls and a clipboard of work orders
+  foreman:{skin:'#e8c4a0',tunic:'#3f6fa8',pants:'#2e4a78',boots:'#3a2a1e',belt:'#8e6a40',eyeCol:'#2a2130',hair:'#6b4a2a',
+    extra:t=>{t.beginPath();t.ellipse(50,30,28,16,0,Math.PI,0);t.closePath();fi(t,'#e0b04a',3);t.fillStyle='#e0b04a';t.fillRect(20,28,60,6);t.strokeStyle=INK;t.lineWidth=2.4;t.strokeRect(20,28,60,6);},
+    front:t=>{rr(t,60,80,22,28,3);fi(t,'#8e6a40',2);rr(t,63,84,16,20,2);fi(t,'#fbf8f0',1.4);t.fillStyle='rgba(42,33,48,.45)';for(const y of[88,93,98])t.fillRect(66,y,10,1.6);},clip:'march',arm:-.6},
+  // the Sunken Inkwell Temple's scribe: robes soaked through with ink, a dripping quill and pale, drowned eyes
+  scribe:{skin:'#b8c4d8',tunic:'#3a2a5a',pants:'#2a1e3a',boots:'#1c1520',belt:'#6b4c8f',eyeCol:'#8fcaf0',noBlush:1,eyeY:51,
+    extra:t=>{t.beginPath();t.moveTo(26,58);t.quadraticCurveTo(22,20,50,18);t.quadraticCurveTo(78,20,74,58);t.lineTo(68,44);t.quadraticCurveTo(50,32,32,44);t.closePath();fi(t,'#2a1e3a');
+      for(const x of[34,52,66]){t.beginPath();t.moveTo(x,56);t.quadraticCurveTo(x+2,66,x,72);ink(t,2.4,'#3a2a5a');}},
+    front:t=>{t.save();t.translate(70,86);t.rotate(-.5);poly(t,[0,-22,5,-6,0,10,-5,-6]);fi(t,'#e9dcc0',1.6);t.beginPath();t.moveTo(0,10);t.lineTo(0,16);ink(t,2.4,'#3a2a5a');t.restore();},clip:'march',arm:-.7},
   ashimp:{skin:'#9a3b2a',tunic:'#3a2a24',pants:'#2a1e1a',boots:'#1e1614',eyeCol:'#ffd66b',noBlush:1,
     extra:t=>{poly(t,[34,34,28,14,40,28]);fi(t,'#3a2a24',2);poly(t,[62,30,72,10,68,32]);fi(t,'#3a2a24',2);},front:t=>{circ(t,70,84,7);t.fillStyle='rgba(255,138,61,.6)';t.fill();},clip:'march',arm:-.8}};
 export const FOERIG={slime:['slime',{col:'#6cc57a'}],bslime:['slime',{col:'#5aa7e0'}],blot:['slime',{col:'#4a3570'}],king:['king',{col:'#5aa7e0'}],
   bat:['bat',{c1:'#6b4c8f',c2:'#5a3f7a',eye:'#f1c04f',fang:1}],cinderbat:['bat',{c1:'#3a2a24',c2:'#2a1e1a',eye:'#ff8a3d'}],eye:['eye',{}],
-  zombie:['human',HUMANFOE.zombie],knight:['human',HUMANFOE.knight],sentinel:['human',HUMANFOE.sentinel],ashimp:['human',HUMANFOE.ashimp],warden:['human',HUMANFOE.warden],
+  zombie:['human',HUMANFOE.zombie],knight:['human',HUMANFOE.knight],sentinel:['human',HUMANFOE.sentinel],ashimp:['human',HUMANFOE.ashimp],warden:['human',HUMANFOE.warden],gazer:['human',HUMANFOE.gazer],foreman:['human',HUMANFOE.foreman],scribe:['human',HUMANFOE.scribe],
   mothling:['bat',{c1:'#e8dcc4',c2:'#b8a0d0',eye:'#2a2130'}],
   // every other foe and boss wears its own rig's colors
   ...Object.fromEntries(['crumple','toadstool','dunefin','scarab','clockbug','sunkite','snowroll','snowlet','frostpuff','flurry','inkwisp','quillfish','inksquid','foldfox','cracker','ashspider','wraith','skyray',
-    'crane','lev','levseg','levtail','folio','unfolded','mainspring','bookmoth'].map(k=>[k,[k,{}]]))};
+    'crane','lev','levseg','levtail','folio','unfolded','mainspring','bookmoth','starfold','pulper','nib'].map(k=>[k,[k,{}]]))};
 // the enemies' still pictures (bestiary sketches) come from their rigs; the T textures stay for anything that still wants a sheet
 export function buildRigSheets(SHEETS){for(const k in FOERIG){if(SHEETS[k])continue;const[r,s]=FOERIG[k],d=RIGS[r];SHEETS[k]=rigPic(r,s,r==='human'?'idle':['fly','idle','swim'].find(c=>d.clips[c]),0,k);SHEETS[k+'T']=canvasTex(SHEETS[k]);}}

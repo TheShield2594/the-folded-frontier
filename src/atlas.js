@@ -432,5 +432,31 @@ C.cardpack=sticker(t=>{poly(t,[14,8,50,8,52,56,12,56]);fi(t,'#d4483b',3);t.begin
   rr(t,20,20,24,26,3);fi(t,'#fbf8f0',2);poly(t,starPts(32,33,9,4));t.fillStyle='#f1c04f';t.fill();t.fillStyle='rgba(255,255,255,.35)';t.fillRect(17,12,4,40);});
 C.cardpackg=sticker(t=>{poly(t,[14,8,50,8,52,56,12,56]);fi(t,'#c9a24a',3);t.beginPath();for(let x=14;x<=50;x+=6){t.lineTo(x,8);t.lineTo(x+3,4);}ink(t,2);
   rr(t,20,20,24,26,3);fi(t,'#2a3160',2);poly(t,starPts(32,33,10,4.5));t.fillStyle='#fff3c0';t.fill();for(const[x,y]of[[18,14],[46,50],[46,16]]){poly(t,starPts(x,y,4,1.6));t.fillStyle='#fff';t.fill();}});
+// ---- the Origami Observatory (dungeons.js): its star-chart shell, the telescope, the Star Vaults' sealed door, and the lens that opens it
+C.dome=blockCell('#2a3160',c=>{c.strokeStyle='rgba(143,160,224,.45)';c.lineWidth=1.4;c.beginPath();c.moveTo(0,32);c.lineTo(64,32);c.moveTo(32,0);c.lineTo(32,64);c.stroke();c.beginPath();c.arc(32,32,22,0,6.28);c.stroke();
+  for(const[x,y,r]of[[12,12,2.2],[50,18,1.6],[20,48,1.8],[46,50,2.4],[40,8,1.2],[8,34,1.2]]){poly(c,starPts(x,y,r*2.2,r));c.fillStyle='#fff3c0';c.fill();}
+  c.beginPath();c.moveTo(12,12);c.lineTo(20,48);c.lineTo(46,50);ink(c,1,'rgba(255,243,192,.45)');});
+C.scope=sticker(t=>{t.beginPath();t.moveTo(22,60);t.lineTo(32,40);t.lineTo(42,60);ink(t,4,INK);t.beginPath();t.moveTo(22,60);t.lineTo(32,40);t.lineTo(42,60);ink(t,2,'#8a5a33');
+  t.save();t.translate(32,36);t.rotate(-.7);rr(t,-8,-28,16,40,5);fi(t,'#c9a24a',2.5);rr(t,-10,-32,20,8,3);fi(t,'#6b5234',2);t.fillStyle='rgba(255,255,255,.35)';t.fillRect(-4,-22,3,26);t.restore();
+  circ(t,32,40,5);fi(t,'#6b5234',2);poly(t,starPts(50,12,7,3));t.fillStyle='#fff3c0';t.fill();});
+C.stardoor=blockCell('#3a4a8a',c=>{c.fillStyle='#232a58';c.fillRect(8,0,48,64);c.strokeStyle='#c9a24a';c.lineWidth=2.4;c.strokeRect(8,1,48,62);
+  for(let k=0;k<5;k++){const a=-Math.PI/2+k*Math.PI*2/5;c.beginPath();c.moveTo(32,32);c.lineTo(32+Math.cos(a)*22,32+Math.sin(a)*22);c.strokeStyle='rgba(255,243,192,.4)';c.lineWidth=1.4;c.stroke();}
+  poly(c,starPts(32,32,13,6));c.fillStyle='#f7d046';c.fill();ink(c,1.6,'#6b5234');circ(c,32,32,3);c.fillStyle='#232a58';c.fill();});
+C.starlens=sticker(t=>{circ(t,30,30,22);fi(t,'#c9a24a',3);circ(t,30,30,16);t.fillStyle='#9fb4f0';t.fill();ink(t,2);poly(t,starPts(30,30,9,4));t.fillStyle='#fff3c0';t.fill();
+  t.beginPath();t.moveTo(24,20);t.quadraticCurveTo(28,17,33,18);ink(t,2.4,'rgba(255,255,255,.8)');t.beginPath();t.moveTo(46,46);t.lineTo(58,58);ink(t,8,INK);t.beginPath();t.moveTo(46,46);t.lineTo(58,58);ink(t,4.5,'#6b5234');});
+// ---- the Great Scrapworks and the Sunken Inkwell Temple (dungeons.js): the scrap shell, the shredders, the Supply Crates' and
+// Ink Wells' sealed doors, and the keys that open them
+C.scrap=blockCell('#9a7a52',c=>{c.fillStyle='#b8966a';for(let y=4;y<64;y+=12)c.fillRect(0,y,64,5);c.strokeStyle='rgba(60,40,24,.45)';c.lineWidth=1.4;for(let x=6;x<64;x+=8){c.beginPath();c.moveTo(x,0);c.lineTo(x,64);c.stroke();}
+  for(const[x,y]of[[8,8],[56,8],[8,56],[56,56]]){circ(c,x,y,3.2);c.fillStyle='#8d8f9a';c.fill();ink(c,1.2);}});
+C.shred=blockCell('#5a5c68',c=>{for(const x of[16,48]){circ(c,x,26,14);c.fillStyle='#a9adb8';c.fill();ink(c,2);for(let k=0;k<8;k++){const a=k/8*Math.PI*2;c.beginPath();c.moveTo(x+Math.cos(a)*9,26+Math.sin(a)*9);c.lineTo(x+Math.cos(a+.3)*15,26+Math.sin(a+.3)*15);ink(c,2.4,'#e6e1d6');}}
+  c.fillStyle='#3a3c48';c.fillRect(0,42,64,22);for(let x=2;x<64;x+=8){poly(c,[x,42,x+4,34,x+8,42]);c.fillStyle='#e6e1d6';c.fill();}});
+C.crate=blockCell('#a86b3a',c=>{c.strokeStyle='#7b4a25';c.lineWidth=3;for(const y of[20,42]){c.beginPath();c.moveTo(0,y);c.lineTo(64,y);c.stroke();}c.beginPath();c.moveTo(4,4);c.lineTo(60,60);c.stroke();
+  for(const[x,y]of[[10,10],[54,10],[10,54],[54,54],[32,31]]){circ(c,x,y,2.6);c.fillStyle='#8d8f9a';c.fill();ink(c,1);}rr(c,20,24,24,14,2);fi(c,'#e9dcc0',1.6);c.fillStyle='rgba(42,33,48,.5)';c.fillRect(24,29,16,2);c.fillRect(24,33,10,2);});
+C.welldoor=blockCell('#2e2446',c=>{c.fillStyle='#3a2a5a';c.fillRect(8,0,48,64);c.beginPath();c.moveTo(32,10);c.bezierCurveTo(46,26,46,40,32,48);c.bezierCurveTo(18,40,18,26,32,10);c.fillStyle='#6b4c8f';c.fill();ink(c,2,'#c9a24a');
+  circ(c,32,34,4);c.fillStyle='#1c1520';c.fill();c.beginPath();c.moveTo(32,38);c.lineTo(32,50);ink(c,2,'#1c1520');c.strokeStyle='#c9a24a';c.lineWidth=2.4;c.strokeRect(8,1,48,62);});
+C.crowbar=sticker(t=>{t.beginPath();t.moveTo(14,54);t.lineTo(44,14);t.quadraticCurveTo(50,6,56,12);ink(t,8,INK);t.beginPath();t.moveTo(14,54);t.lineTo(44,14);t.quadraticCurveTo(50,6,56,12);ink(t,4.5,'#d4483b');
+  t.beginPath();t.moveTo(14,54);t.lineTo(8,52);ink(t,4.5,'#d4483b');});
+C.wellnib=sticker(t=>{poly(t,[32,60,16,26,22,8,42,8,48,26]);fi(t,'#c9a24a',3);t.beginPath();t.moveTo(32,58);t.lineTo(32,30);ink(t,2);circ(t,32,26,4.5);t.fillStyle='#1c1520';t.fill();
+  t.beginPath();t.moveTo(32,60);t.quadraticCurveTo(38,56,36,50);t.strokeStyle='#6b4c8f';t.lineWidth=3;t.stroke();t.fillStyle='rgba(255,255,255,.45)';t.fillRect(24,12,3,14);});
 C.hl=sticker(t=>{rr(t,2,2,60,60,8);t.setLineDash([8,5]);ink(t,3,'#fff');t.setLineDash([]);},0);
 if(cellN>(32-4)*16)console.warn('atlas overflow');

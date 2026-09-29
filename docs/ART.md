@@ -13,10 +13,11 @@ assets/art/sheets/<name>.png   one whole sprite sheet, named after its key in SH
 
 - **Atlas cells** (`C.swFe` → `assets/art/atlas/swFe.png`). Cells that are arrays take the index after a dot: `C.crack[1]` → `crack.1.png`. A cell covers the block, decor or item icon everywhere it is used: the world, the backpack, tooltips and the held item.
 - **Sprite sheets** (`SHEETS.stag` → `assets/art/sheets/stag.png`) hold the animation frames side by side (the mount's 3 frames of 160×112 make a 480×112 strip). The new image must have the same size and frame layout as the drawn one. Other sizes are scaled with a console warning.
-- The files are found at build time (`import.meta.glob` in `src/art.js`) and bundled by Vite, so a missing picture never makes a request or logs an error. Images under 4 kB are inlined into the bundle, and larger ones get a hashed file in `dist/assets/`.
+- The files are found at build time (`import.meta.glob` in `src/art.js`, through the `@art` alias in `vite.config.js`) and bundled by Vite, so a missing picture never makes a request or logs an error. Images under 4 kB are inlined into the bundle, and larger ones get a hashed file in `dist/assets/`.
 - At boot `loadArt()` decodes the images and paints them over the drawn cells and sheets. It then rebuilds the atlas normal map (so the world lighting uses the new art), clears the cached icons and bestiary sketches, and marks the sheet textures for upload. `artReady` is a promise that resolves to the number of pictures applied.
 - Ore cells (`copper`, `iron`, `gold`, `frostOre`, `inkOre`, `emberOre`, `foilOre`) are only replaced while Settings > Color vision is off. In the other modes the drawn ores come back, because their nugget shapes and palette carry the meaning (`applyCB()` repaints the overrides after it redraws the ores).
 - Names that don't match a cell or sheet are skipped with a console warning.
+- Everything in `assets/art/` ships with the game, so never put test pictures there. The smoke tests glob their own from `tests/fixtures/art/` (`FF_ART_DIR`), and CI checks that none of them reach `dist/`.
 
 ### Making a picture
 

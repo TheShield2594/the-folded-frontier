@@ -12,7 +12,7 @@ import {
   spriteMat,stat,state,surf,surfAvg,syncPartners,T,talkTo,threadGeo,tileAt,tiles,toast,tone,TP,U,
   palEv,partnerCheer,FISH,season,festival,worldDay,hasNPC,META,
   updateCoins,updateDashHud,updateDrawHud,updateEnemyFx,updateGhosts,upx,W,WALLCOL,WALLDROP,walls,
-  worldClock,worldTime,digFossil,evKill,fcount,npcLine,plain,clockRoom,dunRoom,stacksAt,layerAt,crankAt,gateAt,
+  worldClock,worldTime,digFossil,evKill,fcount,npcLine,plain,clockRoom,dunRoom,stacksAt,vaultAt,crateAt,wellAt,layerAt,crankAt,gateAt,
   guideEv,trickAt,dismount,MOUNTS,petS,toggleMount,togglePet,NDL,emit,loreChest,readMural,PF,lookColors,SHEETS,canvasTex,fullSet,setOn,setMul,SETS,
   openPack,openBinder,
 } from './game.js';
@@ -207,6 +207,8 @@ export const PK={
  gear:{icon:'gear',size:.7,grav:0,spin:9,life:4,noclipAll:1,trail:['#e0b04a'],trailRate:.3,splat:['#c9a24a','#fbf8f0']},
  // the Bookmoth's scale dust: slow ink specks that drift down through platforms
  dust:{elem:'ink',icon:'inkball',size:.5,grav:3.5,spin:5,life:4,noclipAll:1,trail:['#e8dcc4','#b8a0d0'],trailRate:.5,splat:['#e8dcc4','#7a5aa8']},
+ // the Observatory's thrown stars: small, glowing, and they pass through its walls
+ starshot:{icon:'fstar',size:.6,grav:0,spin:8,life:4,noclipAll:1,trail:['#fff3c0','#f1c04f'],trailRate:.6,light:[1.1,.95,.5,4],glow:1,splat:['#fff3c0','#f1c04f','#fbf8f0']},
  inkglob:{elem:'ink',icon:'inkball',size:.65,grav:6,spin:8,life:3,trail:['#3a2a5a','#6b4c8f'],trailRate:.6,splat:['#3a2a5a','#6b4c8f','#8a3fb0']},
 };
 export function fireProj(kind,x,y,vx,vy,dmg,o={}){const k=PK[kind];const m=new THREE.Mesh(new THREE.PlaneGeometry(k.size,k.size),spriteMat(iconTex(k.icon)));m.position.set(x,y,.25);scene.add(m);
@@ -403,6 +405,9 @@ function interact(){const tx=Math.floor(mouse.wx),ty=Math.floor(mouse.wy);
   if(t===T.CRANK){crankAt(tx,ty);return;}
   if(t===T.GATE){gateAt(tx,ty);return;}
   if(t===T.STACKS){stacksAt(tx,ty);return;}
+  if(t===T.STARDOOR){vaultAt(tx,ty);return;}
+  if(t===T.CRATE){crateAt(tx,ty);return;}
+  if(t===T.WELLDOOR){wellAt(tx,ty);return;}
   if(t===T.SKETCH){popSketch(tx,ty);return;}
   if(t===T.SEAM||t===T.RIP||t===T.CREASE){trickAt(t,tx,ty);return;}
   if(t===T.SIGN){signAt(tx,ty);return;}
@@ -540,7 +545,7 @@ function crack(e){if(e.dying)return;const was=e.broke>worldClock;e.broke=worldCl
 function airHit(s,e){const p=player;if((p.airHits=(p.airHits||0)+1)<=4)p.vy=Math.max(p.vy,s.combo===2?3:5.5);if(e.dying||e.parent)return;
   if(s.combo===2){e.vy=-16;e.vx=p.face*3;floatText(e.x,e.y+e.h+.6,'SPIKE!','nice');shake(.18);burst(e.x,e.y+e.h,['#fbf8f0','#fff3c0'],8,4,{grav:0,life:.3});}else{e.vy=Math.max(e.vy,e.elite?5:8);e.vx=p.face*1.5;}}
 // boss phases: at 50% and 25% life a boss tears open, holds still (immune) while it refolds, then fights with new or harder attacks
-const PHASE_MSG={mainspring:['The Mainspring winds itself tighter!','The Mainspring\'s spring snaps loose!'],bookmoth:['The Bookmoth shakes loose a cloud of ink dust!','The Bookmoth tears its own pages into a storm!'],king:['The King Slime swells with rage!','The King Slime splits at the seams!'],crane:['The Great Crane refolds its wings!','The Great Crane tears into a paper storm!'],
+const PHASE_MSG={mainspring:['The Mainspring winds itself tighter!','The Mainspring\'s spring snaps loose!'],bookmoth:['The Bookmoth shakes loose a cloud of ink dust!','The Bookmoth tears its own pages into a storm!'],starfold:['The Starfold learns to fold the sky!','The Starfold tears open and stars pour out!'],pulper:['The Pulper shifts into a higher gear!','The Pulper\'s hopper bursts open!'],nib:['The Grand Nib dips itself in fresh ink!','The Grand Nib splits along its slit!'],king:['The King Slime swells with rage!','The King Slime splits at the seams!'],crane:['The Great Crane refolds its wings!','The Great Crane tears into a paper storm!'],
   lev:['The Inkwell Leviathan churns the ink!','The Leviathan comes unbound!'],folio:['The Charred Folio turns to a new chapter!','The Folio\'s last pages catch fire!'],unfolded:['The Unfolded creases sharply!','The Unfolded tears itself open!']};
 function bossPhase(e,ph){e.phase=ph;e.act='phase';e.at=1.3;e.stun=0;SFX.tear();shake(.45);hitPause(.15);burst(e.x,e.y+e.h/2,e.d.col.concat(['#fbf8f0','#e9dcc0']),40,8,{grav:6,life:1.2});
   bossPhaseFx(e,ph);const m=PHASE_MSG[e.type];if(m)toast(m[ph-1],'bad');const bb=$('boss');bb.classList.remove('p1','p2');bb.classList.add('p'+ph);}
@@ -603,7 +608,7 @@ function updateShield(dt){const p=player,R=p.rig,u=R.mat.uniforms.uPF.value;p.sh
 
 export function spawnLogic(dt){spawnT-=dt;if(spawnT>0)return;spawnT=.9;const p=player;if(p.dead)return;const surfY=surf[clamp(Math.floor(p.x),0,W-1)];const under=p.y<surfY-12;const ecl=eclipseOn()&&!under,night=isNight()||ecl;
   const cap=(under||biomeAt(p.x,p.y)==='under'?6:(night?7:4+(weather==='rain'?2:0)))*(inkMoon&&night&&!under?2:1);if(enemies.filter(e=>!e.d.boss&&!e.parent).length>=cap+(BIO.awake?2:0)+(ecl?2:0))return;if(Math.random()<(inkMoon&&night?.1:.45))return;
-  const bio=biomeAt(p.x,p.y),lay=layerAt(p.x,p.y);let type;if(lay==='tower'||lay==='archive')return;
+  const bio=biomeAt(p.x,p.y),lay=layerAt(p.x,p.y);let type;if(lay==='tower'||lay==='archive'||lay==='observatory'||lay==='scrapworks'||lay==='inkwell')return;
   let mig=null;const sp=(t,x,y)=>{const e=spawnEnemy(t,x,y);if(Math.random()<(night?.1:.06)*(BIO.awake?1.6:1)*(ecl?1.8:1))makeElite(e);if(ecl)e.ecl=true;if(mig&&t===mig)e.mig=true;return e;};
   // the vertical layers (layers.js) have their own foes
   if(lay==='sky')type=pick(night?['skyray','skyray','eye','sunkite']:['skyray','skyray','sunkite']);
@@ -654,14 +659,20 @@ export function updateEnemies(dt){const p=player;tickFuses(dt);for(let i=enemies
   else if(d.slimy){e.vy-=(d.boss?40:40)*dt;if(e.onGround){e.vx*=Math.pow(.001,dt);e.timer-=dt;if(e.timer<=0){const dir=chase?toward:(Math.random()<.5?-1:1);e.face=dir;if(d.boss){const ph=e.phase||0;e.hops=(e.hops||0)+1;if(ph>=2&&e.hops%3===0){e.big=true;e.vx=clamp(dx/1.3,-16,16);e.vy=26;SFX.jump();}else{e.vx=dir*rand(5,8)*(ph?1.25:1);e.vy=rand(14,20);}e.timer=ph?rand(.6,1.1):rand(.9,1.6);}else{e.vx=dir*rand(2.5,4.5);e.vy=rand(10,14);e.timer=rand(.8,2);}}}
       if(d.boss){if(dist>45&&e.onGround){e.x=p.x+rand(-6,6);e.y=Math.min(H-8,p.y+18);e.vy=0;burst(e.x,e.y,d.col,20,5);}if((e.phase||0)>=2&&(e.hops+1)%3===0&&e.onGround&&e.timer<1){e.tele=e.warn=true;if(Math.random()<dt*20)burst(e.x+rand(-2,2),e.y,d.col,1,3,{up:2});}
         if(e.landV<-12){shake(e.big?.6:.3);SFX.stomp();burst(e.x,e.y,['#c9a574','#e9dfc9'],e.big?30:14,e.big?8:5,{up:1});if(e.phase)kingQuake(e);}e.landV=0;}}
-  else if(e.type==='zombie'||e.type==='knight'||e.type==='sentinel'||e.type==='warden'){e.vy-=50*dt;const kn=e.type!=='zombie';e.cd=(e.cd||0)-dt;
+  else if(e.type==='zombie'||e.type==='knight'||e.type==='sentinel'||e.type==='warden'||e.type==='gazer'||e.type==='foreman'||e.type==='scribe'){e.vy-=50*dt;const kn=e.type!=='zombie';e.cd=(e.cd||0)-dt;
       if(kn&&e.act==='wind'){e.at-=dt;e.vx*=Math.pow(.001,dt);e.tele=e.warn=true;if(e.at<=0){e.act='dash';e.at=.38;e.vy=4;SFX.swing();}}
       else if(kn&&e.act==='dash'){e.at-=dt;e.vx=e.face*12;if(e.at<=0||e.hitWall){e.act='rest';e.at=.6;}}
       else if(kn&&e.act==='rest'){e.at-=dt;e.vx*=Math.pow(.01,dt);if(e.at<=0){e.act=null;e.cd=rand(1.5,2.6);}}
-      else{const sp=e.type==='sentinel'?3.4:e.type==='warden'?3.1:kn?2.9:2.3;const dir=(night||kn||dist<10)?toward:-toward;e.face=dir;e.vx+=(dir*sp-e.vx)*Math.min(1,dt*4);if(e.hitWall&&e.onGround)e.vy=13;
+      else{const sp=e.type==='sentinel'?3.4:e.type==='warden'?3.1:e.type==='gazer'?3.2:e.type==='foreman'?3:e.type==='scribe'?3.3:kn?2.9:2.3;const dir=(night||kn||dist<10)?toward:-toward;e.face=dir;e.vx+=(dir*sp-e.vx)*Math.min(1,dt*4);if(e.hitWall&&e.onGround)e.vy=13;
         if(kn&&e.cd<=0&&e.onGround&&Math.abs(dx)<7&&Math.abs(dy)<2.5&&!p.dead){e.act='wind';e.at=.5;e.face=toward;}
         // the Stack Warden flings pages from its ledger when you keep your distance
-        else if(e.type==='warden'&&e.cd<=0&&dist>=7&&dist<16&&!p.dead){const l=dist||1;for(const a of[-.18,0,.18]){const c=Math.cos(a),s=Math.sin(a);fireProj('page',e.x,e.y+1.3,(dx*c-dy*s)/l*10,(dx*s+dy*c)/l*10,edmg(e)*.7,{hostile:true});}SFX.swing();e.cd=rand(1.8,2.6);}}
+        else if(e.type==='warden'&&e.cd<=0&&dist>=7&&dist<16&&!p.dead){const l=dist||1;for(const a of[-.18,0,.18]){const c=Math.cos(a),s=Math.sin(a);fireProj('page',e.x,e.y+1.3,(dx*c-dy*s)/l*10,(dx*s+dy*c)/l*10,edmg(e)*.7,{hostile:true});}SFX.swing();e.cd=rand(1.8,2.6);}
+        // the Stargazer throws a fan of stars from its astrolabe, or calls one down on you
+        else if(e.type==='gazer'&&e.cd<=0&&dist>=6&&dist<18&&!p.dead){const l=dist||1;if(Math.random()<.35){fireProj('starshot',p.x+rand(-1,1),p.y+9,0,-9,edmg(e)*.8,{hostile:true});tone(880,440,.3,'sine',.05);}
+          else for(const a of[-.22,0,.22]){const c=Math.cos(a),s=Math.sin(a);fireProj('starshot',e.x,e.y+1.3,(dx*c-dy*s)/l*10,(dx*s+dy*c)/l*10,edmg(e)*.7,{hostile:true});}SFX.swing();e.cd=rand(1.7,2.4);}
+        // the Scrap Foreman throws a gear at you; the Drowned Scribe flicks a fan of ink from its quill
+        else if(e.type==='foreman'&&e.cd<=0&&dist>=5&&dist<15&&!p.dead){const l=dist||1;fireProj('gear',e.x,e.y+1.3,dx/l*9,dy/l*9,edmg(e)*.7,{hostile:true});SFX.swing();e.cd=rand(1.6,2.4);}
+        else if(e.type==='scribe'&&e.cd<=0&&dist>=6&&dist<17&&!p.dead){const l=dist||1;for(const a of[-.25,0,.25]){const c=Math.cos(a),s=Math.sin(a);fireProj('inkglob',e.x,e.y+1.3,(dx*c-dy*s)/l*10,(dx*s+dy*c)/l*10+3,edmg(e)*.7,{hostile:true});}SFX.swing();e.cd=rand(1.5,2.2);}}
       if(!night&&e.type==='zombie'&&dist>35){removeEnemy(e);enemies.splice(i,1);continue;}}
   else if(e.type==='eye'){e.cd=(e.cd??rand(1.5,3))-dt;
       if(e.act==='wind'){e.at-=dt;e.vx*=Math.pow(.02,dt);e.vy*=Math.pow(.02,dt);e.tele=e.warn=true;e.face=toward;if(e.at<=0){e.act='dash';e.at=.55;const l=dist||1;e.vx=dx/l*13;e.vy=dy/l*13;SFX.swing();}}
@@ -739,6 +750,61 @@ export function updateEnemies(dt){const p=player;tickFuses(dt);for(let i=enemies
         else if(enr&&r<sh+(1-sh)*.75){e.act='pages';e.at=.5;e.tele=e.warn=true;}
         else{e.act='dust';e.shots=enr?3:2;e.at=.55;}}}
     if(cb){const m=e.w/2;if(e.x<cb[0]+m){e.x=cb[0]+m;e.vx=Math.abs(e.vx)*.5;}if(e.x>cb[2]+1-m){e.x=cb[2]+1-m;e.vx=-Math.abs(e.vx)*.5;}if(e.y<cb[1]){e.y=cb[1];e.vy=Math.abs(e.vy)*.5;}if(e.y+e.h>cb[3]+1){e.y=cb[3]+1-e.h;e.vy=-Math.abs(e.vy)*.5;}}}
+  // the Starfold (the Origami Observatory, dungeons.js) keeps to its dome: it dives at you and throws fans of stars; after 50%
+  // it folds the dome along its middle, steps out on the other side and throws a ring of stars; at 25% the stars fall
+  else if(e.type==='starfold'){const ph=e.phase||0,enr=ph>=1,cb=dunRoom('obs'),cx=e.x,cy=e.y+e.h/2,gold=['#fff3c0','#f7d046','#fbf8f0'];e.cd=(e.cd??2)-dt;
+    e.spin=(e.spin||0)+dt*(e.act==='wind'||e.act==='dive'||e.act==='fold'?4:enr?1.4:.8);
+    if(e.act==='wind'){e.at-=dt;e.tele=e.warn=true;e.vx*=Math.pow(.05,dt);e.vy*=Math.pow(.05,dt);e.face=toward;if(e.at<=0){e.act='dive';e.at=.7;const l=dist||1,v=enr?18:15;e.vx=dx/l*v;e.vy=dy/l*v;SFX.swing();}}
+    else if(e.act==='dive'){e.at-=dt;if(e.at<=0){e.act=null;e.cd=rand(1,1.7);}}
+    else if(e.act==='shots'){e.at-=dt;e.vx*=Math.pow(.2,dt);e.vy*=Math.pow(.2,dt);if(e.shots===(enr?3:2))e.tele=e.warn=true;
+      if(e.at<=0){const n=enr?5:3,a0=Math.atan2(dy,dx);for(let k=0;k<n;k++){const a=a0+(k-(n-1)/2)*.24;fireProj('starshot',cx,cy,Math.cos(a)*9,Math.sin(a)*9,edmg(e)*.7,{hostile:true});}tone(988,660,.25,'sine',.05);e.shots--;e.at=.45;if(e.shots<=0){e.act=null;e.cd=rand(1.2,1.9);}}}
+    else if(e.act==='fold'){e.at-=dt;e.tele=e.warn=true;e.vx*=Math.pow(.05,dt);e.vy*=Math.pow(.05,dt);if(Math.random()<dt*30)burst(e.fx,e.fy,gold,1,2,{grav:0,life:.5});
+      if(e.at<=0){burst(cx,cy,gold,24,6,{grav:0});e.x=e.fx;e.y=e.fy-e.h/2;e.vx=e.vy=0;burst(e.fx,e.fy,gold,24,6,{grav:0});SFX.peel();shake(.25);
+        const n=ph>=2?14:10;e.a0=(e.a0||0)+Math.PI/n;for(let k=0;k<n;k++){const a=e.a0+k/n*Math.PI*2;fireProj('starshot',e.fx,e.fy,Math.cos(a)*7,Math.sin(a)*7,edmg(e)*.75,{hostile:true});}e.act=null;e.cd=rand(1.3,2);}}
+    else if(e.act==='fall'){e.at-=dt;e.st2-=dt;e.vx*=Math.pow(.2,dt);e.vy*=Math.pow(.2,dt);if(e.at>2.4)e.tele=e.warn=true;if(e.st2<=0&&cb){e.st2=.14;fireProj('starshot',rand(cb[0]+.5,cb[2]+.5),cb[3]+.6,rand(-1,1),-7,edmg(e)*.7,{hostile:true});}if(e.at<=0){e.act=null;e.cd=rand(1.2,1.8);}}
+    else{const tx=p.x+Math.sin(e.t*.6)*6,ty=p.y+5+Math.sin(e.t*1.7)*1.4;e.vx+=((tx-e.x)*2-e.vx*1.5)*dt;e.vy+=((ty-cy)*2-e.vy*1.5)*dt;e.face=toward;
+      if(e.cd<=0&&!p.dead){const r=Math.random(),sh=ph>=2?.25:0;
+        if(r<sh){e.act='fall';e.at=3;e.st2=.9;tone(660,990,.6,'sine',.1);toast('The Starfold tears the dome open! Stars pour down.');}
+        else if(enr&&r<sh+(1-sh)*.3){let fx=cb?cb[0]+cb[2]+1-cx:cx;if(Math.abs(fx-cx)<4)fx=cx+(cx<p.x?10:-10);if(cb)fx=clamp(fx,cb[0]+e.w/2+.5,cb[2]+.5-e.w/2);e.fx=fx;e.fy=cy;e.act='fold';e.at=.8;SFX.rustle(.3,.4);}
+        else if(r<sh+(1-sh)*.6){e.act='wind';e.at=enr?.45:.6;}
+        else{e.act='shots';e.shots=enr?3:2;e.at=.5;}}}
+    if(cb){const m=e.w/2;if(e.x<cb[0]+m){e.x=cb[0]+m;e.vx=Math.abs(e.vx)*.5;}if(e.x>cb[2]+1-m){e.x=cb[2]+1-m;e.vx=-Math.abs(e.vx)*.5;}if(e.y<cb[1]){e.y=cb[1];e.vy=Math.abs(e.vy)*.5;}if(e.y+e.h>cb[3]+1){e.y=cb[3]+1-e.h;e.vy=-Math.abs(e.vy)*.5;}}}
+  // the Pulper (the Great Scrapworks, dungeons.js) walks its floor: it charges wall to wall, shreds fans of pages at you and spits
+  // crumples; at 25% it bursts its hopper, hopping and slamming while scraps rain from the ceiling
+  else if(e.type==='pulper'){const ph=e.phase||0,enr=ph>=1,cb=dunRoom('scrap'),cx=e.x,cy=e.y+e.h/2;e.vy-=50*dt;e.cd=(e.cd??2)-dt;e.roll=(e.roll||0)+dt*(e.act==='dash'?14:e.act==='shred'?20:4);
+    if(e.act==='wind'){e.at-=dt;e.vx*=Math.pow(.001,dt);e.tele=e.warn=true;if(e.at<=0){e.act='dash';e.at=1.1;SFX.swing();}}
+    else if(e.act==='dash'){e.at-=dt;e.vx=e.face*(enr?13:11);if(Math.random()<dt*20)burst(e.x-e.face*1.5,e.y+.2,['#e6e1d6','#fbf8f0'],1,2);if(e.at<=0||e.hitWall){if(e.hitWall){shake(.3);SFX.stomp();}e.act='rest';e.at=.8;}}
+    else if(e.act==='rest'){e.at-=dt;e.vx*=Math.pow(.01,dt);if(e.at<=0){e.act=null;e.cd=rand(1,1.6);}}
+    else if(e.act==='shred'){e.at-=dt;e.vx*=Math.pow(.01,dt);if(e.shots===(enr?4:3))e.tele=e.warn=true;
+      if(e.at<=0){const n=enr?5:3,a0=Math.atan2(dy,dx);for(let k=0;k<n;k++){const a=a0+(k-(n-1)/2)*.2;fireProj('page',cx+e.face*1.2,cy,Math.cos(a)*10,Math.sin(a)*10,edmg(e)*.7,{hostile:true});}SFX.rustle(.3,.7);e.shots--;e.at=.35;if(e.shots<=0){e.act=null;e.cd=rand(1.2,1.8);}}}
+    else if(e.act==='slam'){e.at-=dt;e.tele=e.warn=true;if(!e.up){e.up=1;e.vy=19;e.vx=clamp(dx/1.2,-10,10);SFX.jump();}
+      else if(e.onGround&&e.at<1.6){shake(.5);SFX.stomp();burst(e.x,e.y+.2,['#c9a574','#e9dfc9','#fbf8f0'],24,7,{up:1});e.act='rain';e.at=2;e.st2=0;e.up=0;}}
+    else if(e.act==='rain'){e.at-=dt;e.st2-=dt;e.vx*=Math.pow(.01,dt);if(e.st2<=0&&cb){e.st2=.16;fireProj('page',rand(cb[0]+.5,cb[2]+.5),cb[3]+.6,rand(-1,1),-8,edmg(e)*.6,{hostile:true});}if(e.at<=0){e.act=null;e.cd=rand(1.2,1.8);}}
+    else{e.face=toward;e.vx+=(toward*2.2-e.vx)*Math.min(1,dt*3);
+      if(e.cd<=0&&!p.dead&&e.onGround){const r=Math.random(),sh=ph>=2?.3:0,cr=enemies.filter(o=>o.type==='crumple'&&!o.dying).length;
+        if(r<sh){e.act='slam';e.at=2;e.up=0;toast('The Pulper bursts its hopper! Scraps rain from the ceiling.');}
+        else if(r<sh+(1-sh)*.35){e.act='wind';e.at=enr?.45:.6;}
+        else if(r<sh+(1-sh)*.55&&cr<3){for(let k=0;k<(enr?2:1);k++){const m=spawnEnemy('crumple',cx+e.face*1.6,e.y+1.8);m.vx=e.face*rand(5,8);m.vy=rand(6,9);}SFX.rustle(.3,.5);e.cd=rand(1.4,2);}
+        else{e.act='shred';e.shots=enr?4:3;e.at=.5;}}}
+    if(cb){const m=e.w/2;if(e.x<cb[0]+m){e.x=cb[0]+m;e.vx=Math.abs(e.vx)*.3;e.hitWall=1;}if(e.x>cb[2]+1-m){e.x=cb[2]+1-m;e.vx=-Math.abs(e.vx)*.3;e.hitWall=1;}}}
+  // the Grand Nib (the Sunken Inkwell Temple, dungeons.js) hangs over you: it stabs down, writes a line of ink across the chamber
+  // and calls Ink Blots; after 50% it splatters rings of ink, and at 25% ink floods down from the ceiling
+  else if(e.type==='nib'){const ph=e.phase||0,enr=ph>=1,cb=dunRoom('temple'),cx=e.x,cy=e.y+e.h/2;e.cd=(e.cd??2)-dt;
+    if(e.act==='wind'){e.at-=dt;e.tele=e.warn=true;e.vx*=Math.pow(.05,dt);e.vy*=Math.pow(.05,dt);if(e.at<=0){e.act='dive';e.at=.6;const l=dist||1,v=enr?20:17;e.vx=dx/l*v;e.vy=dy/l*v;SFX.swing();}}
+    else if(e.act==='dive'){e.at-=dt;if(e.at<=0){e.act=null;e.cd=rand(1,1.6);}}
+    else if(e.act==='write'){e.at-=dt;e.st2-=dt;e.vx=e.wd*(enr?11:9);e.vy+=(((cb?cb[3]-1.5:p.y+7)-(e.y+e.h))*3-e.vy)*Math.min(1,dt*4);
+      if(e.st2<=0){e.st2=enr?.12:.16;fireProj('inkglob',cx,e.y,rand(-1,1),-3,edmg(e)*.7,{hostile:true});}if(e.at<=0||cb&&(e.wd>0?e.x>cb[2]-2:e.x<cb[0]+3)){e.act=null;e.cd=rand(1,1.6);}}
+    else if(e.act==='splat'){e.at-=dt;e.vx*=Math.pow(.1,dt);e.vy*=Math.pow(.1,dt);if(e.at<=0){const n=ph>=2?16:12;e.a0=(e.a0||0)+Math.PI/n;for(let k=0;k<n;k++){const a=e.a0+k/n*Math.PI*2;fireProj('inkglob',cx,cy,Math.cos(a)*7,Math.sin(a)*7+2,edmg(e)*.75,{hostile:true});}SFX.boom();e.act=null;e.cd=rand(1.3,2);}}
+    else if(e.act==='flood'){e.at-=dt;e.st2-=dt;e.vx*=Math.pow(.2,dt);e.vy*=Math.pow(.2,dt);if(e.at>2.4)e.tele=e.warn=true;if(e.st2<=0&&cb){e.st2=.12;fireProj('inkglob',rand(cb[0]+.5,cb[2]+.5),cb[3]+.6,rand(-1,1),-6,edmg(e)*.7,{hostile:true});}if(e.at<=0){e.act=null;e.cd=rand(1.2,1.8);}}
+    else{const tx=p.x+Math.sin(e.t*.6)*5,ty=p.y+6+Math.sin(e.t*1.5)*1.2;e.vx+=((tx-e.x)*2-e.vx*1.5)*dt;e.vy+=((ty-cy)*2-e.vy*1.5)*dt;e.face=toward;
+      if(e.cd<=0&&!p.dead){const r=Math.random(),sh=ph>=2?.25:0,blots=enemies.filter(o=>o.type==='blot'&&!o.dying).length;
+        if(r<sh){e.act='flood';e.at=3;e.st2=.9;SFX.boom();toast('The Grand Nib splits! Ink floods down from the ceiling.');}
+        else if(r<sh+(1-sh)*.25){e.act='wind';e.at=enr?.45:.6;}
+        else if(r<sh+(1-sh)*.5){e.act='write';e.wd=cb&&cx>(cb[0]+cb[2])/2?-1:1;e.at=2.6;e.st2=.3;tone(520,260,.4,'triangle',.06);}
+        else if(r<sh+(1-sh)*.7&&blots<4){for(let k=0;k<(enr?3:2);k++){const m=spawnEnemy('blot',cx+rand(-1.5,1.5),cy-1);m.vy=3;}burst(cx,cy,['#3a2a5a','#6b4c8f'],18,5);SFX.rustle(.3,.6);e.cd=rand(1.6,2.2);}
+        else if(enr){e.act='splat';e.at=.55;e.tele=e.warn=true;}
+        else{e.act='wind';e.at=.6;}}}
+    if(cb){const m=e.w/2;if(e.x<cb[0]+m){e.x=cb[0]+m;e.vx=Math.abs(e.vx)*.5;}if(e.x>cb[2]+1-m){e.x=cb[2]+1-m;e.vx=-Math.abs(e.vx)*.5;}if(e.y<cb[1]){e.y=cb[1];e.vy=Math.abs(e.vy)*.5;}if(e.y+e.h>cb[3]+1){e.y=cb[3]+1-e.h;e.vy=-Math.abs(e.vy)*.5;}}}
   else if(e.type==='crumple'){e.vy-=50*dt;if(e.onGround){e.vx=clamp(e.vx+toward*9*dt,-8.5,8.5);if(e.hitWall){e.vy=11;e.vx=-e.hitWall*2;}}e.face=e.vx>=0?1:-1;e.roll=(e.roll||0)-e.vx*dt/.45;}
   else if(e.type==='toadstool'){e.vy-=50*dt;e.cd=(e.cd??rand(1.5,2.5))-dt;e.face=toward;
     if(e.act==='wind'){e.at-=dt;e.vx*=Math.pow(.001,dt);e.tele=e.warn=true;if(e.at<=0){const T=1.1,g=PK.spore.grav,ox=e.x+e.face*.3,oy=e.y+1.1;fireProj('spore',ox,oy,clamp((p.x-ox)/T,-11,11),Math.min(20,((p.y+.9-oy)+.5*g*T*T)/T),edmg(e),{hostile:true});SFX.bow();e.act=null;e.cd=rand(2,3);}}
@@ -782,7 +848,7 @@ export function updateEnemies(dt){const p=player;tickFuses(dt);for(let i=enemies
   if(e.y<-4){removeEnemy(e);enemies.splice(i,1);continue;}
   // contact
   if(!p.dead&&!e.dying&&!e.burrow&&!(e.stun>0)&&!bossHeld(e)&&Math.abs(p.x-e.x)<(p.w+e.w)/2&&p.y<e.y+e.h&&p.y+p.h>e.y){
-    const fromAbove=p.vy<0&&p.prevY>=e.y+e.h-.35&&(e.type!=='knight'&&e.type!=='sentinel'&&e.type!=='warden'||hasBadge('spike'));
+    const fromAbove=p.vy<0&&p.prevY>=e.y+e.h-.35&&(e.type!=='knight'&&e.type!=='sentinel'&&e.type!=='warden'&&e.type!=='gazer'&&e.type!=='foreman'&&e.type!=='scribe'||hasBadge('spike'));
     if(fromAbove&&e.hitCD<=0){e.hitCD=.25;const nice=p.jumpAge<.14*niceW();hurtEnemy(e,(nice?20:10)*(hasBadge('stomp')?2:1),p.face,2,nice);p.vy=nice?18:13;p.y=e.y+e.h+.02;SFX.stomp();stat('stomps');if(nice)stat('nices');burst(p.x,p.y,['#fbf8f0','#f1c04f'],8,4);
       if(nice){floatText(e.x,e.y+e.h+.6,'NICE!','nice');SFX.nice();}else{p.stompWin=.14*niceW();p.stompTarget=e;}}
     else if(!fromAbove){const hp0=p.hp;hurtPlayer(edmg(e)*(e.act==='dash'?1.3:1),e.x,e,e.elem||d.elem);if(e.trait==='vampiric'&&p.hp<hp0){const h=Math.round((hp0-p.hp)*1.5);e.hp=Math.min(e.max,e.hp+h);e.hpShow=3;floatText(e.x,e.y+e.h+.3,'+'+h,'weak');burst(e.x,e.y+e.h/2,['#d4483b','#ff9aa8'],8,2,{grav:-2});}}}
@@ -832,6 +898,9 @@ function foeClip(e,dt){const R=e.rig,p=player,a=e.act,mv=Math.abs(e.vx)>.3,look=
   case'levseg':case'levtail':{const b=e.parent||e;e.si??=b.segs?b.segs.indexOf(e):0;rigPlay(R,'swim',{t:(b.t||0)-e.si*.09});break;}
   case'folio':rigPlay(R,a==='wind'?'turn':a==='fire'||a==='rain'?a:'idle');look('iris',9);break;
   case'unfolded':rigPlay(R,a==='wind'||a==='leap'||a==='volley'||a==='shred'||a==='fold'?a:mv&&e.onGround?'walk':'idle',{sp:clamp(Math.abs(e.vx)/2.2,.7,1.4)});if((e.phase||0)>=2)rigSet(R,'head',{sw:'glare',snap:1});break;
+  case'pulper':rigPlay(R,a==='wind'?'wind':a==='shred'||a==='slam'||a==='rain'?'shred':mv?'walk':'idle');rigSet(R,'rollA',{r:e.roll||0,snap:1});rigSet(R,'rollB',{r:-(e.roll||0),snap:1});break;
+  case'nib':rigPlay(R,a==='wind'||a==='splat'?'wind':a==='dive'?'dive':a==='write'||a==='flood'?'write':'idle');break;
+  case'starfold':rigPlay(R,a==='wind'||a==='dive'?'wind':a==='fold'?'fold':a==='shots'||a==='fall'?'shoot':'idle',{sp:(e.phase||0)>=1?1.3:1});rigSet(R,'rays',{r:e.spin||0,snap:1});rigSet(R,'back',{r:-(e.spin||0)*.6,snap:1});break;
   case'bookmoth':rigPlay(R,a==='wind'||a==='dive'||a==='dust'?a:a==='storm'||a==='pages'||a==='phase'||a==='intro'?'wind':'fly',{sp:(e.phase||0)>=1?1.3:1});break;
   case'mainspring':{const ph=e.phase||0,k=a==='wind'||a==='dash'?5:1+ph*.6;e.clk=(e.clk||0)+dt*k;rigPlay(R,a==='chime'?'chime':a==='wind'||a==='dash'?'wind':'idle');
     rigSet(R,'handM',{r:e.clk*2.4,snap:1});rigSet(R,'handH',{r:e.clk*.2+.8,snap:1});rigSet(R,'rim',{r:e.clk*.25,snap:1});look('pupils',4);break;}

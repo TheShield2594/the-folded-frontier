@@ -1,4 +1,4 @@
-// Smoke tests: boot, portraits from the rig, new world, the Hollow Archive, save/load through localStorage, seasonal routes and secrets in the save, the vertical layers and the clocktower, save code round trip, hand-made art overrides.
+// Smoke tests: boot, portraits from the rig, new world, the Hollow Archive, save/load through localStorage, seasonal routes and secrets in the save, the vertical layers and the clocktower, save code round trip, hand-made art loaded from files at boot and applied directly.
 // They check that the game starts and its saves survive, not how it plays. Game state is read
 // through `import('/src/game.js')`, which on the dev server returns the live modules.
 import {test,expect} from '@playwright/test';
@@ -309,6 +309,165 @@ test('new worlds get the Hollow Archive: a seam, a crank and a torn curtain, the
   expect(s.oldClock).toBe(true);
 });
 
+test('new worlds get the Origami Observatory among the sky islands: a fold to the crank, the Stargazer, the Starfold, and a lens for the Star Vaults',async({page})=>{
+  await boot(page);
+  await newSmallWorld(page);
+  const s=await page.evaluate(async()=>{
+    const g=await import('/src/game.js'),d=g.BIO.dun.obs,P=g.player,T=g.T,out={};
+    // template cell (column, row from the top) to world cell; walk through by calling the dungeon code directly
+    const tpl=g.DUNGEONS.obs.rows,G=28,xy=(c,r,o=d)=>[o.x+c,o.y+(tpl.length-1-G)+(G-r)],at=(c,r,o=d)=>{const[x,y]=xy(c,r,o);return g.tiles[y*g.W+x];},
+      put=(c,r)=>{const[x,y]=xy(c,r);P.x=x+.5;P.y=y;P.vx=P.vy=0;P.onGround=true;},cell=()=>[Math.floor(P.x),Math.floor(P.y)],
+      tick=()=>{for(let k=0;k<4;k++){put(...tick.at);g.updateDungeons(.3);}},wait=ms=>new Promise(r=>setTimeout(r,ms));
+    // the whole template came through the rest of world generation, in the sky over the islands
+    const want={'#':T.DOME,Q:T.CREASE,q:T.CREASE,K:T.CRANK,L:T.PEEL,V:T.SCOPE,Y:T.SKYSTONE,U:T.CLOUD,E:T.GATE,G:T.GATE,A:T.GATE,B:T.GATE,r:T.ROPE};
+    const diff=o=>{let n=0;tpl.forEach((row,r)=>[...row].forEach((ch,c)=>{if(want[ch]!=null&&at(c,r,o)!==want[ch])n++;}));return n;};
+    out.diff=diff(d);out.sky=d.y>g.BIO.sky.y;out.lay=g.layerAt(...xy(12,24));
+    g.gateAt(...xy(4,26));out.shut=at(4,26)===T.GATE;g.quests.folio=true;g.gateAt(...xy(4,26));out.door=at(4,26);
+    // the crank is sealed in a vault: only the crease on the hall floor reaches it, and only with the Bone Folder
+    const[qx,qy]=xy(8,27),[ix,iy]=xy(6,22);put(8,27);g.trickAt(T.CREASE,qx,qy);out.foldNoTool=cell().join()===[qx,qy].join();
+    g.addItem('folder',1);g.trickAt(T.CREASE,qx,qy);out.folded=cell().join()===[ix,iy].join();
+    g.crankAt(...xy(9,22));await wait(900);out.gateG=[22,23,24].map(c=>at(c,19));
+    // the vault's own crease folds you back out, tool or not
+    g.removeItem('folder',1);g.trickAt(T.CREASE,ix,iy);out.back=cell().join()===[qx,qy].join();
+    tick.at=[10,18];tick();const mini=g.enemies.find(e=>e.type==='gazer');out.mini=!!mini&&mini.elite;g.hurtEnemy(mini,1e6,1);for(let k=0;k<30;k++)g.updateEnemies(.05);tick();out.gateA=[14,15,16].map(c=>at(c,11));
+    tick.at=[8,10];tick();out.boss=g.boss&&g.boss.type;g.boss.act=null;g.hurtEnemy(g.boss,1e6,1);for(let k=0;k<120;k++)g.updateEnemies(.05);tick();
+    out.quest=!!g.quests.obs;out.B=[14,15,16].map(c=>at(c,0));const[rx,ry]=xy(20,10),rw=g.chests.get(ry*g.W+rx);out.lens=!!rw&&rw.some(i=>i&&i.id==='starlens');
+    // the Star Vaults open only with the lens
+    const v=g.BIO.dun.vaults,v0=v[0];out.vaults=v.length;g.vaultAt(v0[0],v0[1]);out.locked=g.tiles[v0[1]*g.W+v0[0]]===T.STARDOOR;
+    g.addItem('starlens',1);const n0=g.META.stats.vaults||0;g.vaultAt(v0[0],v0[1]+1);g.vaultAt(v0[0],v0[1]);out.once=(g.META.stats.vaults||0)-n0;await wait(600);out.open=[0,1,2].map(k=>g.tiles[(v0[1]+k)*g.W+v0[0]]);
+    g.save();const sv=JSON.parse(localStorage.getItem('folded-frontier-save-v1'));out.st=sv.bio.dun.obs.st;out.saved=sv.bio.dun.vaults[0][2];
+    // a save from before the Observatory gets one on its next load, in empty sky, leaving everything already there alone
+    const old=JSON.parse(JSON.stringify(sv)),was=[d.x,d.y];delete old.bio.dun.obs;delete old.bio.dun.vaults;g.loadWorld(old);const o=g.BIO.dun.obs;
+    out.oldObs=!!o&&diff(o)===0&&(o.x!==was[0]||o.y!==was[1]);out.oldKept=g.tiles[(was[1]+4)*g.W+was[0]+4];out.oldVaults=g.BIO.dun.vaults.length;
+    out.T={AIR:T.AIR,ROPE:T.ROPE,PLATFORM:T.PLATFORM,DOME:T.DOME};return out;
+  });
+  const{AIR,ROPE,PLATFORM,DOME}=s.T;
+  expect(s.diff).toBe(0);
+  expect(s.sky).toBe(true);
+  expect(s.lay).toBe('observatory');
+  expect(s.shut).toBe(true);
+  expect(s.door).toBe(AIR);
+  expect(s.foldNoTool).toBe(true);
+  expect(s.folded).toBe(true);
+  expect(s.gateG).toEqual([PLATFORM,ROPE,PLATFORM]);
+  expect(s.back).toBe(true);
+  expect(s.mini).toBe(true);
+  expect(s.gateA).toEqual([PLATFORM,ROPE,PLATFORM]);
+  expect(s.boss).toBe('starfold');
+  expect(s.quest).toBe(true);
+  expect(s.B).toEqual([AIR,ROPE,AIR]);
+  expect(s.lens).toBe(true);
+  expect(s.vaults).toBe(2);
+  expect(s.locked).toBe(true);
+  expect(s.open).toEqual([AIR,AIR,AIR]);
+  expect(s.once).toBe(1);
+  expect(s.st).toMatchObject({e:1,g:1,m:1,c:1});
+  expect(s.saved).toBe(1);
+  expect(s.oldObs).toBe(true);
+  expect(s.oldKept).toBe(DOME);
+  expect(s.oldVaults).toBeGreaterThan(0);
+});
+
+test('new worlds get the Great Scrapworks: a peel wall, a crank, a shredder pit, the Foreman, the Pulper, and a crowbar for the Supply Crates',async({page})=>{
+  await boot(page);
+  await newSmallWorld(page);
+  const s=await page.evaluate(async()=>{
+    const g=await import('/src/game.js'),d=g.BIO.dun.scrap,P=g.player,T=g.T,out={};
+    const tpl=g.DUNGEONS.scrap.rows,xy=(c,r)=>[d.x+c,d.y+d.h-1-r],at=(c,r)=>{const[x,y]=xy(c,r);return g.tiles[y*g.W+x];},
+      put=(c,r)=>{const[x,y]=xy(c,r);P.x=x+.5;P.y=y;P.vx=P.vy=0;P.onGround=true;},tick=()=>{for(let k=0;k<4;k++){put(...tick.at);g.updateDungeons(.3);}},wait=ms=>new Promise(r=>setTimeout(r,ms));
+    const want={'#':T.SCRAP,Z:T.SHRED,K:T.CRANK,L:T.PEEL,k:T.SKETCH,E:T.GATE,G:T.GATE,A:T.GATE,B:T.GATE,r:T.ROPE};let diff=0;
+    tpl.forEach((row,r)=>[...row].forEach((ch,c)=>{if(want[ch]!=null&&at(c,r)!==want[ch])diff++;}));out.diff=diff;out.lay=g.layerAt(...xy(8,31));
+    g.gateAt(...xy(22,32));out.shut=at(22,32)===T.GATE;g.quests.king=true;g.gateAt(...xy(22,32));out.door=at(22,32);
+    // the shredders bite and throw you up
+    put(9,26);P.onGround=false;P.inv_t=0;const hp=P.hp;g.updateDungeons(.01);out.shred=[P.hp<hp,P.vy>0];P.hp=P.max;
+    g.crankAt(...xy(3,33));await wait(900);out.gateG=[1,2,3].map(c=>at(c,24));
+    tick.at=[8,17];tick();const mini=g.enemies.find(e=>e.type==='foreman');out.mini=!!mini&&mini.elite;g.hurtEnemy(mini,1e6,1);for(let k=0;k<30;k++)g.updateEnemies(.05);tick();out.gateA=[10,11,12].map(c=>at(c,10));
+    tick.at=[6,9];tick();out.boss=g.boss&&g.boss.type;g.boss.act=null;g.hurtEnemy(g.boss,1e6,1);for(let k=0;k<120;k++)g.updateEnemies(.05);tick();
+    out.quest=!!g.quests.scrap;out.B=[10,11,12].map(c=>at(c,2));const[rx,ry]=xy(16,9),rw=g.chests.get(ry*g.W+rx);out.bar=!!rw&&rw.some(i=>i&&i.id==='crowbar');
+    // the Supply Crates open only with the crowbar
+    const c=g.BIO.dun.crates,c0=c[0];out.crates=c.length;g.crateAt(c0[0],c0[1]);out.locked=g.tiles[c0[1]*g.W+c0[0]]===T.CRATE;
+    g.addItem('crowbar',1);const n0=g.META.stats.crates||0;g.crateAt(c0[0],c0[1]+1);g.crateAt(c0[0],c0[1]);out.once=(g.META.stats.crates||0)-n0;await wait(600);out.open=[0,1,2].map(k=>g.tiles[(c0[1]+k)*g.W+c0[0]]);
+    g.save();const sv=JSON.parse(localStorage.getItem('folded-frontier-save-v1'));out.st=sv.bio.dun.scrap.st;out.saved=sv.bio.dun.crates[0][2];
+    // a save from before the Scrapworks loads: it gets one only on untouched ground, and crates only with it
+    const old=JSON.parse(JSON.stringify(sv));delete old.bio.dun.scrap;delete old.bio.dun.crates;g.loadWorld(old);const o=g.BIO.dun.scrap;
+    out.oldOk=o===null?g.BIO.dun.crates===null:!!o.w&&Array.isArray(g.BIO.dun.crates);out.oldClock=!!g.BIO.dun.clock;
+    out.T={AIR:T.AIR,ROPE:T.ROPE,PLATFORM:T.PLATFORM};return out;
+  });
+  const{AIR,ROPE,PLATFORM}=s.T;
+  expect(s.diff).toBe(0);
+  expect(s.lay).toBe('scrapworks');
+  expect(s.shut).toBe(true);
+  expect(s.door).toBe(AIR);
+  expect(s.shred).toEqual([true,true]);
+  expect(s.gateG).toEqual([PLATFORM,ROPE,PLATFORM]);
+  expect(s.mini).toBe(true);
+  expect(s.gateA).toEqual([PLATFORM,ROPE,PLATFORM]);
+  expect(s.boss).toBe('pulper');
+  expect(s.quest).toBe(true);
+  expect(s.B).toEqual([AIR,ROPE,AIR]);
+  expect(s.bar).toBe(true);
+  expect(s.crates).toBeGreaterThanOrEqual(2);
+  expect(s.locked).toBe(true);
+  expect(s.open).toEqual([AIR,AIR,AIR]);
+  expect(s.once).toBe(1);
+  expect(s.st).toMatchObject({e:1,g:1,m:1,c:1});
+  expect(s.saved).toBe(1);
+  expect(s.oldOk).toBe(true);
+  expect(s.oldClock).toBe(true);
+});
+
+test('new worlds get the Sunken Inkwell Temple: an ink shaft, every paper trick, the Scribe, the Grand Nib, and a nib for the Ink Wells',async({page})=>{
+  await boot(page);
+  await newSmallWorld(page);
+  const s=await page.evaluate(async()=>{
+    const g=await import('/src/game.js'),d=g.BIO.dun.temple,P=g.player,T=g.T,out={};
+    const tpl=g.DUNGEONS.temple.rows,xy=(c,r)=>[d.x+c,d.y+d.h-1-r],at=(c,r)=>{const[x,y]=xy(c,r);return g.tiles[y*g.W+x];},cell=()=>[Math.floor(P.x),Math.floor(P.y)].join(),
+      put=(c,r)=>{const[x,y]=xy(c,r);P.x=x+.5;P.y=y;P.vx=P.vy=0;P.onGround=true;},tick=()=>{for(let k=0;k<4;k++){put(...tick.at);g.updateDungeons(.3);}},wait=ms=>new Promise(r=>setTimeout(r,ms));
+    const want={'#':T.SEAL,S:T.SEAM,P:T.RIP,Q:T.CREASE,q:T.CREASE,K:T.CRANK,L:T.PEEL,i:T.INK,E:T.GATE,G:T.GATE,A:T.GATE,B:T.GATE,r:T.ROPE};let diff=0;
+    tpl.forEach((row,r)=>[...row].forEach((ch,c)=>{if(want[ch]!=null&&at(c,r)!==want[ch])diff++;}));out.diff=diff;out.lay=g.layerAt(...xy(12,30));
+    g.gateAt(...xy(0,4));out.shut=at(0,4)===T.GATE;g.quests.unfolded=true;g.gateAt(...xy(0,4));out.door=at(0,4);
+    // tear the seam, fold into the crank's vault and back, sew the curtain
+    put(12,13);g.addItem('ripper',1);g.trickAt(T.SEAM,...xy(15,10));await wait(1100);out.seam=[7,10,13].map(r=>at(15,r));
+    const[qx,qy]=xy(19,13),[ix,iy]=xy(1,10);put(19,13);g.addItem('folder',1);g.trickAt(T.CREASE,qx,qy);out.folded=cell()===[ix,iy].join();
+    g.crankAt(...xy(3,10));await wait(900);out.gateG=[19,20,21].map(c=>at(c,14));g.removeItem('folder',1);g.trickAt(T.CREASE,ix,iy);out.back=cell()===[qx,qy].join();
+    put(16,19);g.addItem('needle',1);g.trickAt(T.RIP,...xy(10,17));await wait(1200);out.curtain=[15,16,19].map(r=>at(10,r));
+    tick.at=[8,27];tick();const mini=g.enemies.find(e=>e.type==='scribe');out.mini=!!mini&&mini.elite;g.hurtEnemy(mini,1e6,1);for(let k=0;k<30;k++)g.updateEnemies(.05);tick();out.gateA=[10,11,12].map(c=>at(c,28));
+    tick.at=[6,38];tick();out.boss=g.boss&&g.boss.type;g.boss.act=null;g.hurtEnemy(g.boss,1e6,1);for(let k=0;k<120;k++)g.updateEnemies(.05);tick();
+    out.quest=!!g.quests.temple;out.B=[36,37,38].map(r=>at(22,r));const[rx,ry]=xy(16,38),rw=g.chests.get(ry*g.W+rx);out.nib=!!rw&&rw.some(i=>i&&i.id==='wellnib');out.blots=g.enemies.filter(e=>e.type==='blot'&&!e.dying).length;
+    // the Ink Wells open only with the Well Nib
+    const w=g.BIO.dun.wells,w0=w[0];out.wells=w.length;g.wellAt(w0[0],w0[1]);out.locked=g.tiles[w0[1]*g.W+w0[0]]===T.WELLDOOR;
+    g.addItem('wellnib',1);g.wellAt(w0[0],w0[1]);await wait(600);out.open=[0,1,2].map(k=>g.tiles[(w0[1]+k)*g.W+w0[0]]);
+    g.save();const sv=JSON.parse(localStorage.getItem('folded-frontier-save-v1'));out.st=sv.bio.dun.temple.st;out.saved=sv.bio.dun.wells[0][2];
+    // a save from before the Temple keeps its terrain: it gets neither the Temple nor the Ink Wells
+    const old=JSON.parse(JSON.stringify(sv));delete old.bio.dun.temple;delete old.bio.dun.wells;g.loadWorld(old);out.oldTemple=g.BIO.dun.temple;out.oldWells=g.BIO.dun.wells;
+    out.T={AIR:T.AIR,ROPE:T.ROPE,PLATFORM:T.PLATFORM,SEWN:T.SEWN};return out;
+  });
+  const{AIR,ROPE,PLATFORM,SEWN}=s.T;
+  expect(s.diff).toBe(0);
+  expect(s.lay).toBe('inkwell');
+  expect(s.shut).toBe(true);
+  expect(s.door).toBe(AIR);
+  expect(s.seam).toEqual([AIR,AIR,AIR]);
+  expect(s.folded).toBe(true);
+  expect(s.gateG).toEqual([PLATFORM,ROPE,PLATFORM]);
+  expect(s.back).toBe(true);
+  expect(s.curtain).toEqual([SEWN,AIR,AIR]);
+  expect(s.mini).toBe(true);
+  expect(s.gateA).toEqual([PLATFORM,PLATFORM,PLATFORM]);
+  expect(s.boss).toBe('nib');
+  expect(s.quest).toBe(true);
+  expect(s.B).toEqual([AIR,AIR,AIR]);
+  expect(s.nib).toBe(true);
+  expect(s.blots).toBe(0);
+  expect(s.wells).toBeGreaterThanOrEqual(2);
+  expect(s.locked).toBe(true);
+  expect(s.open).toEqual([AIR,AIR,AIR]);
+  expect(s.st).toMatchObject({e:1,g:1,m:1,c:1});
+  expect(s.saved).toBe(1);
+  expect(s.oldTemple).toBeNull();
+  expect(s.oldWells).toBeNull();
+});
+
 test('paper tricks: seams tear, torn holes stitch and creases fold, only with their tools, and are saved',async({page})=>{
   await boot(page);
   await newSmallWorld(page);
@@ -442,7 +601,9 @@ test('trading cards: chests and packs give them, a binder files them, a full pag
     out.tab=!!document.querySelector('#tabs [data-tab="binder"]');
     // saved per world; unknown cards are dropped on load, and older saves start with an empty binder
     g.save();const sv=JSON.parse(localStorage.getItem('folded-frontier-save-v1'));out.saved=Object.keys(sv.cards.have).length;
-    sv.cards.have.bogus=2;g.loadWorld(JSON.parse(JSON.stringify(sv)));out.loaded=Object.keys(g.cards.have).length;out.bogus='bogus' in g.cards.have;out.pgKept=g.cards.pg.field;
+    sv.cards.have.bogus=2;const k0=Object.keys(sv.cards.have)[0];g.loadWorld(JSON.parse(JSON.stringify(sv)));out.loaded=Object.keys(g.cards.have).length;out.bogus='bogus' in g.cards.have;out.pgKept=g.cards.pg.field;
+    // a count that isn't a whole number and a page this build doesn't know are dropped too
+    const bad=JSON.parse(JSON.stringify(sv));bad.cards.have[k0]='1';bad.cards.pg.nope=1;g.loadWorld(bad);out.strCount=k0 in g.cards.have;out.badPage='nope' in g.cards.pg;
     delete sv.cards;g.loadWorld(sv);out.old=Object.keys(g.cards.have).length;return out;
   });
   expect(s.treasure).toBe(true);
@@ -461,7 +622,38 @@ test('trading cards: chests and packs give them, a binder files them, a full pag
   expect(s.loaded).toBe(s.saved);
   expect(s.bogus).toBe(false);
   expect(s.pgKept).toBe(1);
+  expect(s.strCount).toBe(false);
+  expect(s.badPage).toBe(false);
   expect(s.old).toBe(0);
+});
+
+// The dev server globs the art from tests/fixtures/art/ (FF_ART_DIR in playwright.config.js), so this covers
+// finding the files, reading their paths and the loadArt() call at boot. A dev server already running on the
+// test port without FF_ART_DIR loads no pictures here.
+test('art files are found and painted in at boot',async({page})=>{
+  const warns=[];page.on('console',m=>{if(m.type()==='warning'&&m.text().startsWith('art:'))warns.push(m.text());});
+  await boot(page);
+  const r=await page.evaluate(async()=>{
+    const g=await import('/src/game.js'),n=await g.artReady;
+    const px=(cv,x,y)=>[...cv.getContext('2d').getImageData(x,y,1,1).data];
+    const cell=k=>{const[x,y]=g.cellXY(k);return px(g.atlas,x+32,y+32);},f=g.SHEETS.stag;
+    return {n,swFe:cell(g.C.swFe),crack:cell(g.C.crack[1]),crack0:cell(g.C.crack[0]),heart:cell(g.C.heart),stag:px(f,f.width/2,f.height/2),
+      loaded:Object.keys(g.artImg.atlas).sort(),sheets:Object.keys(g.artImg.sheets)};
+  });
+  expect(r.n,'pictures applied (is a dev server without FF_ART_DIR running on the test port?)').toBe(4);
+  expect(r.loaded).toEqual(['crack.1','heart','swFe']);
+  expect(r.sheets).toEqual(['stag']);
+  expect(r.swFe).toEqual([255,0,255,255]);
+  expect(r.crack).toEqual([0,255,0,255]);
+  expect(r.crack0).not.toEqual([0,255,0,255]);
+  // heart.png is 32×32: scaled into the cell, with a warning
+  expect(r.heart).toEqual([0,0,255,255]);
+  expect(r.stag).toEqual([0,255,255,255]);
+  // a name with no cell and a folder that isn't atlas/ or sheets/ are skipped with warnings, not errors
+  expect(warns.some(w=>w.includes('no atlas cell "noSuchCell"'))).toBe(true);
+  expect(warns.some(w=>w.includes('atlas/heart is 32×32'))).toBe(true);
+  expect(warns.some(w=>w.includes('ignoring')&&w.includes('misc/stray.png'))).toBe(true);
+  expect(warns).toHaveLength(3);
 });
 
 test('hand-made art replaces the atlas cells and sprite sheets it names',async({page})=>{

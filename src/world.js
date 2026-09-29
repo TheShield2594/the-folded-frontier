@@ -105,7 +105,7 @@ export function generate(sd){
   // wild rare plants: ghost mushrooms in deep caves, sunfruit on the dunes (after the structures, so older seeds keep their layout)
   for(let k=0;k<Math.round(W*.06);k++){const x=Math.floor(4+rng()*(W-8)),y=Math.floor(D1+3+rng()*Math.max(1,surf[x]-D1-33));const i=idx(x,y);if(tiles[i]!==T.AIR||!walls[i])continue;const b=tiles[i-W];if(b===T.STONE||b===T.DIRT){tiles[i]=T.RARE;meta[i]=3*4+2;}}
   for(let x=BIO.desert[0]+3;x<=BIO.desert[1]-3;x++){const s2=surf[x],i=idx(x,s2+1);if(tiles[idx(x,s2)]===T.SAND&&tiles[i]===T.AIR&&rng()<.04){tiles[i]=T.RARE;meta[i]=2*4+2;}}
-  planDungeons(sd,true);planSky(sd);
+  planDungeons(sd,true);planSky(sd);planDungeons(sd,true);
   const L=surf[SPAWNX],x0=SPAWNX+2;
   for(let x=x0-2;x<=x0+13;x++)for(let y=L+1;y<=L+10;y++){const i=idx(x,y);tiles[i]=T.AIR;walls[i]=0;}
   for(let x=x0-2;x<=x0+13;x++){tiles[idx(x,L)]=(x>=x0&&x<=x0+11)?T.PLANK:T.GRASS;for(let y=L-1;y>L-4;y--)if(tiles[idx(x,y)]===T.AIR)tiles[idx(x,y)]=T.DIRT;}

@@ -67,7 +67,9 @@ export function stitchRip(x,y){if(!countItem('needle')){toast('The page is torn 
   SFX.nice();toast('Stitch by stitch, the tear closes into a paper bridge.','gold');stat('stitches');guideEv('stitch');}
 // ---- fold: the Bone Folder folds the page so the two creases meet, and you step out of the other one. The vault's own
 // crease always folds you back out, tool or not, so leaving the folder in the vault's chest can't shut you in.
-export function foldAt(x,y){const f=BIO.trick&&BIO.trick.fold.find(f=>f[0]===x&&f[1]===y||f[2]===x&&f[3]===y);if(!f)return;const out=f[0]===x&&f[1]===y;
+// (a dungeon's crease pairs are in its BIO.dun entry: the Origami Observatory's vault works the same way)
+export function foldAt(x,y){const all=(BIO.trick?BIO.trick.fold:[]).concat(...Object.values(BIO.dun||{}).map(o=>o&&o.fold||[]));
+  const f=all.find(f=>f[0]===x&&f[1]===y||f[2]===x&&f[3]===y);if(!f)return;const out=f[0]===x&&f[1]===y;
   if(out&&!countItem('folder')){toast('A crease runs down the page here, as if it was once folded shut. A bone folder could fold it again.');SFX.rustle(.15,.4);return;}
   const p=player,[tx,ty]=f[0]===x&&f[1]===y?[f[2],f[3]]:[f[0],f[1]],cols=['#e9dcc0','#fbf8f0','#b06ad0'];burst(p.x,p.y+1,cols,24,5,{grav:0});
   p.x=tx+.5;p.y=ty;p.vx=p.vy=0;hook.state=0;camT.x=p.x;camT.y=p.y+1;burst(p.x,p.y+1,cols,24,5,{grav:0});if(!reduceMotion())popUp();SFX.peel();shake(.2);
