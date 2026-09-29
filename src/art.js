@@ -1,6 +1,6 @@
 // Hand-made art: images in assets/art/ replace the procedural atlas cells and sprite sheets they name.
 // Anything without a file keeps its drawn art, so the folder can fill up one picture at a time (docs/ART.md).
-import {A,atlas,atlasTex,bestCache,buildNormals,C,cellXY,clearIcons,facePic,FOERIG,FOLK,mk,ORES,paintCards,PORDER,portraitCache,RIGART,RIGS,rigPic,rigSkin,SET,setInvDirty,setRigArt,SHEETS} from './game.js';
+import {A,atlas,atlasTex,bestCache,buildNormals,C,cellXY,clearIcons,facePic,FOERIG,FOLK,HL,mk,ORES,paintCards,PORDER,portraitCache,RIGART,RIGS,rigPic,rigSkin,SET,setInvDirty,setRigArt,SHEETS} from './game.js';
 
 // ================= art =================
 // assets/art/atlas/<C name>.png  a 64×64 atlas cell (C.swFe → swFe.png; an array cell such as C.crack[1] → crack.1.png)
@@ -29,8 +29,8 @@ function paintSheet(k,img){const s=SHEETS[k];if(!s||!s.getContext){console.warn(
 export function paintArt(){let n=0;for(const k in artImg.atlas)n+=paintCell(k,artImg.atlas[k]);if(n)atlasTex.needsUpdate=true;return n;}
 // puts one picture in place (the loader, and the tests with a canvas); kind is 'atlas' or 'sheets'.
 // refresh=false leaves the normal map and caches to the caller (loadArt refreshes once after the batch)
-function rigPart(k){const m=k.match(/^([a-z_0-9]+)(?:@([\w-]+))?\.([A-Za-z0-9]+)(?:\.([\w-]+))?$/),d=m&&RIGS[m[1]],p=d&&d.parts[d.pi[m[3]]];
-  if(!p||!p.paint||!p.v.includes(m[4]||'')){console.warn(`art: no rig part "${k}"`);return false;}return true;}
+function rigPart(k){if(k.startsWith('L.')){const[,l,pt]=k.split('.');if(HL[l]&&pt)return true;console.warn(`art: no human layer "${k}"`);return false;}const m=k.match(/^([a-z_0-9]+)(?:@([\w-]+))?\.([A-Za-z0-9+]+)(?:\.([\w-]+))?$/),d=m&&RIGS[m[1]],ps=m?m[3].split('+'):[];
+  if(!d||ps.some((n,i)=>{const p=d.parts[d.pi[n]];return i&&n==='all'?ps.length>2:!p||(!p.paint&&!(i===0&&ps.length>1))||(!i&&!p.v.includes(m[4]||''));})){console.warn(`art: no rig part "${k}"`);return false;}return true;}
 export function applyArt(kind,k,img,refresh=true){const ok=kind==='atlas'?paintCell(k,img):kind==='sheets'?paintSheet(k,img):kind==='rigs'&&rigPart(k);if(!ok)return false;
   if(kind==='rigs'){RIGART[k]=img;if(refresh)rigRefresh();return true;}
   artImg[kind][k]=img;if(kind==='atlas')atlasTex.needsUpdate=true;if(refresh)artRefresh(kind==='atlas');return true;}

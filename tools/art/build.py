@@ -282,17 +282,19 @@ def icon_cells(img, rows, cols, cells, native=False, out='assets/art/atlas', ope
         im, _ = fit(im, 124, 124); t = Image.new('RGBA', (128, 128), (0, 0, 0, 0)); t.alpha_composite(im, (64 - im.width // 2, 128 - im.height if cell in floor else 64 - im.height // 2))
         t.resize((64, 64), Image.LANCZOS).save(os.path.join(out, cell + '.png'), optimize=True)
 
-def rig_parts(img, rows, cols, parts, out='assets/art/rigs', open_cells=(), thr=16, loose=False):
+def rig_parts(img, rows, cols, parts, out='assets/art/rigs', open_cells=(), thr=16, loose=False, keep=False):
     """Rig part sheet to assets/art/rigs/<name>.webp. parts = [(name, (w, h))...] in reading order, w x h the part's drawn
     size from artList().rigs (design px, 60 per tile). Each sticker gets the house ink line and no cream edge (the rig
     adds its own) and is saved at 2x that size; the game stretches it over the drawn part's bounds, so the render
     should already have about the drawn part's proportions (a big mismatch is reported). loose: the pieces don't keep to
-    the grid cells, so each row's cols pieces are found as blobs, left to right (row_stickers)."""
+    the grid cells, so each row's cols pieces are found as blobs, left to right (row_stickers). keep: keep the render's
+    proportions at the part's height (merged pieces, <part>+<part>..., which the game fits by height alone)."""
     n = len(parts); items = row_stickers(img, rows, [min(cols, n - r * cols) for r in range(rows)], thr) if loose else stickers(img, rows, cols, [n for n, _ in parts], open_cells, thr); os.makedirs(out, exist_ok=True)
     for (name, (w, h)), im in zip(parts, items):
         im, _ = restyle(im, im.width / (w / 60), border=False); a = np.asarray(im)[..., 3] > 8
         ys, xs = np.where(a); im = im.crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
-        if abs(math.log(im.width / im.height / (w / h))) > .12: print(f'{name}: render is {im.width}x{im.height}, the part is {w}x{h}; it will be stretched')
+        if keep: w = round(im.width / im.height * h)
+        elif abs(math.log(im.width / im.height / (w / h))) > .12: print(f'{name}: render is {im.width}x{im.height}, the part is {w}x{h}; it will be stretched')
         im.resize((w * 2, h * 2), Image.LANCZOS).save(os.path.join(out, name + '.webp'), 'WEBP', quality=90, method=6)  # a quarter of the PNG's size
 
 if __name__ == '__main__':

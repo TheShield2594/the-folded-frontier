@@ -668,13 +668,13 @@ export function updateEnemies(dt){const p=player;tickFuses(dt);for(let i=enemies
       else{const sp=e.type==='sentinel'?3.4:e.type==='warden'?3.1:e.type==='gazer'?3.2:e.type==='foreman'?3:e.type==='scribe'?3.3:kn?2.9:2.3;const dir=(night||kn||dist<10)?toward:-toward;e.face=dir;e.vx+=(dir*sp-e.vx)*Math.min(1,dt*4);if(e.hitWall&&e.onGround)e.vy=13;
         if(kn&&e.cd<=0&&e.onGround&&Math.abs(dx)<7&&Math.abs(dy)<2.5&&!p.dead){e.act='wind';e.at=.5;e.face=toward;}
         // the Stack Warden flings pages from its ledger when you keep your distance
-        else if(e.type==='warden'&&e.cd<=0&&dist>=7&&dist<16&&!p.dead){const l=dist||1;for(const a of[-.18,0,.18]){const c=Math.cos(a),s=Math.sin(a);fireProj('page',e.x,e.y+1.3,(dx*c-dy*s)/l*10,(dx*s+dy*c)/l*10,edmg(e)*.7,{hostile:true});}SFX.swing();e.cd=rand(1.8,2.6);}
+        else if(e.type==='warden'&&e.cd<=0&&dist>=7&&dist<16&&!p.dead){const l=dist||1;for(const a of[-.18,0,.18]){const c=Math.cos(a),s=Math.sin(a);fireProj('page',e.x,e.y+1.3,(dx*c-dy*s)/l*10,(dx*s+dy*c)/l*10,edmg(e)*.7,{hostile:true});}SFX.swing();e.cd=rand(1.8,2.6);e.throwT=.36;}
         // the Stargazer throws a fan of stars from its astrolabe, or calls one down on you
         else if(e.type==='gazer'&&e.cd<=0&&dist>=6&&dist<18&&!p.dead){const l=dist||1;if(Math.random()<.35){fireProj('starshot',p.x+rand(-1,1),p.y+9,0,-9,edmg(e)*.8,{hostile:true});tone(880,440,.3,'sine',.05);}
-          else for(const a of[-.22,0,.22]){const c=Math.cos(a),s=Math.sin(a);fireProj('starshot',e.x,e.y+1.3,(dx*c-dy*s)/l*10,(dx*s+dy*c)/l*10,edmg(e)*.7,{hostile:true});}SFX.swing();e.cd=rand(1.7,2.4);}
+          else for(const a of[-.22,0,.22]){const c=Math.cos(a),s=Math.sin(a);fireProj('starshot',e.x,e.y+1.3,(dx*c-dy*s)/l*10,(dx*s+dy*c)/l*10,edmg(e)*.7,{hostile:true});}SFX.swing();e.cd=rand(1.7,2.4);e.throwT=.36;}
         // the Scrap Foreman throws a gear at you; the Drowned Scribe flicks a fan of ink from its quill
-        else if(e.type==='foreman'&&e.cd<=0&&dist>=5&&dist<15&&!p.dead){const l=dist||1;fireProj('gear',e.x,e.y+1.3,dx/l*9,dy/l*9,edmg(e)*.7,{hostile:true});SFX.swing();e.cd=rand(1.6,2.4);}
-        else if(e.type==='scribe'&&e.cd<=0&&dist>=6&&dist<17&&!p.dead){const l=dist||1;for(const a of[-.25,0,.25]){const c=Math.cos(a),s=Math.sin(a);fireProj('inkglob',e.x,e.y+1.3,(dx*c-dy*s)/l*10,(dx*s+dy*c)/l*10+3,edmg(e)*.7,{hostile:true});}SFX.swing();e.cd=rand(1.5,2.2);}}
+        else if(e.type==='foreman'&&e.cd<=0&&dist>=5&&dist<15&&!p.dead){const l=dist||1;fireProj('gear',e.x,e.y+1.3,dx/l*9,dy/l*9,edmg(e)*.7,{hostile:true});SFX.swing();e.cd=rand(1.6,2.4);e.throwT=.36;}
+        else if(e.type==='scribe'&&e.cd<=0&&dist>=6&&dist<17&&!p.dead){const l=dist||1;for(const a of[-.25,0,.25]){const c=Math.cos(a),s=Math.sin(a);fireProj('inkglob',e.x,e.y+1.3,(dx*c-dy*s)/l*10,(dx*s+dy*c)/l*10+3,edmg(e)*.7,{hostile:true});}SFX.swing();e.cd=rand(1.5,2.2);e.throwT=.36;}}
       if(!night&&e.type==='zombie'&&dist>35){removeEnemy(e);enemies.splice(i,1);continue;}}
   else if(e.type==='eye'){e.cd=(e.cd??rand(1.5,3))-dt;
       if(e.act==='wind'){e.at-=dt;e.vx*=Math.pow(.02,dt);e.vy*=Math.pow(.02,dt);e.tele=e.warn=true;e.face=toward;if(e.at<=0){e.act='dash';e.at=.55;const l=dist||1;e.vx=dx/l*13;e.vy=dy/l*13;SFX.swing();}}
@@ -878,7 +878,9 @@ export function updateEnemies(dt){const p=player;tickFuses(dt);for(let i=enemies
 // and snowballs crouch before a hop, fliers flap, beetles lift their shells, eyes follow you, and bosses pose for each attack
 function foeClip(e,dt){const R=e.rig,p=player,a=e.act,mv=Math.abs(e.vx)>.3,look=(pt,k,y=0)=>{const dx=p.x-e.x,dy=p.y+1-(e.y+e.h/2),l=Math.hypot(dx,dy)||1;rigSet(R,pt,{x:dx/l*k*e.face,y:-dy/l*k+y});};
   switch(R.k){
-  case'human':{const H=HUMANFOE[e.type]||{};rigPlay(R,mv?H.clip||'march':'idle',{sp:clamp(Math.abs(e.vx)/2.2,.6,1.8)});
+  case'human':{const H=HUMANFOE[e.type]||{};e.throwT=Math.max(0,(e.throwT||0)-dt);
+    if(R.S.whole){rigPlay(R,e.flash>0||e.stun>0?'phurt':a==='wind'||a==='dash'||a==='rest'?'p'+a:e.throwT>0?'pthrow':mv?'pwalk':'pidle',{sp:mv&&!a?clamp(Math.abs(e.vx)/2.6,.7,1.6):1});break;}
+    rigPlay(R,mv?H.clip||'march':'idle',{sp:clamp(Math.abs(e.vx)/2.2,.6,1.8)});
     if(H.arm!=null)rigSet(R,'armA',{r:H.arm});if(e.type==='zombie'&&!mv){rigSet(R,'armA',{r:-1.45});rigSet(R,'armB',{r:-1.3});}if(e.flash>0||e.stun>0)rigSet(R,'head',{sw:'hurt',snap:1});break;}
   case'slime':case'king':case'snowroll':case'snowlet':rigPlay(R,e.onGround&&e.timer<.25?'crouch':e.onGround?'idle':'air');break;
   case'crumple':rigPlay(R,'idle',{sp:1+Math.min(3,Math.abs(e.vx)/2.5)});break;

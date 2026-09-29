@@ -1,7 +1,7 @@
 // Paper cutout rig: characters as paper pieces pinned at joints, posed by keyframed clips (issue #98).
 import * as THREE from 'three';
 import {
-  canvasTex,circ,fi,grain,HL,ink,INK,LIMB,mk,poly,POSES,PF,reduceMotion,rr,scene,
+  canvasTex,circ,fi,grain,HL,ink,INK,LIMB,mk,poly,POSES,PF,reduceMotion,rr,scene,sh,
 } from './game.js';
 
 // ================= rig =================
@@ -46,6 +46,9 @@ const PAD=10,BORDER=3,skins=new Map(),RF={willReadFrequently:true};
 // A picture is fitted to the bounds the drawn part covers, so the pivot and joints stay put; setRigArt() re-bakes every skin.
 export const RIGART={};let rigGen=0;
 export function setRigArt(){skins.clear();return++rigGen;}
+// the merged pieces a skin uses: {part: [joined parts]} from the art names, the skin key's own first
+function rigMerge(k,key){const out={};for(const pre of key!=null?[k+'@'+key+'.',k+'.']:[k+'.']){for(const n in RIGART){if(!n.startsWith(pre))continue;const ps=n.slice(pre.length).split('.')[0].split('+');
+  if(ps.length>1&&!out[ps[0]])out[ps[0]]=ps.slice(1);}if(Object.keys(out).length)break;}return out;}
 const rigArtFor=(k,key,n,v)=>{const t=n+(v?'.'+v:'');return(key!=null&&RIGART[k+'@'+key+'.'+t])||RIGART[k+'.'+t];};
 // a cut-out piece: w x h of src (drawn at dw x dh) with paper grain and the cream paper edge, PAD px of margin all round
 function paperPiece(src,sx,sy,w,h,dw=w,dh=h){const cw=dw+PAD*2,chh=dh+PAD*2,tmp=mk(cw,chh),t=tmp.getContext('2d',RF);t.drawImage(src,sx,sy,w,h,PAD,PAD,dw,dh);grain(t,0,0,cw,chh,12);
@@ -53,11 +56,18 @@ function paperPiece(src,sx,sy,w,h,dw=w,dh=h){const cw=dw+PAD*2,chh=dh+PAD*2,tmp=
   const out=mk(cw,chh),o=out.getContext('2d');for(let i=0;i<16;i++){const an=i/16*Math.PI*2;o.drawImage(sil,Math.cos(an)*BORDER,Math.sin(an)*BORDER);}o.drawImage(tmp,0,0);return out;}
 export function rigSkin(k,skin,key){const ck=key!=null?k+':'+key:null;if(ck&&skins.has(ck))return skins.get(ck);
   const d=RIGS[k],M=Math.ceil(Math.max(d.w,d.h)*.3),W=d.w+M*2,H=d.h+M*2,pieces=[];
-  for(const p of d.parts){if(p.slot){const[a,b,c,e]=p.slot;pieces.push({p:p.i,v:'',slot:1,x0:M+p.at[0]+a,y0:M+p.at[1]+b,w:c-a,h:e-b});continue;}if(!p.paint)continue;for(const v of p.v){const c=mk(W,H),t=c.getContext('2d',RF);t.translate(M,M);
-    if(p.clip){t.beginPath();t.rect(p.clip[0],p.clip[1],p.clip[2]-p.clip[0],p.clip[3]-p.clip[1]);t.clip();}if(p.loc)t.translate(p.at[0],p.at[1]);
-    t.lineJoin='round';t.lineCap='round';p.paint(t,skin,v);
+  // merged art (<rig>[@key].<part>+<part>...): one painted piece covers the first part and the ones joined to it (a body
+  // painted with its arms or wings on; <part>+all joins every other part, root+all is a whole cut-out moved by its root),
+  // as tall as all their drawn bounds together; the joined parts stop drawing
+  const mg=rigMerge(k,key),mn={};for(const n in mg){mn[n]=[n,...mg[n]].join('+');if(mg[n][0]==='all')mg[n]=d.parts.filter(q=>q.n!==n).map(q=>q.n);}const gone=new Set(Object.values(mg).flat());
+  const draw=(t,p,v)=>{t.save();if(p.clip){t.beginPath();t.rect(p.clip[0],p.clip[1],p.clip[2]-p.clip[0],p.clip[3]-p.clip[1]);t.clip();}if(p.loc)t.translate(p.at[0],p.at[1]);
+    t.lineJoin='round';t.lineCap='round';p.paint(t,skin,v);t.restore();};
+  for(const p of d.parts){if(gone.has(p.n))continue;if(p.slot){const[a,b,c,e]=p.slot;pieces.push({p:p.i,v:'',slot:1,x0:M+p.at[0]+a,y0:M+p.at[1]+b,w:c-a,h:e-b});continue;}if(!p.paint&&!mg[p.n])continue;for(const v of p.v){const c=mk(W,H),t=c.getContext('2d',RF);t.translate(M,M);
+    if(p.paint)draw(t,p,v);if(mg[p.n])for(const n of mg[p.n]){const q=d.parts[d.pi[n]];if(q.paint)draw(t,q,'');}
     const a=t.getImageData(0,0,W,H).data;let x0=W,y0=H,x1=-1,y1=-1;for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(a[(y*W+x)*4+3]>8){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
-    if(x1<0)continue;const art=rigArtFor(k,key,p.n,v);let pc=c;if(art){pc=mk(W,H);pc.getContext('2d').drawImage(art,x0,y0,x1-x0+1,y1-y0+1);}
+    if(x1<0)continue;const art=rigArtFor(k,key,mn[p.n]||p.n,v);let pc=c;
+    if(art&&mg[p.n]){const w=Math.min(W-2,Math.round(art.width/art.height*(y1-y0+1)));x0=Math.max(0,Math.round((x0+x1-w)/2));x1=Math.min(W-1,x0+w-1);}
+    if(art){pc=mk(W,H);pc.getContext('2d').drawImage(art,x0,y0,x1-x0+1,y1-y0+1);}
     pieces.push({p:p.i,v,c:pc,x0,y0,w:x1-x0+1,h:y1-y0+1});}}
   // shelf packing, tallest first
   const AW=Math.max(256,...pieces.map(q=>q.w+PAD*2));let x=0,y=0,row=0;
@@ -69,7 +79,7 @@ export function rigSkin(k,skin,key){const ck=key!=null?k+':'+key:null;if(ck&&ski
     // the design rect this cell covers at rest (pivot-relative), and its uv rect
     const dx=q.x0-M-PAD,dy=q.y0-M-PAD,P=d.parts[q.p];
     cells[q.p][q.v]={l:[dx-P.at[0],dy-P.at[1],dx+cw-P.at[0],dy+chh-P.at[1]],uv:[q.ax/AW,1-(q.ay+chh)/AH,(q.ax+cw)/AW,1-q.ay/AH],ax:q.ax,ay:q.ay,w:cw,h:chh,iw:q.w,ih:q.h};}
-  const S={img,cells,tex:canvasTex(img),key:ck,gen:rigGen};if(ck)skins.set(ck,S);return S;}
+  const S={img,cells,tex:canvasTex(img),key:ck,gen:rigGen,whole:!!mg[d.parts[0].n]};if(ck)skins.set(ck,S);return S;}
 
 // ---- clips
 function chan(K,t,len,loop){if(loop&&len>0){t%=len;if(t<0)t+=len;}if(t<=K[0][0])return K[0][1];
@@ -177,15 +187,30 @@ export function rigPic(k,skin,clip,t=0,key,set){const d=RIGS[k],own=!skin?.cells
   const P=d.parts,M=R.M;for(const i of d.topo){const p=P[i],L=R.last[i],j=p.pa;let px=p.at[0]+L.x,py=p.at[1]+L.y;if(j>=0){px-=P[j].at[0];py-=P[j].at[1];}
     const c=Math.cos(L.r),s=Math.sin(L.r),la=c*L.sx,lb=s*L.sx,lc=-s*L.sy,ld=c*L.sy,o=i*6;
     if(j<0){M.set([la,lb,lc,ld,px,py],o);}else{const q=j*6,A=M[q],B=M[q+1],C=M[q+2],D=M[q+3];M.set([A*la+C*lb,B*la+D*lb,A*lc+C*ld,B*lc+D*ld,A*px+C*py+M[q+4],B*px+D*py+M[q+5]],o);}}
-  const c=mk(d.w,d.h),t2=c.getContext('2d');for(let i=0;i<P.length;i++){if(P[i].slot)continue;const cs=S.cells[i],sw=R.last[i].sw,cell=sw!=='-'&&cs&&(cs[sw]||cs['']);if(!cell)continue;const o=i*6;
-    t2.setTransform(M[o],M[o+1],M[o+2],M[o+3],M[o+4],M[o+5]);t2.drawImage(S.img,cell.ax,cell.ay,cell.w,cell.h,cell.l[0],cell.l[1],cell.w,cell.h);}if(own)S.tex.dispose();return c;}
+  // a whole painted cut-out can be wider or taller than the rig's frame: the picture grows to fit it
+  const wc=S.whole&&S.cells[0][''],pad=wc?Math.ceil(Math.max(0,-(P[0].at[0]+wc.l[0]),P[0].at[0]+wc.l[2]-d.w,-(P[0].at[1]+wc.l[1]))):0;
+  const c=mk(d.w+pad*2,d.h+pad),t2=c.getContext('2d');for(let i=0;i<P.length;i++){if(P[i].slot)continue;const cs=S.cells[i],sw=R.last[i].sw,cell=sw!=='-'&&cs&&(cs[sw]||cs['']);if(!cell)continue;const o=i*6;
+    t2.setTransform(M[o],M[o+1],M[o+2],M[o+3],M[o+4]+pad,M[o+5]+pad);t2.drawImage(S.img,cell.ax,cell.ay,cell.w,cell.h,cell.l[0],cell.l[1],cell.w,cell.h);}if(own)S.tex.dispose();return c;}
 
 // ================= human rig =================
 // The player, townsfolk and human-shaped foes. Each part bakes the human layers (render.js HL) that belong to it, in
 // the order its hl() lists give; limbs are drawn around their joint. `extra` accessories split at the neck: above it they ride the
 // head, below it the body. The head swaps between expressions: blink, happy, hurt and ko in play, and the dialogue
 // portraits' surprised, sad and angry, which add brows (facePic in render.js).
-const hl=(...L)=>(t,o)=>{for(const[p,l]of L)HL[l](t,p,o,LIMB[p]?LIMB[p][2]:1);};
+const hl=(...L)=>(t,o)=>{for(const[p,l]of L){const k=LIMB[p]?LIMB[p][2]:1;if(!hlArt(t,p,l,o,k))HL[l](t,p,o,k);}};
+// painted layers (art.js, assets/art/rigs/L.<layer>.<part>[.<style>]): a light greyscale picture that replaces one layer's
+// drawing on one human part, fitted to the bounds that drawing covers and tinted (multiply) with the look's colour for the
+// layer, so every hair, shirt, skin and armour colour and any mix of them still comes from one picture per shape
+const LSTY={face:o=>o.blink?'blink':o.face||'',hair:o=>o.hairS||'short',hat:o=>o.hatS,cape:(o,p)=>p==='neck'&&o.cape?'short':''};
+const LCOL={body:o=>o.skin,hair:o=>o.hair,hat:o=>o.hatS==='straw'?null:o.hat,shirt:o=>o.tunic,pants:o=>o.pants,boots:o=>o.boots,
+  cape:(o,p)=>p==='back'?o.cape&&sh(o.cape,.8):o.scarf,armor:(o,p)=>p==='head'?o.helm:p==='torso'||p[0]==='a'?o.mail:o.greaves};
+function hlArt(t,p,l,o,k){const st=LSTY[l]?LSTY[l](o,p):'',art=RIGART['L.'+l+'.'+p+(st?'.'+st:'')];if(!art)return false;
+  const c=t.canvas,W=c.width,H=c.height,u=mk(W,H).getContext('2d',RF);u.setTransform(t.getTransform());u.lineJoin='round';u.lineCap='round';HL[l](u,p,o,k);
+  const a=u.getImageData(0,0,W,H).data;let x0=W,y0=H,x1=-1,y1=-1;for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(a[(y*W+x)*4+3]>8){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
+  if(x1<0)return true;let col=LCOL[l]&&LCOL[l](o,p);if(col&&k<1)col=sh(col,k);
+  const w=x1-x0+1,h=y1-y0+1,pc=mk(w,h),q=pc.getContext('2d');q.drawImage(art,0,0,w,h);
+  if(col){q.globalCompositeOperation='multiply';q.fillStyle=col;q.fillRect(0,0,w,h);q.globalCompositeOperation='destination-in';q.drawImage(art,0,0,w,h);}
+  t.save();t.setTransform(1,0,0,1,0,0);t.drawImage(pc,x0,y0);t.restore();return true;}
 const BROW={surprised:1,sad:1,angry:1};
 const headV=(t,o,v)=>hl(['head','body'],['head','hair'],['head','armor'],['head','face'],['head','hat'])(t,v?Object.assign({},o,v==='blink'?{blink:1}:{face:v,brow:BROW[v]}):o);
 defRig('human',{w:96,h:144,parts:[
@@ -224,6 +249,12 @@ HC.reel=loopClip(.17,[[0,poseCh(POSES[PF.reel0])],[.085,poseCh(POSES[PF.reel1])]
 // townsfolk and foes: a slower amble, and the shamble of the paper undead (arms out, stiff)
 HC.amble=loopClip(.8,[[0,poseCh({legA:.4,legB:-.4,armA:-.3,armB:.1,bob:-1})],[.2,poseCh({legA:.03,legB:-.03,armA:.1,armB:.1})],[.4,poseCh({legA:-.4,legB:.4,armA:.25,armB:-.2,bob:-1})],[.6,poseCh({legA:.03,legB:-.03,armA:.1,armB:.1})]],'io',.15);
 HC.shamble=loopClip(.8,[[0,poseCh({legA:-.3,legB:.3,armA:-1.45,armB:-1.3,lean:.04})],[.4,poseCh({legA:.4,legB:-.4,armA:-1.35,armB:-1.4,bob:1,lean:.08})]],'io',.15);
+// a whole painted cut-out (human@<foe>.root+all) moves as one piece from its feet: breathe, waddle, wind up, charge, throw, flinch
+HC.pidle=loopClip(2.4,[[0,{root:{sy:1,sx:1}}],[1.2,{root:{sy:1.025,sx:.985}}]],'io',.15);
+HC.pwalk=loopClip(.5,[[0,{root:{r:-.07,y:0,sy:.97,sx:1.02}}],[.125,{root:{r:0,y:-4,sy:1.03,sx:.98}}],[.25,{root:{r:.07,y:0,sy:.97,sx:1.02}}],[.375,{root:{r:0,y:-4,sy:1.03,sx:.98}}]],'io',.12);
+HC.pwind=still({root:{r:-.2,x:-4,sy:.9,sx:1.06}},.12);HC.pdash=still({root:{r:.24,x:5,sy:.95,sx:1.06}},.06);HC.prest=still({root:{r:.06,sy:.98}},.15);
+HC.pthrow=loopClip(.36,[[0,{root:{r:-.22,sy:.93}}],[.12,{root:{r:.26,sy:1.05,x:3}}],[.3,{root:{r:0,sy:1,x:0}}]],'io',.05);HC.pthrow.loop=0;
+HC.phurt=still({root:{r:-.16,x:-3,sx:.94,sy:1.04}},.04);
 HC.march=loopClip(.8,[[0,poseCh({legA:-.3,legB:.3,armA:-.4,armB:.2})],[.4,poseCh({legA:.35,legB:-.35,armA:-.4,armB:.2,bob:1})]],'io',.15);
 
 // ================= creature rigs =================
@@ -249,7 +280,7 @@ function batRig(k){const wing=(side)=>(t,s)=>{t.beginPath();t.moveTo(48,32);t.qu
     {n:'body',at:[48,36],up:'root',paint:(t,s)=>{t.beginPath();t.ellipse(48,36,11,13,0,0,6.28);fi(t,s.c1);poly(t,[40,26,43,14,47,25]);fi(t,s.c1,2);poly(t,[49,25,53,14,56,26]);fi(t,s.c1,2);
       circ(t,44,34,2.3);t.fillStyle=s.eye;t.fill();circ(t,52,34,2.3);t.fill();if(s.fang){poly(t,[45,42,47,46,49,42]);t.fillStyle='#fff';t.fill();}}},
     {n:'wingA',at:[50,34],up:'root',paint:wing(1),wob:0}],
-    clips:{fly:loopClip(.25,[[0,{wingA:{r:-.5},wingB:{r:.5},body:{y:-2}}],[.125,{wingA:{r:.45},wingB:{r:-.45},body:{y:1}}]],'io',.05)}});}
+    clips:{fly:loopClip(.25,[[0,{wingA:{r:-.5},wingB:{r:.5},body:{y:-2,sy:1.05,sx:.97}}],[.125,{wingA:{r:.45},wingB:{r:-.45},body:{y:1,sy:.93,sx:1.03}}]],'io',.05)}});}
 batRig('bat');
 // The floating eye: tentacles that wave, the eyeball, and an iris that looks at you (rigSet 'iris')
 defRig('eye',{w:96,h:96,oy:48,parts:[{n:'root',at:[52,48]},
