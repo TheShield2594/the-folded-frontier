@@ -226,24 +226,30 @@ def icons(img, name, rows, cols, ids):
         out.alpha_composite(im, (i * 128 + 64 - im.width // 2, 64 - im.height // 2))
     out.save(f'assets/icons_{name}.webp', quality=92, method=6)
 
-def icon_cells(img, rows, cols, cells, native=False, out='assets/art/atlas', open_cells=(), thr=16, floor=()):
-    """Icon sheet (rows x cols, reading order) to one 64x64 assets/art/atlas/<cell>.png per C name, for docs/ART.md's
-    pipeline. Each item is its whole paper sticker (so pale fills close even where the render left no ink), restyled to
-    the house outline unless native (keep the render's own outline, for things like bow strings), and fitted to the cell.
-    open_cells keep their big holes open (a cord loop); a higher thr leaves soft glows out of the sticker; floor cells
-    (furniture, which is also the placed tile) stand on the bottom of the cell instead of floating in its middle."""
+def stickers(img, rows, cols, names, open_cells=(), thr=16):
+    """The paper sticker in each grid cell (rows x cols, reading order), one per name, as RGBA crops of the render.
+    Each is the whole sticker (so pale fills close even where the render left no ink). open_cells keep their big holes
+    open (a cord loop); a higher thr leaves soft glows out of the sticker."""
     a = np.asarray(img.convert('RGB')).astype(int); H, W = a.shape[:2]
     items = []
-    for i in range(len(cells)):
+    for i in range(len(names)):
         r, c = divmod(i, cols); y0, y1, x0, x1 = int(r * H / rows), int((r + 1) * H / rows), int(c * W / cols), int((c + 1) * W / cols)
         q = a[y0:y1, x0:x1]; bg = np.median(np.concatenate([q[3], q[-4], q[:, 3], q[:, -4]]), axis=0)  # per cell: some renders shade each cell's panel
         f = np.zeros(a.shape[:2], bool); f[y0:y1, x0:x1] = np.abs(q - bg).max(axis=2) >= thr
         fl, fn = ndimage.label(f); fs = ndimage.sum(f, fl, range(1, fn + 1))
         m = np.isin(fl, [k + 1 for k in range(fn) if fs[k] > max(2000, .05 * fs.max())]); mask = ndimage.binary_fill_holes(m)
-        if cells[i] in open_cells:  # a real opening (a cord's loop): fill only the small holes
+        if names[i] in open_cells:  # a real opening (a cord's loop): fill only the small holes
             hl, hn = ndimage.label(mask & ~m); hs = ndimage.sum(mask & ~m, hl, range(1, hn + 1)); mask = m | np.isin(hl, [k + 1 for k in range(hn) if hs[k] < 3000])
         ys, xs = np.where(mask); sl = (slice(ys.min(), ys.max() + 1), slice(xs.min(), xs.max() + 1))
         items.append(Image.fromarray(np.dstack([a.astype(np.uint8), (mask * 255).astype(np.uint8)])[sl], 'RGBA'))
+    return items
+
+def icon_cells(img, rows, cols, cells, native=False, out='assets/art/atlas', open_cells=(), thr=16, floor=()):
+    """Icon sheet (rows x cols, reading order) to one 64x64 assets/art/atlas/<cell>.png per C name, for docs/ART.md's
+    pipeline: each sticker (see stickers()) restyled to the house outline unless native (keep the render's own outline,
+    for things like bow strings) and fitted to the cell. floor cells (furniture, which is also the placed tile) stand on
+    the bottom of the cell instead of floating in its middle."""
+    items = stickers(img, rows, cols, cells, open_cells, thr)
     if not native:  # measure every item's outline, then restyle each knowing the sheet's usual width
         ks = []
         for im in items: restyle(im, ICON_PPT * max(im.size) / 116); ks.append(restyle.K)
@@ -252,6 +258,18 @@ def icon_cells(img, rows, cols, cells, native=False, out='assets/art/atlas', ope
     for cell, im in zip(cells, items):
         im, _ = fit(im, 124, 124); t = Image.new('RGBA', (128, 128), (0, 0, 0, 0)); t.alpha_composite(im, (64 - im.width // 2, 128 - im.height if cell in floor else 64 - im.height // 2))
         t.resize((64, 64), Image.LANCZOS).save(os.path.join(out, cell + '.png'), optimize=True)
+
+def rig_parts(img, rows, cols, parts, out='assets/art/rigs', open_cells=(), thr=16):
+    """Rig part sheet to assets/art/rigs/<name>.png. parts = [(name, (w, h))...] in reading order, w x h the part's drawn
+    size from artList().rigs (design px, 60 per tile). Each sticker gets the house ink line and no cream edge (the rig
+    adds its own) and is saved at 2x that size; the game stretches it over the drawn part's bounds, so the render
+    should already have about the drawn part's proportions (a big mismatch is reported)."""
+    items = stickers(img, rows, cols, [n for n, _ in parts], open_cells, thr); os.makedirs(out, exist_ok=True)
+    for (name, (w, h)), im in zip(parts, items):
+        im, _ = restyle(im, im.width / (w / 60), border=False); a = np.asarray(im)[..., 3] > 8
+        ys, xs = np.where(a); im = im.crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
+        if abs(math.log(im.width / im.height / (w / h))) > .12: print(f'{name}: render is {im.width}x{im.height}, the part is {w}x{h}; it will be stretched')
+        im.resize((w * 2, h * 2), Image.LANCZOS).save(os.path.join(out, name + '.png'), optimize=True)
 
 if __name__ == '__main__':
     d = sys.argv[1]; src = {k: Image.open(os.path.join(d, f)) for k, f in RENDERS.items()}

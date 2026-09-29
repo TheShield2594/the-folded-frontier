@@ -1,4 +1,4 @@
-// Smoke tests: boot, portraits from the rig, new world, the Hollow Archive, save/load through localStorage, seasonal routes and secrets in the save, the vertical layers and the clocktower, save code round trip, hand-made art loaded from files at boot and applied directly.
+// Smoke tests: boot, portraits from the rig, new world, the Hollow Archive, save/load through localStorage, seasonal routes and secrets in the save, the vertical layers and the clocktower, save code round trip, hand-made art (atlas cells, sheets and rig parts) loaded from files at boot and applied directly.
 // They check that the game starts and its saves survive, not how it plays. Game state is read
 // through `import('/src/game.js')`, which on the dev server returns the live modules.
 import {test,expect} from '@playwright/test';
@@ -636,10 +636,14 @@ test('art files are found and painted in at boot',async({page})=>{
     const g=await import('/src/game.js'),n=await g.artReady;
     const px=(cv,x,y)=>[...cv.getContext('2d').getImageData(x,y,1,1).data];
     const cell=k=>{const[x,y]=g.cellXY(k);return px(g.atlas,x+32,y+32);},f=g.SHEETS.stag;
+    // a rig part: baked into the skin the green slime wears, not the blue one's (the same rig), and into its still picture
+    const body=S=>{const c=S.cells[g.RIGS.slime.pi.body][''];return px(S.img,c.ax+c.w/2|0,c.ay+c.h/2|0);},yellow=p=>p[0]>200&&p[1]>200&&p[2]<90;
+    const sl=g.SHEETS.slime,sp=[...sl.getContext('2d').getImageData(0,0,sl.width,sl.height).data].reduce((n,v,i,a)=>n+(i%4===0&&yellow(a.slice(i,i+3))),0);
     return {n,swFe:cell(g.C.swFe),crack:cell(g.C.crack[1]),crack0:cell(g.C.crack[0]),heart:cell(g.C.heart),stag:px(f,f.width/2,f.height/2),
-      loaded:Object.keys(g.artImg.atlas).sort(),sheets:Object.keys(g.artImg.sheets)};
+      loaded:Object.keys(g.artImg.atlas).sort(),sheets:Object.keys(g.artImg.sheets),rigs:Object.keys(g.artImg.rigs),
+      green:yellow(body(g.rigSkin('slime',g.FOERIG.slime[1],'slime'))),blue:yellow(body(g.rigSkin('slime',g.FOERIG.bslime[1],'bslime'))),still:sp>50};
   });
-  expect(r.n,'pictures applied from tests/fixtures/art/').toBe(4);
+  expect(r.n,'pictures applied from tests/fixtures/art/').toBe(5);
   expect(r.loaded).toEqual(['crack.1','heart','swFe']);
   expect(r.sheets).toEqual(['stag']);
   expect(r.swFe).toEqual([255,0,255,255]);
@@ -648,11 +652,14 @@ test('art files are found and painted in at boot',async({page})=>{
   // heart.png is 32×32: scaled into the cell, with a warning
   expect(r.heart).toEqual([0,0,255,255]);
   expect(r.stag).toEqual([0,255,255,255]);
-  // a name with no cell and a folder that isn't atlas/ or sheets/ are skipped with warnings, not errors
+  expect(r.rigs).toEqual(['slime@slime.body']);
+  expect([r.green,r.blue,r.still]).toEqual([true,false,true]);
+  // a name with no cell or part and a folder that isn't atlas/, sheets/ or rigs/ are skipped with warnings, not errors
   expect(warns.some(w=>w.includes('no atlas cell "noSuchCell"'))).toBe(true);
   expect(warns.some(w=>w.includes('atlas/heart is 32×32'))).toBe(true);
   expect(warns.some(w=>w.includes('ignoring')&&w.includes('misc/stray.png'))).toBe(true);
-  expect(warns).toHaveLength(3);
+  expect(warns.some(w=>w.includes('no rig part "slime.nope"'))).toBe(true);
+  expect(warns).toHaveLength(4);
 });
 
 test('hand-made art replaces the atlas cells and sprite sheets it names',async({page})=>{
@@ -669,8 +676,13 @@ test('hand-made art replaces the atlas cells and sprite sheets it names',async({
     const origCell=await new Promise(res=>{const i=new Image();i.onload=()=>{const c=document.createElement('canvas');c.width=64;c.height=64;c.getContext('2d').drawImage(i,0,0);res(px(c,32,32));};
       const a=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){};i.src=g.artExport('atlas','swFe');HTMLAnchorElement.prototype.click=a;});
     const bad=['swFe.0','crack.x','crack.-1','crack.99','crack'].map(k=>g.applyArt('atlas',k,solid(64,64)));
+    // rig parts: listed at their drawn size, exported as drawn, and applied to every skin of the rig
+    const a=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){};const rigExp=!!g.artExport('rigs','king.crown');HTMLAnchorElement.prototype.click=a;
+    const rig=[g.applyArt('rigs','king.crown',solid(20,20)),g.applyArt('rigs','king.nope',solid(8,8)),g.applyArt('rigs','king.eyes.wink',solid(8,8)),g.applyArt('rigs','king.eyes.blink',solid(8,8))];
+    const kS=g.rigSkin('king',g.FOERIG.king[1],'king'),kc=kS.cells[g.RIGS.king.pi.crown][''],crownPx=px(kS.img,kc.ax+kc.w/2|0,kc.ay+kc.h/2|0);
     return {origCell,bad,stag:list.sheets.stag,swFe:list.atlas.swFe,crack:list.atlas['crack.2'],cell,sheet,ore,missing:g.applyArt('sheets','nope',solid(8,8)),
-      cellPx:px(g.atlas,cx+32,cy+32),sheetPx:px(f,f.width/2,f.height/2),bumped:g.SHEETS.stagT.version>fv};
+      cellPx:px(g.atlas,cx+32,cy+32),sheetPx:px(f,f.width/2,f.height/2),bumped:g.SHEETS.stagT.version>fv,
+      slimeBody:list.rigs['slime.body'],kingBlink:list.rigs['king.eyes.blink'],rigExp,rig,crownPx};
   });
   expect(r.stag).toBe('480×112');
   expect(r.swFe).toBe('64×64');
@@ -681,6 +693,11 @@ test('hand-made art replaces the atlas cells and sprite sheets it names',async({
   expect(r.bumped).toBe(true);
   expect(r.origCell).not.toEqual([255,0,0,255]);
   expect(r.bad).toEqual([false,false,false,false,false]);
+  expect(r.slimeBody).toBe('80×53');
+  expect(r.kingBlink).toMatch(/^\d+×\d+$/);
+  expect(r.rigExp).toBe(true);
+  expect(r.rig).toEqual([true,false,false,true]);
+  expect(r.crownPx[0]).toBeGreaterThan(200);expect(r.crownPx[1]).toBeLessThan(60);
 });
 
 // Weapon moves (#78) and armor sets (#37) run through the real update code with the frame loop paused,

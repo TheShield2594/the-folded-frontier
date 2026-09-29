@@ -42,6 +42,11 @@ export function loopClip(len,keys,ez='io',bl){const tr={};for(const[t,v]of keys)
 // ---- skins: every part and variant drawn once, cropped and packed into one texture
 // RF: canvases whose pixels are read back (the crop scan, paper grain) stay in memory, as a GPU readback per piece is slow
 const PAD=10,BORDER=3,skins=new Map(),RF={willReadFrequently:true};
+// hand-made parts (art.js, assets/art/rigs/): RIGART['slime.body'], or 'human@guide.head.happy' for one skin key and variant.
+// A picture is fitted to the bounds the drawn part covers, so the pivot and joints stay put; setRigArt() re-bakes every skin.
+export const RIGART={};let rigGen=0;
+export function setRigArt(){skins.clear();return++rigGen;}
+const rigArtFor=(k,key,n,v)=>{const t=n+(v?'.'+v:'');return(key!=null&&RIGART[k+'@'+key+'.'+t])||RIGART[k+'.'+t];};
 // a cut-out piece: w x h of src (drawn at dw x dh) with paper grain and the cream paper edge, PAD px of margin all round
 function paperPiece(src,sx,sy,w,h,dw=w,dh=h){const cw=dw+PAD*2,chh=dh+PAD*2,tmp=mk(cw,chh),t=tmp.getContext('2d',RF);t.drawImage(src,sx,sy,w,h,PAD,PAD,dw,dh);grain(t,0,0,cw,chh,12);
   const sil=mk(cw,chh),s=sil.getContext('2d');s.drawImage(tmp,0,0);s.globalCompositeOperation='source-in';s.fillStyle='#fbf5e6';s.fillRect(0,0,cw,chh);
@@ -52,7 +57,8 @@ export function rigSkin(k,skin,key){const ck=key!=null?k+':'+key:null;if(ck&&ski
     if(p.clip){t.beginPath();t.rect(p.clip[0],p.clip[1],p.clip[2]-p.clip[0],p.clip[3]-p.clip[1]);t.clip();}if(p.loc)t.translate(p.at[0],p.at[1]);
     t.lineJoin='round';t.lineCap='round';p.paint(t,skin,v);
     const a=t.getImageData(0,0,W,H).data;let x0=W,y0=H,x1=-1,y1=-1;for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(a[(y*W+x)*4+3]>8){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
-    if(x1<0)continue;pieces.push({p:p.i,v,c,x0,y0,w:x1-x0+1,h:y1-y0+1});}}
+    if(x1<0)continue;const art=rigArtFor(k,key,p.n,v);let pc=c;if(art){pc=mk(W,H);pc.getContext('2d').drawImage(art,x0,y0,x1-x0+1,y1-y0+1);}
+    pieces.push({p:p.i,v,c:pc,x0,y0,w:x1-x0+1,h:y1-y0+1});}}
   // shelf packing, tallest first
   const AW=Math.max(256,...pieces.map(q=>q.w+PAD*2));let x=0,y=0,row=0;
   for(const q of pieces.slice().sort((a,b)=>b.h-a.h)){if(x+q.w+PAD*2>AW){x=0;y+=row;row=0;}q.ax=x;q.ay=y;x+=q.w+PAD*2;row=Math.max(row,q.h+PAD*2);}
@@ -63,7 +69,7 @@ export function rigSkin(k,skin,key){const ck=key!=null?k+':'+key:null;if(ck&&ski
     // the design rect this cell covers at rest (pivot-relative), and its uv rect
     const dx=q.x0-M-PAD,dy=q.y0-M-PAD,P=d.parts[q.p];
     cells[q.p][q.v]={l:[dx-P.at[0],dy-P.at[1],dx+cw-P.at[0],dy+chh-P.at[1]],uv:[q.ax/AW,1-(q.ay+chh)/AH,(q.ax+cw)/AW,1-q.ay/AH],ax:q.ax,ay:q.ay,w:cw,h:chh,iw:q.w,ih:q.h};}
-  const S={img,cells,tex:canvasTex(img),key:ck};if(ck)skins.set(ck,S);return S;}
+  const S={img,cells,tex:canvasTex(img),key:ck,gen:rigGen};if(ck)skins.set(ck,S);return S;}
 
 // ---- clips
 function chan(K,t,len,loop){if(loop&&len>0){t%=len;if(t<0)t+=len;}if(t<=K[0][0])return K[0][1];
@@ -109,9 +115,9 @@ export function makeRig(k,skin,key,o={}){const d=RIGS[k],n=d.parts.length,Q=n*3,
   const S=rigSkin(k,skin,key),mat=rigMat(S.tex),mesh=new THREE.Mesh(g,mat);if(o.add!==false)scene.add(mesh);
   const R={d,k,S,mesh,mat,g,PI,t:Math.random()*9,c:null,ct:0,sp:1,w:1,bl:.1,cur:blankPose(n),from:blankPose(n),last:blankPose(n),ov:new Array(n).fill(null),ovl:new Array(n).fill(null),ow:new Float32Array(n),
     M:new Float32Array(n*6),abs:new Float32Array(n),vis:new Array(n).fill(''),shadow:o.shadow!==false,hs:new Array(n).fill(null),hk:new Array(n).fill(null)};
-  rigPlay(R,o.clip||'idle');rigUpdate(R,0);return R;}
+  R.sk=skin;R.key=key;rigPlay(R,o.clip||'idle');rigUpdate(R,0);return R;}
 // re-dress a rig (new armor, a new look): bakes the new skin and drops the old texture if nothing shares it
-export function rigReskin(R,skin,key){const old=R.S;R.S=rigSkin(R.k,skin,key);R.mat.uniforms.map.value=R.S.tex;R.vis.fill(null);if(!old.key&&old!==R.S)old.tex.dispose();rigUpdate(R,0);}
+export function rigReskin(R,skin,key){const old=R.S;R.sk=skin;R.key=key;R.S=rigSkin(R.k,skin,key);R.mat.uniforms.map.value=R.S.tex;R.vis.fill(null);if(!old.key&&old!==R.S)old.tex.dispose();rigUpdate(R,0);}
 export function rigFree(R){scene.remove(R.mesh);R.g.dispose();R.mat.dispose();if(!R.S.key)R.S.tex.dispose();}
 // rigPlay(R, clip, {t, bl, sp}): switch clips, blending from the current pose over bl seconds; t sets the clip time
 // (phase-driven clips like walk), sp its speed
@@ -132,7 +138,7 @@ export function rigHold(R,p,src){const i=R.d.pi[p];if(i==null||R.S.key)return;if
   const cell=R.S.cells[i][''];if(!cell)return;let m=slotCut.get(src);if(!m)slotCut.set(src,m={});const k=cell.iw+'x'+cell.ih;
   const pc=m[k]||(m[k]=paperPiece(src,0,0,src.width,src.height,cell.iw,cell.ih)),t=R.S.img.getContext('2d');
   t.clearRect(cell.ax,cell.ay,cell.w,cell.h);t.drawImage(pc,cell.ax,cell.ay);R.S.tex.needsUpdate=true;}
-export function rigUpdate(R,dt){const d=R.d,n=d.parts.length,rm=reduceMotion();R.t+=dt;R.ct+=dt*R.sp;R.w=Math.min(1,R.w+dt/Math.max(.001,R.bl));
+export function rigUpdate(R,dt){if(R.S.gen!==rigGen&&R.mesh)rigReskin(R,R.sk,R.key);const d=R.d,n=d.parts.length,rm=reduceMotion();R.t+=dt;R.ct+=dt*R.sp;R.w=Math.min(1,R.w+dt/Math.max(.001,R.bl));
   samplePose(d,R.c,R.ct,R.cur);const w=EZR.io(R.w);
   for(let i=0;i<n;i++){const a=R.from[i],b=R.cur[i],L=R.last[i];for(const ch of CH)L[ch]=a[ch]+(b[ch]-a[ch])*w;L.sw=w<.5?a.sw:b.sw;
     const ov=R.ov[i];if(ov){R.ovl[i]=ov;R.ow[i]=ov.snap?1:Math.min(1,R.ow[i]+dt/.08);}else R.ow[i]=Math.max(0,R.ow[i]-dt/.12);R.ov[i]=null;

@@ -6,6 +6,8 @@ Pictures for the smoke test `art files are found and painted in at boot`. The Pl
 - `atlas/heart.png`: 32×32, scaled with a warning (blue)
 - `atlas/noSuchCell.png`: names no cell, skipped with a warning
 - `sheets/stag.png`: the mount's 480×112 sheet (cyan)
-- `misc/stray.png`: not in `atlas/` or `sheets/`, ignored with a warning
+- `rigs/slime@slime.body.png`: the green slime's body part (solid yellow), so the blue slime, which wears the same rig, keeps its drawn body
+- `rigs/slime.nope.png`: names no part of the slime rig, skipped with a warning
+- `misc/stray.png`: not in `atlas/`, `sheets/` or `rigs/`, ignored with a warning
 
 The test counts these, so update it when you add or remove one.
