@@ -6,7 +6,8 @@ import {A,atlas,atlasTex,bestCache,buildNormals,C,cellXY,clearIcons,mk,ORES,port
 // assets/art/atlas/<C name>.png  a 64×64 atlas cell (C.swFe → swFe.png; an array cell such as C.crack[1] → crack.1.png)
 // assets/art/sheets/<name>.png   a whole SHEETS strip, frames side by side at the size the drawn sheet has
 // Vite lists the files at build time and bundles them, so a missing picture never costs a request.
-const ART_FILES=import.meta.glob('../assets/art/*/*.{png,webp}',{eager:true,query:'?url',import:'default'});
+// '@art' is assets/art/ (vite.config.js); the smoke tests point it at tests/fixtures/art/.
+const ART_FILES=import.meta.glob('@art/*/*.{png,webp}',{eager:true,query:'?url',import:'default'});
 export const artImg={atlas:{},sheets:{}};
 const artOrig={atlas:{},sheets:{}}; // the drawn art under each override, kept for artExport()
 export let artReady=Promise.resolve(0);
@@ -30,7 +31,7 @@ export function applyArt(kind,k,img,refresh=true){const ok=kind==='atlas'?paintC
   artImg[kind][k]=img;if(kind==='atlas')atlasTex.needsUpdate=true;if(refresh)artRefresh(kind==='atlas');return true;}
 function artRefresh(atlasN){if(atlasN)buildNormals();clearIcons();for(const k in bestCache)delete bestCache[k];setInvDirty(true);}
 export function loadArt(){const jobs=[];
-  for(const[p,url]of Object.entries(ART_FILES)){const m=p.match(/\/art\/(atlas|sheets)\/([^/]+)\.(png|webp)$/);if(!m){console.warn(`art: ignoring ${p} (use assets/art/atlas/ or assets/art/sheets/)`);continue;}
+  for(const[p,url]of Object.entries(ART_FILES)){const m=p.match(/\/(atlas|sheets)\/([^/]+)\.(png|webp)$/);if(!m){console.warn(`art: ignoring ${p} (use assets/art/atlas/ or assets/art/sheets/)`);continue;}
     jobs.push(new Promise(res=>{const img=new Image();img.onload=()=>res([m[1],m[2],img]);img.onerror=()=>{console.warn(`art: could not load ${p}`);res(null);};img.src=url;}));}
   if(!jobs.length)return artReady;
   return artReady=Promise.all(jobs).then(r=>{let a=0,n=0;for(const j of r)if(j&&applyArt(...j,false)){n++;if(j[0]==='atlas')a++;}artRefresh(a);return n;});}

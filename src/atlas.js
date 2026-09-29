@@ -386,5 +386,77 @@ const slab2=(t,col)=>{poly(t,[10,14,40,6,58,20,56,48,30,58,8,46]);fi(t,col);};
 C.fosSpine=sticker(t=>{slab2(t,'#b9b4c4');for(let k=0;k<4;k++){const x=16+k*10,y=44-k*8;t.beginPath();t.ellipse(x,y,6,5,-.6,0,6.28);fi(t,'#f0e8d6',2);poly(t,[x,y-4,x+2,y-12,x+5,y-3]);fi(t,'#f0e8d6',1.5);}});
 C.fosClaw=sticker(t=>{slab2(t,'#b9b4c4');for(const[dx,s]of[[-8,.9],[2,1],[12,.85]]){t.beginPath();t.moveTo(24+dx,50);t.quadraticCurveTo(22+dx,24,34+dx*1.2,14*s+4);t.quadraticCurveTo(30+dx,28,32+dx,50);t.closePath();fi(t,'#f0e8d6',2);}});
 C.fosWing=sticker(t=>{slab2(t,'#b9b4c4');t.beginPath();t.moveTo(14,46);t.lineTo(30,30);t.lineTo(50,16);ink(t,5,'#f0e8d6');for(const[x,y]of[[30,30],[40,23],[50,16]]){t.beginPath();t.moveTo(x,y);t.lineTo(x+4,y+20);ink(t,3,'#f0e8d6');}t.beginPath();t.moveTo(14,46);t.lineTo(30,30);t.lineTo(50,16);ink(t,1.2,'rgba(90,70,50,.5)');});
+// ---- paper tricks (tricks.js): the stitched seam in the rock, a torn hole in the page, the patch sewn over it, a crease mark,
+// and the three tools. Thread is red so the seam and the patch read as sewn in every color-vision mode by their cross-stitches.
+const THREAD='#d4483b';
+C.seam=blockCell('#8d8f9a',c=>{stoneDeco(c);c.beginPath();c.moveTo(34,0);for(let y=8;y<=64;y+=8)c.lineTo(y%16?28:36,y);ink(c,5,'#1c1520');
+  for(let y=6;y<64;y+=10){c.beginPath();c.moveTo(22,y);c.lineTo(42,y+5);ink(c,4,INK);c.beginPath();c.moveTo(22,y);c.lineTo(42,y+5);ink(c,2.2,THREAD);}});
+C.rip=sticker(t=>{t.beginPath();t.moveTo(0,4);for(let x=0;x<=64;x+=8)t.lineTo(x,x%16?1:7);t.lineTo(64,60);for(let x=64;x>=0;x-=8)t.lineTo(x,x%16?63:57);t.closePath();t.fillStyle='#1c1520';t.fill();
+  t.strokeStyle='#e9dcc0';t.lineWidth=3;t.stroke();const g=t.createRadialGradient(32,32,4,32,32,34);g.addColorStop(0,'rgba(90,60,120,.55)');g.addColorStop(1,'rgba(0,0,0,0)');t.fillStyle=g;t.fillRect(4,6,56,52);
+  for(const[x,l]of[[14,14],[40,20],[52,10]]){t.beginPath();t.moveTo(x,5);t.quadraticCurveTo(x+4,5+l*.6,x-1,5+l);ink(t,1.6,THREAD);}},0);
+C.sewn=blockCell('#e9dcc0',c=>{c.fillStyle='rgba(140,120,90,.18)';for(let i=0;i<5;i++)c.fillRect(rand(4,50),rand(8,52),rand(8,16),2);
+  for(const y of[12,52]){c.setLineDash([6,5]);c.beginPath();c.moveTo(4,y);c.lineTo(60,y);ink(c,2.2,THREAD);c.setLineDash([]);}
+  for(let x=10;x<64;x+=14){c.beginPath();c.moveTo(x-4,8);c.lineTo(x+4,16);c.moveTo(x+4,8);c.lineTo(x-4,16);ink(c,2,THREAD);}});
+C.crease=sticker(t=>{poly(t,[10,58,32,6,54,58]);fi(t,'#e9dcc0',2.2);poly(t,[32,6,54,58,32,58]);t.fillStyle='rgba(106,96,112,.22)';t.fill();t.setLineDash([6,4]);t.beginPath();t.moveTo(32,4);t.lineTo(32,60);ink(t,2.4,'#6a6070');t.setLineDash([]);
+  poly(t,[32,40,46,54,32,54]);fi(t,'#fbf8f0',2);t.beginPath();t.arc(32,22,8,Math.PI*.9,Math.PI*2.1);ink(t,2.4,'#b06ad0');poly(t,[40,17,44,24,36,24]);t.fillStyle='#b06ad0';t.fill();},0);
+C.ripper=sticker(t=>{rr(t,6,40,26,12,5);fi(t,'#c0633a',2.5);t.save();t.translate(30,40);t.rotate(-.75);rr(t,-2,-4,24,8,2);fi(t,'#c9cdd8',2);t.beginPath();t.moveTo(22,-4);t.lineTo(32,-6);t.lineTo(24,0);t.lineTo(32,6);t.lineTo(22,4);t.closePath();fi(t,'#e6e9f0',2);circ(t,26,0,2);t.fillStyle=THREAD;t.fill();t.restore();});
+C.needle=sticker(t=>{t.beginPath();t.moveTo(12,54);t.lineTo(50,12);ink(t,6,INK);t.beginPath();t.moveTo(12,54);t.lineTo(50,12);ink(t,3.2,'#f1c04f');t.beginPath();t.ellipse(46,16,3,5,.73,0,6.28);t.fillStyle=INK;t.fill();
+  t.beginPath();t.moveTo(46,16);t.bezierCurveTo(60,30,30,40,44,58);ink(t,2.4,THREAD);});
+C.folder=sticker(t=>{t.save();t.translate(32,32);t.rotate(-.78);rr(t,-26,-6,52,12,6);fi(t,'#f0e8d6',2.5);t.beginPath();t.moveTo(-14,-6);t.lineTo(-14,6);ink(t,1.6,'rgba(42,33,48,.4)');t.restore();
+  t.setLineDash([4,3]);t.beginPath();t.moveTo(8,20);t.lineTo(26,6);ink(t,1.8,'#6a6070');t.setLineDash([]);});
+// ---- the Hollow Archive (dungeons.js): the ink-sealed shelf in front of the Lost Stacks, and the key that opens it
+C.stacks=blockCell('#2e2446',c=>{c.fillStyle='#5a3a22';c.fillRect(0,0,64,64);for(const y of[4,24,44]){c.fillStyle='#2a1a14';c.fillRect(4,y,56,16);
+  let x=5;for(const[w,col]of[[6,'#d4483b'],[5,'#3f6fa8'],[7,'#e9dcc0'],[5,'#3f7a5f'],[6,'#c9a24a'],[4,'#7a5aa8'],[7,'#d4483b'],[5,'#e9dcc0'],[6,'#3f6fa8']]){if(x+w>59)break;c.fillStyle=col;c.fillRect(x,y+(w%3),w-1,16-(w%3));x+=w;}}
+  c.fillStyle='#8a5a33';for(const y of[20,40,60])c.fillRect(0,y,64,4);c.beginPath();c.moveTo(18,30);for(let k=0;k<=10;k++){const a=k/10*Math.PI*2,r=k%2?11:15;c.lineTo(32+Math.cos(a)*r*1.2,32+Math.sin(a)*r);}c.closePath();c.fillStyle='rgba(58,42,90,.92)';c.fill();
+  circ(c,32,29,4);c.fillStyle='#e0b0ff';c.fill();poly(c,[30,31,34,31,35,40,29,40]);c.fillStyle='#e0b0ff';c.fill();});
+C.archkey=sticker(t=>{t.beginPath();t.moveTo(38,22);t.lineTo(54,46);ink(t,6,INK);t.beginPath();t.moveTo(38,22);t.lineTo(54,46);ink(t,3.4,'#c9a24a');rr(t,44,40,6,10,2);fi(t,'#c9a24a',2);rr(t,50,48,5,8,2);fi(t,'#c9a24a',2);
+  poly(t,[10,10,34,6,38,30,14,34]);fi(t,'#f4ecd8',2.5);for(const y of[14,19,24])t.fillRect(16,y,16,1.6);t.beginPath();t.moveTo(14,34);t.lineTo(10,52);t.lineTo(16,46);t.lineTo(20,54);t.lineTo(22,34);t.closePath();fi(t,'#7a5aa8',2);circ(t,36,26,5);fi(t,'#e0b04a',2);});
+// ---- trading cards (cards.js, issue #67): a card in the 64×64 cell, framed by rarity (0 common, 1 rare, 2 halo, 3 full art).
+// Each rarity also has its own corner mark (dot, diamond, ring, star) so it reads without color. pic(t, x, y, w, h) paints the
+// picture; without one the card shows its back. The faces are painted at boot once the sprite sheets exist (paintCards).
+const CARDCOL=['#f4ecd8','#9fbfee','#f1c04f','#f4d8e4'];
+export function cardFace(t,r,pic,bg='#fbf8f0'){const x=9,y=2,w=46,h=60;
+  if(r===2){const g=t.createLinearGradient(x,y,x+w,y+h);['#ff9aa8','#ffd66b','#9fe0a0','#8fcaf0','#c8a0f0'].forEach((c,i)=>g.addColorStop(i/4,c));rr(t,x-2,y-1,w+4,h+2,7);t.strokeStyle=g;t.lineWidth=3.5;t.stroke();}
+  if(r===3&&pic){rr(t,x,y,w,h,5);t.save();t.clip();t.fillStyle=bg;t.fillRect(x,y,w,h);pic(t,x,y,w,h,1);t.restore();rr(t,x,y,w,h,5);ink(t,3,'#c9a24a');rr(t,x,y,w,h,5);ink(t,1.2,INK);}
+  else{rr(t,x,y,w,h,5);fi(t,CARDCOL[r],2.5);rr(t,x+5,y+5,w-10,h-22,3);t.save();t.clip();t.fillStyle=pic?bg:'#3a4a8a';t.fillRect(x,y,w,h);
+    if(pic)pic(t,x+5,y+5,w-10,h-22,0);else{poly(t,starPts(32,y+24,13,6));t.fillStyle=CARDCOL[r];t.fill();}t.restore();rr(t,x+5,y+5,w-10,h-22,3);ink(t,1.6);
+    t.fillStyle='rgba(42,33,48,.45)';t.fillRect(x+8,y+h-14,w-16,2.4);t.fillRect(x+8,y+h-9,w-24,2.4);}
+  const mx=x+w-7,my=y+h-7;t.fillStyle=INK;if(r===0){circ(t,mx,my,2.6);fi(t,'#fbf8f0',1.4);}else if(r===1){poly(t,[mx,my-4.5,mx+4.5,my,mx,my+4.5,mx-4.5,my]);fi(t,'#5a8fe0',1.4);}
+  else if(r===2){circ(t,mx,my,4);ink(t,2.6,INK);circ(t,mx,my,4);ink(t,1.4,'#fff3c0');}else{poly(t,starPts(mx,my,5.5,2.4));fi(t,'#f7d046',1.2);}}
+export function cardCell(r){return sticker(t=>cardFace(t,r));}
+// repaints a cell that is already allocated (the card faces, once the sheets they picture exist)
+export function repaintCell(c,draw){const[x,y]=cellXY(c);A.clearRect(x,y,64,64);stickerAt(x,y,64,64,draw);}
+C.binder=sticker(t=>{rr(t,8,6,46,54,5);fi(t,'#5a3c78',3);rr(t,12,10,38,46,3);fi(t,'#7a5aa8',1.6);for(const y of[16,32,48]){circ(t,10,y,3.2);fi(t,'#c9a24a',1.6);}
+  t.save();t.translate(33,31);t.rotate(-.12);rr(t,-10,-14,20,28,3);fi(t,'#fbf8f0',2);poly(t,starPts(0,-2,7,3));t.fillStyle='#f1c04f';t.fill();t.restore();});
+C.cardpack=sticker(t=>{poly(t,[14,8,50,8,52,56,12,56]);fi(t,'#d4483b',3);t.beginPath();for(let x=14;x<=50;x+=6){t.lineTo(x,8);t.lineTo(x+3,4);}ink(t,2);
+  rr(t,20,20,24,26,3);fi(t,'#fbf8f0',2);poly(t,starPts(32,33,9,4));t.fillStyle='#f1c04f';t.fill();t.fillStyle='rgba(255,255,255,.35)';t.fillRect(17,12,4,40);});
+C.cardpackg=sticker(t=>{poly(t,[14,8,50,8,52,56,12,56]);fi(t,'#c9a24a',3);t.beginPath();for(let x=14;x<=50;x+=6){t.lineTo(x,8);t.lineTo(x+3,4);}ink(t,2);
+  rr(t,20,20,24,26,3);fi(t,'#2a3160',2);poly(t,starPts(32,33,10,4.5));t.fillStyle='#fff3c0';t.fill();for(const[x,y]of[[18,14],[46,50],[46,16]]){poly(t,starPts(x,y,4,1.6));t.fillStyle='#fff';t.fill();}});
+// ---- the Origami Observatory (dungeons.js): its star-chart shell, the telescope, the Star Vaults' sealed door, and the lens that opens it
+C.dome=blockCell('#2a3160',c=>{c.strokeStyle='rgba(143,160,224,.45)';c.lineWidth=1.4;c.beginPath();c.moveTo(0,32);c.lineTo(64,32);c.moveTo(32,0);c.lineTo(32,64);c.stroke();c.beginPath();c.arc(32,32,22,0,6.28);c.stroke();
+  for(const[x,y,r]of[[12,12,2.2],[50,18,1.6],[20,48,1.8],[46,50,2.4],[40,8,1.2],[8,34,1.2]]){poly(c,starPts(x,y,r*2.2,r));c.fillStyle='#fff3c0';c.fill();}
+  c.beginPath();c.moveTo(12,12);c.lineTo(20,48);c.lineTo(46,50);ink(c,1,'rgba(255,243,192,.45)');});
+C.scope=sticker(t=>{t.beginPath();t.moveTo(22,60);t.lineTo(32,40);t.lineTo(42,60);ink(t,4,INK);t.beginPath();t.moveTo(22,60);t.lineTo(32,40);t.lineTo(42,60);ink(t,2,'#8a5a33');
+  t.save();t.translate(32,36);t.rotate(-.7);rr(t,-8,-28,16,40,5);fi(t,'#c9a24a',2.5);rr(t,-10,-32,20,8,3);fi(t,'#6b5234',2);t.fillStyle='rgba(255,255,255,.35)';t.fillRect(-4,-22,3,26);t.restore();
+  circ(t,32,40,5);fi(t,'#6b5234',2);poly(t,starPts(50,12,7,3));t.fillStyle='#fff3c0';t.fill();});
+C.stardoor=blockCell('#3a4a8a',c=>{c.fillStyle='#232a58';c.fillRect(8,0,48,64);c.strokeStyle='#c9a24a';c.lineWidth=2.4;c.strokeRect(8,1,48,62);
+  for(let k=0;k<5;k++){const a=-Math.PI/2+k*Math.PI*2/5;c.beginPath();c.moveTo(32,32);c.lineTo(32+Math.cos(a)*22,32+Math.sin(a)*22);c.strokeStyle='rgba(255,243,192,.4)';c.lineWidth=1.4;c.stroke();}
+  poly(c,starPts(32,32,13,6));c.fillStyle='#f7d046';c.fill();ink(c,1.6,'#6b5234');circ(c,32,32,3);c.fillStyle='#232a58';c.fill();});
+C.starlens=sticker(t=>{circ(t,30,30,22);fi(t,'#c9a24a',3);circ(t,30,30,16);t.fillStyle='#9fb4f0';t.fill();ink(t,2);poly(t,starPts(30,30,9,4));t.fillStyle='#fff3c0';t.fill();
+  t.beginPath();t.moveTo(24,20);t.quadraticCurveTo(28,17,33,18);ink(t,2.4,'rgba(255,255,255,.8)');t.beginPath();t.moveTo(46,46);t.lineTo(58,58);ink(t,8,INK);t.beginPath();t.moveTo(46,46);t.lineTo(58,58);ink(t,4.5,'#6b5234');});
+// ---- the Great Scrapworks and the Sunken Inkwell Temple (dungeons.js): the scrap shell, the shredders, the Supply Crates' and
+// Ink Wells' sealed doors, and the keys that open them
+C.scrap=blockCell('#9a7a52',c=>{c.fillStyle='#b8966a';for(let y=4;y<64;y+=12)c.fillRect(0,y,64,5);c.strokeStyle='rgba(60,40,24,.45)';c.lineWidth=1.4;for(let x=6;x<64;x+=8){c.beginPath();c.moveTo(x,0);c.lineTo(x,64);c.stroke();}
+  for(const[x,y]of[[8,8],[56,8],[8,56],[56,56]]){circ(c,x,y,3.2);c.fillStyle='#8d8f9a';c.fill();ink(c,1.2);}});
+C.shred=blockCell('#5a5c68',c=>{for(const x of[16,48]){circ(c,x,26,14);c.fillStyle='#a9adb8';c.fill();ink(c,2);for(let k=0;k<8;k++){const a=k/8*Math.PI*2;c.beginPath();c.moveTo(x+Math.cos(a)*9,26+Math.sin(a)*9);c.lineTo(x+Math.cos(a+.3)*15,26+Math.sin(a+.3)*15);ink(c,2.4,'#e6e1d6');}}
+  c.fillStyle='#3a3c48';c.fillRect(0,42,64,22);for(let x=2;x<64;x+=8){poly(c,[x,42,x+4,34,x+8,42]);c.fillStyle='#e6e1d6';c.fill();}});
+C.crate=blockCell('#a86b3a',c=>{c.strokeStyle='#7b4a25';c.lineWidth=3;for(const y of[20,42]){c.beginPath();c.moveTo(0,y);c.lineTo(64,y);c.stroke();}c.beginPath();c.moveTo(4,4);c.lineTo(60,60);c.stroke();
+  for(const[x,y]of[[10,10],[54,10],[10,54],[54,54],[32,31]]){circ(c,x,y,2.6);c.fillStyle='#8d8f9a';c.fill();ink(c,1);}rr(c,20,24,24,14,2);fi(c,'#e9dcc0',1.6);c.fillStyle='rgba(42,33,48,.5)';c.fillRect(24,29,16,2);c.fillRect(24,33,10,2);});
+C.welldoor=blockCell('#2e2446',c=>{c.fillStyle='#3a2a5a';c.fillRect(8,0,48,64);c.beginPath();c.moveTo(32,10);c.bezierCurveTo(46,26,46,40,32,48);c.bezierCurveTo(18,40,18,26,32,10);c.fillStyle='#6b4c8f';c.fill();ink(c,2,'#c9a24a');
+  circ(c,32,34,4);c.fillStyle='#1c1520';c.fill();c.beginPath();c.moveTo(32,38);c.lineTo(32,50);ink(c,2,'#1c1520');c.strokeStyle='#c9a24a';c.lineWidth=2.4;c.strokeRect(8,1,48,62);});
+C.crowbar=sticker(t=>{t.beginPath();t.moveTo(14,54);t.lineTo(44,14);t.quadraticCurveTo(50,6,56,12);ink(t,8,INK);t.beginPath();t.moveTo(14,54);t.lineTo(44,14);t.quadraticCurveTo(50,6,56,12);ink(t,4.5,'#d4483b');
+  t.beginPath();t.moveTo(14,54);t.lineTo(8,52);ink(t,4.5,'#d4483b');});
+C.wellnib=sticker(t=>{poly(t,[32,60,16,26,22,8,42,8,48,26]);fi(t,'#c9a24a',3);t.beginPath();t.moveTo(32,58);t.lineTo(32,30);ink(t,2);circ(t,32,26,4.5);t.fillStyle='#1c1520';t.fill();
+  t.beginPath();t.moveTo(32,60);t.quadraticCurveTo(38,56,36,50);t.strokeStyle='#6b4c8f';t.lineWidth=3;t.stroke();t.fillStyle='rgba(255,255,255,.45)';t.fillRect(24,12,3,14);});
 C.hl=sticker(t=>{rr(t,2,2,60,60,8);t.setLineDash([8,5]);ink(t,3,'#fff');t.setLineDash([]);},0);
 if(cellN>(32-4)*16)console.warn('atlas overflow');

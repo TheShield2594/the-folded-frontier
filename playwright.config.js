@@ -26,8 +26,11 @@ export default defineConfig({
   },
   webServer:{
     command:`npx vite --port ${PORT} --strictPort`,
+    // the hand-made art comes from the test pictures, not assets/art/ (vite.config.js, the art loading test)
+    env:{FF_ART_DIR:'tests/fixtures/art'},
     url:`http://localhost:${PORT}/`,
-    reuseExistingServer:!process.env.CI,
+    // always its own server: one already running on this port wouldn't have FF_ART_DIR, and the art test would fail
+    reuseExistingServer:false,
     timeout:60_000,
   },
 });

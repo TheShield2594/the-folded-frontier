@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import {
   bossIntro,
   $,BADGES,BIO,blk,burst,clamp,H,heal,hurtPlayer,iconTex,inkMoon,isNight,isSolid,ITEMS,pad,rand,
-  renderQuests,scene,setInvDirty,FOERIG,makeRig,SFX,shake,SHEETS,sky,spriteMat,spriteMesh,stat,T,tileAt,toast,U,NDL,
+  renderQuests,scene,setInvDirty,FOERIG,makeRig,SFX,shake,sky,spriteMat,stat,T,tileAt,toast,U,NDL,
   updateCoins,W,
 } from './game.js';
 
@@ -12,7 +12,7 @@ export const player={buffs:{},partners:[],partner:null,badges:[],badgesOn:[],bpU
   onGround:false,coyote:0,jbuf:0,jumpAge:9,usedDouble:false,swing:null,lastSwingEnd:-9,niceNext:false,inv_t:0,spawn:{x:0,y:0},regenT:0,potT:0,mineP:0,mineTile:-1,placeT:0,walkT:0,dead:false,deadT:0,stompWin:0,stompTarget:null,dashT:0,dashCD:0,dashI:0,dashDir:1,airDashed:false,ghostT:0,dashPing:0,sheetDirty:true,mesh:null,mat:null,prevY:0};
 export let enemies=[],pickups=[],projs=[],npcs=[],boss=null;
 export let worldTime=7.5,quests={},hintT=0;
-export const QUESTS=[['tree','Chop down a tree'],['bar','Smelt a bar at a furnace'],['house','Build a house for the Merchant'],['heart','Find and use a Paper Heart'],['iron','Forge iron gear at an anvil'],['king','Defeat the King Slime'],['crane','Defeat the Great Crane'],['clock','Conquer the Folded Clocktower'],['lev','Defeat the Inkwell Leviathan'],['folio','Defeat the Charred Folio'],['unfolded','Solve the riddle of the ink shrine']];
+export const QUESTS=[['tree','Chop down a tree'],['bar','Smelt a bar at a furnace'],['house','Build a house for the Merchant'],['heart','Find and use a Paper Heart'],['iron','Forge iron gear at an anvil'],['king','Defeat the King Slime'],['scrap','Conquer the Great Scrapworks'],['crane','Defeat the Great Crane'],['clock','Conquer the Folded Clocktower'],['lev','Defeat the Inkwell Leviathan'],['arch','Conquer the Hollow Archive'],['folio','Defeat the Charred Folio'],['obs','Conquer the Origami Observatory'],['unfolded','Solve the riddle of the ink shrine'],['temple','Conquer the Sunken Inkwell Temple']];
 export function questDone(k){if(quests[k])return;quests[k]=true;const q=QUESTS.find(q=>q[0]===k);toast(`Quest complete: ${q[1]}`,'gold');SFX.nice();renderQuests();}
 
 export function boxHits(x,y,w,h,prevY,drop){const x0=Math.floor(x-w/2),x1=Math.floor(x+w/2-1e-6),y0=Math.floor(y),y1=Math.floor(y+h-1e-6);
@@ -71,6 +71,19 @@ export const EN={
   // the Folded Clocktower (dungeons.js): its mini-boss is always an elite, its boss sits in the clock chamber at the top
   sentinel:{w:.85,h:1.85,hp:230,dmg:26,def:12,sheet:'sentinel',fw:96,fh:144,coins:[40,70],drops:[['cog',2,4,1],['goldbar',3,6,1]],col:['#c9a24a','#6b5234'],name:'Clockwork Sentinel',step:1},
   mainspring:{w:3.2,h:3.2,hp:1900,dmg:30,def:13,fly:1,noclip:1,sheet:'mainspring',fw:240,fh:240,boss:1,name:'The Mainspring',quest:'clock',coins:[450,600],drops:[['cog',6,10,1],['skyore',6,12,1],['goldbar',6,10,1],['b_quick',1,1,.5]],col:['#b08a4a','#f4ecd8','#d4483b']},
+  // the Hollow Archive (dungeons.js): its keeper (the mini-boss, always an elite), the Bookmoth and the mothlings it calls
+  warden:{w:.85,h:1.85,hp:320,dmg:28,def:15,sheet:'warden',fw:96,fh:144,coins:[60,90],drops:[['moonink',2,4,1],['inkbar',3,6,1]],col:['#5a3c78','#e9dcc0'],name:'Stack Warden',step:1},
+  mothling:{w:.8,h:.6,hp:45,dmg:24,def:6,fly:1,sheet:'mothling',fw:96,fh:64,coins:[2,6],drops:[],col:['#e8dcc4','#b8a0d0']},
+  bookmoth:{w:3.4,h:2.4,hp:3000,dmg:36,def:16,fly:1,noclip:1,sheet:'bookmoth',fw:300,fh:220,boss:1,name:'The Bookmoth',quest:'arch',coins:[550,700],drops:[['moonink',5,9,1],['inkbar',6,10,1],['fstar',4,8,1],['moontome',1,1,.35],['b_dip',1,1,.5]],col:['#e8dcc4','#7a5aa8','#c9a24a']},
+  // the Origami Observatory (dungeons.js): the keeper of its charts (the mini-boss, always an elite) and the Starfold under the dome
+  gazer:{w:.85,h:1.85,hp:400,dmg:30,def:19,sheet:'gazer',fw:96,fh:144,coins:[80,120],drops:[['fstar',3,6,1],['skybar',3,6,1]],col:['#2a3160','#f7d046'],name:'Stargazer',step:1},
+  starfold:{w:3.4,h:3.4,hp:4200,dmg:42,def:21,fly:1,noclip:1,sheet:'starfold',fw:260,fh:260,boss:1,name:'The Starfold',quest:'obs',coins:[1000,1300],drops:[['fstar',8,14,1],['skybar',6,10,1],['emberbar',4,8,1],['b_nice',1,1,.5]],col:['#f7d046','#2a3160','#fbf8f0']},
+  // the Great Scrapworks (dungeons.js): its foreman (the mini-boss, always an elite) and the Pulper, a paper-mill machine that walks
+  foreman:{w:.85,h:1.85,hp:150,dmg:18,def:6,sheet:'foreman',fw:96,fh:144,coins:[25,45],drops:[['ironbar',2,4,1],['gel',3,6,1]],col:['#e0b04a','#3f6fa8'],name:'Scrap Foreman',step:1},
+  pulper:{w:3.6,h:2.9,hp:1100,dmg:26,def:8,sheet:'pulper',fw:280,fh:230,boss:1,name:'The Pulper',quest:'scrap',coins:[300,400],drops:[['goldbar',5,9,1],['paper',30,50,1],['b_stomp',1,1,.5]],col:['#9a7a52','#e6e1d6','#d4483b']},
+  // the Sunken Inkwell Temple (dungeons.js): the Drowned Scribe (the mini-boss, always an elite) and the Grand Nib, which calls Ink Blots
+  scribe:{w:.85,h:1.85,hp:560,dmg:34,def:24,sheet:'scribe',fw:96,fh:144,coins:[120,180],drops:[['moonink',3,6,1],['foilbar',2,4,1]],col:['#3a2a5a','#8fcaf0'],name:'Drowned Scribe',step:1},
+  nib:{w:3,h:3.6,hp:6200,dmg:48,def:24,fly:1,noclip:1,sheet:'nib',fw:240,fh:280,boss:1,name:'The Grand Nib',quest:'temple',coins:[1400,1800],drops:[['foilbar',8,14,1],['moonink',10,16,1],['b_last',1,1,.5]],col:['#c9a24a','#3a2a5a','#6b4c8f']},
   king:{w:4.4,h:3.3,hp:750,dmg:26,def:6,sheet:'king',fw:340,fh:280,boss:1,name:'King Slime',quest:'king',slimy:1,coins:[250,320],drops:[['b_nice',1,1,1],['ribbon',1,1,1],['gel',20,35,1],['goldbar',5,10,1],['starstaff',1,1,.6],['fstar',5,10,1]],col:['#5aa7e0','#8fcaf0','#f1c04f']},
 };
 // damage types: weak takes ×1.5, resists take ×.5. Fire burns (damage over time), ink stains (slows), water soaks (takes +25% damage, hits 25% softer).
@@ -80,7 +93,7 @@ export const ELEM={fire:{name:'Fire',st:'Burning',col:['#ff8a3d','#ffd66b'],icon
  ['foldfox','fire','water'],['flurry','fire','water','water'],['snowroll','fire','water','water'],['snowlet','fire','water','water'],['frostpuff','fire','water','water'],
  ['blot','water','ink','ink'],['inksquid','water','ink','ink'],['inkwisp','water','ink','ink'],['quillfish','','ink','ink'],['wraith','water','ink','ink'],
  ['cinderbat','water','fire','fire'],['ashimp','water','fire','fire'],['cracker','water','fire','fire'],['ashspider','water','fire','fire'],
- ['skyray','fire','water'],['clockbug','water','fire'],['sentinel','water'],['mainspring','water','fire'],
+ ['skyray','fire','water'],['clockbug','water','fire'],['sentinel','water'],['mainspring','water','fire'],['warden','fire','ink','ink'],['mothling','fire'],['bookmoth','fire','ink','ink'],['gazer','ink','water'],['foreman','fire'],['pulper','fire','water'],['scribe','water','ink','ink'],['nib','water','ink','ink'],['starfold','ink','fire','fire'],
  ['king','fire','water'],['crane','fire','water'],['lev','water','ink','ink'],['levseg','water','ink','ink'],['levtail','water','ink','ink'],['folio','water','fire','fire'],['unfolded','fire','ink','ink']
 ].forEach(([k,w,r,el])=>{Object.assign(EN[k],{weak:w||null,res:r||null,elem:el||null});});
 // bestiary: order, display names and where each enemy lives (segments of the Leviathan are part of it)
@@ -89,15 +102,15 @@ export const BEST=[['slime','Green Slime','Forest, by day'],['bslime','Blue Slim
   ['foldfox','Fold Fox','Origami Snowfield'],['flurry','Flurry','Origami Snowfield'],['snowroll','Snow Roller','Origami Snowfield'],['snowlet','Snowlet','Origami Snowfield, from Snow Rollers'],['frostpuff','Frost Puff','Origami Snowfield'],
   ['blot','Ink Blot','Ink Lake'],['inksquid','Ink Squid','Ink Lake, in the ink'],['inkwisp','Ink Wisp','Ink Lake'],['quillfish','Quillfish','Ink Lake, in the ink'],
   ['cinderbat','Cinder Bat','Burnt Underworld'],['ashimp','Ash Imp','Burnt Underworld'],['cracker','Firecracker Imp','Burnt Underworld'],['ashspider','Ash Spider','Burnt Underworld ceilings'],['wraith','Ink Wraith','Surface, under the Ink Moon'],
-  ['skyray','Paper Ray','Sky islands'],['clockbug','Clockwork Beetle','The Pressed Deep'],['sentinel','Clockwork Sentinel','Mini-boss · the Folded Clocktower'],
-  ['king','King Slime','Boss · summoned on the surface'],['crane','Great Crane','Boss · Origami Snowfield'],['mainspring','The Mainspring','Boss · the Folded Clocktower'],['lev','Inkwell Leviathan','Boss · Ink Lake'],['folio','Charred Folio','Boss · Burnt Underworld'],['unfolded','The Unfolded','Secret boss · the ink shrine']];
+  ['skyray','Paper Ray','Sky islands'],['clockbug','Clockwork Beetle','The Pressed Deep'],['sentinel','Clockwork Sentinel','Mini-boss · the Folded Clocktower'],['warden','Stack Warden','Mini-boss · the Hollow Archive'],['mothling','Mothling','The Hollow Archive, from the Bookmoth'],['gazer','Stargazer','Mini-boss · the Origami Observatory'],['foreman','Scrap Foreman','Mini-boss · the Great Scrapworks'],['scribe','Drowned Scribe','Mini-boss · the Sunken Inkwell Temple'],
+  ['king','King Slime','Boss · summoned on the surface'],['pulper','The Pulper','Boss · the Great Scrapworks'],['crane','Great Crane','Boss · Origami Snowfield'],['mainspring','The Mainspring','Boss · the Folded Clocktower'],['lev','Inkwell Leviathan','Boss · Ink Lake'],['bookmoth','The Bookmoth','Boss · the Hollow Archive'],['folio','Charred Folio','Boss · Burnt Underworld'],['starfold','The Starfold','Boss · the Origami Observatory'],['unfolded','The Unfolded','Secret boss · the ink shrine'],['nib','The Grand Nib','Boss · the Sunken Inkwell Temple']];
 export let bestiary={};
 export function bestKill(e){const b=bestiary[e.type]||(bestiary[e.type]={k:0,d:{}});b.k++;if(e.elite)b.e=(b.e||0)+1;
   if(e.trait&&TRAITS[e.trait]){const tr=b.tr||(b.tr={});if(!tr[e.trait]&&!Object.values(bestiary).some(o=>o.tr&&o.tr[e.trait]))toast(`New elite trait in the bestiary: ${TRAITS[e.trait].n}!`,'gold');tr[e.trait]=(tr[e.trait]||0)+1;}
   if(b.k===1){const row=BEST.find(r=>r[0]===e.type);toast(`New bestiary entry: ${row?row[1]:e.type}!`,'gold');stat('bestiary');}}
 export const bestDrop=(e,id,n)=>{const b=bestiary[e.type];if(b)b.d[id]=(b.d[id]||0)+n;};
 export function spawnEnemy(type,x,y){const d=EN[type];const e={type,d,x,y,w:d.w,h:d.h,vx:0,vy:0,hp:d.hp,max:d.hp,face:1,rot:0,t:rand(0,2),timer:rand(.5,2),flash:0,dying:0,onGround:false,step:d.step,kb:0,hitCD:0};
-  e.sw=d.fw/60;e.sh=d.fh/60;const fr=FOERIG[d.sheet];if(fr){e.rig=makeRig(fr[0],fr[1],d.sheet);e.mesh=e.rig.mesh;}else e.mesh=spriteMesh(SHEETS[d.sheet+'T'],2,e.sw,e.sh,!d.fly&&!d.center);e.mesh.position.z=.1+enemies.length%8*.006;enemies.push(e);if(inkMoon&&isNight()&&!d.boss&&!d.worm){e.inked=true;e.hp=e.max=Math.round(e.hp*1.7);}
+  e.sw=d.fw/60;e.sh=d.fh/60;const fr=FOERIG[d.sheet];e.rig=makeRig(fr[0],fr[1],d.sheet);e.mesh=e.rig.mesh;e.mesh.position.z=.1+enemies.length%8*.006;enemies.push(e);if(inkMoon&&isNight()&&!d.boss&&!d.worm){e.inked=true;e.hp=e.max=Math.round(e.hp*1.7);}
   // an awakened world (awaken.js) makes every foe tougher; the Leviathan's segments share its life, so they are skipped
   if(BIO.awake&&(!d.worm||type==='lev')){e.awake=true;e.hp=e.max=Math.round(e.max*(d.boss?1.5:1.8));}
   if(d.boss){boss=e;$('boss').hidden=false;$('boss').classList.remove('p1','p2');$('boss').querySelector('.bn').textContent=d.name;bossIntro(e);}

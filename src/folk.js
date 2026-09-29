@@ -13,7 +13,7 @@ export const newFolk=()=>({q:{},heard:{},met:{},n:{},mus:{},col:{},ink:{}});
 export let folk=newFolk();
 export function fcount(k,n=1){folk.n[k]=(folk.n[k]||0)+n;}
 const give=(id,n)=>{if(id==='coin'){addItem('coin',n);return;}const l=addItem(id,n);if(l)dropItem(id,l,player.x,player.y+1);};
-const rewardTxt=r=>r.map(([id,n])=>id==='coin'?`${n} coins`:`${ITEMS[id].name}${n>1?' ×'+n:''}`).join(', ');
+export const rewardTxt=r=>r.map(([id,n])=>id==='coin'?`${n} coins`:`${ITEMS[id].name}${n>1?' ×'+n:''}`).join(', ');
 const camps=()=>(BIO.camps||[]).filter(c=>c.done).length;
 const donated=()=>Object.keys(folk.mus).length;
 const bosses=()=>['king','crane','lev','folio','unfolded'].filter(k=>quests[k]).length;
@@ -87,6 +87,13 @@ const MEMORY=[
   ['r_ink','painter guide',()=>worldDay>=3,'{happy}The old explorers wrote in *invisible ink.* {neutral}Hold a torch close to the walls down there, or bring Lumi along.'],
   ['r_temple','angler curator',()=>worldDay>=6||!!quests.lev,'{surprised}They say a temple sleeps under the Ink Lake. {neutral}It wakes for whoever swims there under an *Ink Moon* carrying a ~Moon Lily~.'],
   ['r_legend','angler',()=>angler.caught>=5,'{surprised}Four *legendary* fish swim in this world. {neutral}Old Crease in the forest ponds, Glacier Jaw under winter ice, Magmaw in the lava, and one that only rises under an ~Ink Moon~.'],
+  ['r_arch','curator scout',()=>!!quests.lev,'{neutral}Somewhere out there is a little stone gatehouse, sealed with ink, with a whole *library* dug in under it. {surprised}Since the Leviathan fell, its door has come ~unstuck~. Take a seam ripper and a needle.'],
+  ['r_obs','scout curator',()=>!!quests.folio,'{surprised}At night I see a *dome* up among the sky islands, turning like a star chart. {neutral}Folded shut, they say, with its crank sealed where only a ~bone folder~ reaches.'],
+  ['r_scrap','guide merchant',()=>!!quests.king,'{neutral}Out past town there\'s an old *scrap mill*, chained shut. {happy}Since the King Slime stopped bouncing, the chain\'s gone slack. Bring a torch, and mind the ~shredders~.'],
+  ['r_well','angler curator',()=>!!quests.unfolded,'{surprised}The ink by the lake shore has started to *bubble*. {neutral}There\'s a temple under there, older than the page. The folded tools you carry will all be needed.'],
+  ['r_seam','tinkerer guide',()=>!!quests.crane,'{neutral}Seen the *stitched seams* in the deep rock? Something was sewn away behind them. {happy}A seam ripper from the anvil would open them: iron and a few crane plumes.'],
+  ['r_rip','tinkerer painter',()=>!!quests.lev,'{sad}Some caves are torn right through the page. Nothing can stand on a tear. {happy}A *golden needle* could sew it shut, gold and an ink heart and some rope.'],
+  ['r_fold','curator guide',()=>!!quests.folio,'{surprised}Those *crease marks* on the cave walls? Fold the page along one and you come out at its partner. {neutral}A ~bone folder~ does it. Fossils make good ones.'],
   ['r_ice','farmer scout angler',()=>season().k==='winter','{happy}The ponds and the lake froze over. You can *walk on the ice!* {neutral}Break a hole in it if you want to fish.'],
   ['r_dry','farmer angler',()=>season().k==='summer','{surprised}The shallow ponds dried up in the heat. {happy}People find *all sorts* in the mud.'],
   ['r_flood','scout guide',()=>season().k==='spring','{sad}The spring melt flooded the low cave passages again. {neutral}They drain by summer, or you can ~swim~ through.'],

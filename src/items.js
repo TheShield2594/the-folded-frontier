@@ -1,8 +1,8 @@
 // Tiles (T, TP and lookup arrays), items, badges and recipes.
-import {C,METAL,SETCOL} from './game.js';
+import {C,cardCell,METAL,SETCOL} from './game.js';
 
 // ================= tiles =================
-export const T={SKYSTONE:68,CLOUD:69,SKYORE:70,DEEP:71,MACHINE:72,BONE:73,GATE:74,CRANK:75,TOWER:76,FAKE:64,DRIFT:65,THIN:66,SEAL:67,MURAL:63,RARE:62,FOIL:61,PEEL:55,SKETCH:56,SIGN:57,PEDESTAL:58,RUBBLE:59,ALTAR:60,CROP:52,ALCHEMY:53,PAINT5:54,PAINT1:39,PAINT2:40,PAINT3:41,PAINT4:42,BANR:43,BANB:44,BANG:45,LANTERNP:46,SHELF:47,CANDLE:48,POT:49,CLOCK:50,ARMCHAIR:51,SNOW:28,ICE:29,FROST:30,INKSTONE:31,INKORE:32,ASH:33,EMBERORE:34,ROPE:35,INK:36,LAVA:37,BLOOM:38,AIR:0,GRASS:1,DIRT:2,STONE:3,PLANK:4,TRUNK:5,COPPER:6,IRON:7,GOLD:8,SAND:9,TORCH:10,DOOR:11,TABLE:12,CHAIR:13,CHEST:14,BENCH:15,BRICK:16,GLASS:17,PLATFORM:18,FURNACE:19,ANVIL:20,BED:21,HEART:22,TUFT:23,FLOWER:24,MUSH:25,CORE:26,FLOWER2:27};
+export const T={SCRAP:85,SHRED:86,CRATE:87,WELLDOOR:88,DOME:82,SCOPE:83,STARDOOR:84,STACKS:81,SEAM:77,RIP:78,SEWN:79,CREASE:80,SKYSTONE:68,CLOUD:69,SKYORE:70,DEEP:71,MACHINE:72,BONE:73,GATE:74,CRANK:75,TOWER:76,FAKE:64,DRIFT:65,THIN:66,SEAL:67,MURAL:63,RARE:62,FOIL:61,PEEL:55,SKETCH:56,SIGN:57,PEDESTAL:58,RUBBLE:59,ALTAR:60,CROP:52,ALCHEMY:53,PAINT5:54,PAINT1:39,PAINT2:40,PAINT3:41,PAINT4:42,BANR:43,BANB:44,BANG:45,LANTERNP:46,SHELF:47,CANDLE:48,POT:49,CLOCK:50,ARMCHAIR:51,SNOW:28,ICE:29,FROST:30,INKSTONE:31,INKORE:32,ASH:33,EMBERORE:34,ROPE:35,INK:36,LAVA:37,BLOOM:38,AIR:0,GRASS:1,DIRT:2,STONE:3,PLANK:4,TRUNK:5,COPPER:6,IRON:7,GOLD:8,SAND:9,TORCH:10,DOOR:11,TABLE:12,CHAIR:13,CHEST:14,BENCH:15,BRICK:16,GLASS:17,PLATFORM:18,FURNACE:19,ANVIL:20,BED:21,HEART:22,TUFT:23,FLOWER:24,MUSH:25,CORE:26,FLOWER2:27};
 export const TP=[];export const SOLID=new Uint8Array(128),OPAQUE=new Uint8Array(128),LB=new Uint8Array(128),LIGHT=new Uint8Array(128);
 function def(id,o){TP[id]=Object.assign({hard:.5,pick:0,drop:null,light:0,solid:false,col:'#888'},o);SOLID[id]=o.solid?1:0;OPAQUE[id]=o.solid&&id!==T.DOOR?1:0;LB[id]=OPAQUE[id]&&id!==T.GLASS?1:0;LIGHT[id]=o.light||0;}
 def(T.AIR,{hard:0,col:'#000'});
@@ -80,7 +80,25 @@ def(T.BONE,{solid:1,hard:1.4,pick:2,drop:null,cell:C.bone,col:'#efe6cf'});
 // dungeons (dungeons.js): the shell and gates can't be dug through, so the puzzle, the mini-boss and the boss have to be beaten in order
 def(T.TOWER,{solid:1,hard:99,pick:99,cell:C.tower,col:'#6e5a48'});
 def(T.GATE,{solid:1,hard:99,pick:99,cell:C.gate,col:'#8a6a3a'});
+// paper tricks (tricks.js): a stitched seam the Seam Ripper tears open, a torn hole in the page the Golden Needle sews shut
+// (into a solid paper patch), and a crease mark the Bone Folder folds the page along to reach its partner
+def(T.SEAM,{solid:1,hard:99,pick:99,cell:C.seam,col:'#8d8f9a'});
+def(T.RIP,{hard:99,pick:99,cell:C.rip,col:'#1c1520'});
+def(T.SEWN,{solid:1,hard:1.2,drop:null,cell:C.sewn,col:'#e9dcc0'});
+def(T.CREASE,{hard:99,pick:99,cell:C.crease,col:'#b8a07a',light:2});
 def(T.CRANK,{hard:99,pick:99,cell:C.crank[0],col:'#c9a24a'});
+// the ink-sealed shelves in front of the Lost Stacks (dungeons.js): the Hollow Archive's key opens them
+def(T.STACKS,{solid:1,hard:99,pick:99,cell:C.stacks,col:'#5a3c78',light:3});
+// the Origami Observatory (dungeons.js): its star-chart shell, the great telescope, and the star-sealed doors of the Star Vaults that its lens opens
+def(T.DOME,{solid:1,hard:99,pick:99,cell:C.dome,col:'#2a3160'});
+def(T.SCOPE,{hard:99,pick:99,cell:C.scope,col:'#c9a24a',light:4});
+def(T.STARDOOR,{solid:1,hard:99,pick:99,cell:C.stardoor,col:'#3a4a8a',light:5});
+// the Great Scrapworks (dungeons.js): its riveted cardboard shell, the shredders in its pit (they bite and throw you up) and the
+// nailed-shut Supply Crates its Crowbar opens; the Ink Wells' sealed doors, which the Sunken Inkwell Temple's Well Nib opens
+def(T.SCRAP,{solid:1,hard:99,pick:99,cell:C.scrap,col:'#9a7a52'});
+def(T.SHRED,{solid:1,hard:99,pick:99,cell:C.shred,col:'#8d8f9a'});
+def(T.CRATE,{solid:1,hard:99,pick:99,cell:C.crate,col:'#a86b3a'});
+def(T.WELLDOOR,{solid:1,hard:99,pick:99,cell:C.welldoor,col:'#3a2a5a',light:4});
 export const WALLCELL=[0,C.wDirt,C.wWood,C.wStone,C.wRed,C.wBlue,C.wGreen,C.wYellow],WALLCOL=['#000','#4e3824','#5e4128','#55576a','#6a2e28','#2e4262','#3a583a','#806832'],WALLDROP=[null,null,'woodwall','stonewall','wallred','wallblue','wallgreen','wallyellow'];
 
 // ================= items =================
@@ -298,6 +316,43 @@ item('skybar',{name:'Skyglass Bar',cell:C.barSky,value:45});
 item('deepslate',{name:'Pressed Slate',cell:C.deep,place:T.DEEP,desc:'Pages pressed flat for ages. Needs a Frostsilver Pickaxe or better.'});
 item('cog',{name:'Ancient Cog',cell:C.cog,value:15,desc:'Pried from the old machines of the Pressed Deep.'});
 item('clockwings',{name:'Clockwork Wings',cell:C.clockwings,acc:['fly','djump'],max:1,value:400,desc:'Brass and paper wings from the Folded Clocktower. Hold Jump in mid-air to fly for a moment; they rewind on the ground. Reaches the sky islands.'});
+// ---- trading cards (cards.js, issue #67): found in ruin, sky and dungeon chests and buried treasure, or opened from packs;
+// a Card Binder in the backpack files them into the per-world collection (cards.have). Keys are saved, so keep them stable.
+// RARITY[r].w: the odds of each rarity at luck 0 (ruins, packs), 1 (sky shrines, dungeon chests, secret chests), 2 (treasure).
+export const RARITY=[{n:'Common',w:[60,40,20]},{n:'Rare',w:[28,34,36]},{n:'Halo',w:[9,18,28]},{n:'Full Art',w:[3,8,16]}];
+export const CARDPAGES=[{id:'field',n:'Field Guide',tip:'Foes of the surface, the caves and the sky.',reward:[['cardpack',2],['coin',300]]},
+  {id:'friends',n:'Friends of the Frontier',tip:'Townsfolk, partners and a pet.',reward:[['bpup',1],['cardpack',2]]},
+  {id:'legends',n:'Legends',tip:'The bosses, from the King Slime to The Unfolded.',reward:[['cardpackg',2],['coin',1500]]}];
+// [key, name, rarity, picture: [kind ('foe' an enemy's sketch, 'folk' a townsperson, 'pal' a partner, 'pet'), key], page, line]
+export const CARDS=[
+  ['slime','Green Slime',0,['foe','slime'],'field','Bounces first, thinks later.'],['bat','Paper Bat',0,['foe','bat'],'field','Folded in the dark, and cross about it.'],
+  ['crumple','Crumple',0,['foe','crumple'],'field','A page someone gave up on.'],['toadstool','Toadstool Lobber',0,['foe','toadstool'],'field','It throws what it grows.'],
+  ['foldfox','Fold Fox',0,['foe','foldfox'],'field','Three folds and a grin.'],['blot','Ink Blot',0,['foe','blot'],'field','Every spill wants to spread.'],
+  ['skyray','Paper Ray',1,['foe','skyray'],'field','It glides where the page runs out.'],['wraith','Ink Wraith',1,['foe','wraith'],'field','Only the Ink Moon can see it clearly.'],
+  ['guide','The Guide',0,['folk','guide'],'friends','Knows every recipe, and says so.'],['merchant','The Merchant',0,['folk','merchant'],'friends','Everything has a price. Cards too.'],
+  ['angler','The Angler',0,['folk','angler'],'friends','Patience, and a very long line.'],['curator','The Curator',1,['folk','curator'],'friends','Keeps the world\'s oddments behind glass.'],
+  ['lumi','Lumi',1,['pal','lumi'],'friends','A little light that never leaves.'],['snip','Snip',1,['pal','snip'],'friends','Sharp, small and very sure of itself.'],
+  ['ember','Ember',2,['pal','ember'],'friends','Warm company, hot temper.'],['crease','Old Crease',2,['pet','crease'],'friends','The oldest fold in the forest pond.'],
+  ['king','King Slime',2,['foe','king'],'legends','Every hop shakes the page.'],['crane','Great Crane',3,['foe','crane'],'legends','A thousand folds, one sharp beak.'],
+  ['sentinel','Clockwork Sentinel',2,['foe','sentinel'],'legends','Wound once, a thousand years ago.'],['mainspring','The Mainspring',3,['foe','mainspring'],'legends','It keeps the seasons turning.'],
+  ['lev','Inkwell Leviathan',3,['foe','lev'],'legends','It swims where the ink runs deepest.'],['bookmoth','The Bookmoth',2,['foe','bookmoth'],'legends','It has eaten every word down there.'],
+  ['folio','Charred Folio',3,['foe','folio'],'legends','Every chapter ends in flame.'],['unfolded','The Unfolded',3,['foe','unfolded'],'legends','It remembers the world before the folds.']];
+export const CARDBACK=[0,1,2,3].map(r=>C['cardback'+r]=cardCell(r));
+for(const[k,n,r,,pg,line]of CARDS)item('card_'+k,{name:n+' Card',cell:C['card_'+k]=cardCell(r),card:k,max:99,value:[10,30,90,250][r],
+  desc:`${RARITY[r].n} trading card · ${CARDPAGES.find(p=>p.id===pg).n}. “${line}” Carry a Card Binder to file it.`});
+// a random card's item id: the rarity is rolled with the luck's odds, then a card of that rarity
+export function cardId(luck=0,min=0){const w=RARITY.map((o,r)=>r<min?0:o.w[luck]),sum=w.reduce((a,b)=>a+b,0);let v=Math.random()*sum,r=0;while(r<3&&v>=w[r]){v-=w[r];r++;}
+  const l=CARDS.filter(c=>c[2]===r);return 'card_'+l[Math.floor(Math.random()*l.length)][0];}
+item('binder',{name:'Card Binder',cell:C.binder,use:'binder',max:1,value:60,desc:'Use it to open. While it is in your backpack, trading cards you carry file themselves into it.'});
+item('cardpack',{name:'Card Pack',cell:C.cardpack,use:'pack',pack:0,max:99,value:60,desc:'Use it to open: three trading cards, at least one Rare or better.'});
+item('cardpackg',{name:'Gilded Card Pack',cell:C.cardpackg,use:'pack',pack:1,max:99,value:220,desc:'Use it to open: five trading cards, at least one Halo or better.'});
+item('crowbar',{name:'Crowbar',cell:C.crowbar,max:1,value:180,desc:'From the Pulper\'s bin in the Great Scrapworks. While it is in your backpack, right-click a nailed-shut Supply Crate in the caves to pry it open.'});
+item('wellnib',{name:'Well Nib',cell:C.wellnib,max:1,value:700,desc:'The Grand Nib\'s own point, from the Sunken Inkwell Temple. While it is in your backpack, right-click a sealed Ink Well in the Pressed Deep to write it open.'});
+item('starlens',{name:'Star Lens',cell:C.starlens,max:1,value:520,desc:'The great telescope\'s lens, from the Origami Observatory. While it is in your backpack, right-click a star-sealed door high in the sky to open the Star Vault behind it.'});
+item('archkey',{name:'Archive Key',cell:C.archkey,max:1,value:420,desc:'From the heart of the Hollow Archive. While it is in your backpack, right-click an ink-sealed shelf deep underground to open the Lost Stacks behind it.'});
+item('ripper',{name:'Seam Ripper',cell:C.ripper,max:1,value:90,desc:'A paper trick: while it is in your backpack, right-click a stitched seam in the rock to tear it open.'});
+item('needle',{name:'Golden Needle',cell:C.needle,max:1,value:150,desc:'A paper trick: while it is in your backpack, right-click a torn hole in the page to sew it shut.'});
+item('folder',{name:'Bone Folder',cell:C.folder,max:1,value:240,desc:'A paper trick: while it is in your backpack, right-click a crease mark to fold the page along it and step out at the other end.'});
 item('skyhook',{name:'Skyglass Hook',cell:C.skyhook,hook:1,max:1,value:180,desc:'A grappling hook with a skyglass tip: reaches almost twice as far and pulls faster. Press F (or LT) to fire.'});
 item('skyblade',{name:'Skyglass Saber',cell:C.swSky,dmg:36,kb:6,dur:.25,max:1,value:140,desc:'Light as air. Quick cuts.'});
 item('gear',{name:'Spinning Gear',cell:C.cog});
@@ -305,7 +360,7 @@ item('gear',{name:'Spinning Gear',cell:C.cog});
 export const RECIPES=[
  ['bench',1,[['wood',10]],null],['torch',3,[['wood',1],['gel',1]],null],['platform',2,[['wood',1]],null],
  ['woodwall',4,[['wood',1]],'bench'],['door',1,[['wood',6]],'bench'],['table',1,[['wood',8]],'bench'],['chair',1,[['wood',4]],'bench'],
- ['chest',1,[['wood',8]],'bench'],['bed',1,[['wood',15],['gel',5]],'bench'],['hammer',1,[['wood',8]],'bench'],['woodsword',1,[['wood',7]],'bench'],
+ ['chest',1,[['wood',8]],'bench'],['binder',1,[['paper',12],['wood',4],['gel',2]],'bench'],['bed',1,[['wood',15],['gel',5]],'bench'],['hammer',1,[['wood',8]],'bench'],['woodsword',1,[['wood',7]],'bench'],
  ['potion',1,[['gel',2],['mushroom',1]],'bench'],['glider',1,[['batwing',4],['gel',10]],'bench'],
  ['furnace',1,[['stone',20],['wood',4],['torch',3]],'bench'],
  ['copperbar',1,[['copperore',3]],'furnace'],['ironbar',1,[['ironore',3]],'furnace'],['goldbar',1,[['goldore',4]],'furnace'],
@@ -354,6 +409,7 @@ export const RECIPES=[
  ['helm_sky',1,[['emberbar',8],['plume',4],['batwing',4]],'anvil'],['mail_sky',1,[['emberbar',12],['plume',6],['batwing',6]],'anvil'],['legs_sky',1,[['emberbar',10],['plume',5],['batwing',4]],'anvil'],
  ['helm_weave',1,[['emberbar',8],['inkheart',2],['fstar',8]],'anvil'],['mail_weave',1,[['emberbar',12],['inkheart',3],['fstar',12]],'anvil'],['legs_weave',1,[['emberbar',10],['inkheart',2],['fstar',10]],'anvil'],['shfo',1,[['foilbar',14]],'anvil'],
  ['skybar',1,[['skyore',4]],'furnace'],['skyhook',1,[['skybar',10],['cog',4],['hook',1]],'anvil'],['skyblade',1,[['skybar',14],['cog',2]],'anvil'],['clock',1,[['wood',8],['cog',2]],'bench'],
+ ['ripper',1,[['ironbar',4],['plume',2]],'anvil'],['needle',1,[['goldbar',4],['inkheart',1],['rope',5]],'anvil'],['folder',1,[['fos_amm',1],['fos_tri',1],['cinder',1]],'anvil'],
  ['inktome',1,[['fstar',5],['gel',8],['mushroom',3]],'bench'],['cranetome',1,[['fstar',10],['goldbar',8],['batwing',4]],'anvil'],['starstaff',1,[['fstar',20],['goldbar',12]],'anvil'],
 ];
-export const SHOP=[['rodwood',40],['fly',3],['tmap',150],['seed_sun',5],['seed_wheat',5],['bucket',60],['b_stomp',60],['b_dip',150],['b_heartf',120],['torch',5],['rope',1],['hook',200],['potion',25],['arrow',1],['paper',1],['manapotion',20],['woodbow',30],['shuriken',3],['glass',4],['bed',60],['crown',180],['lantern',300],['glider',450]];
+export const SHOP=[['cardpack',120],['rodwood',40],['fly',3],['tmap',150],['seed_sun',5],['seed_wheat',5],['bucket',60],['b_stomp',60],['b_dip',150],['b_heartf',120],['torch',5],['rope',1],['hook',200],['potion',25],['arrow',1],['paper',1],['manapotion',20],['woodbow',30],['shuriken',3],['glass',4],['bed',60],['crown',180],['lantern',300],['glider',450]];

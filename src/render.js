@@ -4,7 +4,7 @@ import {
   reduceMotion,$,atlas,blk,buildDiorama,C,canopyCell,cellXY,circ,computeLight,CS,fi,grain,H,idx,INK,ink,isOpaque,ITEMS,LB,lightAt,meta,mk,
   LIGHT,mulberry32,N,OPAQUE,pick,player,poly,rand,rr,seed,SET,sh,sky,stamp,surfAvg,T,tileAt,tiles,TP,W,
   WALLCELL,walls,markFg,
-  buildMarks,
+  buildMarks,rigPic,
 } from './game.js';
 
 // ================= three setup =================
@@ -110,7 +110,7 @@ export function buildChunk(cx,cy){markFg(cx);const P=[],UV=[],L=[],I=[];let vc=0
     const w=walls[i];if(w){quad([x,y,-.5,x+1,y,-.5,x+1,y+1,-.5,x,y+1,-.5],cellUV(WALLCELL[w]),c4(),.52);}
     if(t===T.AIR)continue;
     if(TP[t].liq){const top=tileAt(x,y+1)!==t;const lava=t===T.LAVA;lquad([x,y,.42,x+1,y,.42,x+1,y+1,.42,x,y+1,.42],cellUV(lava?(top?C.lavaT:C.lavaF):(top?C.inkT:C.inkF)),c4(),lava?2:1);continue;}
-    let cell=TP[t].cell,z=0;if(t===T.SKETCH)cell=meta[i]===2?C.sketchS:C.sketchB;if(t===T.SIGN)cell=meta[i]?C.sign1:C.sign0;if(t===T.CRANK)cell=C.crank[meta[i]&1];if(t===T.MURAL){cell=C.murals[meta[i]&3];z=-.45;}if(t===T.CROP){const m=meta[i];cell=C.crops[Math.min(4,m>>2)][Math.min(2,m&3)];}if(t===T.RARE){const m=meta[i];cell=C.rare[Math.min(3,m>>2)][Math.min(2,m&3)];}
+    let cell=TP[t].cell,z=0;if(t===T.SKETCH)cell=meta[i]===2?C.sketchS:C.sketchB;if(t===T.SIGN)cell=meta[i]?C.sign1:C.sign0;if(t===T.CRANK)cell=C.crank[meta[i]&1];if(t===T.MURAL){cell=C.murals[meta[i]&3];z=-.45;}if(t===T.CREASE)z=-.45;if(t===T.CROP){const m=meta[i];cell=C.crops[Math.min(4,m>>2)][Math.min(2,m&3)];}if(t===T.RARE){const m=meta[i];cell=C.rare[Math.min(3,m>>2)][Math.min(2,m&3)];}
     if(t===T.DOOR){const m=meta[i];cell=(m&1)?((m&2)?C.doorOT:C.doorOB):((m&2)?C.doorT:C.doorB);}
     if(t===T.TRUNK)z=-.2;
     const l4=c4();quad([x,y,z,x+1,y,z,x+1,y+1,z,x,y+1,z],cellUV(cell),l4,EMIS(t,1));
@@ -138,17 +138,14 @@ export function setTile(x,y,t,m=0){if(x<0||y<0||x>=W||y>=H)return;const i=idx(x,
 export function makeSheet(n,fw,fh,draw,b=4){const out=mk(n*fw,fh),o=out.getContext('2d');for(let f=0;f<n;f++){const tmp=mk(fw,fh),t=tmp.getContext('2d');draw(t,f);grain(t,0,0,fw,fh,12);const sil=mk(fw,fh),s=sil.getContext('2d');s.drawImage(tmp,0,0);s.globalCompositeOperation='source-in';s.fillStyle='#fbf5e6';s.fillRect(0,0,fw,fh);
   o.save();o.beginPath();o.rect(f*fw,0,fw,fh);o.clip();for(let i=0;i<16;i++){const a=i/16*Math.PI*2;o.drawImage(sil,f*fw+Math.cos(a)*b,Math.sin(a)*b);}o.drawImage(tmp,f*fw,0);o.restore();}return out;}
 // Humans (the player and townsfolk) are drawn as layers over body parts, back to front. The look `o` says what each layer wears:
-//  body: skin | face: eyeCol, eyeY, noBlush, blink, face (an expression, as faceX) | hair: hair color, hairS style | hat: hat color, hatS style
+//  body: skin | face: eyeCol, eyeY, noBlush, blink, face (an expression), brow (brows over it) | hair: hair color, hairS style | hat: hat color, hatS style
 //  shirt: tunic | pants: pants, belt | boots: boots | cape: scarf (at the neck), cape (down the back) | acc: back/extra/front draw callbacks
 //  armor: helm, mail, greaves, the worn armor's colors, drawn over the clothes
-// HUMAN_ORDER is the list of [part, layer] steps; a layer with nothing to wear on a part draws nothing. The human rig (rig.js)
-// bakes each part's layers into its own paper piece, so any mix of armor, clothes and cosmetics is one re-bake of the rig's skin
-// (player.sheetDirty), not a new hand-drawn sheet. drawHuman still draws whole still pictures (portraits, the look preview).
-// The held weapon, the shield and status overlays are their own meshes over the rig (gameplay.js).
+// A layer with nothing to wear on a part draws nothing. The human rig (rig.js) lists which layers each of its parts bakes, back
+// to front, into its own paper piece, so any mix of armor, clothes and cosmetics is one re-bake of the rig's skin
+// (player.sheetDirty), not a new hand-drawn sheet. Still pictures (portraits, the look preview) are rigPic() of the same rig.
+// The held weapon and the shield are slots on the rig (rigHold); the status overlays are their own meshes (gameplay.js).
 const HIP=110;export const LIMB={legB:[43,HIP,.8],armB:[42,82,.78],legA:[53,HIP,1],armA:[55,82,1]};
-const HUMAN_ORDER=[['back','cape'],['back','hair'],['legB','pants'],['legB','armor'],['legB','boots'],['armB','shirt'],['armB','armor'],['armB','body'],['back','acc'],
-  ['torso','shirt'],['torso','armor'],['torso','pants'],['legA','pants'],['legA','armor'],['legA','boots'],
-  ['head','body'],['head','hair'],['head','armor'],['head','face'],['head','hat'],['neck','cape'],['head','acc'],['armA','shirt'],['armA','armor'],['armA','body'],['front','acc']];
 const isArm=p=>p==='armA'||p==='armB',isLeg=p=>p==='legA'||p==='legB';
 // hair styles: [cap over the head, piece behind the head (drawn before the body)]
 const HAIRCAP={short:[29,60,22,26,50,26,76,26,73,46],long:[28,66,20,24,50,25,77,25,74,47],bun:[29,60,22,26,50,26,76,26,73,46],pony:[29,60,22,26,50,26,76,26,73,46]};
@@ -183,22 +180,17 @@ export const HL={
     if(p==='back'&&o.cape){t.beginPath();t.moveTo(34,70);t.quadraticCurveTo(22,96,14+w,124);t.lineTo(30+w*.6,128);t.quadraticCurveTo(38,104,52,74);t.closePath();fi(t,sh(o.cape,.8));}
     else if(p==='neck'&&o.scarf){rr(t,32,67,35,9,4);fi(t,o.scarf);if(o.cape)return;t.beginPath();t.moveTo(36,70);t.quadraticCurveTo(24,72+w,16,82+w);t.lineTo(22,84+w);t.quadraticCurveTo(28,78,38,76);t.closePath();fi(t,o.scarf,2);}},
   acc(t,p,o){const f=p==='back'?o.back:p==='head'?o.extra:o.front;if(f)f(t);},
-  face(t,p,o){const ey=o.eyeY||50,X=faceX||o.face;
+  face(t,p,o){const ey=o.eyeY||50,X=o.face;
     for(const ex of[58,48]){if(X==='happy'){t.beginPath();t.arc(ex,ey+2,3.8,3.5,5.9);ink(t,2.6,o.eyeCol||INK);continue;}
       // hurt: eyes squeezed shut; ko: crossed out (the death pose)
       if(X==='hurt'){const d=ex>50?-1:1;t.beginPath();t.moveTo(ex-3.5*d,ey-3.5);t.lineTo(ex+3*d,ey);t.lineTo(ex-3.5*d,ey+3.5);ink(t,2.4,o.eyeCol||INK);continue;}
       if(X==='ko'){t.beginPath();t.moveTo(ex-3,ey-3);t.lineTo(ex+3,ey+3);t.moveTo(ex+3,ey-3);t.lineTo(ex-3,ey+3);ink(t,2.4,o.eyeCol||INK);continue;}
       const r=X==='surprised'?1.3:1;t.beginPath();t.ellipse(ex,ey,3*r,o.blink?1:5*r,0,0,6.28);t.fillStyle=o.eyeCol||INK;t.fill();if(!o.blink){circ(t,ex+1,ey-2,1.3*r);t.fillStyle='#fff';t.fill();}}
-    // brows only when a portrait asks for an expression (see facePic)
-    if(faceX&&X!=='happy'){const b=X==='sad'?[-7,-10]:X==='angry'?[-10,-6]:[-12,-12];for(const[x0,x1]of[[44,51],[62,55]]){t.beginPath();t.moveTo(x0,ey+b[0]);t.lineTo(x1,ey+b[1]);ink(t,2.4);}}
+    // brows only on the portraits' expressions (the head variants surprised, sad and angry)
+    if(o.brow){const b=X==='sad'?[-7,-10]:X==='angry'?[-10,-6]:[-12,-12];for(const[x0,x1]of[[44,51],[62,55]]){t.beginPath();t.moveTo(x0,ey+b[0]);t.lineTo(x1,ey+b[1]);ink(t,2.4);}}
     if(!o.noBlush){circ(t,63,58,X==='happy'?5:4);t.fillStyle='rgba(230,110,110,.45)';t.fill();}
     t.beginPath();if(X==='happy'){t.moveTo(53.5,58);t.quadraticCurveTo(58,67,62.5,58);t.closePath();fi(t,'#9a3b3b',1.8);}else if(X==='surprised'||X==='hurt'){t.ellipse(58,61,2.6,3.6,0,0,6.28);fi(t,'#6a2a2a',1.6);}
     else if(X==='sad'||X==='ko'){t.arc(58,64,3.5,3.5,5.9);ink(t,2);}else if(X==='angry'){t.moveTo(54,61.5);t.lineTo(58,60);t.lineTo(62,61.5);ink(t,2);}else{t.arc(58,59,3.5,.2,2.6);ink(t,2);}}};
-// faceX: the expression drawHuman gives the face ('happy','surprised','sad','angry'); only set while facePic draws a portrait
-let faceX=null;
-function drawHuman(t,o){t.save();t.translate(0,o.bob||0);if(o.lean){t.translate(48,138);t.rotate(o.lean);t.translate(-48,-138);}
-  for(const[p,l]of HUMAN_ORDER){if(p==='armA'&&o.noArm)continue;const L=LIMB[p];if(L){t.save();t.translate(L[0],L[1]);t.rotate(o[p]||0);HL[l](t,p,o,L[2]);t.restore();}else HL[l](t,p,o,1);}
-  t.restore();}
 // Player poses: the numbers the human rig's clips are built from (rig.js turns each into a clip, and the idle, walk, climb,
 // cheer and reel loops blend between them). 0-1 idle, 2-5 walk, 6 jump, 7 fall, 8 hold (a tool or item at rest)
 export const POSES=[{legA:.03,legB:-.03,armA:.12,armB:-.12},{legA:.03,legB:-.03,armA:.18,armB:-.08,bob:1.5,wave:2}];
@@ -230,16 +222,18 @@ export function cleanLook(l){const o={};for(const k in LOOK){const v=l&&l[k];o[k
 export function lookColors(l){l=cleanLook(l);const a=LOOK.acc[l.acc],c=LOOK.capeS[l.capeS];
   return{skin:LOOK.skin[l.skin],hair:LOOK.hair[l.hair],hairS:LOOK.hairS[l.hairS],tunic:LOOK.tunic[l.tunic],hatS:LOOK.hatS[l.hatS],hat:a,scarf:c==='none'?null:a,cape:c==='cape'?a:null};}
 // playerLook(): what the player wears now (the look picked at world creation plus worn armor), the skin of the player's rig
-export function playerLook(look=player.look){const eq={};const a=player.armor||[];if(a[0])eq.helm=ITEMS[a[0].id].color;if(a[1])eq.mail=ITEMS[a[1].id].color;if(a[2])eq.greaves=ITEMS[a[2].id].color;
+export function playerLook(look=player.look,a=player.armor||[]){const eq={};if(a[0])eq.helm=ITEMS[a[0].id].color;if(a[1])eq.mail=ITEMS[a[1].id].color;if(a[2])eq.greaves=ITEMS[a[2].id].color;
   return Object.assign({pants:'#3b3552',boots:'#6b4430',back:tt=>{tt.beginPath();tt.moveTo(38,74);tt.lineTo(58,104);ink(tt,3.5,'#6b4430');rr(tt,24,92,16,16,4);fi(tt,'#b9874f',2);}},lookColors(look),eq);}
-function playerDraw(look=player.look){const base=playerLook(look);return t=>drawHuman(t,Object.assign({},base,POSES[0]));}
-// lookPic(look): the player standing in a given look, for the New World dialog's preview
-export function lookPic(look){return makeSheet(1,96,144,t=>playerDraw(look)(t,0));}
-// Townsfolk sheets keep their draw function so facePic() can redraw frame 0 with an expression.
-const NPCDRAW={};function npcSheet(k,draw){NPCDRAW[k]=draw;return makeSheet(2,96,144,draw);}
-// facePic(k, expr): one standing frame of an NPC type (or 'player') drawn with the given expression, for dialogue portraits
-export function facePic(k,expr){const draw=k==='player'?playerDraw():NPCDRAW[k];if(!draw)return null;faceX=expr||null;try{return makeSheet(1,96,144,t=>draw(t,0));}finally{faceX=null;}}
-// Townsfolk looks (drawHuman's o): their rigs wear these (rig.js), and their sheets are the still pictures for portraits.
+// Still pictures of humans come from the human rig (rigPic), so a portrait is the same paper cut-out as the one in the world.
+// lookPic(look): the player standing in a given look, for the New World dialog's preview (a new world starts with no armor)
+export function lookPic(look){return rigPic('human',playerLook(look,[]),'idle',0);}
+// folkPose(k): a townsperson standing as in town, holding their tool
+const folkPose=k=>{const o=FOLK[k];return{armA:{r:o.arm},armB:{r:o.armB??.1}};};
+// facePic(k, expr): an NPC type (or 'player', in the skin the player's rig wears now) standing, with the head swapped to
+// the expression (happy, surprised, sad, angry; null for the plain face), for dialogue portraits
+export function facePic(k,expr){const pl=k==='player';if(!pl&&!FOLK[k])return null;
+  return rigPic('human',pl?player.rig?.S||playerLook():FOLK[k],'idle',0,pl?null:k,Object.assign(pl?{}:folkPose(k),{head:{sw:expr||''}}));}
+// Townsfolk looks (the human layers' o): their rigs wear these (rig.js), and SHEETS[k] is the still picture for portraits.
 // arm: the front arm angle they stand with (holding their tool), armB the back arm's.
 export const FOLK={
   guide:{skin:'#e8b88f',hair:'#7a4b2a',tunic:'#4f7fa6',pants:'#3b3552',boots:'#5a3a22',scarf:'#f1c04f',
@@ -271,22 +265,13 @@ export const FOLK={
     extra:tt=>{tt.beginPath();tt.moveTo(24,52);tt.quadraticCurveTo(22,18,50,18);tt.quadraticCurveTo(78,18,76,44);tt.lineTo(70,36);tt.quadraticCurveTo(50,28,32,38);tt.closePath();fi(tt,'#7a3a2a');},arm:-.6}};
 export const SHEETS={};
 export function buildSheets(){
-  for(const k in FOLK){const o=FOLK[k];SHEETS[k]=npcSheet(k,(t,f)=>drawHuman(t,Object.assign({},o,{legA:f?.4:.03,legB:f?-.4:-.03,armA:f?-.3:o.arm,armB:o.armB??.1,bob:f?-1:0})));}
+  for(const k in FOLK)SHEETS[k]=facePic(k);
   // the player's status overlays (gameplay.js statusOverlay): 0 paper flames, 1 ink blots and drips, 2 water drops
   SHEETS.pstatus=makeSheet(3,96,144,(t,f)=>{
     if(f===0){for(const[x,y,h,c]of[[26,126,26,'#ff8a3d'],[70,128,30,'#ff8a3d'],[34,98,20,'#ffd66b'],[66,84,22,'#ffd66b'],[22,72,18,'#ff8a3d'],[76,58,16,'#ffd66b']]){t.beginPath();t.moveTo(x-7,y);t.quadraticCurveTo(x-8,y-h*.6,x,y-h);t.quadraticCurveTo(x+8,y-h*.6,x+7,y);t.closePath();fi(t,c,2);t.beginPath();t.moveTo(x-3,y);t.quadraticCurveTo(x,y-h*.7,x+3,y);t.closePath();t.fillStyle='#fff3c0';t.fill();}}
     else if(f===1){for(const[x,y,r]of[[44,86,6],[58,98,4.5],[40,56,4],[62,40,3.5],[50,112,4]]){circ(t,x,y,r);fi(t,'#3a2a5a',1.8);circ(t,x+r*.8,y+r*.6,r*.4);t.fillStyle='#3a2a5a';t.fill();}
       for(const[x,y,l]of[[36,62,14],[60,104,12],[48,90,10]]){rr(t,x-2,y,4,l,2);fi(t,'#3a2a5a',1.5);circ(t,x,y+l,3);t.fillStyle='#3a2a5a';t.fill();}}
     else for(const[x,y,r]of[[30,40,4],[70,52,3.5],[26,80,4.5],[74,96,4],[40,20,3.5],[62,24,3]]){t.beginPath();t.moveTo(x,y-r*2);t.quadraticCurveTo(x+r,y-r*.3,x+r,y+r*.3);t.arc(x,y+r*.3,r,0,Math.PI);t.quadraticCurveTo(x-r,y-r*.3,x,y-r*2);fi(t,'#a8e4ff',1.8);circ(t,x-r*.35,y,r*.3);t.fillStyle='#fff';t.fill();}});
-  SHEETS.unfolded=makeSheet(2,300,360,(t,f)=>{const cx=150,lg=f?10:-10;
-    for(const[x,o]of[[122,lg],[178,-lg]]){poly(t,[x-20,250,x+20,250,x+14+o,350,x-26+o,350]);fi(t,'#e9dcc0',5);t.beginPath();t.moveTo(x-6,250);t.lineTo(x-2+o,350);ink(t,2,'rgba(42,33,48,.25)');}
-    for(const s2 of[-1,1]){poly(t,[cx+s2*70,120,cx+s2*118,150+(f?-10:10),cx+s2*122,250,cx+s2*96,255,cx+s2*80,170]);fi(t,'#e9dcc0',5);}
-    poly(t,[cx-76,110,cx+76,110,cx+60,262,cx-60,262]);fi(t,'#f4f0e6',5);for(let y=130;y<250;y+=16){t.beginPath();t.moveTo(cx-50,y);t.lineTo(cx+50,y+2);ink(t,1.5,'rgba(42,33,48,.2)');}
-    t.beginPath();t.moveTo(cx-76,110);t.lineTo(cx+60,262);t.moveTo(cx+76,110);t.lineTo(cx-60,262);ink(t,2,'rgba(42,33,48,.2)');
-    poly(t,[cx-50,20,cx+50,20,cx+56,104,cx-56,104]);fi(t,'#f4f0e6',5);poly(t,[cx+50,20,cx+56,104,cx+40,60]);t.fillStyle='#d9ccb4';t.fill();
-    for(const ex of[cx-20,cx+18]){t.beginPath();t.ellipse(ex,64,11,8,0,0,6.28);t.fillStyle='#2a1a3a';t.fill();circ(t,ex+2,64,4);t.fillStyle='#e0b0ff';t.fill();}
-    t.beginPath();t.moveTo(cx-24,90);t.lineTo(cx-8,84);t.lineTo(cx+8,92);t.lineTo(cx+24,84);ink(t,3);},6);
-  SHEETS.wraith=makeSheet(2,96,128,(t,f)=>{const w=f?6:-6;t.beginPath();t.moveTo(20,112);t.quadraticCurveTo(14,40,48,14);t.quadraticCurveTo(82,40,76,112);for(let x=76;x>=20;x-=14){t.quadraticCurveTo(x-7,112+(((x/14)|0)%2?10:-2)+w*.5,x-14,112);}t.closePath();fi(t,'#3a1a4a',3);t.beginPath();t.moveTo(30,60);t.quadraticCurveTo(48,30,66,60);ink(t,2,'rgba(200,150,255,.35)');for(const x of[40,58]){t.beginPath();t.ellipse(x,52,5,7,0,0,6.28);t.fillStyle='#e0b0ff';t.fill();}t.beginPath();t.ellipse(49,72,6,4,0,0,6.28);t.fillStyle='#1a0a24';t.fill();});
   for(const k of Object.keys(SHEETS))SHEETS[k+'T']=canvasTex(SHEETS[k]);}
 export const INKTINT=new THREE.Vector3(.85,.6,1.15);
 export const markGeo=new THREE.PlaneGeometry(.6,.6),markMat=new THREE.MeshBasicMaterial({transparent:true,alphaTest:.5,depthTest:false});
@@ -313,88 +298,6 @@ export function updateEnemyFx(e,dt){const top=e.y+e.h+(e.d.fly?.15:.3);e.hpShow=
   if(e.warn){if(!e.mark){e.mark=new THREE.Mesh(markGeo,markMat);e.mark.renderOrder=8;scene.add(e.mark);}e.mark.visible=true;const k=(SET.cb&&SET.cb!=='off'?1.3:1)*(SET.tele?1.35:1)*(1+.18*Math.sin(e.t*20));e.mark.scale.set(k,k,1);e.mark.position.set(e.x,top+(e.elite?1.05:.6),.7);}else if(e.mark)e.mark.visible=false;
   const show=!e.d.boss&&e.hpShow>0&&e.hp<e.max;if(show&&!e.bar){const bg=new THREE.Mesh(barBgGeo,barBgMat),fg=new THREE.Mesh(barFgGeo,e.elite?barFgEliteMat:barFgMat);bg.renderOrder=6;fg.renderOrder=7;scene.add(bg,fg);e.bar=[bg,fg];}
   if(e.bar){e.bar[0].visible=e.bar[1].visible=show;if(show){const bw=Math.max(.9,e.w+.2);e.bar[0].scale.x=bw;e.bar[0].position.set(e.x,top+.12,.66);e.bar[1].scale.x=Math.max(.001,(bw-.08)*e.hp/e.max);e.bar[1].position.set(e.x-bw/2+.04,top+.12,.67);}}}
-function snowDraw(w,h){return(t,f)=>{const cx=w/2,sq=f?1:0,r=Math.min(w,h)*.4,rx=r*(1+sq*.12),ry=r*(1-sq*.15),cy=h-6-ry;
-  t.beginPath();t.ellipse(cx,cy,rx,ry,0,0,6.28);fi(t,'#f6f9fb',3);t.beginPath();t.ellipse(cx-rx*.35,cy-ry*.4,rx*.22,ry*.14,-.5,0,6.28);t.fillStyle='rgba(174,224,242,.6)';t.fill();
-  for(const ex of[cx+rx*.12,cx+rx*.42]){circ(t,ex,cy-ry*.14,r*.08+1);t.fillStyle=INK;t.fill();}poly(t,[cx+rx*.3,cy+ry*.04,cx+rx*1.05,cy+ry*.16,cx+rx*.3,cy+ry*.28]);fi(t,'#e0823d',1.5);
-  t.beginPath();t.moveTo(cx-rx*.6,cy+ry*.5);t.quadraticCurveTo(cx,cy+ry*.8,cx+rx*.5,cy+ry*.6);ink(t,1.2,'rgba(42,33,48,.25)');};}
-// newer biome enemies: every sheet faces right, 2 frames
-export function buildMoreSheets(){
-  SHEETS.crumple=makeSheet(2,80,80,(t,f)=>{const pts=[];for(let i=0;i<14;i++){const a=i/14*6.283+f*.2,r=(i%2?25:31)+((i*7)%5)-2;pts.push(40+Math.cos(a)*r,40+Math.sin(a)*r);}poly(t,pts);fi(t,'#efe6d2',3);
-    t.beginPath();for(let i=0;i<5;i++){const a=i*1.3+f;t.moveTo(40+Math.cos(a)*6,40+Math.sin(a)*6);t.lineTo(40+Math.cos(a)*26,40+Math.sin(a)*26);}ink(t,1.4,'rgba(42,33,48,.35)');
-    for(const ex of[46,58]){circ(t,ex,37,3.4);t.fillStyle=INK;t.fill();}t.beginPath();t.moveTo(41,29);t.lineTo(50,32);t.moveTo(63,29);t.lineTo(54,32);ink(t,2.4);t.beginPath();t.moveTo(47,49);t.lineTo(57,47);ink(t,2);});
-  SHEETS.toadstool=makeSheet(2,96,96,(t,f)=>{const sq=f?5:0;rr(t,32,48+sq,32,44-sq,12);fi(t,'#f4ecd8',3);for(const ex of[50,59]){t.beginPath();t.ellipse(ex,64+sq*.5,2.6,4.2,0,0,6.28);t.fillStyle=INK;t.fill();}t.beginPath();t.arc(55,74+sq*.5,3,.2,2.9);ink(t,2);
-    t.beginPath();t.moveTo(8,54+sq);t.bezierCurveTo(8,10+sq*1.6,88,10+sq*1.6,88,54+sq);t.closePath();fi(t,'#d4483b',3.5);for(const[x,y,r]of[[30,36,6],[52,26,7],[72,38,5],[46,46,4]]){circ(t,x,y+sq,r);t.fillStyle='#fbf5e6';t.fill();}});
-  SHEETS.dunefin=makeSheet(2,128,96,(t,f)=>{const o=f?4:-4;poly(t,[48,46,62,6,80,46]);fi(t,'#b98f4a',3);poly(t,[10,58+o,24,66,10,80-o]);fi(t,'#b98f4a',3);
-    t.beginPath();t.moveTo(20,66);t.quadraticCurveTo(50,36,96,48);t.quadraticCurveTo(124,56,122,68);t.quadraticCurveTo(100,90,56,86);t.quadraticCurveTo(28,82,20,66);t.closePath();fi(t,'#e3c77d',3);
-    t.beginPath();t.moveTo(60,82);t.quadraticCurveTo(92,84,118,70);ink(t,1.5,'rgba(42,33,48,.3)');poly(t,[98,72,102,78,106,72,110,77,114,70]);t.fillStyle='#fbf5e6';t.fill();ink(t,1.5);
-    circ(t,104,58,4);t.fillStyle=INK;t.fill();circ(t,105,57,1.4);t.fillStyle='#fff';t.fill();poly(t,[60,84,70,94,74,84]);fi(t,'#b98f4a',2);});
-  SHEETS.scarab=makeSheet(2,112,80,(t,f)=>{const lg=f?5:-5;for(const[x,o]of[[34,lg],[52,-lg],[70,lg]]){t.beginPath();t.moveTo(x,60);t.lineTo(x+o-6,76);ink(t,4);}
-    poly(t,[84,44,104,40,108,52,100,62,84,60]);fi(t,'#2c5763',3);poly(t,[100,42,110,24,106,44]);fi(t,'#f1c04f',2);circ(t,98,48,2.8);t.fillStyle='#ffd66b';t.fill();
-    t.beginPath();t.moveTo(14,64);t.bezierCurveTo(12,14,92,10,90,64);t.closePath();fi(t,'#3f7a8a',3.5);t.beginPath();t.moveTo(52,19);t.lineTo(52,64);ink(t,2.5);
-    t.beginPath();t.moveTo(14,64);t.lineTo(90,64);ink(t,4,'#f1c04f');for(const[x,y]of[[34,36],[68,34],[40,52],[64,52]]){circ(t,x,y,4);t.fillStyle='rgba(255,255,255,.25)';t.fill();}});
-  SHEETS.sunkite=makeSheet(2,112,80,(t,f)=>{const w=f?6:-6;t.beginPath();t.moveTo(30,40);t.quadraticCurveTo(18,40+w,8,34-w);t.quadraticCurveTo(0,30,4,44+w);ink(t,2.5,'#d4483b');for(const[x,y]of[[18,40+w*.6],[8,36-w*.4]]){poly(t,[x-4,y-4,x+4,y+4,x+4,y-4,x-4,y+4]);fi(t,'#f1c04f',1.5);}
-    poly(t,[30,40,70,6,106,40,70,74]);fi(t,'#f1c04f',3.5);poly(t,[70,6,106,40,70,40]);t.fillStyle='#d4483b';t.fill();ink(t,3);poly(t,[30,40,70,74,70,40]);t.fillStyle='#e0823d';t.fill();ink(t,3);
-    t.beginPath();t.moveTo(30,40);t.lineTo(106,40);t.moveTo(70,6);t.lineTo(70,74);ink(t,1.6,'rgba(42,33,48,.45)');circ(t,80,32,3.4);t.fillStyle=INK;t.fill();circ(t,92,32,3.4);t.fill();t.beginPath();t.arc(86,46,4,.2,2.9);ink(t,2);});
-  SHEETS.snowroll=makeSheet(2,96,96,snowDraw(96,96));
-  SHEETS.snowlet=makeSheet(2,64,56,snowDraw(64,56),3);
-  SHEETS.frostpuff=makeSheet(2,96,96,(t,f)=>{t.translate(48,48);for(let i=0;i<10;i++){const a=i/10*6.283+(f?.12:0);poly(t,[Math.cos(a-.16)*24,Math.sin(a-.16)*24,Math.cos(a)*40,Math.sin(a)*40,Math.cos(a+.16)*24,Math.sin(a+.16)*24]);fi(t,'#aee0f2',2);}
-    circ(t,0,0,27);fi(t,'#dff2fa',3);circ(t,-8,-10,7);t.fillStyle='rgba(255,255,255,.7)';t.fill();circ(t,8,-3,3.4);t.fillStyle=INK;t.fill();circ(t,18,-3,3.4);t.fill();circ(t,14,9,4);ink(t,2);});
-  SHEETS.inkwisp=makeSheet(2,80,96,(t,f)=>{const w=f?6:-6;t.beginPath();t.moveTo(40,8);t.bezierCurveTo(72,36,70,70,44,78);t.quadraticCurveTo(30+w,86,36+w,94);t.quadraticCurveTo(14+w,84,18,62);t.bezierCurveTo(12,40,30,26,40,8);t.closePath();fi(t,'#3a2a5a',3);
-    t.beginPath();t.moveTo(40,24);t.bezierCurveTo(58,42,58,62,44,70);t.bezierCurveTo(30,64,28,44,40,24);t.fillStyle='#8a5fc0';t.fill();circ(t,48,50,9);fi(t,'#f4f0e6',2);circ(t,51,50,4.5);t.fillStyle=INK;t.fill();circ(t,49,47,1.6);t.fillStyle='#fff';t.fill();});
-  SHEETS.quillfish=makeSheet(2,96,72,(t,f)=>{const o=f?7:-7;poly(t,[20,36,4,20+o,8,36,4,52-o]);fi(t,'#35557f',3);for(let k=0;k<4;k++){const x=36+k*11;poly(t,[x,26,x+4,6+k*2,x+9,24]);fi(t,'#f4f0e6',1.8);}
-    t.beginPath();t.ellipse(52,38,34,17,0,0,6.28);fi(t,'#4a6fa0',3);t.beginPath();t.ellipse(54,44,26,8,0,0,3.14);t.fillStyle='#f4f0e6';t.fill();poly(t,[48,42,58,58,62,42]);fi(t,'#35557f',2);
-    circ(t,72,32,5);fi(t,'#fbf5e6',1.5);circ(t,74,32,2.4);t.fillStyle=INK;t.fill();t.beginPath();t.moveTo(84,40);t.lineTo(78,42);ink(t,2);});
-  SHEETS.cracker=makeSheet(2,80,112,(t,f)=>{const lg=f?5:-5;for(const[x,o]of[[30,lg],[48,-lg]]){rr(t,x-5+o,88,10,20,4);fi(t,'#3a2a24',2);}
-    rr(t,18,30,42,62,8);fi(t,'#d4483b',3.5);t.fillStyle='#f1c04f';t.fillRect(20,42,38,6);t.fillRect(20,74,38,6);rr(t,16,24,46,12,5);fi(t,'#ffd66b',3);
-    t.beginPath();t.moveTo(39,24);t.quadraticCurveTo(34,12,46,6);ink(t,3,'#5a3a22');const s=f?9:6;poly(t,[46,6-s,48,4,46+s,6,48,8,46,6+s,44,8,46-s,6,44,4]);t.fillStyle='#ffd66b';t.fill();
-    for(const ex of[44,54]){circ(t,ex,58,3.2);t.fillStyle='#ffd66b';t.fill();ink(t,1.5);}t.beginPath();t.moveTo(38,50);t.lineTo(47,53);t.moveTo(60,50);t.lineTo(51,53);ink(t,2.4);});
-  SHEETS.ashspider=makeSheet(2,112,72,(t,f)=>{const lg=f?4:-4;for(let k=0;k<4;k++){const x=40+k*14,o=k%2?lg:-lg;t.beginPath();t.moveTo(x,44);t.lineTo(x-8+o,24);t.lineTo(x-14+o,66);ink(t,4,'#1e1614');}
-    t.beginPath();t.ellipse(38,42,26,20,0,0,6.28);fi(t,'#3a2a24',3);poly(t,[30,34,38,26,46,34,38,50]);t.fillStyle='#ff8a3d';t.fill();
-    circ(t,74,46,14);fi(t,'#2a1e1a',3);for(const[x,y]of[[78,42],[86,44],[80,50]]){circ(t,x,y,2.6);t.fillStyle='#ffd66b';t.fill();}});
-  // the vertical layers: the Paper Ray glides between the sky islands, the Clockwork Beetle winds through the Pressed Deep
-  SHEETS.skyray=makeSheet(2,128,80,(t,f)=>{const w=f?-10:8;t.beginPath();t.moveTo(18,44);t.quadraticCurveTo(4,50,2,62);ink(t,2.5,'#6a7fb8');
-    t.beginPath();t.moveTo(18,44);t.quadraticCurveTo(52,30+w,64,6+w*1.4);t.quadraticCurveTo(76,30,98,36);t.quadraticCurveTo(122,40,124,46);t.quadraticCurveTo(100,56,78,56);t.quadraticCurveTo(64,74-w,40,70-w*.6);t.quadraticCurveTo(30,54,18,44);t.closePath();fi(t,'#dfe7fb',3);
-    t.beginPath();t.moveTo(40,46);t.quadraticCurveTo(60,22+w,64,14+w*1.2);t.moveTo(46,50);t.quadraticCurveTo(62,62-w*.5,58,66-w*.6);ink(t,1.4,'rgba(42,33,48,.3)');
-    t.beginPath();t.moveTo(78,42);t.quadraticCurveTo(100,40,122,46);ink(t,1.4,'rgba(42,33,48,.3)');circ(t,104,42,3.2);t.fillStyle=INK;t.fill();circ(t,113,43,3);t.fill();t.beginPath();t.arc(108,49,3.5,.3,2.8);ink(t,1.8);
-    for(const[x,y]of[[70,40],[84,48]]){circ(t,x,y,3);t.fillStyle='#8fd0ff';t.fill();}});
-  const gearP=(t,x,y,r,n)=>{t.beginPath();for(let k=0;k<n*2;k++){const a=k/(n*2)*Math.PI*2,q=k%2?r*.8:r;t.lineTo(x+Math.cos(a-.1)*q,y+Math.sin(a-.1)*q);t.lineTo(x+Math.cos(a+.1)*q,y+Math.sin(a+.1)*q);}t.closePath();};
-  SHEETS.clockbug=makeSheet(2,112,80,(t,f)=>{const lg=f?5:-5;for(const[x,o]of[[34,lg],[52,-lg],[70,lg]]){t.beginPath();t.moveTo(x,60);t.lineTo(x+o-6,76);ink(t,4,'#4a3a26');}
-    t.save();t.translate(44,18);t.rotate(f?.5:0);rr(t,-3,-14,6,16,2);fi(t,'#a9adb8',2);t.beginPath();t.ellipse(-8,-16,7,5,0,0,6.28);t.ellipse(8,-16,7,5,0,0,6.28);fi(t,'#c9a24a',2);t.restore();
-    poly(t,[84,44,104,40,108,52,100,62,84,60]);fi(t,'#6b5234',3);circ(t,98,48,3.2);t.fillStyle='#ffd66b';t.fill();
-    t.beginPath();t.moveTo(14,64);t.bezierCurveTo(12,14,92,10,90,64);t.closePath();fi(t,'#b08a4a',3.5);gearP(t,52,44,13,7);fi(t,'#e0b04a',2);circ(t,52,44,4);t.fillStyle='#6b5234';t.fill();
-    t.beginPath();t.moveTo(14,64);t.lineTo(90,64);ink(t,4,'#6b5234');});
-  // the Folded Clocktower's boss: a great clock face in a brass gear rim; its hands sweep between the two frames
-  SHEETS.mainspring=makeSheet(2,240,240,(t,f)=>{const cx=120,cy=120;gearP(t,cx,cy,108,16);fi(t,'#b08a4a',4);gearP(t,cx,cy,96,16);t.fillStyle='rgba(255,230,160,.25)';t.fill();
-    circ(t,cx,cy,84);fi(t,'#f4ecd8',4);for(let k=0;k<12;k++){const a=k/12*Math.PI*2;t.beginPath();t.moveTo(cx+Math.cos(a)*70,cy+Math.sin(a)*70);t.lineTo(cx+Math.cos(a)*(k%3?78:80),cy+Math.sin(a)*(k%3?78:80));ink(t,k%3?3:6);}
-    for(const[ex,ey]of[[92,98],[148,98]]){t.beginPath();t.ellipse(ex,ey,11,15,0,0,6.28);fi(t,'#fbf8f0',2.5);circ(t,ex+4,ey+3,6);t.fillStyle=INK;t.fill();}
-    t.beginPath();t.moveTo(78,78);t.lineTo(104,88);t.moveTo(162,78);t.lineTo(136,88);ink(t,5);
-    const hand=(a,l,w,col)=>{t.save();t.translate(cx,cy);t.rotate(a);poly(t,[-w,0,0,-l,w,0,0,w*1.5]);fi(t,col,2.5);t.restore();};hand(f?.4:-.3,44,7,'#6b5234');hand(f?2.4:2.9,64,5,'#d4483b');circ(t,cx,cy,9);fi(t,'#c9a24a',2.5);
-    t.beginPath();t.arc(cx,cy+46,16,Math.PI+.4,-.4);ink(t,4);});
-  for(const k of['crumple','toadstool','dunefin','scarab','sunkite','snowroll','snowlet','frostpuff','inkwisp','quillfish','cracker','ashspider','skyray','clockbug','mainspring'])SHEETS[k+'T']=canvasTex(SHEETS[k]);}
-export function buildBiomeSheets(){
-  SHEETS.foldfox=makeSheet(2,128,96,(t,f)=>{const lg=f?6:-6;for(const[x,o]of[[40,lg],[52,-lg],[80,-lg],[92,lg]]){poly(t,[x-4,62,x+4,62,x+2+o,90,x-4+o,90]);fi(t,x<60?'#b8612a':'#e0823d',2);}
-    poly(t,[26,60,40,40,88,38,104,56,90,66,36,68]);fi(t,'#e0823d');poly(t,[60,66,88,40,90,66]);fi(t,'#f4f0e6',2);
-    poly(t,[26,58,4,20,12,18,34,48]);fi(t,'#e0823d');poly(t,[4,20,12,18,14,30]);fi(t,'#f4f0e6',2);
-    poly(t,[90,40,104,20,110,36,124,48,104,56]);fi(t,'#e0823d');poly(t,[104,20,108,8,112,26]);fi(t,'#b8612a',2);poly(t,[124,48,112,52,116,44]);fi(t,INK,1.5);circ(t,108,38,2.6);t.fillStyle=INK;t.fill();
-    t.beginPath();t.moveTo(40,40);t.lineTo(60,66);t.moveTo(88,38);t.lineTo(74,66);ink(t,1.4,'rgba(42,33,48,.35)');});
-  SHEETS.flurry=makeSheet(2,80,80,(t,f)=>{t.translate(40,40);t.rotate(f?.26:0);for(let i=0;i<6;i++){t.save();t.rotate(i/6*Math.PI*2);poly(t,[-4,0,4,0,3,-30,-3,-30]);fi(t,'#f6f9fb',2);poly(t,[0,-20,-8,-28,0,-24,8,-28]);fi(t,'#e6f1f7',1.5);t.restore();}circ(t,0,0,12);fi(t,'#e6f1f7',2.5);circ(t,-4,-2,2);t.fillStyle=INK;t.fill();circ(t,4,-2,2);t.fill();t.beginPath();t.arc(0,3,3,.2,2.9);ink(t,1.5);});
-  SHEETS.inksquid=makeSheet(2,96,96,(t,f)=>{for(let k=0;k<4;k++){t.beginPath();t.moveTo(40,40+k*6);t.quadraticCurveTo(20,36+k*8+(f?8:-8),6,44+k*6);ink(t,6,'#4a3570');}t.beginPath();t.ellipse(58,48,28,17,0,0,6.28);fi(t,'#6b4c8f');poly(t,[80,40,94,48,80,56]);fi(t,'#8a5fc0',2);circ(t,64,44,5);fi(t,'#f4f0e6',1.5);circ(t,66,44,2.5);t.fillStyle=INK;t.fill();circ(t,50,40,4);t.fillStyle='rgba(255,255,255,.35)';t.fill();});
-  SHEETS.crane=makeSheet(2,360,240,(t,f)=>{const cx=170,cy=140,up=f?1:0;const wing=(dx,col)=>{if(up)poly(t,[cx-30+dx,cy-14,cx+40+dx,cy-16,cx-10+dx,cy-126,cx-96+dx,cy-110]);else poly(t,[cx-30+dx,cy+8,cx+40+dx,cy+8,cx-4+dx,cy+96,cx-88+dx,cy+74]);fi(t,col,4);};
-    wing(-20,'#b9cfe0');poly(t,[cx-60,cy,cx-156,cy-72,cx-132,cy-38,cx-68,cy+14]);fi(t,'#dce8f0',4);
-    poly(t,[cx-72,cy,cx,cy-32,cx+62,cy,cx,cy+32]);fi(t,'#f4f0e6',4);t.beginPath();t.moveTo(cx-72,cy);t.lineTo(cx+62,cy);ink(t,2,'rgba(42,33,48,.3)');
-    poly(t,[cx+40,cy-8,cx+120,cy-80,cx+130,cy-72,cx+56,cy+6]);fi(t,'#f4f0e6',4);poly(t,[cx+118,cy-84,cx+160,cy-64,cx+126,cy-66]);fi(t,'#f1c04f',3);circ(t,cx+120,cy-86,6);fi(t,'#d4483b',2.5);circ(t,cx+126,cy-74,3);t.fillStyle=INK;t.fill();
-    wing(14,'#e6f1f7');t.beginPath();t.moveTo(cx,cy);t.lineTo(cx-40,up?cy-110:cy+80);ink(t,2,'rgba(42,33,48,.25)');},6);
-  SHEETS.lev=makeSheet(2,180,140,(t,f)=>{const o=f?14:0;poly(t,[20,40,100,22,150,46,172,62-o*.4,120,70,20,100]);fi(t,'#4a3570',4);poly(t,[20,100,120,70+o,168,82+o,110,110,24,112]);fi(t,'#3a2a5a',4);
-    for(let k=0;k<5;k++){poly(t,[150-k*10,62+o*.5,146-k*10,72+o*.5,142-k*10,62+o*.5]);t.fillStyle='#f4f0e6';t.fill();}poly(t,[60,24,80,0,96,26]);fi(t,'#8a5fc0',3);circ(t,118,44,9);fi(t,'#f1c04f',3);circ(t,120,44,4);t.fillStyle=INK;t.fill();},5);
-  SHEETS.levseg=makeSheet(2,140,140,(t,f)=>{poly(t,[70,24,90,4,104,30]);fi(t,'#8a5fc0',3);circ(t,70,70,50);fi(t,'#4a3570',4);circ(t,70,70,34);ink(t,3,'rgba(160,130,220,.35)');poly(t,[36,98,52,128,62,102]);fi(t,'#8a5fc0',3);circ(t,56,54,8);t.fillStyle='rgba(255,255,255,.2)';t.fill();},5);
-  SHEETS.levtail=makeSheet(2,140,140,(t,f)=>{poly(t,[110,70,40,40,10,20+(f?10:0),30,70,10,120-(f?10:0),40,100]);fi(t,'#4a3570',4);poly(t,[10,20,30,70,10,120]);fi(t,'#8a5fc0',3);},5);
-  SHEETS.folio=makeSheet(2,340,280,(t,f)=>{const lift=f?16:0;rr(t,20,70,300,190,12);fi(t,'#6b2a1a',5);
-    poly(t,[40,80,168,96,168,250,40,240]);fi(t,'#e9dcc0',4);poly(t,[172,96,300,80-lift,300,240,172,250]);fi(t,'#e9dcc0',4);
-    for(const x of[60,80,100,120,140])for(let y=120;y<230;y+=16){t.beginPath();t.moveTo(x-8,y);t.lineTo(x+8,y+1);ink(t,1.5,'rgba(42,33,48,.25)');}
-    for(let k=0;k<7;k++){const x=40+k*42;t.beginPath();t.moveTo(x,84);t.bezierCurveTo(x+18,60,x+10,30,x+20,6+(k%2)*14);t.bezierCurveTo(x+30,34,x+40,60,x+36,84);t.closePath();fi(t,'#ff7a2d',3);t.beginPath();t.moveTo(x+10,82);t.quadraticCurveTo(x+20,52,x+22,40);t.quadraticCurveTo(x+30,60,x+28,82);t.fillStyle='#ffd66b';t.fill();}
-    t.beginPath();t.ellipse(236,168,40,30,0,0,6.28);fi(t,'#f4f0e6',4);circ(t,240,168,18);fi(t,'#ff8a3d',3);circ(t,242,168,8);t.fillStyle=INK;t.fill();circ(t,234,160,5);t.fillStyle='#fff';t.fill();
-    for(const[x,y]of[[44,236],[160,246],[296,234]]){circ(t,x,y,12);t.fillStyle='#2a1e1a';t.fill();}},6);
-  for(const k of['unfolded','wraith','guide','painter','nurse','tinkerer','foldfox','flurry','inksquid','crane','lev','levseg','levtail','folio'])SHEETS[k+'T']=canvasTex(SHEETS[k]);}
 export function spriteMesh(tex,frames,w,h,anchorBottom=true){const g=new THREE.PlaneGeometry(w,h);if(anchorBottom)g.translate(0,h/2,0);const m=new THREE.Mesh(g,spriteMat(tex,frames));scene.add(m);return m;}
 const iconCache={},iconTexCache={};
 function iconCanvas(id){const c=mk(64,64);const[x,y]=cellXY(ITEMS[id].cell);c.getContext('2d').drawImage(atlas,x,y,64,64,0,0,64,64);return c;}

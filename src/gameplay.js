@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import {
   bossDefeatFx,bossHeld,bossLook,bossPhaseFx,crops,DEFEAT_T,markChunk,RARE,RARECOL,RAREHOW,reduceMotion,RSEEDS,RSOIL,teleOutline,wev,
-  $,AC,addItem,ambBus,BADGES,FCLIP,HUMANFOE,FOLK,rigPlay,rigSet,rigUpdate,rigJoint,bestDrop,bestKill,BIO,biomeAt,boss,boxHits,BUFFS,burst,camera,camT,chests,
+  $,AC,addItem,ambBus,BADGES,FCLIP,HUMANFOE,FOLK,rigPlay,rigSet,rigUpdate,rigJoint,rigHold,rigPt,bestDrop,bestKill,BIO,biomeAt,boss,boxHits,BUFFS,burst,camera,camT,chests,
   clamp,collide,consumeSel,countItem,crackerBoom,cursor,DASH_V,defense,dormant,dropItem,dummy,edmg,ELEM,
   ELITE_LOOT,ELITE_TINT,TRAITS,traitOf,eclipseOn,migPick,EN,enemies,floatText,H,hasAcc,hasBadge,hasBuff,held,HERBCOL,HERBS,iconTex,idx,
   INKTINT,inNiceWin,isFest,invOpen,isNight,isOpaque,isSolid,ITEMS,keys,touch,lerp,lightAt,makeElite,markDirty,meta,
@@ -12,8 +12,9 @@ import {
   spriteMat,stat,state,surf,surfAvg,syncPartners,T,talkTo,threadGeo,tileAt,tiles,toast,tone,TP,U,
   palEv,partnerCheer,FISH,season,festival,worldDay,hasNPC,META,
   updateCoins,updateDashHud,updateDrawHud,updateEnemyFx,updateGhosts,upx,W,WALLCOL,WALLDROP,walls,
-  worldClock,worldTime,digFossil,evKill,fcount,npcLine,plain,clockRoom,layerAt,crankAt,gateAt,
-  guideEv,dismount,MOUNTS,petS,toggleMount,togglePet,NDL,emit,loreChest,readMural,PF,lookColors,SHEETS,canvasTex,fullSet,setOn,setMul,SETS,
+  worldClock,worldTime,digFossil,evKill,fcount,npcLine,plain,clockRoom,dunRoom,stacksAt,vaultAt,crateAt,wellAt,layerAt,crankAt,gateAt,
+  guideEv,trickAt,dismount,MOUNTS,petS,toggleMount,togglePet,NDL,emit,loreChest,readMural,PF,lookColors,SHEETS,canvasTex,fullSet,setOn,setMul,SETS,
+  openPack,openBinder,
 } from './game.js';
 
 // ================= gameplay =================
@@ -149,6 +150,8 @@ function useItem(it,dt,pressed){const tx=Math.floor(mouse.wx),ty=Math.floor(mous
   if(it.use==='throw'){p.placeT-=dt;if(p.placeT>0)return;p.placeT=.28;throwStar();return;}
   if(it.use&&mouse.lp){if(it.use==='tmap'){const left=(BIO.treasure||[]).filter(([x,y])=>!(BIO.shown=BIO.shown||[]).some(([a,b])=>a===x&&b===y)&&tiles[idx(x,y)]===T.CHEST);if(!left.length){toast('Every treasure on this map has already been found.','bad');return;}left.sort((a,b)=>Math.hypot(a[0]-p.x,a[1]-p.y)-Math.hypot(b[0]-p.x,b[1]-p.y));const tg=left[0];BIO.shown.push(tg);consumeSel();const dx=Math.round((tg[0]-p.x)*2),dy=Math.round((p.y-tg[1])*2);toast(`X marks the spot: ${Math.abs(dx)} ft ${dx<0?'west':'east'} and ${Math.abs(dy)} ft ${dy>0?'down':'up'}. It is on your map (M).`,'gold');SFX.pick();return;}
     if(it.use==='crate'){consumeSel();openCrate();return;}
+    if(it.use==='pack'){consumeSel();openPack(it.pack);return;}
+    if(it.use==='binder'){openBinder();return;}
     if(it.use==='buff'){consumeSel();p.buffs[it.buff]=it.dur;SFX.potion();toast(`${BUFFS[it.buff][0]}: ${BUFFS[it.buff][2]}`,'good');burst(p.x,p.y+1,['#fbf8f0','#9be27d'],10,3,{grav:-2});return;}
     if(it.use==='mana'){if(player.maxMana>=200){toast('Your mana is already at its limit.','bad');return;}consumeSel();player.maxMana+=20;player.mana=Math.min(player.maxMana,player.mana+20);SFX.nice();toast('Max mana +20!','good');}
     else if(it.use==='bpup'){if(player.bpUps>=5){toast('You already have every BP Up.','bad');return;}consumeSel();player.bpUps++;toast('Badge Points +1!','good');SFX.nice();}
@@ -202,6 +205,10 @@ export const PK={
  bubble:{elem:'water',icon:'bubble',size:.6,grav:11,spin:4,bounce:2,trail:['#8fcaf0','#fbf8f0'],trailRate:.6,splat:['#5aa7e0','#bfe3f7','#fbf8f0']},
  gelblob:{icon:'gel',size:.65,grav:22,spin:8,life:3,trail:['#8fcaf0'],trailRate:.3,splat:['#5aa7e0','#8fcaf0']},
  gear:{icon:'gear',size:.7,grav:0,spin:9,life:4,noclipAll:1,trail:['#e0b04a'],trailRate:.3,splat:['#c9a24a','#fbf8f0']},
+ // the Bookmoth's scale dust: slow ink specks that drift down through platforms
+ dust:{elem:'ink',icon:'inkball',size:.5,grav:3.5,spin:5,life:4,noclipAll:1,trail:['#e8dcc4','#b8a0d0'],trailRate:.5,splat:['#e8dcc4','#7a5aa8']},
+ // the Observatory's thrown stars: small, glowing, and they pass through its walls
+ starshot:{icon:'fstar',size:.6,grav:0,spin:8,life:4,noclipAll:1,trail:['#fff3c0','#f1c04f'],trailRate:.6,light:[1.1,.95,.5,4],glow:1,splat:['#fff3c0','#f1c04f','#fbf8f0']},
  inkglob:{elem:'ink',icon:'inkball',size:.65,grav:6,spin:8,life:3,trail:['#3a2a5a','#6b4c8f'],trailRate:.6,splat:['#3a2a5a','#6b4c8f','#8a3fb0']},
 };
 export function fireProj(kind,x,y,vx,vy,dmg,o={}){const k=PK[kind];const m=new THREE.Mesh(new THREE.PlaneGeometry(k.size,k.size),spriteMat(iconTex(k.icon)));m.position.set(x,y,.25);scene.add(m);
@@ -312,7 +319,7 @@ export function updateFishing(dt){const p=player,it=selItem();
   // hold the rod up toward the bobber while the line is out
   p.face=bob.x>=p.x?1:-1;const ca=bob.state===1&&bob.t<.3?lerp(2.7,1.1,EZ.o2(bob.t/.3)):bob.state===3||bob.state===5&&bob.fight.thr>0?1.1+Math.sin(bob.t*40)*.1:1.1,aim=p.face>0?ca:Math.PI-ca;if(!p.swing||p.swing.tool!==bob.rod)p.swing={t:0,dur:1,tool:bob.rod,aim};else{p.swing.t=0;p.swing.aim=aim;}
   bobMesh.visible=lineObj.visible=true;bobMesh.position.set(bob.x,bob.y+.1,.46);bobMesh.rotation.z=bob.state===1?bob.t*8:Math.sin(bob.t*2.4)*.15;setTint(bobMesh.material,bob.x,bob.y);
-  let tx0=p.x+p.face*.9,ty0=p.y+2.2;if(toolMesh&&toolPivot.visible){toolPivot.updateMatrixWorld(true);toolMesh.localToWorld(tipV.set(1.08,1.08,0));tx0=tipV.x;ty0=tipV.y;}
+  let tx0=p.x+p.face*.9,ty0=p.y+2.2;if(p.rig.hs[p.rig.d.pi.held]){const[lx,ly]=rigPt(p.rig,'held',65,-65);p.mesh.updateMatrixWorld(true);p.mesh.localToWorld(tipV.set(lx,ly,0));tx0=tipV.x;ty0=tipV.y;}
   const pos=lineObj.geometry.attributes.position,bx=bob.x,by=bob.y+.32,sag=bob.state===1?0:Math.min(1.6,Math.hypot(bx-tx0,by-ty0)*.12);
   for(let i=0;i<16;i++){const k=i/15;pos.setXYZ(i,lerp(tx0,bx,k),lerp(ty0,by,k)-Math.sin(k*Math.PI)*sag,.45);}pos.needsUpdate=true;const L=lightAt(bx,by);lineObj.material.color.setRGB(.96*L[0],.94*L[1],.9*L[2]);}
 function openCrate(){const p=player,x=p.x,y=p.y+1.2,g=(id,n)=>dropItem(id,n,x,y),tier=quests.folio?3:quests.lev?2:quests.crane?1:0;g('coin',randi(40,120));
@@ -362,7 +369,9 @@ export function updateWeather(dt){weatherT-=dt;if(weatherT<=0){const r=weather!=
 // and spells, light-giving partners and pets, fallen stars, a torch in the player's hand, and light tiles near the
 // camera (LTILE: color, radius, strength), which flicker unless reduced motion is on. The tile scan runs 4 times a second of real time (el).
 const LTILE={[T.TORCH]:[1,.72,.38,7,.32,1],[T.CANDLE]:[1,.8,.5,5,.26,1],[T.LANTERNP]:[1,.62,.55,6,.28,.4],[T.FURNACE]:[1,.55,.25,6,.3,1],[T.ALTAR]:[.75,.45,1,6,.35,.3],
-  [T.LAVA]:[1,.45,.15,7,.42,.5],[T.EMBERORE]:[1,.5,.2,3,.28,.6],[T.FOIL]:[.82,.76,1,3,.3,.2],[T.MUSH]:[1,.62,.32,3,.18,.2],[T.HEART]:[1,.42,.5,3,.24,.3],[T.ALCHEMY]:[.6,1,.7,3,.2,.3]};
+  [T.LAVA]:[1,.45,.15,7,.42,.5],[T.EMBERORE]:[1,.5,.2,3,.28,.6],[T.FOIL]:[.82,.76,1,3,.3,.2],[T.MUSH]:[1,.62,.32,3,.18,.2],[T.HEART]:[1,.42,.5,3,.24,.3],[T.ALCHEMY]:[.6,1,.7,3,.2,.3],
+  // the dungeons' glowing doors and the Observatory's telescope
+  [T.STACKS]:[.75,.5,1,3,.22,.3],[T.SCOPE]:[1,.85,.5,4,.22,.2],[T.STARDOOR]:[1,.9,.5,4,.26,.3],[T.WELLDOOR]:[.6,.45,1,4,.26,.3]};
 let lScan=0,lTiles=[];
 function scanLights(){lTiles=[];const cx=Math.floor(camera.position.x),cy=Math.floor(camera.position.y-3);
   for(let y=Math.max(0,cy-20);y<=Math.min(H-1,cy+20);y++)for(let x=Math.max(0,cx-32);x<=Math.min(W-1,cx+32);x++){const t=tiles[y*W+x],d=LTILE[t];if(!d)continue;
@@ -397,7 +406,12 @@ function interact(){const tx=Math.floor(mouse.wx),ty=Math.floor(mouse.wy);
   if(t===T.PEEL){peelAt(tx,ty);return;}
   if(t===T.CRANK){crankAt(tx,ty);return;}
   if(t===T.GATE){gateAt(tx,ty);return;}
+  if(t===T.STACKS){stacksAt(tx,ty);return;}
+  if(t===T.STARDOOR){vaultAt(tx,ty);return;}
+  if(t===T.CRATE){crateAt(tx,ty);return;}
+  if(t===T.WELLDOOR){wellAt(tx,ty);return;}
   if(t===T.SKETCH){popSketch(tx,ty);return;}
+  if(t===T.SEAM||t===T.RIP||t===T.CREASE){trickAt(t,tx,ty);return;}
   if(t===T.SIGN){signAt(tx,ty);return;}
   if(t===T.MURAL){readMural(tx,ty);SFX.rustle(.2,.5);return;}
   if(t===T.ALTAR){toast('"Five small flames upon the stones, beneath a moon of ink, will wake the one who was unfolded."');SFX.pick();return;}
@@ -408,7 +422,7 @@ function interact(){const tx=Math.floor(mouse.wx),ty=Math.floor(mouse.wy);
   if(t===T.CLOCK){const h=Math.floor(worldTime),m=Math.floor((worldTime-h)*60);toast(`The clock reads ${(h%12)||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}.`);SFX.pick();return;}
   if(t===T.BED){player.spawn={x:tx+.5,y:ty};toast('Spawn point set.','good');SFX.pick();return;}}
 
-export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();setCheck();updateDashHud(dt);updateDrawHud();if(p.dead){p.dashT=0;updateShield(dt);dieAnim(dt);p.deadT-=dt;$('deadTxt').textContent=`Refolding in ${Math.max(0,Math.ceil(p.deadT))}…`;if(p.deadT<=0)respawn();return;}
+export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();setCheck();updateDashHud(dt);updateDrawHud();if(p.dead){p.dashT=0;updateTool(null);updateShield(dt);updateNock();dieAnim(dt);p.deadT-=dt;$('deadTxt').textContent=`Refolding in ${Math.max(0,Math.ceil(p.deadT))}…`;if(p.deadT<=0)respawn();return;}
   const cx=Math.floor(p.x);const lt=tileAt(cx,Math.floor(p.y+.7));p.inLiq=TP[lt].liq?lt:0;
   if(p.inLiq===T.INK&&!p.wasInk)stat('swims');p.wasInk=p.inLiq===T.INK;
   if(p.inLiq===T.LAVA&&!hasBuff('fire')){if(p.inv_t<=0)hurtPlayer(30,p.x-p.face,null,'fire');burst(p.x,p.y+.5,['#ff8a3d','#ffd66b'],1,2,{grav:-4,bright:1});}
@@ -455,7 +469,7 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();se
   p.manaT=(p.manaT||0)+dt;if(p.manaT>.8&&p.mana<p.maxMana)p.mana=Math.min(p.maxMana,p.mana+dt*(3+p.maxMana*.05)*(Math.abs(p.vx)<.5?1.6:1)*(setOn('weave')?2:1));
   p.inv_t-=dt;p.potT=Math.max(0,p.potT-dt);p.stompWin-=dt;p.regenT+=dt;if(p.regenT>5&&p.hp<p.max){p.hp=Math.min(p.max,p.hp+dt*(p.regenT>12?3:1));}if(hasBadge('happy')&&p.hp<p.max)p.hp=Math.min(p.max,p.hp+dt);const rg=(hasBuff('regen')?2:0)+(hasBuff('lunar')&&isNight()?3:0)+(hasBuff('fed')?.5:0)+(hasAcc('nightregen')&&isNight()?1:0);if(rg&&p.hp<p.max)p.hp=Math.min(p.max,p.hp+rg*dt);
   for(const k in p.buffs){p.buffs[k]-=dt;if(p.buffs[k]<=0){delete p.buffs[k];toast(`${BUFFS[k][0]} wore off.`);}}
-  updatePlayerStatus(dt);if(p.dead){updateTool(null,1);return;}
+  updatePlayerStatus(dt);if(p.dead){updateTool(null);return;}
   if(wind&&!p.onGround&&hook.state!==2&&!p.inLiq)p.vx+=wind*dt*3;
   // items
   const it=selItem();p.mineP=p.mineP||0;
@@ -484,7 +498,8 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();se
   rigPlay(p.rig,c,{t:ct});m.position.set(p.x,p.y-.08+(p.rideY||0),.15);setTint(p.mat,p.x,p.y+1);statusOverlay(dt);p.mat.uniforms.uFlash.value=p.inv_t>0&&!(p.inv_t>1.3)?(Math.floor(p.inv_t*14)%2?.6:0):0;
   const sq=(p.onGround?(p.squash>0?1-p.squash*.9:1):clamp(1+p.vy*.006,.92,1.08))*(sp?sp.sq:1);m.scale.set(1/Math.sqrt(sq),sq,1);if(p.flat)m.scale.set(1.3,.42,1);if(p.cheerT>0&&!reduceMotion())m.position.y+=Math.abs(Math.sin(p.cheerT*10))*.12;
   if(p.dashT>0){m.scale.x*=1.22;m.scale.y*=.9;p.ghostT-=dt;if(p.ghostT<=0){p.ghostT=.03;spawnGhost();}}
-  updateArm(sp);rigUpdate(p.rig,dt);updateTool(sp,sq);updateShield(dt);}
+  updateArm(sp);updateTool(sp);updateShield(dt);rigUpdate(p.rig,dt);
+  if(p.swing&&p.swing.aim!=null)aimHand=sp?swingHand(sp,sq,1):[p.x+p.face*.25,p.y+1.1];updateNock();}
 // sword: a three-hit combo, each cut keyframed as [k end, arm angle, easing, body frame]. Angles are world radians
 // relative to facing (0 forward, + up). A cut coils back (anticipation), snaps through fast (ease-out-quart), overshoots, then settles.
 // 0 overhead cut, 1 rising cut back up, 2 a wider lunging finisher. Each wind-up starts from where the last cut ended so chains flow.
@@ -532,7 +547,7 @@ function crack(e){if(e.dying)return;const was=e.broke>worldClock;e.broke=worldCl
 function airHit(s,e){const p=player;if((p.airHits=(p.airHits||0)+1)<=4)p.vy=Math.max(p.vy,s.combo===2?3:5.5);if(e.dying||e.parent)return;
   if(s.combo===2){e.vy=-16;e.vx=p.face*3;floatText(e.x,e.y+e.h+.6,'SPIKE!','nice');shake(.18);burst(e.x,e.y+e.h,['#fbf8f0','#fff3c0'],8,4,{grav:0,life:.3});}else{e.vy=Math.max(e.vy,e.elite?5:8);e.vx=p.face*1.5;}}
 // boss phases: at 50% and 25% life a boss tears open, holds still (immune) while it refolds, then fights with new or harder attacks
-const PHASE_MSG={mainspring:['The Mainspring winds itself tighter!','The Mainspring\'s spring snaps loose!'],king:['The King Slime swells with rage!','The King Slime splits at the seams!'],crane:['The Great Crane refolds its wings!','The Great Crane tears into a paper storm!'],
+const PHASE_MSG={mainspring:['The Mainspring winds itself tighter!','The Mainspring\'s spring snaps loose!'],bookmoth:['The Bookmoth shakes loose a cloud of ink dust!','The Bookmoth tears its own pages into a storm!'],starfold:['The Starfold learns to fold the sky!','The Starfold tears open and stars pour out!'],pulper:['The Pulper shifts into a higher gear!','The Pulper\'s hopper bursts open!'],nib:['The Grand Nib dips itself in fresh ink!','The Grand Nib splits along its slit!'],king:['The King Slime swells with rage!','The King Slime splits at the seams!'],crane:['The Great Crane refolds its wings!','The Great Crane tears into a paper storm!'],
   lev:['The Inkwell Leviathan churns the ink!','The Leviathan comes unbound!'],folio:['The Charred Folio turns to a new chapter!','The Folio\'s last pages catch fire!'],unfolded:['The Unfolded creases sharply!','The Unfolded tears itself open!']};
 function bossPhase(e,ph){e.phase=ph;e.act='phase';e.at=1.3;e.stun=0;SFX.tear();shake(.45);hitPause(.15);burst(e.x,e.y+e.h/2,e.d.col.concat(['#fbf8f0','#e9dcc0']),40,8,{grav:6,life:1.2});
   bossPhaseFx(e,ph);const m=PHASE_MSG[e.type];if(m)toast(m[ph-1],'bad');const bb=$('boss');bb.classList.remove('p1','p2');bb.classList.add('p'+ph);}
@@ -571,26 +586,31 @@ export function updateTrail(dt){const p=player,s=p.swing;
     const dx=p.face*Math.cos(sp.blade),dy=Math.sin(sp.blade),a=u**1.4*clamp((Math.abs(sp.v)-4)/16,0,1)*(s.combo===2?.95:.8);if(a>.02)any=1;
     trailPos.set([hx+dx*.35*ts,hy+dy*.35*ts,.3,hx+dx*1.6*ts,hy+dy*1.6*ts,.3],i*6);trailA[i*2]=a*.1;trailA[i*2+1]=a;}
   trailMesh.visible=!!any;trailGeo.attributes.position.needsUpdate=true;trailGeo.attributes.aA.needsUpdate=true;}
-const toolPivot=new THREE.Group();scene.add(toolPivot);let toolMesh=null,toolId=null,aimHand=[0,0];
+let aimHand=[0,0];
 // while swinging or aiming, gameplay holds the rig's front arm: pinned on screen from the shoulder toward the weapon's grip
 function updateArm(sp){const p=player;if(!sp||p.dead||p.flat)return;rigSet(p.rig,'armA',{r:-(sp.arm+Math.PI/2),sy:sp.sc,abs:1,snap:1});}
-function updateTool(sp,sq){const p=player,s=p.swing;if(!s||!s.tool||p.dead){toolPivot.visible=false;return;}if(toolId!==s.tool){if(toolMesh){toolPivot.remove(toolMesh);toolMesh.material.dispose();}const g=new THREE.PlaneGeometry(1.25,1.25);g.translate(.5,.5,0);toolMesh=new THREE.Mesh(g,spriteMat(iconTex(s.tool)));toolPivot.add(toolMesh);toolId=s.tool;}
-  toolPivot.visible=true;const k=clamp(s.t/s.dur,0,1),ang=sp?sp.blade:s.aim!=null?(p.face>0?s.aim:Math.PI-s.aim):lerp(1.9,-.5,Math.sin(k*Math.PI*.5));
-  if(s.aim!=null){const r=.55+.2*(1-k),[hx,hy]=aimHand=sp?swingHand(sp,sq,1):[p.x+p.face*.25,p.y+1.1];toolPivot.position.set(hx-Math.cos(s.aim)*r,hy-Math.sin(s.aim)*r,.18);}else if(sp){const[hx,hy]=swingHand(sp,sq,1);toolPivot.position.set(hx,hy,.18);}else toolPivot.position.set(p.x+p.face*.2,p.y+1.05+(p.rideY||0),.18);const ts=s.heavy?1.2:1;toolPivot.scale.set(p.face*ts,ts,1);toolPivot.rotation.z=(ang-Math.PI/4)*p.face;setTint(toolMesh.material,p.x,p.y+1);toolMesh.material.uniforms.uFlash.value=inNiceWin(s)||s.draw>=1?.55+.2*Math.sin(worldClock*30):s.nice?.35:s.draw?s.draw*.25:0;}
+// the held weapon or tool is the rig's 'held' piece (rig.js), cut from the item's icon: it hangs at the hand, turned to the
+// blade's angle (which leads or lags the arm), bigger for a warhammer, and set back along the aim for bows, wands and rods.
+// Runs before rigUpdate so the piece and the arm pose in the same frame.
+function updateTool(sp){const p=player,s=p.swing,R=p.rig;if(!s||!s.tool||p.dead){rigHold(R,'held',null);return;}rigHold(R,'held',iconTex(s.tool).image);
+  const k=clamp(s.t/s.dur,0,1),ang=sp?sp.blade:s.aim!=null?(p.face>0?s.aim:Math.PI-s.aim):lerp(1.9,-.5,Math.sin(k*Math.PI*.5)),ts=s.heavy?1.2:1,o={r:Math.PI/4-ang,sx:ts,sy:ts,abs:1,snap:1};
+  // the aimed item sits behind the hand along the aim (the held piece is rigid, but its pivot rides the stretched arm)
+  if(s.aim!=null)o.y=-(.55+.2*(1-k))*60/(sp?sp.sc:1);rigSet(R,'held',o);
+  const f=inNiceWin(s)||s.draw>=1?.55+.2*Math.sin(worldClock*30):s.nice?.35:s.draw?s.draw*.25:0,u=R.mat.uniforms.uPF.value;u.x=R.d.pi.held;u.y=f;}
 // a nocked arrow slides back along the bow while drawing
-let nockMesh=null,nockId=null,shieldMesh=null,shieldId=null;
+let nockMesh=null,nockId=null;
 function updateNock(){const p=player,s=p.swing;if(!s||s.draw==null||p.dead){if(nockMesh)nockMesh.visible=false;return;}const ai=findAmmo('arrow'),id=ai>=0?p.inv[ai].id:'arrow';
   if(nockId!==id){if(nockMesh){scene.remove(nockMesh);nockMesh.material.dispose();nockMesh.geometry.dispose();}nockMesh=new THREE.Mesh(new THREE.PlaneGeometry(.8,.8),spriteMat(iconTex(id)));nockMesh.renderOrder=5;scene.add(nockMesh);nockId=id;}
   const a=s.aim,r=.25-.42*s.draw;nockMesh.visible=true;nockMesh.position.set(aimHand[0]+Math.cos(a)*r,aimHand[1]+.05+Math.sin(a)*r,.19);nockMesh.rotation.z=a-Math.PI/4;setTint(nockMesh.material,p.x,p.y+1);nockMesh.material.uniforms.uFlash.value=s.draw>=1?.5:0;}
-// the raised shield sits in front of the player; it glows while a parry would still land
-function updateShield(dt){const p=player;p.shieldFlash=Math.max(0,(p.shieldFlash||0)-dt);updateNock();if(!p.blocking||p.dead){if(shieldMesh)shieldMesh.visible=false;return;}const id=shieldItem().id;
-  if(shieldId!==id){if(shieldMesh){scene.remove(shieldMesh);shieldMesh.material.dispose();shieldMesh.geometry.dispose();}shieldMesh=new THREE.Mesh(new THREE.PlaneGeometry(1,1),spriteMat(iconTex(id)));shieldMesh.renderOrder=5;scene.add(shieldMesh);shieldId=id;}
-  const up=Math.min(1,p.blockT/.08),hot=p.parryOK&&p.blockT<PARRY_W*niceW();shieldMesh.visible=true;shieldMesh.position.set(p.x+p.face*(.3+.25*up),p.y+.75+(p.rideY||0)+.3*up,.2);shieldMesh.rotation.z=p.face*(1-up)*.5;
-  setTint(shieldMesh.material,p.x,p.y+1);shieldMesh.material.uniforms.uFlash.value=p.shieldFlash>0?.9:hot?.3:0;}
+// the raised shield is the rig's 'shield' piece, in front of everything; it swings up as the block starts and glows while a
+// parry would still land. Runs before rigUpdate, like updateTool.
+function updateShield(dt){const p=player,R=p.rig,u=R.mat.uniforms.uPF.value;p.shieldFlash=Math.max(0,(p.shieldFlash||0)-dt);if(!p.blocking||p.dead){rigHold(R,'shield',null);u.w=0;return;}
+  rigHold(R,'shield',iconTex(shieldItem().id).image);const up=Math.min(1,p.blockT/.08),hot=p.parryOK&&p.blockT<PARRY_W*niceW();
+  rigSet(R,'shield',{x:15*up,y:-18*up,r:-(1-up)*.5,abs:1,snap:1});u.z=R.d.pi.shield;u.w=p.shieldFlash>0?.9:hot?.3:0;}
 
 export function spawnLogic(dt){spawnT-=dt;if(spawnT>0)return;spawnT=.9;const p=player;if(p.dead)return;const surfY=surf[clamp(Math.floor(p.x),0,W-1)];const under=p.y<surfY-12;const ecl=eclipseOn()&&!under,night=isNight()||ecl;
   const cap=(under||biomeAt(p.x,p.y)==='under'?6:(night?7:4+(weather==='rain'?2:0)))*(inkMoon&&night&&!under?2:1);if(enemies.filter(e=>!e.d.boss&&!e.parent).length>=cap+(BIO.awake?2:0)+(ecl?2:0))return;if(Math.random()<(inkMoon&&night?.1:.45))return;
-  const bio=biomeAt(p.x,p.y),lay=layerAt(p.x,p.y);let type;if(lay==='tower')return;
+  const bio=biomeAt(p.x,p.y),lay=layerAt(p.x,p.y);let type;if(lay==='tower'||lay==='archive'||lay==='observatory'||lay==='scrapworks'||lay==='inkwell')return;
   let mig=null;const sp=(t,x,y)=>{const e=spawnEnemy(t,x,y);if(Math.random()<(night?.1:.06)*(BIO.awake?1.6:1)*(ecl?1.8:1))makeElite(e);if(ecl)e.ecl=true;if(mig&&t===mig)e.mig=true;return e;};
   // the vertical layers (layers.js) have their own foes
   if(lay==='sky')type=pick(night?['skyray','skyray','eye','sunkite']:['skyray','skyray','sunkite']);
@@ -641,19 +661,27 @@ export function updateEnemies(dt){const p=player;tickFuses(dt);for(let i=enemies
   else if(d.slimy){e.vy-=(d.boss?40:40)*dt;if(e.onGround){e.vx*=Math.pow(.001,dt);e.timer-=dt;if(e.timer<=0){const dir=chase?toward:(Math.random()<.5?-1:1);e.face=dir;if(d.boss){const ph=e.phase||0;e.hops=(e.hops||0)+1;if(ph>=2&&e.hops%3===0){e.big=true;e.vx=clamp(dx/1.3,-16,16);e.vy=26;SFX.jump();}else{e.vx=dir*rand(5,8)*(ph?1.25:1);e.vy=rand(14,20);}e.timer=ph?rand(.6,1.1):rand(.9,1.6);}else{e.vx=dir*rand(2.5,4.5);e.vy=rand(10,14);e.timer=rand(.8,2);}}}
       if(d.boss){if(dist>45&&e.onGround){e.x=p.x+rand(-6,6);e.y=Math.min(H-8,p.y+18);e.vy=0;burst(e.x,e.y,d.col,20,5);}if((e.phase||0)>=2&&(e.hops+1)%3===0&&e.onGround&&e.timer<1){e.tele=e.warn=true;if(Math.random()<dt*20)burst(e.x+rand(-2,2),e.y,d.col,1,3,{up:2});}
         if(e.landV<-12){shake(e.big?.6:.3);SFX.stomp();burst(e.x,e.y,['#c9a574','#e9dfc9'],e.big?30:14,e.big?8:5,{up:1});if(e.phase)kingQuake(e);}e.landV=0;}}
-  else if(e.type==='zombie'||e.type==='knight'||e.type==='sentinel'){e.vy-=50*dt;const kn=e.type!=='zombie';e.cd=(e.cd||0)-dt;
+  else if(e.type==='zombie'||e.type==='knight'||e.type==='sentinel'||e.type==='warden'||e.type==='gazer'||e.type==='foreman'||e.type==='scribe'){e.vy-=50*dt;const kn=e.type!=='zombie';e.cd=(e.cd||0)-dt;
       if(kn&&e.act==='wind'){e.at-=dt;e.vx*=Math.pow(.001,dt);e.tele=e.warn=true;if(e.at<=0){e.act='dash';e.at=.38;e.vy=4;SFX.swing();}}
       else if(kn&&e.act==='dash'){e.at-=dt;e.vx=e.face*12;if(e.at<=0||e.hitWall){e.act='rest';e.at=.6;}}
       else if(kn&&e.act==='rest'){e.at-=dt;e.vx*=Math.pow(.01,dt);if(e.at<=0){e.act=null;e.cd=rand(1.5,2.6);}}
-      else{const sp=e.type==='sentinel'?3.4:kn?2.9:2.3;const dir=(night||kn||dist<10)?toward:-toward;e.face=dir;e.vx+=(dir*sp-e.vx)*Math.min(1,dt*4);if(e.hitWall&&e.onGround)e.vy=13;
-        if(kn&&e.cd<=0&&e.onGround&&Math.abs(dx)<7&&Math.abs(dy)<2.5&&!p.dead){e.act='wind';e.at=.5;e.face=toward;}}
+      else{const sp=e.type==='sentinel'?3.4:e.type==='warden'?3.1:e.type==='gazer'?3.2:e.type==='foreman'?3:e.type==='scribe'?3.3:kn?2.9:2.3;const dir=(night||kn||dist<10)?toward:-toward;e.face=dir;e.vx+=(dir*sp-e.vx)*Math.min(1,dt*4);if(e.hitWall&&e.onGround)e.vy=13;
+        if(kn&&e.cd<=0&&e.onGround&&Math.abs(dx)<7&&Math.abs(dy)<2.5&&!p.dead){e.act='wind';e.at=.5;e.face=toward;}
+        // the Stack Warden flings pages from its ledger when you keep your distance
+        else if(e.type==='warden'&&e.cd<=0&&dist>=7&&dist<16&&!p.dead){const l=dist||1;for(const a of[-.18,0,.18]){const c=Math.cos(a),s=Math.sin(a);fireProj('page',e.x,e.y+1.3,(dx*c-dy*s)/l*10,(dx*s+dy*c)/l*10,edmg(e)*.7,{hostile:true});}SFX.swing();e.cd=rand(1.8,2.6);}
+        // the Stargazer throws a fan of stars from its astrolabe, or calls one down on you
+        else if(e.type==='gazer'&&e.cd<=0&&dist>=6&&dist<18&&!p.dead){const l=dist||1;if(Math.random()<.35){fireProj('starshot',p.x+rand(-1,1),p.y+9,0,-9,edmg(e)*.8,{hostile:true});tone(880,440,.3,'sine',.05);}
+          else for(const a of[-.22,0,.22]){const c=Math.cos(a),s=Math.sin(a);fireProj('starshot',e.x,e.y+1.3,(dx*c-dy*s)/l*10,(dx*s+dy*c)/l*10,edmg(e)*.7,{hostile:true});}SFX.swing();e.cd=rand(1.7,2.4);}
+        // the Scrap Foreman throws a gear at you; the Drowned Scribe flicks a fan of ink from its quill
+        else if(e.type==='foreman'&&e.cd<=0&&dist>=5&&dist<15&&!p.dead){const l=dist||1;fireProj('gear',e.x,e.y+1.3,dx/l*9,dy/l*9,edmg(e)*.7,{hostile:true});SFX.swing();e.cd=rand(1.6,2.4);}
+        else if(e.type==='scribe'&&e.cd<=0&&dist>=6&&dist<17&&!p.dead){const l=dist||1;for(const a of[-.25,0,.25]){const c=Math.cos(a),s=Math.sin(a);fireProj('inkglob',e.x,e.y+1.3,(dx*c-dy*s)/l*10,(dx*s+dy*c)/l*10+3,edmg(e)*.7,{hostile:true});}SFX.swing();e.cd=rand(1.5,2.2);}}
       if(!night&&e.type==='zombie'&&dist>35){removeEnemy(e);enemies.splice(i,1);continue;}}
   else if(e.type==='eye'){e.cd=(e.cd??rand(1.5,3))-dt;
       if(e.act==='wind'){e.at-=dt;e.vx*=Math.pow(.02,dt);e.vy*=Math.pow(.02,dt);e.tele=e.warn=true;e.face=toward;if(e.at<=0){e.act='dash';e.at=.55;const l=dist||1;e.vx=dx/l*13;e.vy=dy/l*13;SFX.swing();}}
       else if(e.act==='dash'){e.at-=dt;if(e.at<=0){e.act=null;e.cd=rand(2.5,4.5);}}
       else{const sp=6.5;e.vx+=toward*dt*9;e.vy+=Math.sign(dy)*dt*7+Math.sin(e.t*3)*dt*3;const v=Math.hypot(e.vx,e.vy);if(v>sp){e.vx*=sp/v;e.vy*=sp/v;}e.face=e.vx>0?1:-1;if(!night&&dist>30){e.vy+=dt*20;}
         if(e.cd<=0&&dist<12&&night&&!p.dead){e.act='wind';e.at=.45;}}}
-  else if(e.type==='bat'){e.vx+=(toward*2+rand(-1,1)*6)*dt*3;e.vy+=(Math.sign(dy)*2+rand(-1,1)*6)*dt*3;const v=Math.hypot(e.vx,e.vy);if(v>5.5){e.vx*=5.5/v;e.vy*=5.5/v;}e.face=e.vx>0?1:-1;}
+  else if(e.type==='bat'||e.type==='mothling'){e.vx+=(toward*2+rand(-1,1)*6)*dt*3;e.vy+=(Math.sign(dy)*2+rand(-1,1)*6)*dt*3;const v=Math.hypot(e.vx,e.vy);if(v>5.5){e.vx*=5.5/v;e.vy*=5.5/v;}e.face=e.vx>0?1:-1;}
   else if(e.type==='wraith'){const l=Math.hypot(dx,dy)||1;e.vx+=(dx/l*3.8-e.vx)*dt*1.5;e.vy+=(dy/l*3.8+Math.sin(e.t*2)*1.5-e.vy)*dt*1.5;e.face=e.vx>0?1:-1;if(!isNight()&&!eclipseOn()){e.vy+=dt*6;}if(Math.random()<dt*6)burst(e.x,e.y+.3,['#5a2a6a','#b06ad0'],1,.5,{grav:-1,life:.6});}
   else if(e.type==='cinderbat'||e.type==='flurry'){const mx=e.type==='cinderbat'?7.5:4.2;e.vx+=(toward*2+rand(-1,1)*6)*dt*3;e.vy+=(Math.sign(dy)*2+rand(-1,1)*6)*dt*3;const v=Math.hypot(e.vx,e.vy);if(v>mx){e.vx*=mx/v;e.vy*=mx/v;}e.face=e.vx>0?1:-1;if(e.type==='cinderbat'&&Math.random()<dt*8)burst(e.x,e.y+.3,['#ff8a3d','#ffd66b'],1,.5,{grav:-3,life:.5,bright:1});}
   else if(e.type==='foldfox'){e.vy-=50*dt;e.cd=(e.cd??1.5)-dt;
@@ -707,6 +735,78 @@ export function updateEnemies(dt){const p=player;tickFuses(dt);for(let i=enemies
     else{const tx=p.x+Math.sin(e.t*.8)*5,ty=p.y+5+Math.sin(e.t*1.4)*1.2;e.vx+=((tx-e.x)*2-e.vx*1.5)*dt;e.vy+=((ty-cy)*2-e.vy*1.5)*dt;e.face=toward;
       if(e.cd<=0&&!p.dead){const r=Math.random(),sh=ph>=2?.3:0;if(r<sh){e.act='chime';e.at=2.8;e.st2=.9;tone(660,660,.6,'sine',.12);toast('The Mainspring chimes the hour! Gears fall from the ceiling.');}else if(r<sh+(1-sh)*.35){e.act='wind';e.at=enr?.45:.6;}else if(r<sh+(1-sh)*.7){e.act='ring';e.shots=enr?3:2;e.at=.6;}else{e.act='tick';e.shots=enr?6:4;e.at=.5;e.tele=e.warn=true;}}}
     if(cb){const m=e.w/2;if(e.x<cb[0]+m){e.x=cb[0]+m;e.vx=Math.abs(e.vx)*.5;}if(e.x>cb[2]+1-m){e.x=cb[2]+1-m;e.vx=-Math.abs(e.vx)*.5;}if(e.y<cb[1]){e.y=cb[1];e.vy=Math.abs(e.vy)*.5;}if(e.y+e.h>cb[3]+1){e.y=cb[3]+1-e.h;e.vy=-Math.abs(e.vy)*.5;}}}
+  // the Bookmoth (the Hollow Archive, dungeons.js) keeps to its chamber: it dives at you, sheds fans of ink dust, calls
+  // mothlings, and after 50% throws rings of pages; at 25% it tears itself into a storm of dust falling from the ceiling
+  else if(e.type==='bookmoth'){const ph=e.phase||0,enr=ph>=1,cb=dunRoom('arch'),cx=e.x,cy=e.y+e.h/2;e.cd=(e.cd??2)-dt;
+    if(e.act==='wind'){e.at-=dt;e.tele=e.warn=true;e.vx*=Math.pow(.05,dt);e.vy*=Math.pow(.05,dt);e.face=toward;if(e.at<=0){e.act='dive';e.at=.75;const l=dist||1,v=enr?19:16;e.vx=dx/l*v;e.vy=dy/l*v;SFX.swing();}}
+    else if(e.act==='dive'){e.at-=dt;if(e.at<=0){e.act=null;e.cd=rand(1,1.7);}}
+    else if(e.act==='dust'){e.at-=dt;e.vx*=Math.pow(.2,dt);e.vy*=Math.pow(.2,dt);if(e.shots===(enr?3:2))e.tele=e.warn=true;
+      if(e.at<=0){const n=enr?9:7;for(let k=0;k<n;k++){const a=-Math.PI/2+(k-(n-1)/2)*.26+rand(-.05,.05);fireProj('dust',cx,cy-.4,Math.cos(a)*6+e.vx*.3,Math.sin(a)*6,edmg(e)*.75,{hostile:true});}SFX.rustle(.25,.5);e.shots--;e.at=.6;if(e.shots<=0){e.act=null;e.cd=rand(1.3,2);}}}
+    else if(e.act==='pages'){e.at-=dt;e.vx*=Math.pow(.1,dt);e.vy*=Math.pow(.1,dt);if(e.at<=0){const n=ph>=2?16:12;e.a0=(e.a0||0)+Math.PI/n;for(let k=0;k<n;k++){const a=e.a0+k/n*Math.PI*2;fireProj('page',cx,cy,Math.cos(a)*7,Math.sin(a)*7,edmg(e)*.75,{hostile:true});}SFX.swing();e.act=null;e.cd=rand(1.4,2.1);}}
+    else if(e.act==='storm'){e.at-=dt;e.st2-=dt;e.vx*=Math.pow(.2,dt);e.vy*=Math.pow(.2,dt);if(e.at>2.4)e.tele=e.warn=true;if(e.st2<=0&&cb){e.st2=.13;fireProj('dust',rand(cb[0]+.5,cb[2]+.5),cb[3]+.6,rand(-1,1),-6,edmg(e)*.7,{hostile:true});}if(e.at<=0){e.act=null;e.cd=rand(1.2,1.8);}}
+    else{const tx=p.x+Math.sin(e.t*.7)*6,ty=p.y+5.5+Math.sin(e.t*1.9)*1.5;e.vx+=((tx-e.x)*2-e.vx*1.5)*dt;e.vy+=((ty-cy)*2-e.vy*1.5)*dt;e.face=toward;
+      if(e.cd<=0&&!p.dead){const r=Math.random(),sh=ph>=2?.25:0,moths=enemies.filter(o=>o.type==='mothling'&&!o.dying).length;
+        if(r<sh){e.act='storm';e.at=3;e.st2=.9;SFX.rustle(.4,.3);toast('The Bookmoth tears its pages! Ink dust pours from the ceiling.');}
+        else if(r<sh+(1-sh)*.3){e.act='wind';e.at=enr?.45:.6;}
+        else if(r<sh+(1-sh)*.55&&moths<4){for(let k=0;k<(enr?3:2);k++){const m=spawnEnemy('mothling',cx+rand(-1.5,1.5),cy+rand(-.5,.5));m.vy=4;}burst(cx,cy,['#e8dcc4','#b8a0d0'],18,5);SFX.rustle(.3,.6);e.act=null;e.cd=rand(1.6,2.2);}
+        else if(enr&&r<sh+(1-sh)*.75){e.act='pages';e.at=.5;e.tele=e.warn=true;}
+        else{e.act='dust';e.shots=enr?3:2;e.at=.55;}}}
+    if(cb){const m=e.w/2;if(e.x<cb[0]+m){e.x=cb[0]+m;e.vx=Math.abs(e.vx)*.5;}if(e.x>cb[2]+1-m){e.x=cb[2]+1-m;e.vx=-Math.abs(e.vx)*.5;}if(e.y<cb[1]){e.y=cb[1];e.vy=Math.abs(e.vy)*.5;}if(e.y+e.h>cb[3]+1){e.y=cb[3]+1-e.h;e.vy=-Math.abs(e.vy)*.5;}}}
+  // the Starfold (the Origami Observatory, dungeons.js) keeps to its dome: it dives at you and throws fans of stars; after 50%
+  // it folds the dome along its middle, steps out on the other side and throws a ring of stars; at 25% the stars fall
+  else if(e.type==='starfold'){const ph=e.phase||0,enr=ph>=1,cb=dunRoom('obs'),cx=e.x,cy=e.y+e.h/2,gold=['#fff3c0','#f7d046','#fbf8f0'];e.cd=(e.cd??2)-dt;
+    e.spin=(e.spin||0)+dt*(e.act==='wind'||e.act==='dive'||e.act==='fold'?4:enr?1.4:.8);
+    if(e.act==='wind'){e.at-=dt;e.tele=e.warn=true;e.vx*=Math.pow(.05,dt);e.vy*=Math.pow(.05,dt);e.face=toward;if(e.at<=0){e.act='dive';e.at=.7;const l=dist||1,v=enr?18:15;e.vx=dx/l*v;e.vy=dy/l*v;SFX.swing();}}
+    else if(e.act==='dive'){e.at-=dt;if(e.at<=0){e.act=null;e.cd=rand(1,1.7);}}
+    else if(e.act==='shots'){e.at-=dt;e.vx*=Math.pow(.2,dt);e.vy*=Math.pow(.2,dt);if(e.shots===(enr?3:2))e.tele=e.warn=true;
+      if(e.at<=0){const n=enr?5:3,a0=Math.atan2(dy,dx);for(let k=0;k<n;k++){const a=a0+(k-(n-1)/2)*.24;fireProj('starshot',cx,cy,Math.cos(a)*9,Math.sin(a)*9,edmg(e)*.7,{hostile:true});}tone(988,660,.25,'sine',.05);e.shots--;e.at=.45;if(e.shots<=0){e.act=null;e.cd=rand(1.2,1.9);}}}
+    else if(e.act==='fold'){e.at-=dt;e.tele=e.warn=true;e.vx*=Math.pow(.05,dt);e.vy*=Math.pow(.05,dt);if(Math.random()<dt*30)burst(e.fx,e.fy,gold,1,2,{grav:0,life:.5});
+      if(e.at<=0){burst(cx,cy,gold,24,6,{grav:0});e.x=e.fx;e.y=e.fy-e.h/2;e.vx=e.vy=0;burst(e.fx,e.fy,gold,24,6,{grav:0});SFX.peel();shake(.25);
+        const n=ph>=2?14:10;e.a0=(e.a0||0)+Math.PI/n;for(let k=0;k<n;k++){const a=e.a0+k/n*Math.PI*2;fireProj('starshot',e.fx,e.fy,Math.cos(a)*7,Math.sin(a)*7,edmg(e)*.75,{hostile:true});}e.act=null;e.cd=rand(1.3,2);}}
+    else if(e.act==='fall'){e.at-=dt;e.st2-=dt;e.vx*=Math.pow(.2,dt);e.vy*=Math.pow(.2,dt);if(e.at>2.4)e.tele=e.warn=true;if(e.st2<=0&&cb){e.st2=.14;fireProj('starshot',rand(cb[0]+.5,cb[2]+.5),cb[3]+.6,rand(-1,1),-7,edmg(e)*.7,{hostile:true});}if(e.at<=0){e.act=null;e.cd=rand(1.2,1.8);}}
+    else{const tx=p.x+Math.sin(e.t*.6)*6,ty=p.y+5+Math.sin(e.t*1.7)*1.4;e.vx+=((tx-e.x)*2-e.vx*1.5)*dt;e.vy+=((ty-cy)*2-e.vy*1.5)*dt;e.face=toward;
+      if(e.cd<=0&&!p.dead){const r=Math.random(),sh=ph>=2?.25:0;
+        if(r<sh){e.act='fall';e.at=3;e.st2=.9;tone(660,990,.6,'sine',.1);toast('The Starfold tears the dome open! Stars pour down.');}
+        else if(enr&&r<sh+(1-sh)*.3){let fx=cb?cb[0]+cb[2]+1-cx:cx;if(Math.abs(fx-cx)<4)fx=cx+(cx<p.x?10:-10);if(cb)fx=clamp(fx,cb[0]+e.w/2+.5,cb[2]+.5-e.w/2);e.fx=fx;e.fy=cy;e.act='fold';e.at=.8;SFX.rustle(.3,.4);}
+        else if(r<sh+(1-sh)*.6){e.act='wind';e.at=enr?.45:.6;}
+        else{e.act='shots';e.shots=enr?3:2;e.at=.5;}}}
+    if(cb){const m=e.w/2;if(e.x<cb[0]+m){e.x=cb[0]+m;e.vx=Math.abs(e.vx)*.5;}if(e.x>cb[2]+1-m){e.x=cb[2]+1-m;e.vx=-Math.abs(e.vx)*.5;}if(e.y<cb[1]){e.y=cb[1];e.vy=Math.abs(e.vy)*.5;}if(e.y+e.h>cb[3]+1){e.y=cb[3]+1-e.h;e.vy=-Math.abs(e.vy)*.5;}}}
+  // the Pulper (the Great Scrapworks, dungeons.js) walks its floor: it charges wall to wall, shreds fans of pages at you and spits
+  // crumples; at 25% it bursts its hopper, hopping and slamming while scraps rain from the ceiling
+  else if(e.type==='pulper'){const ph=e.phase||0,enr=ph>=1,cb=dunRoom('scrap'),cx=e.x,cy=e.y+e.h/2;e.vy-=50*dt;e.cd=(e.cd??2)-dt;e.roll=(e.roll||0)+dt*(e.act==='dash'?14:e.act==='shred'?20:4);
+    if(e.act==='wind'){e.at-=dt;e.vx*=Math.pow(.001,dt);e.tele=e.warn=true;if(e.at<=0){e.act='dash';e.at=1.1;SFX.swing();}}
+    else if(e.act==='dash'){e.at-=dt;e.vx=e.face*(enr?13:11);if(Math.random()<dt*20)burst(e.x-e.face*1.5,e.y+.2,['#e6e1d6','#fbf8f0'],1,2);if(e.at<=0||e.hitWall){if(e.hitWall){shake(.3);SFX.stomp();}e.act='rest';e.at=.8;}}
+    else if(e.act==='rest'){e.at-=dt;e.vx*=Math.pow(.01,dt);if(e.at<=0){e.act=null;e.cd=rand(1,1.6);}}
+    else if(e.act==='shred'){e.at-=dt;e.vx*=Math.pow(.01,dt);if(e.shots===(enr?4:3))e.tele=e.warn=true;
+      if(e.at<=0){const n=enr?5:3,a0=Math.atan2(dy,dx);for(let k=0;k<n;k++){const a=a0+(k-(n-1)/2)*.2;fireProj('page',cx+e.face*1.2,cy,Math.cos(a)*10,Math.sin(a)*10,edmg(e)*.7,{hostile:true});}SFX.rustle(.3,.7);e.shots--;e.at=.35;if(e.shots<=0){e.act=null;e.cd=rand(1.2,1.8);}}}
+    else if(e.act==='slam'){e.at-=dt;e.tele=e.warn=true;if(!e.up){e.up=1;e.vy=19;e.vx=clamp(dx/1.2,-10,10);SFX.jump();}
+      else if(e.onGround&&e.at<1.6){shake(.5);SFX.stomp();burst(e.x,e.y+.2,['#c9a574','#e9dfc9','#fbf8f0'],24,7,{up:1});e.act='rain';e.at=2;e.st2=0;e.up=0;}}
+    else if(e.act==='rain'){e.at-=dt;e.st2-=dt;e.vx*=Math.pow(.01,dt);if(e.st2<=0&&cb){e.st2=.16;fireProj('page',rand(cb[0]+.5,cb[2]+.5),cb[3]+.6,rand(-1,1),-8,edmg(e)*.6,{hostile:true});}if(e.at<=0){e.act=null;e.cd=rand(1.2,1.8);}}
+    else{e.face=toward;e.vx+=(toward*2.2-e.vx)*Math.min(1,dt*3);
+      if(e.cd<=0&&!p.dead&&e.onGround){const r=Math.random(),sh=ph>=2?.3:0,cr=enemies.filter(o=>o.type==='crumple'&&!o.dying).length;
+        if(r<sh){e.act='slam';e.at=2;e.up=0;toast('The Pulper bursts its hopper! Scraps rain from the ceiling.');}
+        else if(r<sh+(1-sh)*.35){e.act='wind';e.at=enr?.45:.6;}
+        else if(r<sh+(1-sh)*.55&&cr<3){for(let k=0;k<(enr?2:1);k++){const m=spawnEnemy('crumple',cx+e.face*1.6,e.y+1.8);m.vx=e.face*rand(5,8);m.vy=rand(6,9);}SFX.rustle(.3,.5);e.cd=rand(1.4,2);}
+        else{e.act='shred';e.shots=enr?4:3;e.at=.5;}}}
+    if(cb){const m=e.w/2;if(e.x<cb[0]+m){e.x=cb[0]+m;e.vx=Math.abs(e.vx)*.3;e.hitWall=1;}if(e.x>cb[2]+1-m){e.x=cb[2]+1-m;e.vx=-Math.abs(e.vx)*.3;e.hitWall=1;}}}
+  // the Grand Nib (the Sunken Inkwell Temple, dungeons.js) hangs over you: it stabs down, writes a line of ink across the chamber
+  // and calls Ink Blots; after 50% it splatters rings of ink, and at 25% ink floods down from the ceiling
+  else if(e.type==='nib'){const ph=e.phase||0,enr=ph>=1,cb=dunRoom('temple'),cx=e.x,cy=e.y+e.h/2;e.cd=(e.cd??2)-dt;
+    if(e.act==='wind'){e.at-=dt;e.tele=e.warn=true;e.vx*=Math.pow(.05,dt);e.vy*=Math.pow(.05,dt);if(e.at<=0){e.act='dive';e.at=.6;const l=dist||1,v=enr?20:17;e.vx=dx/l*v;e.vy=dy/l*v;SFX.swing();}}
+    else if(e.act==='dive'){e.at-=dt;if(e.at<=0){e.act=null;e.cd=rand(1,1.6);}}
+    else if(e.act==='write'){e.at-=dt;e.st2-=dt;e.vx=e.wd*(enr?11:9);e.vy+=(((cb?cb[3]-1.5:p.y+7)-(e.y+e.h))*3-e.vy)*Math.min(1,dt*4);
+      if(e.st2<=0){e.st2=enr?.12:.16;fireProj('inkglob',cx,e.y,rand(-1,1),-3,edmg(e)*.7,{hostile:true});}if(e.at<=0||cb&&(e.wd>0?e.x>cb[2]-2:e.x<cb[0]+3)){e.act=null;e.cd=rand(1,1.6);}}
+    else if(e.act==='splat'){e.at-=dt;e.vx*=Math.pow(.1,dt);e.vy*=Math.pow(.1,dt);if(e.at<=0){const n=ph>=2?16:12;e.a0=(e.a0||0)+Math.PI/n;for(let k=0;k<n;k++){const a=e.a0+k/n*Math.PI*2;fireProj('inkglob',cx,cy,Math.cos(a)*7,Math.sin(a)*7+2,edmg(e)*.75,{hostile:true});}SFX.boom();e.act=null;e.cd=rand(1.3,2);}}
+    else if(e.act==='flood'){e.at-=dt;e.st2-=dt;e.vx*=Math.pow(.2,dt);e.vy*=Math.pow(.2,dt);if(e.at>2.4)e.tele=e.warn=true;if(e.st2<=0&&cb){e.st2=.12;fireProj('inkglob',rand(cb[0]+.5,cb[2]+.5),cb[3]+.6,rand(-1,1),-6,edmg(e)*.7,{hostile:true});}if(e.at<=0){e.act=null;e.cd=rand(1.2,1.8);}}
+    else{const tx=p.x+Math.sin(e.t*.6)*5,ty=p.y+6+Math.sin(e.t*1.5)*1.2;e.vx+=((tx-e.x)*2-e.vx*1.5)*dt;e.vy+=((ty-cy)*2-e.vy*1.5)*dt;e.face=toward;
+      if(e.cd<=0&&!p.dead){const r=Math.random(),sh=ph>=2?.25:0,blots=enemies.filter(o=>o.type==='blot'&&!o.dying).length;
+        if(r<sh){e.act='flood';e.at=3;e.st2=.9;SFX.boom();toast('The Grand Nib splits! Ink floods down from the ceiling.');}
+        else if(r<sh+(1-sh)*.25){e.act='wind';e.at=enr?.45:.6;}
+        else if(r<sh+(1-sh)*.5){e.act='write';e.wd=cb&&cx>(cb[0]+cb[2])/2?-1:1;e.at=2.6;e.st2=.3;tone(520,260,.4,'triangle',.06);}
+        else if(r<sh+(1-sh)*.7&&blots<4){for(let k=0;k<(enr?3:2);k++){const m=spawnEnemy('blot',cx+rand(-1.5,1.5),cy-1);m.vy=3;}burst(cx,cy,['#3a2a5a','#6b4c8f'],18,5);SFX.rustle(.3,.6);e.cd=rand(1.6,2.2);}
+        else if(enr){e.act='splat';e.at=.55;e.tele=e.warn=true;}
+        else{e.act='wind';e.at=.6;}}}
+    if(cb){const m=e.w/2;if(e.x<cb[0]+m){e.x=cb[0]+m;e.vx=Math.abs(e.vx)*.5;}if(e.x>cb[2]+1-m){e.x=cb[2]+1-m;e.vx=-Math.abs(e.vx)*.5;}if(e.y<cb[1]){e.y=cb[1];e.vy=Math.abs(e.vy)*.5;}if(e.y+e.h>cb[3]+1){e.y=cb[3]+1-e.h;e.vy=-Math.abs(e.vy)*.5;}}}
   else if(e.type==='crumple'){e.vy-=50*dt;if(e.onGround){e.vx=clamp(e.vx+toward*9*dt,-8.5,8.5);if(e.hitWall){e.vy=11;e.vx=-e.hitWall*2;}}e.face=e.vx>=0?1:-1;e.roll=(e.roll||0)-e.vx*dt/.45;}
   else if(e.type==='toadstool'){e.vy-=50*dt;e.cd=(e.cd??rand(1.5,2.5))-dt;e.face=toward;
     if(e.act==='wind'){e.at-=dt;e.vx*=Math.pow(.001,dt);e.tele=e.warn=true;if(e.at<=0){const T=1.1,g=PK.spore.grav,ox=e.x+e.face*.3,oy=e.y+1.1;fireProj('spore',ox,oy,clamp((p.x-ox)/T,-11,11),Math.min(20,((p.y+.9-oy)+.5*g*T*T)/T),edmg(e),{hostile:true});SFX.bow();e.act=null;e.cd=rand(2,3);}}
@@ -750,13 +850,13 @@ export function updateEnemies(dt){const p=player;tickFuses(dt);for(let i=enemies
   if(e.y<-4){removeEnemy(e);enemies.splice(i,1);continue;}
   // contact
   if(!p.dead&&!e.dying&&!e.burrow&&!(e.stun>0)&&!bossHeld(e)&&Math.abs(p.x-e.x)<(p.w+e.w)/2&&p.y<e.y+e.h&&p.y+p.h>e.y){
-    const fromAbove=p.vy<0&&p.prevY>=e.y+e.h-.35&&(e.type!=='knight'&&e.type!=='sentinel'||hasBadge('spike'));
+    const fromAbove=p.vy<0&&p.prevY>=e.y+e.h-.35&&(e.type!=='knight'&&e.type!=='sentinel'&&e.type!=='warden'&&e.type!=='gazer'&&e.type!=='foreman'&&e.type!=='scribe'||hasBadge('spike'));
     if(fromAbove&&e.hitCD<=0){e.hitCD=.25;const nice=p.jumpAge<.14*niceW();hurtEnemy(e,(nice?20:10)*(hasBadge('stomp')?2:1),p.face,2,nice);p.vy=nice?18:13;p.y=e.y+e.h+.02;SFX.stomp();stat('stomps');if(nice)stat('nices');burst(p.x,p.y,['#fbf8f0','#f1c04f'],8,4);
       if(nice){floatText(e.x,e.y+e.h+.6,'NICE!','nice');SFX.nice();}else{p.stompWin=.14*niceW();p.stompTarget=e;}}
     else if(!fromAbove){const hp0=p.hp;hurtPlayer(edmg(e)*(e.act==='dash'?1.3:1),e.x,e,e.elem||d.elem);if(e.trait==='vampiric'&&p.hp<hp0){const h=Math.round((hp0-p.hp)*1.5);e.hp=Math.min(e.max,e.hp+h);e.hpShow=3;floatText(e.x,e.y+e.h+.3,'+'+h,'weak');burst(e.x,e.y+e.h/2,['#d4483b','#ff9aa8'],8,2,{grav:-2});}}}
   // mesh
   const m=e.mesh;e.rot+=((e.face>0?0:Math.PI)-e.rot)*Math.min(1,dt*14);m.rotation.y=e.rot;
-  if(e.rig)foeClip(e);else{let fr=0;if(d.slimy)fr=e.onGround&&e.timer<.25?1:0;else fr=Math.floor(e.t*(d.fly?8:5))%2;e.mesh.material.uniforms.uFrame.value=fr;}
+  foeClip(e,dt);
   if(d.fly)m.position.set(e.x,e.y+e.h/2,m.position.z);else m.position.set(e.x,e.y-.1,m.position.z);if(e.tele)m.position.x+=Math.sin(e.t*75)*.05*(d.boss?2.5:1);
   if(!d.fly&&!e.onGround&&d.slimy){const s=clamp(1+e.vy*.02,.85,1.2);m.scale.set(1/s,s,1);}else m.scale.set(1,1,1);
   if(e.folded)m.scale.set(1.2,.25,1);if(d.worm){m.rotation.y=0;const a=e.ang||0;m.rotation.z=a;m.scale.set(1,Math.cos(a)<0?-1:1,1);}
@@ -767,22 +867,46 @@ export function updateEnemies(dt){const p=player;tickFuses(dt);for(let i=enemies
   else if(e.type==='dunefin'&&e.burrow)m.position.y-=e.sh*.72;
   else if(e.type==='frostpuff'){const k=1+(e.inf||0)*.45;m.scale.set(k,k,1);}
   else if(e.type==='inkwisp'&&e.act==='fade'){const k=Math.max(.05,e.at/.5);m.scale.set(k,k,1);}
-  else if((e.type==='scarab'||e.type==='clockbug')&&e.act==='open')m.scale.set(1.08,.8,1);
   else if(e.type==='ashspider'){const hang=e.act==='hang'||e.act==='drop';m.rotation.z=hang?Math.PI:0;if(hang)m.position.y=e.y+e.h+.1;
     if(hang&&!e.thread){e.thread=new THREE.Mesh(threadGeo,new THREE.MeshBasicMaterial({color:0xd8cfc0}));e.thread.renderOrder=2;scene.add(e.thread);}
     if(e.thread){const len=(e.hangY??e.y+e.h)-(e.y+e.h);e.thread.visible=hang&&len>.05;e.thread.position.set(e.x,e.y+e.h,.09);e.thread.scale.y=Math.max(.01,len);}}
   if(e.elite)m.scale.multiplyScalar((traitOf(e)||{}).sz||1.2);
   if(d.boss||e.parent)bossLook(e,m,dt);
-  setTint(m.material,e.x,e.y+e.h/2);if(e.inked)m.material.uniforms.uTint.value.multiply(INKTINT);if(e.elite){m.material.uniforms.uTint.value.multiply(ELITE_TINT);if(e.trait)traitFx(e,m,dt);else if(Math.random()<dt*4)burst(e.x+rand(-e.w/2,e.w/2),e.y+rand(0,e.h),['#f1c04f','#fff3c0'],1,.6,{grav:-1,life:.6,bright:1});}if(e.st)statusFx(e,m,dt);m.material.uniforms.uFlash.value=e.flash>0?.8:(e.warn?.15+.12*Math.sin(e.t*28):0);teleOutline(m,SET.tele&&(e.tele||e.warn)&&!e.burrow,e.t);if(e.rig)rigUpdate(e.rig,dt);updateEnemyFx(e,dt);}
+  setTint(m.material,e.x,e.y+e.h/2);if(e.inked)m.material.uniforms.uTint.value.multiply(INKTINT);if(e.elite){m.material.uniforms.uTint.value.multiply(ELITE_TINT);if(e.trait)traitFx(e,m,dt);else if(Math.random()<dt*4)burst(e.x+rand(-e.w/2,e.w/2),e.y+rand(0,e.h),['#f1c04f','#fff3c0'],1,.6,{grav:-1,life:.6,bright:1});}if(e.st)statusFx(e,m,dt);m.material.uniforms.uFlash.value=e.flash>0?.8:(e.warn?.15+.12*Math.sin(e.t*28):0);teleOutline(m,SET.tele&&(e.tele||e.warn)&&!e.burrow,e.t);rigUpdate(e.rig,dt);updateEnemyFx(e,dt);}
   if(boss){$('boss').querySelector('i').style.width=clamp(boss.hp/boss.max*100,0,100)+'%';}}
-// rigged foes (rig.js FOERIG) pick a clip from what they are doing: humans walk their gait and wince when hit, slimes crouch
-// before a hop, fliers flap, and the floating eye's iris follows you
-function foeClip(e){const R=e.rig,p=player;
-  if(R.k==='human'){const H=HUMANFOE[e.type]||{},walk=Math.abs(e.vx)>.3;rigPlay(R,walk?H.clip||'march':'idle',{sp:clamp(Math.abs(e.vx)/2.2,.6,1.8)});
-    if(H.arm!=null)rigSet(R,'armA',{r:H.arm});if(e.type==='zombie'&&!walk){rigSet(R,'armA',{r:-1.45});rigSet(R,'armB',{r:-1.3});}if(e.flash>0||e.stun>0)rigSet(R,'head',{sw:'hurt',snap:1});}
-  else if(R.k==='slime'||R.k==='king')rigPlay(R,e.onGround&&e.timer<.25?'crouch':'idle');
-  else rigPlay(R,'fly',{sp:e.stun>0?.3:1});
-  if(R.k==='eye'){const dx=p.x-e.x,dy=p.y+1-(e.y+e.h/2),l=Math.hypot(dx,dy)||1;rigSet(R,'iris',{x:dx/l*5*e.face,y:-dy/l*5});}}
+// every foe is a rig (rig.js FOERIG) and picks a clip from what it is doing: humans walk their gait and wince when hit, slimes
+// and snowballs crouch before a hop, fliers flap, beetles lift their shells, eyes follow you, and bosses pose for each attack
+function foeClip(e,dt){const R=e.rig,p=player,a=e.act,mv=Math.abs(e.vx)>.3,look=(pt,k,y=0)=>{const dx=p.x-e.x,dy=p.y+1-(e.y+e.h/2),l=Math.hypot(dx,dy)||1;rigSet(R,pt,{x:dx/l*k*e.face,y:-dy/l*k+y});};
+  switch(R.k){
+  case'human':{const H=HUMANFOE[e.type]||{};rigPlay(R,mv?H.clip||'march':'idle',{sp:clamp(Math.abs(e.vx)/2.2,.6,1.8)});
+    if(H.arm!=null)rigSet(R,'armA',{r:H.arm});if(e.type==='zombie'&&!mv){rigSet(R,'armA',{r:-1.45});rigSet(R,'armB',{r:-1.3});}if(e.flash>0||e.stun>0)rigSet(R,'head',{sw:'hurt',snap:1});break;}
+  case'slime':case'king':case'snowroll':case'snowlet':rigPlay(R,e.onGround&&e.timer<.25?'crouch':e.onGround?'idle':'air');break;
+  case'crumple':rigPlay(R,'idle',{sp:1+Math.min(3,Math.abs(e.vx)/2.5)});break;
+  case'toadstool':rigPlay(R,a==='wind'?'wind':mv&&e.onGround?'walk':'idle');break;
+  case'dunefin':rigPlay(R,a==='leap'?(e.vy>0?'up':'down'):a==='exposed'?'flop':'swim',{sp:a==='rise'?3:a==='under'?1.5:1});break;
+  case'scarab':case'clockbug':rigPlay(R,a==='wind'?'wind':a==='dash'?'dash':a==='open'?'open':mv?'walk':'idle');break;
+  case'sunkite':case'skyray':rigPlay(R,a==='wind'||a==='dive'?a:'fly',{sp:a==='climb'?1.6:1});break;
+  case'frostpuff':rigPlay(R,a==='puff'?'puff':'fly');break;
+  case'inkwisp':rigPlay(R,a==='aim'||a==='strike'?a:'fly');look('iris',2.5);break;
+  case'quillfish':{const wet=TP[tileAt(Math.floor(e.x),Math.floor(e.y+e.h/2))].liq;rigPlay(R,wet?'swim':e.onGround?'flop':'air');break;}
+  case'inksquid':rigPlay(R,TP[tileAt(Math.floor(e.x),Math.floor(e.y+e.h/2))].liq?'swim':'dry');break;
+  case'foldfox':rigPlay(R,a==='wind'?'wind':!e.onGround?'air':Math.abs(e.vx)>.5?'run':'idle',{sp:clamp(Math.abs(e.vx)/3.5,.7,1.6)});break;
+  case'cracker':rigPlay(R,a==='fuse'?'fuse':mv?'walk':'idle');break;
+  case'ashspider':rigPlay(R,a==='hang'?'hang':a==='drop'||!e.onGround?'drop':mv?'walk':'idle');break;
+  // bosses: the crane beats its wings harder in a storm, the Leviathan's body follows its head a beat behind, the Folio turns a
+  // page to cast and watches you, the Unfolded glares in its last phase, the Mainspring keeps (fast) time
+  case'crane':rigPlay(R,a==='wind'||a==='swoop'||a==='volley'?a:a==='phase'||a==='intro'?'wind':'fly',{sp:a==='storm'?2.2:(e.phase||0)>=1?1.3:1});break;
+  case'lev':rigPlay(R,a==='wind'||a==='lunge'?a:'swim');break;
+  case'levseg':case'levtail':{const b=e.parent||e;e.si??=b.segs?b.segs.indexOf(e):0;rigPlay(R,'swim',{t:(b.t||0)-e.si*.09});break;}
+  case'folio':rigPlay(R,a==='wind'?'turn':a==='fire'||a==='rain'?a:'idle');look('iris',9);break;
+  case'unfolded':rigPlay(R,a==='wind'||a==='leap'||a==='volley'||a==='shred'||a==='fold'?a:mv&&e.onGround?'walk':'idle',{sp:clamp(Math.abs(e.vx)/2.2,.7,1.4)});if((e.phase||0)>=2)rigSet(R,'head',{sw:'glare',snap:1});break;
+  case'pulper':rigPlay(R,a==='wind'?'wind':a==='shred'||a==='slam'||a==='rain'?'shred':mv?'walk':'idle');rigSet(R,'rollA',{r:e.roll||0,snap:1});rigSet(R,'rollB',{r:-(e.roll||0),snap:1});break;
+  case'nib':rigPlay(R,a==='wind'||a==='splat'?'wind':a==='dive'?'dive':a==='write'||a==='flood'?'write':'idle');break;
+  case'starfold':rigPlay(R,a==='wind'||a==='dive'?'wind':a==='fold'?'fold':a==='shots'||a==='fall'?'shoot':'idle',{sp:(e.phase||0)>=1?1.3:1});rigSet(R,'rays',{r:e.spin||0,snap:1});rigSet(R,'back',{r:-(e.spin||0)*.6,snap:1});break;
+  case'bookmoth':rigPlay(R,a==='wind'||a==='dive'||a==='dust'?a:a==='storm'||a==='pages'||a==='phase'||a==='intro'?'wind':'fly',{sp:(e.phase||0)>=1?1.3:1});break;
+  case'mainspring':{const ph=e.phase||0,k=a==='wind'||a==='dash'?5:1+ph*.6;e.clk=(e.clk||0)+dt*k;rigPlay(R,a==='chime'?'chime':a==='wind'||a==='dash'?'wind':'idle');
+    rigSet(R,'handM',{r:e.clk*2.4,snap:1});rigSet(R,'handH',{r:e.clk*.2+.8,snap:1});rigSet(R,'rim',{r:e.clk*.25,snap:1});look('pupils',4);break;}
+  default:rigPlay(R,'fly',{sp:e.stun>0?.3:1});if(R.k==='eye')look('iris',5);}}
 export function updateNPC(dt){for(const n of npcs){n.t+=dt;n.timer-=dt;const h=n.home||n.roam;if(n.timer<=0){n.timer=rand(1.5,4);const r=Math.random();n.want=r<.45?0:(r<.72?-1:1);}
   const near=Math.abs(player.x-n.x)<3&&Math.abs(player.y-n.y)<2.5&&!player.dead;
   let want=near?0:(n.want||0);if(near)n.face=player.x>n.x?1:-1;if(h){if(n.x<h.minX+.7)want=1;if(n.x>h.maxX+.3)want=-1;}n.vx=want*1.6;if(want)n.face=want;n.vy-=50*dt;collide(n,dt);
