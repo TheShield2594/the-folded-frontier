@@ -26,6 +26,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      # the smoke tests' art pictures (tests/fixtures/art/) must never reach a real build
+      - run: node tests/check-dist.mjs
       - run: npx playwright install --with-deps chromium
       - run: npm test
       - uses: actions/upload-artifact@v4
