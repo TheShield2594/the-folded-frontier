@@ -2,8 +2,11 @@
 import {circ,fi,fibers,grain,INK,ink,mk,pick,poly,rand,rr,SET,sh,drawPet,drawStag} from './game.js';
 
 // ================= atlas =================
-export const atlas=mk(1024,2048),A=atlas.getContext('2d');
-let cellN=0;export const cellXY=c=>{let row=Math.floor(c/16);if(row>=12)row+=4;return[(c%16)*64,row*64];};
+// 64px cells in rows of 16, around two bands of 256px regions no cell may enter: rows 12-15 the tree canopies (C.canopy),
+// rows 28-31 the seasonal ones (C.canopyFall...). ATH leaves room for 640 cells; atlasCheck() at the end reports an overflow
+export const ATW=1024,ATH=3072,ATSKIP=[[12,4],[28,4]];
+export const atlas=mk(ATW,ATH),A=atlas.getContext('2d');
+let cellN=0;export const cellXY=c=>{let row=Math.floor(c/16);for(const[r,n]of ATSKIP)if(row>=r)row+=n;return[(c%16)*64,row*64];};
 function blockCell(base,deco,outline=true,c=cellN++){const[x,y]=cellXY(c);A.save();A.beginPath();A.rect(x,y,64,64);A.clip();A.translate(x,y);
   A.fillStyle=sh(base,.6);A.fillRect(0,0,64,64);rr(A,1.5,1.5,61,61,8);A.fillStyle=base;A.fill();
   A.save();rr(A,1.5,1.5,61,61,8);A.clip();const g=A.createLinearGradient(0,0,0,64);g.addColorStop(0,'rgba(255,255,255,.16)');g.addColorStop(1,'rgba(0,0,0,.14)');A.fillStyle=g;A.fillRect(0,0,64,64);
@@ -124,7 +127,7 @@ stickerAt(768,768,256,256,t=>drawCanopy(t,['#3f7a2b','#5aa83c','#86d15f']),4);
 stickerAt(512,768,256,256,t=>drawCanopy(t,['#2f6a3a','#3f8f4f','#6cc07a']),4);
 stickerAt(256,768,256,256,t=>{for(const[y,w]of[[70,70],[120,96],[172,120]]){poly(t,[128,y-58,128+w/2+4,y+8,128-w/2-4,y+8]);t.fillStyle='#2e5a4a';t.fill();}for(const[y,w]of[[66,62],[116,88],[168,112]]){poly(t,[128,y-58,128+w/2,y,128-w/2,y]);fi(t,'#3f7a5f',3);t.beginPath();t.moveTo(128,y-58);t.lineTo(128,y);ink(t,2,'rgba(20,40,30,.35)');t.beginPath();t.moveTo(128-w/2+8,y-3);t.quadraticCurveTo(128,y-12,128+w/2-8,y-3);ink(t,6,'#f6f9fb');}},4);
 C.canopy=[[768,768],[512,768],[256,768]];
-// seasonal canopies for forest trees, in the free band at the bottom of the atlas (see seasons.js canopyCell)
+// seasonal canopies for forest trees, in the second band cellXY skips (see seasons.js canopyCell)
 stickerAt(0,1792,256,256,t=>drawCanopy(t,['#b8561f','#e0823d','#f6b85a']),4);
 stickerAt(256,1792,256,256,t=>drawCanopy(t,['#8a2f22','#c9483a','#f1a04f']),4);
 stickerAt(512,1792,256,256,t=>{drawCanopy(t,['#8e9faf','#d3dfe8','#fbf8f0']);for(const[x,y,r]of[[128,158,66],[66,170,50],[190,170,50],[128,72,56]]){t.beginPath();t.arc(x,y,r*.9,Math.PI*1.15,Math.PI*1.85);ink(t,9,'#fbf8f0');}},4);
@@ -459,4 +462,4 @@ C.crowbar=sticker(t=>{t.beginPath();t.moveTo(14,54);t.lineTo(44,14);t.quadraticC
 C.wellnib=sticker(t=>{poly(t,[32,60,16,26,22,8,42,8,48,26]);fi(t,'#c9a24a',3);t.beginPath();t.moveTo(32,58);t.lineTo(32,30);ink(t,2);circ(t,32,26,4.5);t.fillStyle='#1c1520';t.fill();
   t.beginPath();t.moveTo(32,60);t.quadraticCurveTo(38,56,36,50);t.strokeStyle='#6b4c8f';t.lineWidth=3;t.stroke();t.fillStyle='rgba(255,255,255,.45)';t.fillRect(24,12,3,14);});
 C.hl=sticker(t=>{rr(t,2,2,60,60,8);t.setLineDash([8,5]);ink(t,3,'#fff');t.setLineDash([]);},0);
-if(cellN>(32-4)*16)console.warn('atlas overflow');
+if(cellXY(cellN-1)[1]+64>ATH)console.error(`atlas overflow: ${cellN} cells need more than ${ATW}×${ATH}`);

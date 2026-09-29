@@ -1,0 +1,70 @@
+The Folded Frontier: gripping arms, one per sleeve, so the player visibly holds weapons and tools.
+
+How to run each one:
+- Model: Nano Banana Pro, 1:1 or 3:4 at 2K.
+- Attach that arm's reference image (grip-ref-N-name.png). Optional: grip-ref-all.png too, so they stay consistent.
+- Once you have a good plain one, attach it as an extra reference for the rest so the fists match.
+- Paste each result here in its own message, or upload as renders/grip-<name>.png.
+
+======================================================================
+1. PLAIN  (reference: grip-ref-1-plain.png; save as renders/grip-plain.png)
+======================================================================
+Redraw the exact arm in the reference image, the plain teal tunic sleeve, keeping everything above the wrist identical: same sleeve, same colours, same thick dark plum-black ink outline (#2a2130), same white paper border, same size and proportions, hanging straight down in strict side view.
+
+Change only the hand: make it a CLOSED FIST gripping a round handle that is NOT drawn. The fingers curl around an empty round hole that runs through the fist from front to back, knuckles facing right, thumb wrapped over the top. The hole is clearly visible as a gap in the fist, about as wide as a sword grip.
+
+One arm only, centred. Complete ink outline all the way round. Plain flat light grey background, no weapon, no handle, no text, no shadow.
+
+======================================================================
+2. COPPER  (reference: grip-ref-2-copper.png; save as renders/grip-copper.png)
+======================================================================
+Redraw the exact arm in the reference image, the copper ring-mail sleeve with the brown leather bracer, keeping everything above the wrist identical: same sleeve, same colours, same thick dark plum-black ink outline (#2a2130), same white paper border, same size and proportions, hanging straight down in strict side view.
+
+Change only the hand: make it a CLOSED FIST gripping a round handle that is NOT drawn. The fingers curl around an empty round hole that runs through the fist from front to back, knuckles facing right, thumb wrapped over the top. The hole is clearly visible as a gap in the fist, about as wide as a sword grip.
+
+One arm only, centred. Complete ink outline all the way round. Plain flat light grey background, no weapon, no handle, no text, no shadow.
+
+======================================================================
+3. IRON  (reference: grip-ref-3-iron.png; save as renders/grip-iron.png)
+======================================================================
+Redraw the exact arm in the reference image, the iron chainmail sleeve with the plain iron vambrace, keeping everything above the wrist identical: same sleeve, same colours, same thick dark plum-black ink outline (#2a2130), same white paper border, same size and proportions, hanging straight down in strict side view.
+
+Change only the hand: make it a CLOSED FIST gripping a round handle that is NOT drawn. The fingers curl around an empty round hole that runs through the fist from front to back, knuckles facing right, thumb wrapped over the top. The hole is clearly visible as a gap in the fist, about as wide as a sword grip.
+
+One arm only, centred. Complete ink outline all the way round. Plain flat light grey background, no weapon, no handle, no text, no shadow.
+
+======================================================================
+4. GOLD  (reference: grip-ref-4-gold.png; save as renders/grip-gold.png)
+======================================================================
+Redraw the exact arm in the reference image, the gold scale sleeve with the engraved gold vambrace, keeping everything above the wrist identical: same sleeve, same colours, same thick dark plum-black ink outline (#2a2130), same white paper border, same size and proportions, hanging straight down in strict side view.
+
+Change only the hand: make it a CLOSED FIST gripping a round handle that is NOT drawn. The fingers curl around an empty round hole that runs through the fist from front to back, knuckles facing right, thumb wrapped over the top. The hole is clearly visible as a gap in the fist, about as wide as a sword grip.
+
+One arm only, centred. Complete ink outline all the way round. Plain flat light grey background, no weapon, no handle, no text, no shadow.
+
+======================================================================
+5. FROSTSILVER  (reference: grip-ref-5-frostsilver.png; save as renders/grip-frostsilver.png)
+======================================================================
+Redraw the exact arm in the reference image, the frostsilver chainmail sleeve with the ice-crystal vambrace, keeping everything above the wrist identical: same sleeve, same colours, same thick dark plum-black ink outline (#2a2130), same white paper border, same size and proportions, hanging straight down in strict side view.
+
+Change only the hand: make it a CLOSED FIST gripping a round handle that is NOT drawn. The fingers curl around an empty round hole that runs through the fist from front to back, knuckles facing right, thumb wrapped over the top. The hole is clearly visible as a gap in the fist, about as wide as a sword grip.
+
+One arm only, centred. Complete ink outline all the way round. Plain flat light grey background, no weapon, no handle, no text, no shadow.
+
+======================================================================
+6. INKSTONE  (reference: grip-ref-6-inkstone.png; save as renders/grip-inkstone.png)
+======================================================================
+Redraw the exact arm in the reference image, the dark inkstone plate sleeve with ink drips and the glowing purple line, keeping everything above the wrist identical: same sleeve, same colours, same thick dark plum-black ink outline (#2a2130), same white paper border, same size and proportions, hanging straight down in strict side view.
+
+Change only the hand: make it a CLOSED FIST gripping a round handle that is NOT drawn. The fingers curl around an empty round hole that runs through the fist from front to back, knuckles facing right, thumb wrapped over the top. The hole is clearly visible as a gap in the fist, about as wide as a sword grip.
+
+One arm only, centred. Complete ink outline all the way round. Plain flat light grey background, no weapon, no handle, no text, no shadow.
+
+======================================================================
+7. EMBERITE  (reference: grip-ref-7-emberite.png; save as renders/grip-emberite.png)
+======================================================================
+Redraw the exact arm in the reference image, the charcoal emberite plate sleeve with glowing ember cracks and the small flame at the wrist, keeping everything above the wrist identical: same sleeve, same colours, same thick dark plum-black ink outline (#2a2130), same white paper border, same size and proportions, hanging straight down in strict side view.
+
+Change only the hand: make it a CLOSED FIST gripping a round handle that is NOT drawn. The fingers curl around an empty round hole that runs through the fist from front to back, knuckles facing right, thumb wrapped over the top. The hole is clearly visible as a gap in the fist, about as wide as a sword grip.
+
+One arm only, centred. Complete ink outline all the way round. Plain flat light grey background, no weapon, no handle, no text, no shadow.

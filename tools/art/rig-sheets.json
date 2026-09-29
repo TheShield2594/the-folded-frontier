@@ -1,0 +1,624 @@
+{
+ "how": "Each sheet: the drawn parts laid out in a grid (artExport rigs) uploaded as the first reference, the house style image as the second; cut with build.rig_parts(render, rows, cols, [(name, drawn size)]). folio.f2/f4/f6 copy f0, f3/f5 copy f1, pulper.rollB/legB copy rollA/legA.",
+ "sheets": {
+  "lev": {
+   "rows": 2,
+   "cols": 4,
+   "parts": [
+    "lev.head",
+    "lev.jaw",
+    "lev.crest",
+    "levseg.body",
+    "levseg.finT",
+    "levseg.finB",
+    "levtail.fluke",
+    "levtail.stalk"
+   ],
+   "names": [
+    "lev.head",
+    "lev.jaw",
+    "lev.crest",
+    "levseg.body",
+    "levseg.finT",
+    "levseg.finB",
+    "levtail.fluke",
+    "levtail.stalk"
+   ],
+   "prompt": "The first reference image is a layout sheet: 8 flat paper cut-out pieces of the Inkwell Leviathan, a giant deep-violet ink sea serpent boss, in a grid of 2 rows and 4 columns. Repaint EVERY piece as a high quality, hand-painted papercraft game asset in the art style of the second reference image (Paper Mario-like paper cut-outs, thick dark plum-black ink outline #2a2130, white paper cut-out border, visible paper grain, soft painted shading and gentle highlights).\n\nKeep each piece in EXACTLY the same grid cell as in the layout sheet, facing the SAME direction, with the SAME silhouette, angle and width-to-height ratio, and keep its colours:\n1 (row 1, column 1). Head: violet paper sea-serpent head facing right, yellow eye, small white fangs, about 1.9 times as wide as tall\n2 (row 1, column 2). Lower jaw: a thin violet paper jaw strip, about 3.3 times as wide as tall\n3 (row 1, column 3). Crest: a violet paper triangle fin, about 1.3 times as wide as tall\n4 (row 1, column 4). Body segment: a round deep violet paper disc with a lighter inner ring and glossy ink sheen, about 1.0 times as wide as tall\n5 (row 2, column 1). Top fin: violet paper triangle fin, about 1.3 times as wide as tall\n6 (row 2, column 2). Bottom fin: violet paper triangle fin pointing down, about 1.1 times as tall as wide\n7 (row 2, column 3). Tail fluke: tall violet folded paper fin, about 2.7 times as tall as wide\n8 (row 2, column 4). Tail stalk: violet paper wedge pointing right, about 1.3 times as wide as tall\n\nPlain flat light grey background, generous space between pieces, no text, no labels, no shadows, no extra pieces."
+  },
+  "folio": {
+   "rows": 2,
+   "cols": 3,
+   "parts": [
+    "folio.cover",
+    "folio.pageL",
+    "folio.pageR",
+    "folio.turn",
+    "folio.f0",
+    "folio.f1"
+   ],
+   "names": [
+    "folio.cover",
+    "folio.pageL",
+    "folio.pageR",
+    "folio.turn",
+    "folio.f0",
+    "folio.f1"
+   ],
+   "prompt": "The first reference image is a layout sheet: 6 flat paper cut-out pieces of the Charred Folio, a haunted burning book boss, in a grid of 2 rows and 3 columns. Repaint EVERY piece as a high quality, hand-painted papercraft game asset in the art style of the second reference image (Paper Mario-like paper cut-outs, thick dark plum-black ink outline #2a2130, white paper cut-out border, visible paper grain, soft painted shading and gentle highlights).\n\nKeep each piece in EXACTLY the same grid cell as in the layout sheet, facing the SAME direction, with the SAME silhouette, angle and width-to-height ratio, and keep its colours:\n1 (row 1, column 1). Book cover: a scorched dark red-brown leather book cover with charred edges, about 1.6 times as wide as tall\n2 (row 1, column 2). Left page: an old cream page with lines of faded writing, singed edges, about 1.3 times as tall as wide\n3 (row 1, column 3). Right page: plain old cream page, singed edges, about 1.3 times as tall as wide\n4 (row 2, column 1). Turning page: an old cream page with lines of writing, about 1.3 times as tall as wide\n5 (row 2, column 2). Flame: a tall orange and yellow paper flame, about 2.0 times as tall as wide\n6 (row 2, column 3). Flame: a shorter orange and yellow paper flame, about 1.7 times as tall as wide\n\nPlain flat light grey background, generous space between pieces, no text, no labels, no shadows, no extra pieces."
+  },
+  "unfolded": {
+   "rows": 2,
+   "cols": 3,
+   "parts": [
+    "unfolded.torso",
+    "unfolded.head",
+    "unfolded.armL",
+    "unfolded.armR",
+    "unfolded.legL",
+    "unfolded.legR"
+   ],
+   "names": [
+    "unfolded.torso",
+    "unfolded.head",
+    "unfolded.armL",
+    "unfolded.armR",
+    "unfolded.legL",
+    "unfolded.legR"
+   ],
+   "prompt": "The first reference image is a layout sheet: 6 flat paper cut-out pieces of The Unfolded, the final boss: a towering living figure made of old unfolded paper pages, in a grid of 2 rows and 3 columns. Repaint EVERY piece as a high quality, hand-painted papercraft game asset in the art style of the second reference image (Paper Mario-like paper cut-outs, thick dark plum-black ink outline #2a2130, white paper cut-out border, visible paper grain, soft painted shading and gentle highlights).\n\nKeep each piece in EXACTLY the same grid cell as in the layout sheet, facing the SAME direction, with the SAME silhouette, angle and width-to-height ratio, and keep its colours:\n1 (row 1, column 1). Torso: a large trapezoid of old cream paper with X-shaped fold creases and faint writing, about 1.0 times as wide as tall\n2 (row 1, column 2). Head: a square of old cream paper with a menacing face (two violet eyes, a jagged mouth) and a folded corner, about 1.3 times as wide as tall\n3 (row 1, column 3). Arm: a long tapering folded paper sliver, about 2.4 times as tall as wide\n4 (row 2, column 1). Arm: a long tapering folded paper sliver, about 2.4 times as tall as wide\n5 (row 2, column 2). Leg: a tall folded paper column with a centre crease, about 2.0 times as tall as wide\n6 (row 2, column 3). Leg: a tall folded paper column with a centre crease, about 2.0 times as tall as wide\n\nPlain flat light grey background, generous space between pieces, no text, no labels, no shadows, no extra pieces."
+  },
+  "mainspring": {
+   "rows": 2,
+   "cols": 3,
+   "parts": [
+    "mainspring.rim",
+    "mainspring.face",
+    "mainspring.handH",
+    "mainspring.handM",
+    "mainspring.cap"
+   ],
+   "names": [
+    "mainspring.rim",
+    "mainspring.face",
+    "mainspring.handH",
+    "mainspring.handM",
+    "mainspring.cap"
+   ],
+   "prompt": "The first reference image is a layout sheet: 5 flat paper cut-out pieces of the Mainspring, a giant living clock boss, in a grid of 2 rows and 3 columns; the last 1 cell stay empty. Repaint EVERY piece as a high quality, hand-painted papercraft game asset in the art style of the second reference image (Paper Mario-like paper cut-outs, thick dark plum-black ink outline #2a2130, white paper cut-out border, visible paper grain, soft painted shading and gentle highlights).\n\nKeep each piece in EXACTLY the same grid cell as in the layout sheet, facing the SAME direction, with the SAME silhouette, angle and width-to-height ratio, and keep its colours:\n1 (row 1, column 1). Rim: a large brass cog ring, about 1.0 times as wide as tall\n2 (row 1, column 2). Clock face: a cream clock dial with hour ticks, NO hands, NO eyes, about 1.0 times as wide as tall\n3 (row 1, column 3). Hour hand: a dark bronze clock hand pointing up, about 3.2 times as tall as wide\n4 (row 2, column 1). Minute hand: a long thin red clock hand pointing up, about 5.4 times as tall as wide\n5 (row 2, column 2). Centre cap: a round brass cap, about 1.0 times as wide as tall\n\nPlain flat light grey background, generous space between pieces, no text, no labels, no shadows, no extra pieces."
+  },
+  "bookmoth": {
+   "rows": 2,
+   "cols": 3,
+   "parts": [
+    "bookmoth.wingA",
+    "bookmoth.wingB",
+    "bookmoth.hindA",
+    "bookmoth.hindB",
+    "bookmoth.body",
+    "bookmoth.head"
+   ],
+   "names": [
+    "bookmoth.wingA",
+    "bookmoth.wingB",
+    "bookmoth.hindA",
+    "bookmoth.hindB",
+    "bookmoth.body",
+    "bookmoth.head"
+   ],
+   "prompt": "The first reference image is a layout sheet: 6 flat paper cut-out pieces of the Bookmoth, a huge moth boss whose wings are book pages, in a grid of 2 rows and 3 columns. Repaint EVERY piece as a high quality, hand-painted papercraft game asset in the art style of the second reference image (Paper Mario-like paper cut-outs, thick dark plum-black ink outline #2a2130, white paper cut-out border, visible paper grain, soft painted shading and gentle highlights).\n\nKeep each piece in EXACTLY the same grid cell as in the layout sheet, facing the SAME direction, with the SAME silhouette, angle and width-to-height ratio, and keep its colours:\n1 (row 1, column 1). Front wing: a book page wing with lines of writing and one eye-spot, about 1.4 times as wide as tall\n2 (row 1, column 2). Back front wing: book page wing with writing, in shadow, about 1.5 times as wide as tall\n3 (row 1, column 3). Hind wing: book page wing with an eye-spot, about 1.2 times as wide as tall\n4 (row 2, column 1). Back hind wing: book page wing, in shadow, about 1.4 times as wide as tall\n5 (row 2, column 2). Body: a fuzzy dark violet moth body with gold stripes, about 2.8 times as wide as tall\n6 (row 2, column 3). Head: a round grey-violet moth head with feathery antennae, no eyes, about 1.6 times as tall as wide\n\nPlain flat light grey background, generous space between pieces, no text, no labels, no shadows, no extra pieces."
+  },
+  "starnib": {
+   "rows": 2,
+   "cols": 3,
+   "parts": [
+    "starfold.back",
+    "starfold.rays",
+    "starfold.face",
+    "nib.body",
+    "nib.collar"
+   ],
+   "names": [
+    "starfold.back",
+    "starfold.rays",
+    "starfold.face",
+    "nib.body",
+    "nib.collar"
+   ],
+   "prompt": "The first reference image is a layout sheet: 5 flat paper cut-out pieces of two bosses: the Starfold, a living folded paper star, and the Grand Nib, a giant living fountain-pen nib, in a grid of 2 rows and 3 columns; the last 1 cell stay empty. Repaint EVERY piece as a high quality, hand-painted papercraft game asset in the art style of the second reference image (Paper Mario-like paper cut-outs, thick dark plum-black ink outline #2a2130, white paper cut-out border, visible paper grain, soft painted shading and gentle highlights).\n\nKeep each piece in EXACTLY the same grid cell as in the layout sheet, facing the SAME direction, with the SAME silhouette, angle and width-to-height ratio, and keep its colours:\n1 (row 1, column 1). Back star: a navy blue folded origami star with crisp facets, about 1.0 times as wide as tall\n2 (row 1, column 2). Front star: a golden folded origami star with crisp facets, about 1.0 times as wide as tall\n3 (row 1, column 3). Face disc: a plain cream paper circle, no face, about 1.0 times as wide as tall\n4 (row 2, column 1). Nib: a giant golden fountain pen nib pointing down, with a slit and ink stains, about 1.5 times as tall as wide\n5 (row 2, column 2). Collar: a dark violet rounded bar with a lighter band, about 2.9 times as wide as tall\n\nPlain flat light grey background, generous space between pieces, no text, no labels, no shadows, no extra pieces."
+  },
+  "pulper": {
+   "rows": 2,
+   "cols": 3,
+   "parts": [
+    "pulper.body",
+    "pulper.hopper",
+    "pulper.rollA",
+    "pulper.legA"
+   ],
+   "names": [
+    "pulper.body",
+    "pulper.hopper",
+    "pulper.rollA",
+    "pulper.legA"
+   ],
+   "prompt": "The first reference image is a layout sheet: 4 flat paper cut-out pieces of the Pulper, a walking wooden paper mill boss, in a grid of 2 rows and 3 columns; the last 2 cells stay empty. Repaint EVERY piece as a high quality, hand-painted papercraft game asset in the art style of the second reference image (Paper Mario-like paper cut-outs, thick dark plum-black ink outline #2a2130, white paper cut-out border, visible paper grain, soft painted shading and gentle highlights).\n\nKeep each piece in EXACTLY the same grid cell as in the layout sheet, facing the SAME direction, with the SAME silhouette, angle and width-to-height ratio, and keep its colours:\n1 (row 1, column 1). Body: a wooden paper-mill cabinet panel with brass rivets and a dark slot window, about 1.6 times as wide as tall\n2 (row 1, column 2). Hopper: a wooden basket full of crumpled paper scraps, about 2.0 times as wide as tall\n3 (row 1, column 3). Roller: a grey metal roller wheel with spokes, about 1.0 times as wide as tall\n4 (row 2, column 1). Leg: a sturdy brown wooden block leg, about 1.2 times as tall as wide\n\nPlain flat light grey background, generous space between pieces, no text, no labels, no shadows, no extra pieces."
+  },
+  "bugs": {
+   "rows": 2,
+   "cols": 4,
+   "parts": [
+    "scarab.shell",
+    "scarab.belly",
+    "scarab.head",
+    "clockbug.shell",
+    "clockbug.belly",
+    "clockbug.head",
+    "clockbug.gear",
+    "clockbug.key"
+   ],
+   "names": [
+    "scarab.shell",
+    "scarab.belly",
+    "scarab.head",
+    "clockbug.shell",
+    "clockbug.belly",
+    "clockbug.head",
+    "clockbug.gear",
+    "clockbug.key"
+   ],
+   "prompt": "The first reference image is a layout sheet: 8 flat paper cut-out pieces of two beetle foes: a teal scarab and a brass clockwork beetle, in a grid of 2 rows and 4 columns. Repaint EVERY piece as a high quality, hand-painted papercraft game asset in the art style of the second reference image (Paper Mario-like paper cut-outs, thick dark plum-black ink outline #2a2130, white paper cut-out border, visible paper grain, soft painted shading and gentle highlights).\n\nKeep each piece in EXACTLY the same grid cell as in the layout sheet, facing the SAME direction, with the SAME silhouette, angle and width-to-height ratio, and keep its colours:\n1 (row 1, column 1). Scarab shell: a teal beetle dome shell with gold rim and dots, about 1.6 times as wide as tall\n2 (row 1, column 2). Scarab belly: a pale yellow segmented oval, about 3.2 times as wide as tall\n3 (row 1, column 3). Scarab head: a teal beetle head with a gold horn, about 1.4 times as tall as wide\n4 (row 1, column 4). Clockwork shell: a brass beetle dome shell with rivets, about 1.9 times as wide as tall\n5 (row 2, column 1). Clockwork belly: a pale yellow segmented oval, about 3.2 times as wide as tall\n6 (row 2, column 2). Clockwork head: a dark brass beetle head with a glowing gold eye, about 1.1 times as wide as tall\n7 (row 2, column 3). Gear: a brass cog, about 1.0 times as wide as tall\n8 (row 2, column 4). Wind-up key: a brass wind-up key, about 1.3 times as wide as tall\n\nPlain flat light grey background, generous space between pieces, no text, no labels, no shadows, no extra pieces."
+  },
+  "critters": {
+   "rows": 2,
+   "cols": 4,
+   "parts": [
+    "crumple.body",
+    "toadstool.cap",
+    "dunefin.body",
+    "dunefin.fin",
+    "dunefin.tail",
+    "sunkite.kite",
+    "sunkite.tail",
+    "eye.ball"
+   ],
+   "names": [
+    "crumple.body",
+    "toadstool.cap",
+    "dunefin.body",
+    "dunefin.fin",
+    "dunefin.tail",
+    "sunkite.kite",
+    "sunkite.tail",
+    "eye.ball"
+   ],
+   "prompt": "The first reference image is a layout sheet: 8 flat paper cut-out pieces of several small paper foes, in a grid of 2 rows and 4 columns. Repaint EVERY piece as a high quality, hand-painted papercraft game asset in the art style of the second reference image (Paper Mario-like paper cut-outs, thick dark plum-black ink outline #2a2130, white paper cut-out border, visible paper grain, soft painted shading and gentle highlights).\n\nKeep each piece in EXACTLY the same grid cell as in the layout sheet, facing the SAME direction, with the SAME silhouette, angle and width-to-height ratio, and keep its colours:\n1 (row 1, column 1). Crumple: a crumpled ball of cream paper, about 1.0 times as tall as wide\n2 (row 1, column 2). Mushroom cap: a red toadstool cap with white spots, about 2.3 times as wide as tall\n3 (row 1, column 3). Dune fin: a sandy tan fish body facing right with small teeth and an eye, about 2.0 times as wide as tall\n4 (row 1, column 4). Dorsal fin: tan triangle fin, about 1.2 times as tall as wide\n5 (row 2, column 1). Tail: tan triangle tail pointing right, about 1.7 times as tall as wide\n6 (row 2, column 2). Sun kite: an orange and red diamond kite with a small happy face, about 1.1 times as wide as tall\n7 (row 2, column 3). Kite tail: a string of little red bows, about 2.1 times as wide as tall\n8 (row 2, column 4). Eyeball: a white eyeball with red veins, NO iris, about 1.0 times as wide as tall\n\nPlain flat light grey background, generous space between pieces, no text, no labels, no shadows, no extra pieces."
+  },
+  "snow": {
+   "rows": 2,
+   "cols": 4,
+   "parts": [
+    "snowroll.body",
+    "snowlet.body",
+    "frostpuff.spikes",
+    "flurry.arms",
+    "inkwisp.body",
+    "inkwisp.tail",
+    "cracker.body",
+    "ashspider.abdomen"
+   ],
+   "names": [
+    "snowroll.body",
+    "snowlet.body",
+    "frostpuff.spikes",
+    "flurry.arms",
+    "inkwisp.body",
+    "inkwisp.tail",
+    "cracker.body",
+    "ashspider.abdomen"
+   ],
+   "prompt": "The first reference image is a layout sheet: 8 flat paper cut-out pieces of several small foes from snow and ink biomes, in a grid of 2 rows and 4 columns. Repaint EVERY piece as a high quality, hand-painted papercraft game asset in the art style of the second reference image (Paper Mario-like paper cut-outs, thick dark plum-black ink outline #2a2130, white paper cut-out border, visible paper grain, soft painted shading and gentle highlights).\n\nKeep each piece in EXACTLY the same grid cell as in the layout sheet, facing the SAME direction, with the SAME silhouette, angle and width-to-height ratio, and keep its colours:\n1 (row 1, column 1). Snowball: a big round snowball with a pale blue shine, no face, about 1.0 times as tall as wide\n2 (row 1, column 2). Small snowball: round snowball with a pale blue shine, no face, about 1.0 times as tall as wide\n3 (row 1, column 3). Ice spikes: a ring of pale blue ice shards, about 1.1 times as wide as tall\n4 (row 1, column 4). Snowflake: a six-armed white and pale blue snowflake, about 1.1 times as tall as wide\n5 (row 2, column 1). Ink wisp: a violet ink teardrop with a white eye socket, about 1.5 times as tall as wide\n6 (row 2, column 2). Wisp tail: a dark violet curling ink wisp, about 1.2 times as tall as wide\n7 (row 2, column 3). Firecracker: a red paper firecracker tube with yellow bands and angry eyes, about 1.4 times as tall as wide\n8 (row 2, column 4). Spider abdomen: a dark charcoal round abdomen with an orange diamond mark, about 1.3 times as wide as tall\n\nPlain flat light grey background, generous space between pieces, no text, no labels, no shadows, no extra pieces."
+  },
+  "seasky": {
+   "rows": 2,
+   "cols": 4,
+   "parts": [
+    "quillfish.body",
+    "quillfish.quills",
+    "quillfish.tail",
+    "quillfish.fin",
+    "inksquid.body",
+    "skyray.body",
+    "skyray.wingT",
+    "skyray.wingB"
+   ],
+   "names": [
+    "quillfish.body",
+    "quillfish.quills",
+    "quillfish.tail",
+    "quillfish.fin",
+    "inksquid.body",
+    "skyray.body",
+    "skyray.wingT",
+    "skyray.wingB"
+   ],
+   "prompt": "The first reference image is a layout sheet: 8 flat paper cut-out pieces of sea and sky foes: a quill fish, an ink squid and a paper manta ray, in a grid of 2 rows and 4 columns. Repaint EVERY piece as a high quality, hand-painted papercraft game asset in the art style of the second reference image (Paper Mario-like paper cut-outs, thick dark plum-black ink outline #2a2130, white paper cut-out border, visible paper grain, soft painted shading and gentle highlights).\n\nKeep each piece in EXACTLY the same grid cell as in the layout sheet, facing the SAME direction, with the SAME silhouette, angle and width-to-height ratio, and keep its colours:\n1 (row 1, column 1). Quill fish: a blue fish body facing right with an eye, about 1.9 times as wide as tall\n2 (row 1, column 2). Quills: a row of white paper spikes, about 2.0 times as wide as tall\n3 (row 1, column 3). Tail: dark blue triangle tail, about 1.8 times as tall as wide\n4 (row 1, column 4). Fin: small blue triangle fin, about 1.1 times as tall as wide\n5 (row 2, column 1). Ink squid: a purple squid head facing right with an eye, about 1.8 times as wide as tall\n6 (row 2, column 2). Ray body: a long slim pale blue-white paper body, about 4.6 times as wide as tall\n7 (row 2, column 3). Top wing: a pale folded paper wing triangle, about 1.7 times as wide as tall\n8 (row 2, column 4). Bottom wing: a pale curved paper wing, about 2.0 times as wide as tall\n\nPlain flat light grey background, generous space between pieces, no text, no labels, no shadows, no extra pieces."
+  },
+  "misc": {
+   "rows": 2,
+   "cols": 4,
+   "parts": [
+    "skyray.tail",
+    "foldfox.body",
+    "foldfox.head",
+    "foldfox.tail",
+    "ashspider.head",
+    "wraith.body",
+    "wraith.hem",
+    "wraith.hem.b"
+   ],
+   "names": [
+    "skyray.tail",
+    "foldfox.body",
+    "foldfox.head",
+    "foldfox.tail",
+    "ashspider.head",
+    "wraith.body",
+    "wraith.hem",
+    "wraith.hem.b"
+   ],
+   "prompt": "The first reference image is a layout sheet: 8 flat paper cut-out pieces of foes: a paper ray tail, an origami fold fox, an ash spider head and an ink wraith, in a grid of 2 rows and 4 columns. Repaint EVERY piece as a high quality, hand-painted papercraft game asset in the art style of the second reference image (Paper Mario-like paper cut-outs, thick dark plum-black ink outline #2a2130, white paper cut-out border, visible paper grain, soft painted shading and gentle highlights).\n\nKeep each piece in EXACTLY the same grid cell as in the layout sheet, facing the SAME direction, with the SAME silhouette, angle and width-to-height ratio, and keep its colours:\n1 (row 1, column 1). Ray tail: a thin curved blue tail, about 1.1 times as tall as wide\n2 (row 1, column 2). Fox body: an orange origami fox body, folded prism, about 2.4 times as wide as tall\n3 (row 1, column 3). Fox head: an orange origami fox head facing right with a black nose, about 1.1 times as tall as wide\n4 (row 1, column 4). Fox tail: an orange origami tail with a white tip, about 1.3 times as tall as wide\n5 (row 2, column 1). Spider head: a round charcoal spider head with small glowing yellow eyes, about 1.0 times as wide as tall\n6 (row 2, column 2). Ink wraith: a dark violet hooded ghostly cloak, with a dark slit, about 1.5 times as tall as wide\n7 (row 2, column 3). Hem: a dark violet wavy ragged cloak hem, about 1.9 times as wide as tall\n8 (row 2, column 4). Hem (second frame): the same dark violet ragged hem with the waves shifted, about 1.8 times as wide as tall\n\nPlain flat light grey background, generous space between pieces, no text, no labels, no shadows, no extra pieces."
+  },
+  "bats": {
+   "rows": 3,
+   "cols": 3,
+   "parts": [
+    "bat.wingA",
+    "bat.wingB",
+    "bat.body",
+    "bat.wingA",
+    "bat.wingB",
+    "bat.body",
+    "bat.wingA",
+    "bat.wingB",
+    "bat.body"
+   ],
+   "names": [
+    "bat@bat.wingA",
+    "bat@bat.wingB",
+    "bat@bat.body",
+    "bat@cinderbat.wingA",
+    "bat@cinderbat.wingB",
+    "bat@cinderbat.body",
+    "bat@mothling.wingA",
+    "bat@mothling.wingB",
+    "bat@mothling.body"
+   ],
+   "prompt": "The first reference image is a layout sheet: 9 flat paper cut-out pieces of three paper bat foes, in a grid of 3 rows and 3 columns. Repaint EVERY piece as a high quality, hand-painted papercraft game asset in the art style of the second reference image (Paper Mario-like paper cut-outs, thick dark plum-black ink outline #2a2130, white paper cut-out border, visible paper grain, soft painted shading and gentle highlights).\n\nKeep each piece in EXACTLY the same grid cell as in the layout sheet, facing the SAME direction, with the SAME silhouette, angle and width-to-height ratio, and keep its colours:\n1 (row 1, column 1). Front wing: a bat wing in purple (#6b4c8f) paper, about 2.6 times as wide as tall\n2 (row 1, column 2). Back wing: a bat wing, in shadow in purple (#6b4c8f) paper, about 2.6 times as wide as tall\n3 (row 1, column 3). Body: a small bat body with pointed ears, eyes and tiny fangs in purple (#6b4c8f) paper, about 1.5 times as tall as wide\n4 (row 2, column 1). Front wing: a bat wing in charcoal (#3a2a24) with ember-orange eyes paper, about 2.6 times as wide as tall\n5 (row 2, column 2). Back wing: a bat wing, in shadow in charcoal (#3a2a24) with ember-orange eyes paper, about 2.6 times as wide as tall\n6 (row 2, column 3). Body: a small bat body with pointed ears, eyes and tiny fangs in charcoal (#3a2a24) with ember-orange eyes paper, about 1.5 times as tall as wide\n7 (row 3, column 1). Front wing: a bat wing in cream (#e8dcc4) with lilac (#b8a0d0) markings paper, about 2.6 times as wide as tall\n8 (row 3, column 2). Back wing: a bat wing, in shadow in cream (#e8dcc4) with lilac (#b8a0d0) markings paper, about 2.6 times as wide as tall\n9 (row 3, column 3). Body: a small bat body with pointed ears, eyes and tiny fangs in cream (#e8dcc4) with lilac (#b8a0d0) markings paper, about 1.5 times as tall as wide\n\nPlain flat light grey background, generous space between pieces, no text, no labels, no shadows, no extra pieces."
+  },
+  "fix": {
+   "rows": 2,
+   "cols": 2,
+   "parts": [
+    "ashspider.abdomen",
+    "ashspider.head",
+    "cracker.body",
+    "foldfox.body"
+   ],
+   "names": [
+    "ashspider.abdomen",
+    "ashspider.head",
+    "cracker.body",
+    "foldfox.body"
+   ],
+   "prompt": "(redo: see the fix request)"
+  },
+  "crane": {
+   "rows": 2,
+   "cols": 3,
+   "parts": [
+    "crane.wingA",
+    "crane.wingB",
+    "crane.body",
+    "crane.tail",
+    "crane.neck",
+    "crane.head"
+   ],
+   "names": [
+    "crane.wingA",
+    "crane.wingB",
+    "crane.body",
+    "crane.tail",
+    "crane.neck",
+    "crane.head"
+   ],
+   "prompt": "(the first run: same layout, crane.head mirrored after cutting)"
+  }
+ },
+ "human_foes": {
+  "how": "2 foes per sheet (rows), parts head (face blanked with hface.blank), torso, armA, armB, legA, legB; cut as human@<foe>.<part> with build.rig_parts(render, 2, 6, ...), then each of the 8 head variants is the painted blank head with hface.features() laid over it.",
+  "sheets": [
+   [
+    "zombie",
+    "knight"
+   ],
+   [
+    "sentinel",
+    "ashimp"
+   ],
+   [
+    "warden",
+    "gazer"
+   ],
+   [
+    "foreman",
+    "scribe"
+   ]
+  ]
+ },
+ "v2": {
+  "how": "Second pass in the painted player model style (tools/art/pending/player_parts.webp as the style reference, uploaded as style_player.png): each sheet takes the player style as the first reference and the old layout sheet as the second, described from each foe or boss name, habitat and title card; cut with build.rig_parts(..., loose=True) (row_stickers), since the pieces rarely keep to a grid.",
+  "sheets": {
+   "lev": {
+    "rows": 2,
+    "cols": 4,
+    "parts": [
+     "lev.head",
+     "lev.jaw",
+     "lev.crest",
+     "levseg.body",
+     "levseg.finT",
+     "levseg.finB",
+     "levtail.fluke",
+     "levtail.stalk"
+    ],
+    "prompt": "Paint the body pieces of the Inkwell Leviathan, \"Terror of the Inkwell\", a colossal deep-violet ink sea serpent boss that swims where the ink runs deepest for a 2D papercraft game, as a character artist would for a polished AAA release.\n\nThe FIRST reference image shows the hero character's pieces: match its art style, quality and level of detail exactly (rich hand-painted shading and highlights, subtle paper grain and fibres, crisp fold lines, confident thick dark plum-black ink outline #2a2130, thin white paper edge). The SECOND reference image is the layout sheet: the old simple pieces in a grid of 2 rows and 4 columns. Keep every piece in the SAME grid cell, facing the SAME direction, with about the SAME silhouette and width-to-height ratio, so it still fits the animation rig, but give it real character, detail and material:\n1 (row 1, column 1). Head: a fearsome deep-violet sea serpent head facing right, glossy wet ink sheen, a glowing yellow eye with a slit pupil, rows of small ivory fangs, paper-fold scales along the snout; about 1.9 times as wide as tall\n2 (row 1, column 2). Lower jaw: a long violet jaw strip with a row of ivory fangs along its top edge; about 3.3 times as wide as tall\n3 (row 1, column 3). Crest: a tall violet fin crest with folded-paper ribs and a lighter lavender edge; about 1.3 times as wide as tall\n4 (row 1, column 4). Body segment: a round coil of the serpent's body, deep violet with a glossy ink sheen, overlapping paper-fold scales and a paler belly band; about 1.0 times as wide as tall\n5 (row 2, column 1). Top fin: a ribbed violet dorsal fin with a lavender edge; about 1.3 times as wide as tall\n6 (row 2, column 2). Bottom fin: a ribbed violet fin pointing down; about 1.1 times as tall as wide\n7 (row 2, column 3). Tail fluke: a tall ribbed violet tail fin like folded paper, dripping ink at its tip; about 2.7 times as tall as wide\n8 (row 2, column 4). Tail stalk: the tapering end of the serpent's body, violet scales, pointing right; about 1.3 times as wide as tall\n\nEach piece on its own, none touching. Plain flat light grey background, no grid lines, no text, no labels, no shadows, no extra pieces."
+   },
+   "folio": {
+    "rows": 2,
+    "cols": 3,
+    "parts": [
+     "folio.cover",
+     "folio.pageL",
+     "folio.pageR",
+     "folio.turn",
+     "folio.f0",
+     "folio.f1"
+    ],
+    "prompt": "Paint the body pieces of the Charred Folio, \"The Burning Book\", a haunted grimoire boss whose every chapter ends in flame for a 2D papercraft game, as a character artist would for a polished AAA release.\n\nThe FIRST reference image shows the hero character's pieces: match its art style, quality and level of detail exactly (rich hand-painted shading and highlights, subtle paper grain and fibres, crisp fold lines, confident thick dark plum-black ink outline #2a2130, thin white paper edge). The SECOND reference image is the layout sheet: the old simple pieces in a grid of 2 rows and 3 columns. Keep every piece in the SAME grid cell, facing the SAME direction, with about the SAME silhouette and width-to-height ratio, so it still fits the animation rig, but give it real character, detail and material:\n1 (row 1, column 1). Book cover: a heavy scorched leather grimoire cover in dark red-brown, brass corner guards, embossed sigils, charred smoking edges; about 1.6 times as wide as tall\n2 (row 1, column 2). Left page: an old yellowed page with lines of faded handwriting and scorched, curling edges; about 1.3 times as tall as wide\n3 (row 1, column 3). Right page: an old yellowed page with a faded diagram and scorched, curling edges; about 1.3 times as tall as wide\n4 (row 2, column 1). Turning page: an old yellowed page with lines of handwriting, singed edges; about 1.3 times as tall as wide\n5 (row 2, column 2). Flame: a tall paper-cut flame, layered orange, yellow and a hot white core; about 2.0 times as tall as wide\n6 (row 2, column 3). Flame: a shorter paper-cut flame, layered orange, yellow and a hot white core; about 1.7 times as tall as wide\n\nEach piece on its own, none touching. Plain flat light grey background, no grid lines, no text, no labels, no shadows, no extra pieces."
+   },
+   "unfolded": {
+    "rows": 2,
+    "cols": 3,
+    "parts": [
+     "unfolded.torso",
+     "unfolded.head",
+     "unfolded.armL",
+     "unfolded.armR",
+     "unfolded.legL",
+     "unfolded.legR"
+    ],
+    "prompt": "Paint the body pieces of The Unfolded, \"The First Page\", the final boss: a towering, ancient figure folded from yellowed pages of the world before it was folded, covered in faded script and fold scars for a 2D papercraft game, as a character artist would for a polished AAA release.\n\nThe FIRST reference image shows the hero character's pieces: match its art style, quality and level of detail exactly (rich hand-painted shading and highlights, subtle paper grain and fibres, crisp fold lines, confident thick dark plum-black ink outline #2a2130, thin white paper edge). The SECOND reference image is the layout sheet: the old simple pieces in a grid of 2 rows and 3 columns. Keep every piece in the SAME grid cell, facing the SAME direction, with about the SAME silhouette and width-to-height ratio, so it still fits the animation rig, but give it real character, detail and material:\n1 (row 1, column 1). Torso: a massive chest of yellowed ancient pages layered like armour, deep fold scars in an X, faded script and a faint glowing crease at the heart; about 1.0 times as wide as tall\n2 (row 1, column 2). Head: a square head of layered yellowed pages with a folded corner, faded script across it, two small glowing violet eyes and a jagged torn mouth; about 1.3 times as wide as tall\n3 (row 1, column 3). Arm: a long tapering arm of folded yellowed pages, fold scars and faded script; about 2.4 times as tall as wide\n4 (row 2, column 1). Arm: a long tapering arm of folded yellowed pages, fold scars and faded script; about 2.4 times as tall as wide\n5 (row 2, column 2). Leg: a tall pillar-like leg of stacked folded pages with a centre crease; about 2.0 times as tall as wide\n6 (row 2, column 3). Leg: a tall pillar-like leg of stacked folded pages with a centre crease; about 2.0 times as tall as wide\n\nEach piece on its own, none touching. Plain flat light grey background, no grid lines, no text, no labels, no shadows, no extra pieces."
+   },
+   "mainspring": {
+    "rows": 2,
+    "cols": 3,
+    "parts": [
+     "mainspring.rim",
+     "mainspring.face",
+     "mainspring.handH",
+     "mainspring.handM",
+     "mainspring.cap"
+    ],
+    "prompt": "Paint the body pieces of the Mainspring, \"Heart of the Folded Clocktower\", a colossal living brass clock that has been winding itself for a thousand years for a 2D papercraft game, as a character artist would for a polished AAA release.\n\nThe FIRST reference image shows the hero character's pieces: match its art style, quality and level of detail exactly (rich hand-painted shading and highlights, subtle paper grain and fibres, crisp fold lines, confident thick dark plum-black ink outline #2a2130, thin white paper edge). The SECOND reference image is the layout sheet: the old simple pieces in a grid of 2 rows and 3 columns; the last 1 cell stay empty. Keep every piece in the SAME grid cell, facing the SAME direction, with about the SAME silhouette and width-to-height ratio, so it still fits the animation rig, but give it real character, detail and material:\n1 (row 1, column 1). Rim: a massive ornate brass gear ring with worn teeth, rivets and engraved scrollwork; about 1.0 times as wide as tall\n2 (row 1, column 2). Clock face: an aged ivory clock dial with ornate Roman numeral ticks, subtle cracks and a brass bezel, NO hands, NO eyes, NO mouth; about 1.0 times as wide as tall\n3 (row 1, column 3). Hour hand: an ornate dark bronze clock hand with filigree, pointing up; about 3.2 times as tall as wide\n4 (row 2, column 1). Minute hand: a long slender ornate red-lacquered clock hand, pointing up; about 5.4 times as tall as wide\n5 (row 2, column 2). Centre cap: a domed polished brass cap with a tiny gem; about 1.0 times as wide as tall\n\nEach piece on its own, none touching. Plain flat light grey background, no grid lines, no text, no labels, no shadows, no extra pieces."
+   },
+   "bookmoth": {
+    "rows": 2,
+    "cols": 3,
+    "parts": [
+     "bookmoth.wingA",
+     "bookmoth.wingB",
+     "bookmoth.hindA",
+     "bookmoth.hindB",
+     "bookmoth.body",
+     "bookmoth.head"
+    ],
+    "prompt": "Paint the body pieces of the Bookmoth, \"Keeper of the Hollow Archive\", a huge moth whose wings are old book pages, which has eaten every word ever written in the archive for a 2D papercraft game, as a character artist would for a polished AAA release.\n\nThe FIRST reference image shows the hero character's pieces: match its art style, quality and level of detail exactly (rich hand-painted shading and highlights, subtle paper grain and fibres, crisp fold lines, confident thick dark plum-black ink outline #2a2130, thin white paper edge). The SECOND reference image is the layout sheet: the old simple pieces in a grid of 2 rows and 3 columns. Keep every piece in the SAME grid cell, facing the SAME direction, with about the SAME silhouette and width-to-height ratio, so it still fits the animation rig, but give it real character, detail and material:\n1 (row 1, column 1). Front wing: a moth wing made of an old book page with lines of handwriting, an eye-spot pattern in violet and gold, torn edges; about 1.4 times as wide as tall\n2 (row 1, column 2). Back front wing: the same page wing in deeper shadow tones; about 1.5 times as wide as tall\n3 (row 1, column 3). Hind wing: a smaller book page wing with an eye-spot and handwriting; about 1.2 times as wide as tall\n4 (row 2, column 1). Back hind wing: the same smaller wing in deeper shadow tones; about 1.4 times as wide as tall\n5 (row 2, column 2). Body: a fuzzy deep-violet moth abdomen with gold stripes like book bindings; about 2.8 times as wide as tall\n6 (row 2, column 3). Head: a fuzzy grey-violet moth head with large feathery antennae, no eyes; about 1.6 times as tall as wide\n\nEach piece on its own, none touching. Plain flat light grey background, no grid lines, no text, no labels, no shadows, no extra pieces."
+   },
+   "starnib": {
+    "rows": 2,
+    "cols": 3,
+    "parts": [
+     "starfold.back",
+     "starfold.rays",
+     "starfold.face",
+     "nib.body",
+     "nib.collar"
+    ],
+    "prompt": "Paint the body pieces of two bosses: the Starfold, heart of the Origami Observatory, a living folded paper star of navy and gold; and the Grand Nib, a giant living fountain-pen nib of gold that writes lines of ink for a 2D papercraft game, as a character artist would for a polished AAA release.\n\nThe FIRST reference image shows the hero character's pieces: match its art style, quality and level of detail exactly (rich hand-painted shading and highlights, subtle paper grain and fibres, crisp fold lines, confident thick dark plum-black ink outline #2a2130, thin white paper edge). The SECOND reference image is the layout sheet: the old simple pieces in a grid of 2 rows and 3 columns; the last 1 cell stay empty. Keep every piece in the SAME grid cell, facing the SAME direction, with about the SAME silhouette and width-to-height ratio, so it still fits the animation rig, but give it real character, detail and material:\n1 (row 1, column 1). Back star: a navy blue origami star with sharp crisp facets and tiny gold star specks; about 1.0 times as wide as tall\n2 (row 1, column 2). Front star: a gleaming golden origami star with crisp facets and a soft glow; about 1.0 times as wide as tall\n3 (row 1, column 3). Face disc: a smooth ivory paper disc with a faint star watermark, no face; about 1.0 times as wide as tall\n4 (row 2, column 1). Nib: a giant ornate gold fountain pen nib pointing down, engraved scrollwork, a breather hole, a slit, ink stains dripping from its tip; about 1.5 times as tall as wide\n5 (row 2, column 2). Collar: a dark violet enamel grip collar with a gold band; about 2.9 times as wide as tall\n\nEach piece on its own, none touching. Plain flat light grey background, no grid lines, no text, no labels, no shadows, no extra pieces."
+   },
+   "pulper": {
+    "rows": 2,
+    "cols": 3,
+    "parts": [
+     "pulper.body",
+     "pulper.hopper",
+     "pulper.rollA",
+     "pulper.legA"
+    ],
+    "prompt": "Paint the body pieces of the Pulper, a walking wooden paper mill boss with spinning rollers that grinds paper into pulp for a 2D papercraft game, as a character artist would for a polished AAA release.\n\nThe FIRST reference image shows the hero character's pieces: match its art style, quality and level of detail exactly (rich hand-painted shading and highlights, subtle paper grain and fibres, crisp fold lines, confident thick dark plum-black ink outline #2a2130, thin white paper edge). The SECOND reference image is the layout sheet: the old simple pieces in a grid of 2 rows and 3 columns; the last 2 cells stay empty. Keep every piece in the SAME grid cell, facing the SAME direction, with about the SAME silhouette and width-to-height ratio, so it still fits the animation rig, but give it real character, detail and material:\n1 (row 1, column 1). Body: a sturdy wooden paper-mill cabinet, 1.6 times wider than tall, planks bound with iron straps and brass rivets, a dark slot mouth near the bottom with paper scraps poking out; about 1.6 times as wide as tall\n2 (row 1, column 2). Hopper: a wide wooden trough, wider at the top, overflowing with crumpled white paper scraps; about 2.0 times as wide as tall\n3 (row 1, column 3). Roller: a heavy iron roller wheel with six spokes, worn edges; about 1.0 times as wide as tall\n4 (row 2, column 1). Leg: a stubby sturdy wooden block leg with an iron band; about 1.2 times as tall as wide\n\nEach piece on its own, none touching. Plain flat light grey background, no grid lines, no text, no labels, no shadows, no extra pieces."
+   },
+   "bugs": {
+    "rows": 2,
+    "cols": 4,
+    "parts": [
+     "scarab.shell",
+     "scarab.belly",
+     "scarab.head",
+     "clockbug.shell",
+     "clockbug.belly",
+     "clockbug.head",
+     "clockbug.gear",
+     "clockbug.key"
+    ],
+    "prompt": "Paint the body pieces of two desert beetles: the Shell Scarab, a teal armoured scarab, and the Clockwork Beetle, a wind-up brass beetle from the clocktower for a 2D papercraft game, as a character artist would for a polished AAA release.\n\nThe FIRST reference image shows the hero character's pieces: match its art style, quality and level of detail exactly (rich hand-painted shading and highlights, subtle paper grain and fibres, crisp fold lines, confident thick dark plum-black ink outline #2a2130, thin white paper edge). The SECOND reference image is the layout sheet: the old simple pieces in a grid of 2 rows and 4 columns. Keep every piece in the SAME grid cell, facing the SAME direction, with about the SAME silhouette and width-to-height ratio, so it still fits the animation rig, but give it real character, detail and material:\n1 (row 1, column 1). Scarab shell: a glossy teal beetle shell with a gold rim, gold dots and a gleaming highlight; about 1.6 times as wide as tall\n2 (row 1, column 2). Scarab belly: a pale gold segmented underside; about 3.2 times as wide as tall\n3 (row 1, column 3). Scarab head: a teal beetle head facing right with a curved gold horn and a small dark eye; about 1.4 times as tall as wide\n4 (row 1, column 4). Clockwork shell: a riveted brass beetle shell with an engraved gear motif; about 1.9 times as wide as tall\n5 (row 2, column 1). Clockwork belly: a pale brass segmented underside; about 3.2 times as wide as tall\n6 (row 2, column 2). Clockwork head: a dark brass beetle head facing right with a glowing gold lens eye; about 1.1 times as wide as tall\n7 (row 2, column 3). Gear: a small brass cog; about 1.0 times as wide as tall\n8 (row 2, column 4). Wind-up key: an ornate brass wind-up key; about 1.3 times as wide as tall\n\nEach piece on its own, none touching. Plain flat light grey background, no grid lines, no text, no labels, no shadows, no extra pieces."
+   },
+   "critters": {
+    "rows": 2,
+    "cols": 4,
+    "parts": [
+     "crumple.body",
+     "toadstool.cap",
+     "dunefin.body",
+     "dunefin.fin",
+     "dunefin.tail",
+     "sunkite.kite",
+     "sunkite.tail",
+     "eye.ball"
+    ],
+    "prompt": "Paint the body pieces of small foes: the Crumple (a living crumpled ball of paper), the Toadstool Lobber (a spotted mushroom), the Dune Fin (a sand shark that swims through desert sand), the Sun Kite (a living diamond kite) and the Watcher Eye (a floating night eyeball) for a 2D papercraft game, as a character artist would for a polished AAA release.\n\nThe FIRST reference image shows the hero character's pieces: match its art style, quality and level of detail exactly (rich hand-painted shading and highlights, subtle paper grain and fibres, crisp fold lines, confident thick dark plum-black ink outline #2a2130, thin white paper edge). The SECOND reference image is the layout sheet: the old simple pieces in a grid of 2 rows and 4 columns. Keep every piece in the SAME grid cell, facing the SAME direction, with about the SAME silhouette and width-to-height ratio, so it still fits the animation rig, but give it real character, detail and material:\n1 (row 1, column 1). Crumple: a living ball of crumpled cream paper with deep creases and shadows; about 1.0 times as tall as wide\n2 (row 1, column 2). Toadstool cap: a glossy red mushroom cap with raised white spots and a pale frilled rim; about 2.3 times as wide as tall\n3 (row 1, column 3). Dune Fin: a sandy tan shark-like body facing right, sand-grain texture, a beady eye and small teeth; about 2.0 times as wide as tall\n4 (row 1, column 4). Dorsal fin: a tan shark fin with sand dusting; about 1.2 times as tall as wide\n5 (row 2, column 1). Tail: a tan shark tail fin pointing right; about 1.7 times as tall as wide\n6 (row 2, column 2). Sun Kite: a diamond paper kite in orange, red and gold with a small cheeky face and sun rays painted on it; about 1.1 times as wide as tall\n7 (row 2, column 3). Kite tail: a string with little red and gold paper bows; about 2.1 times as wide as tall\n8 (row 2, column 4). Watcher Eye: a glossy white eyeball with red veins, NO iris; about 1.0 times as wide as tall\n\nEach piece on its own, none touching. Plain flat light grey background, no grid lines, no text, no labels, no shadows, no extra pieces."
+   },
+   "snow": {
+    "rows": 2,
+    "cols": 4,
+    "parts": [
+     "snowroll.body",
+     "snowlet.body",
+     "frostpuff.spikes",
+     "flurry.arms",
+     "inkwisp.body",
+     "inkwisp.tail",
+     "cracker.body",
+     "ashspider.abdomen"
+    ],
+    "prompt": "Paint the body pieces of small foes of the Origami Snowfield and the Ink Lake and the Burnt Underworld: the Snow Roller and Snowlet (living snowballs), the Frost Puff (a spiky frost creature), the Flurry (a living snowflake), the Ink Wisp (a ghostly ink flame), the Firecracker Imp and the Ash Spider for a 2D papercraft game, as a character artist would for a polished AAA release.\n\nThe FIRST reference image shows the hero character's pieces: match its art style, quality and level of detail exactly (rich hand-painted shading and highlights, subtle paper grain and fibres, crisp fold lines, confident thick dark plum-black ink outline #2a2130, thin white paper edge). The SECOND reference image is the layout sheet: the old simple pieces in a grid of 2 rows and 4 columns. Keep every piece in the SAME grid cell, facing the SAME direction, with about the SAME silhouette and width-to-height ratio, so it still fits the animation rig, but give it real character, detail and material:\n1 (row 1, column 1). Snow Roller: a big packed snowball with pale blue shading, sparkles and a few twigs stuck in it, no face; about 1.0 times as tall as wide\n2 (row 1, column 2). Snowlet: a small snowball with pale blue shading and sparkles, no face; about 1.0 times as tall as wide\n3 (row 1, column 3). Frost spikes: a ring of sharp pale blue ice crystals; about 1.1 times as wide as tall\n4 (row 1, column 4). Flurry: an intricate six-armed ice snowflake, pale blue and white, glinting; about 1.1 times as tall as wide\n5 (row 2, column 1). Ink Wisp: a violet ink flame teardrop with a glossy sheen and a white eye socket; about 1.5 times as tall as wide\n6 (row 2, column 2). Wisp tail: a curling violet ink wisp; about 1.2 times as tall as wide\n7 (row 2, column 3). Firecracker Imp: an upright red paper firecracker with gold bands, a lit fuse stub on top and angry little eyes; about 1.4 times as tall as wide\n8 (row 2, column 4). Spider abdomen ONLY, no legs: a charcoal-black abdomen with bristles and a glowing orange diamond mark; about 1.3 times as wide as tall\n\nEach piece on its own, none touching. Plain flat light grey background, no grid lines, no text, no labels, no shadows, no extra pieces."
+   },
+   "seasky": {
+    "rows": 2,
+    "cols": 4,
+    "parts": [
+     "quillfish.body",
+     "quillfish.quills",
+     "quillfish.tail",
+     "quillfish.fin",
+     "inksquid.body",
+     "skyray.body",
+     "skyray.wingT",
+     "skyray.wingB"
+    ],
+    "prompt": "Paint the body pieces of the Quillfish (a spiny fish of the Ink Lake), the Ink Squid and the Paper Ray (an origami manta ray of the sky islands) for a 2D papercraft game, as a character artist would for a polished AAA release.\n\nThe FIRST reference image shows the hero character's pieces: match its art style, quality and level of detail exactly (rich hand-painted shading and highlights, subtle paper grain and fibres, crisp fold lines, confident thick dark plum-black ink outline #2a2130, thin white paper edge). The SECOND reference image is the layout sheet: the old simple pieces in a grid of 2 rows and 4 columns. Keep every piece in the SAME grid cell, facing the SAME direction, with about the SAME silhouette and width-to-height ratio, so it still fits the animation rig, but give it real character, detail and material:\n1 (row 1, column 1). Quillfish: a blue fish body facing right with ink-dark stripes and a beady eye; about 1.9 times as wide as tall\n2 (row 1, column 2). Quills: a row of sharp white quill spikes like pen nibs; about 2.0 times as wide as tall\n3 (row 1, column 3). Tail: a dark blue forked tail fin; about 1.8 times as tall as wide\n4 (row 1, column 4). Fin: a small blue fin; about 1.1 times as tall as wide\n5 (row 2, column 1). Ink Squid: a purple squid mantle facing right with a big glossy eye and darker spots; about 1.8 times as wide as tall\n6 (row 2, column 2). Paper Ray body: a long slim white and pale blue origami body with crisp folds; about 4.6 times as wide as tall\n7 (row 2, column 3). Top wing: a pale folded paper wing triangle with fold lines; about 1.7 times as wide as tall\n8 (row 2, column 4). Bottom wing: a pale curved folded paper wing; about 2.0 times as wide as tall\n\nEach piece on its own, none touching. Plain flat light grey background, no grid lines, no text, no labels, no shadows, no extra pieces."
+   },
+   "misc": {
+    "rows": 2,
+    "cols": 4,
+    "parts": [
+     "skyray.tail",
+     "foldfox.body",
+     "foldfox.head",
+     "foldfox.tail",
+     "ashspider.head",
+     "wraith.body",
+     "wraith.hem",
+     "wraith.hem.b"
+    ],
+    "prompt": "Paint the body pieces of the Paper Ray tail, the Fold Fox (an origami fox of the snowfield), the Ash Spider head and the Ink Wraith (a hooded ghost that walks under the Ink Moon) for a 2D papercraft game, as a character artist would for a polished AAA release.\n\nThe FIRST reference image shows the hero character's pieces: match its art style, quality and level of detail exactly (rich hand-painted shading and highlights, subtle paper grain and fibres, crisp fold lines, confident thick dark plum-black ink outline #2a2130, thin white paper edge). The SECOND reference image is the layout sheet: the old simple pieces in a grid of 2 rows and 4 columns. Keep every piece in the SAME grid cell, facing the SAME direction, with about the SAME silhouette and width-to-height ratio, so it still fits the animation rig, but give it real character, detail and material:\n1 (row 1, column 1). Ray tail: a thin curved blue tail; about 1.1 times as tall as wide\n2 (row 1, column 2). Fold Fox body ONLY, no head, no legs: a long low orange origami fox torso, 2.4 times wider than tall, crisp folds; about 2.4 times as wide as tall\n3 (row 1, column 3). Fold Fox head: an orange origami fox head facing right with a white muzzle and a black nose; about 1.1 times as tall as wide\n4 (row 1, column 4). Fold Fox tail: a bushy orange origami tail with a white tip; about 1.3 times as tall as wide\n5 (row 2, column 1). Spider head ONLY, no legs: a round charcoal-black head with small glowing yellow eyes; about 1.0 times as wide as tall\n6 (row 2, column 2). Ink Wraith: a dark violet hooded ghostly cloak with a black void where the face should be, ink dripping from its edges; about 1.5 times as tall as wide\n7 (row 2, column 3). Hem: a dark violet ragged ghostly cloak hem; about 1.9 times as wide as tall\n8 (row 2, column 4). Hem (second frame): the same ragged hem with the tatters shifted; about 1.8 times as wide as tall\n\nEach piece on its own, none touching. Plain flat light grey background, no grid lines, no text, no labels, no shadows, no extra pieces."
+   },
+   "bats": {
+    "rows": 3,
+    "cols": 3,
+    "parts": [
+     "bat.wingA",
+     "bat.wingB",
+     "bat.body",
+     "bat.wingA",
+     "bat.wingB",
+     "bat.body",
+     "bat.wingA",
+     "bat.wingB",
+     "bat.body"
+    ],
+    "prompt": "Paint the body pieces of three bats: the Cave Bat (purple), the Cinder Bat of the Burnt Underworld (charcoal with glowing embers) and the Mothling (a small cream and lilac moth that the Bookmoth calls) for a 2D papercraft game, as a character artist would for a polished AAA release.\n\nThe FIRST reference image shows the hero character's pieces: match its art style, quality and level of detail exactly (rich hand-painted shading and highlights, subtle paper grain and fibres, crisp fold lines, confident thick dark plum-black ink outline #2a2130, thin white paper edge). The SECOND reference image is the layout sheet: the old simple pieces in a grid of 3 rows and 3 columns. Keep every piece in the SAME grid cell, facing the SAME direction, with about the SAME silhouette and width-to-height ratio, so it still fits the animation rig, but give it real character, detail and material:\n1 (row 1, column 1). Cave Bat front wing: a purple bat wing with fine membrane ribs; about 2.6 times as wide as tall\n2 (row 1, column 2). Cave Bat back wing: the same wing in darker purple; about 2.6 times as wide as tall\n3 (row 1, column 3). Cave Bat body: a small furry purple bat body with pointed ears, golden eyes and tiny fangs; about 1.5 times as tall as wide\n4 (row 2, column 1). Cinder Bat front wing: a charcoal bat wing with glowing ember cracks; about 2.6 times as wide as tall\n5 (row 2, column 2). Cinder Bat back wing: the same wing darker; about 2.6 times as wide as tall\n6 (row 2, column 3). Cinder Bat body: a sooty charcoal bat body with pointed ears and glowing ember-orange eyes; about 1.5 times as tall as wide\n7 (row 3, column 1). Mothling front wing: ONE single cream moth wing with lilac markings; about 2.6 times as wide as tall\n8 (row 3, column 2). Mothling back wing: ONE single lilac moth wing; about 2.6 times as wide as tall\n9 (row 3, column 3). Mothling body: a small fluffy cream moth body with feathery antennae and dark eyes; about 1.5 times as tall as wide\n\nEach piece on its own, none touching. Plain flat light grey background, no grid lines, no text, no labels, no shadows, no extra pieces."
+   },
+   "crane": {
+    "rows": 2,
+    "cols": 3,
+    "parts": [
+     "crane.wingA",
+     "crane.wingB",
+     "crane.body",
+     "crane.tail",
+     "crane.neck",
+     "crane.head"
+    ],
+    "prompt": "Paint the body pieces of the Great Crane, a giant origami paper crane boss of the sky for a 2D papercraft game, as a character artist would for a polished AAA release.\n\nThe FIRST reference image shows the hero character's pieces: match its art style, quality and level of detail exactly (rich hand-painted shading and highlights, subtle paper grain and fibres, crisp fold lines, confident thick dark plum-black ink outline #2a2130, thin white paper edge). The SECOND reference image is the layout sheet: the old simple pieces in a grid of 2 rows and 3 columns. Keep every piece in the SAME grid cell, facing the SAME direction, with about the SAME silhouette and width-to-height ratio, so it still fits the animation rig, but give it real character, detail and material:\n1 (row 1, column 1). Front wing: a large folded paper crane wing in pale ice blue with crisp origami creases and feather-like fold lines; about 1.2 times as wide as tall\n2 (row 1, column 2). Back wing: the same wing in deeper blue shadow tones; about 1.2 times as wide as tall\n3 (row 1, column 3). Body: a cream paper diamond body with a central crease, 2 times wider than tall; about 2.0 times as wide as tall\n4 (row 2, column 1). Tail: a long pointed pale blue folded paper tail; about 1.1 times as wide as tall\n5 (row 2, column 2). Neck: a long slender cream paper neck strip; about 1.0 times as wide as tall\n6 (row 2, column 3). Head: a cream origami crane head facing RIGHT with a red paper crest, a black bead eye and a golden folded beak; about 1.6 times as wide as tall\n\nEach piece on its own, none touching. Plain flat light grey background, no grid lines, no text, no labels, no shadows, no extra pieces."
+   },
+   "fix": {
+    "rows": 2,
+    "cols": 2,
+    "parts": [
+     "ashspider.abdomen",
+     "ashspider.head",
+     "cracker.body",
+     "foldfox.body"
+    ],
+    "prompt": "Paint the body pieces of the Ash Spider abdomen and head, the Firecracker Imp and the Fold Fox body for a 2D papercraft game, as a character artist would for a polished AAA release.\n\nThe FIRST reference image shows the hero character's pieces: match its art style, quality and level of detail exactly (rich hand-painted shading and highlights, subtle paper grain and fibres, crisp fold lines, confident thick dark plum-black ink outline #2a2130, thin white paper edge). The SECOND reference image is the layout sheet: the old simple pieces in a grid of 2 rows and 2 columns. Keep every piece in the SAME grid cell, facing the SAME direction, with about the SAME silhouette and width-to-height ratio, so it still fits the animation rig, but give it real character, detail and material:\n1 (row 1, column 1). Spider abdomen ONLY, no legs: a charcoal-black abdomen with bristles and a glowing orange diamond mark; about 1.3 times as wide as tall\n2 (row 1, column 2). Spider head ONLY, no legs: a round charcoal-black head with small glowing yellow eyes; about 1.0 times as wide as tall\n3 (row 2, column 1). Firecracker Imp: an upright red paper firecracker with gold bands, a lit fuse stub on top and angry little eyes; about 1.4 times as tall as wide\n4 (row 2, column 2). Fold Fox body ONLY, no head, no legs: a long low orange origami fox torso, 2.4 times wider than tall, crisp folds; about 2.4 times as wide as tall\n\nEach piece on its own, none touching. Plain flat light grey background, no grid lines, no text, no labels, no shadows, no extra pieces."
+   }
+  },
+  "faces": [
+   [
+    "slime.eyes",
+    "slime.eyes.blink",
+    "slime.mouth",
+    "king.eyes",
+    "king.eyes.blink",
+    "crumple.face",
+    "crumple.face.blink",
+    "toadstool.stem",
+    "toadstool.stem.blink",
+    "snowroll.face",
+    "snowroll.face.blink",
+    "snowlet.face"
+   ],
+   [
+    "snowlet.face.blink",
+    "frostpuff.body",
+    "frostpuff.body.blink",
+    "flurry.core",
+    "flurry.core.blink",
+    "wraith.eyes",
+    "wraith.eyes.blink",
+    "inkwisp.iris",
+    "eye.iris",
+    "folio.iris",
+    "folio.eye",
+    "bookmoth.eyes"
+   ],
+   [
+    "bookmoth.eyes.blink",
+    "mainspring.eyes",
+    "mainspring.eyes.blink",
+    "mainspring.pupils",
+    "mainspring.brows",
+    "mainspring.mouth",
+    "mainspring.mouth.open",
+    "starfold.eyes",
+    "starfold.eyes.blink",
+    "starfold.mouth",
+    "starfold.mouth.open",
+    "nib.eye"
+   ],
+   [
+    "nib.eye.blink",
+    "pulper.gauge",
+    "pulper.gauge.blink"
+   ]
+  ],
+  "human_foes": "2 foes per sheet in the player style (head, torso, arms, legs), then one sheet per foe of its head in 8 expressions from that render; hacc and hairB (their old drawn headwear) are blank pictures, since the painted heads carry their own hats and hoods."
+ },
+ "frames": {
+  "how": "Whole-body frame sheets, one render per character so the frames share a scale: the character's whole painted cut-out (or its drawn still, for townsfolk) as the first reference and a painted style sheet as the second; cut with build.blobs() and build.frame_set(name, {frame: figure index}). Foes: '', blink, w1, w2, wind, atk, hurt. Townsfolk: '', blink, w1, w2, happy, surprised, sad, angry.",
+  "foe_prompt": "An animation sprite sheet for <who>, an enemy in a 2D papercraft adventure game in the style of Paper Mario... Seven frames in ONE horizontal row... 1. Idle 2. Blink 3. Walk step A 4. Walk step B 5. Wind-up: <wind> 6. Attack: <attack> (projectiles NOT drawn, the game adds them) 7. Hurt. IMPORTANT: the held item and signature pose stay the same in every frame. Plain flat light grey background, no ground line, no ghost or faded copies.",
+  "folk_prompt": "An animation sprite sheet for <who>, a friendly townsperson... Eight frames: 1. Idle 2. Blink 3. Walk step A 4. Walk step B 5. Happy 6. Surprised 7. Sad 8. Angry; frames 5 to 8 change only the face.",
+  "player_layers": "Two layout sheets of the drawn layer shapes (hair caps, hats, head, hands, shirt, sleeve, trouser leg, boot, cape, scarves, armour), painted as tintable greyscale pieces in the player style; hair caps must be painted without any head or face. Cut per piece, stretched to the drawn layer's size, mirrored where the render faced the wrong way."
+ }
+}

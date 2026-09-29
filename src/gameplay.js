@@ -668,13 +668,13 @@ export function updateEnemies(dt){const p=player;tickFuses(dt);for(let i=enemies
       else{const sp=e.type==='sentinel'?3.4:e.type==='warden'?3.1:e.type==='gazer'?3.2:e.type==='foreman'?3:e.type==='scribe'?3.3:kn?2.9:2.3;const dir=(night||kn||dist<10)?toward:-toward;e.face=dir;e.vx+=(dir*sp-e.vx)*Math.min(1,dt*4);if(e.hitWall&&e.onGround)e.vy=13;
         if(kn&&e.cd<=0&&e.onGround&&Math.abs(dx)<7&&Math.abs(dy)<2.5&&!p.dead){e.act='wind';e.at=.5;e.face=toward;}
         // the Stack Warden flings pages from its ledger when you keep your distance
-        else if(e.type==='warden'&&e.cd<=0&&dist>=7&&dist<16&&!p.dead){const l=dist||1;for(const a of[-.18,0,.18]){const c=Math.cos(a),s=Math.sin(a);fireProj('page',e.x,e.y+1.3,(dx*c-dy*s)/l*10,(dx*s+dy*c)/l*10,edmg(e)*.7,{hostile:true});}SFX.swing();e.cd=rand(1.8,2.6);}
+        else if(e.type==='warden'&&e.cd<=0&&dist>=7&&dist<16&&!p.dead){const l=dist||1;for(const a of[-.18,0,.18]){const c=Math.cos(a),s=Math.sin(a);fireProj('page',e.x,e.y+1.3,(dx*c-dy*s)/l*10,(dx*s+dy*c)/l*10,edmg(e)*.7,{hostile:true});}SFX.swing();e.cd=rand(1.8,2.6);e.throwT=.36;}
         // the Stargazer throws a fan of stars from its astrolabe, or calls one down on you
         else if(e.type==='gazer'&&e.cd<=0&&dist>=6&&dist<18&&!p.dead){const l=dist||1;if(Math.random()<.35){fireProj('starshot',p.x+rand(-1,1),p.y+9,0,-9,edmg(e)*.8,{hostile:true});tone(880,440,.3,'sine',.05);}
-          else for(const a of[-.22,0,.22]){const c=Math.cos(a),s=Math.sin(a);fireProj('starshot',e.x,e.y+1.3,(dx*c-dy*s)/l*10,(dx*s+dy*c)/l*10,edmg(e)*.7,{hostile:true});}SFX.swing();e.cd=rand(1.7,2.4);}
+          else for(const a of[-.22,0,.22]){const c=Math.cos(a),s=Math.sin(a);fireProj('starshot',e.x,e.y+1.3,(dx*c-dy*s)/l*10,(dx*s+dy*c)/l*10,edmg(e)*.7,{hostile:true});}SFX.swing();e.cd=rand(1.7,2.4);e.throwT=.36;}
         // the Scrap Foreman throws a gear at you; the Drowned Scribe flicks a fan of ink from its quill
-        else if(e.type==='foreman'&&e.cd<=0&&dist>=5&&dist<15&&!p.dead){const l=dist||1;fireProj('gear',e.x,e.y+1.3,dx/l*9,dy/l*9,edmg(e)*.7,{hostile:true});SFX.swing();e.cd=rand(1.6,2.4);}
-        else if(e.type==='scribe'&&e.cd<=0&&dist>=6&&dist<17&&!p.dead){const l=dist||1;for(const a of[-.25,0,.25]){const c=Math.cos(a),s=Math.sin(a);fireProj('inkglob',e.x,e.y+1.3,(dx*c-dy*s)/l*10,(dx*s+dy*c)/l*10+3,edmg(e)*.7,{hostile:true});}SFX.swing();e.cd=rand(1.5,2.2);}}
+        else if(e.type==='foreman'&&e.cd<=0&&dist>=5&&dist<15&&!p.dead){const l=dist||1;fireProj('gear',e.x,e.y+1.3,dx/l*9,dy/l*9,edmg(e)*.7,{hostile:true});SFX.swing();e.cd=rand(1.6,2.4);e.throwT=.36;}
+        else if(e.type==='scribe'&&e.cd<=0&&dist>=6&&dist<17&&!p.dead){const l=dist||1;for(const a of[-.25,0,.25]){const c=Math.cos(a),s=Math.sin(a);fireProj('inkglob',e.x,e.y+1.3,(dx*c-dy*s)/l*10,(dx*s+dy*c)/l*10+3,edmg(e)*.7,{hostile:true});}SFX.swing();e.cd=rand(1.5,2.2);e.throwT=.36;}}
       if(!night&&e.type==='zombie'&&dist>35){removeEnemy(e);enemies.splice(i,1);continue;}}
   else if(e.type==='eye'){e.cd=(e.cd??rand(1.5,3))-dt;
       if(e.act==='wind'){e.at-=dt;e.vx*=Math.pow(.02,dt);e.vy*=Math.pow(.02,dt);e.tele=e.warn=true;e.face=toward;if(e.at<=0){e.act='dash';e.at=.55;const l=dist||1;e.vx=dx/l*13;e.vy=dy/l*13;SFX.swing();}}
@@ -688,7 +688,7 @@ export function updateEnemies(dt){const p=player;tickFuses(dt);for(let i=enemies
     if(e.act==='wind'){e.at-=dt;e.vx*=Math.pow(.001,dt);e.tele=e.warn=true;e.face=toward;if(e.at<=0){e.act=null;e.vx=e.face*10;e.vy=12;e.cd=rand(1.8,2.8);SFX.jump();}}
     else if(e.onGround){e.face=toward;e.vx+=(toward*4-e.vx)*Math.min(1,dt*5);if(e.hitWall)e.vy=13;if(e.cd<=0&&Math.abs(dx)<9&&Math.abs(dy)<3&&!p.dead){e.act='wind';e.at=.38;}}}
   else if(e.type==='ashimp'){e.vy-=50*dt;e.cd=(e.cd??2)-dt;
-    if(e.act==='wind'){e.at-=dt;e.vx*=Math.pow(.001,dt);e.tele=e.warn=true;e.face=toward;if(e.at<=0){const l=Math.hypot(dx,dy)||1;fireProj('fireball',e.x+e.face*.4,e.y+1.3,dx/l*11,dy/l*11,d.dmg,{hostile:true});SFX.bow();e.act=null;e.cd=rand(2,3.2);}}
+    if(e.act==='wind'){e.at-=dt;e.vx*=Math.pow(.001,dt);e.tele=e.warn=true;e.face=toward;if(e.at<=0){const l=Math.hypot(dx,dy)||1;fireProj('fireball',e.x+e.face*.4,e.y+1.3,dx/l*11,dy/l*11,d.dmg,{hostile:true});SFX.bow();e.act=null;e.throwT=.36;e.cd=rand(2,3.2);}}
     else{e.face=toward;e.vx+=(toward*2.4-e.vx)*Math.min(1,dt*4);if(e.hitWall&&e.onGround)e.vy=13;if(e.cd<=0&&dist<15&&!p.dead){e.act='wind';e.at=.5;}}}
   else if(e.type==='inksquid'){const wet=TP[tileAt(Math.floor(e.x),Math.floor(e.y+e.h/2))].liq;if(wet){const pw=TP[tileAt(Math.floor(p.x),Math.floor(p.y+.9))].liq||dist<6;const tx=pw?dx:Math.sin(e.t)*3,ty=pw?dy:Math.cos(e.t*1.3)*2,l=Math.hypot(tx,ty)||1;e.vx+=tx/l*dt*14;e.vy+=ty/l*dt*14;const v=Math.hypot(e.vx,e.vy);if(v>6){e.vx*=6/v;e.vy*=6/v;}e.face=e.vx>0?1:-1;}else{e.vy-=40*dt;e.vx*=Math.pow(.2,dt);}}
   else if(e.type==='crane'){const ph=e.phase||0,enr=ph>=1;e.cd=(e.cd??2)-dt;
@@ -878,7 +878,9 @@ export function updateEnemies(dt){const p=player;tickFuses(dt);for(let i=enemies
 // and snowballs crouch before a hop, fliers flap, beetles lift their shells, eyes follow you, and bosses pose for each attack
 function foeClip(e,dt){const R=e.rig,p=player,a=e.act,mv=Math.abs(e.vx)>.3,look=(pt,k,y=0)=>{const dx=p.x-e.x,dy=p.y+1-(e.y+e.h/2),l=Math.hypot(dx,dy)||1;rigSet(R,pt,{x:dx/l*k*e.face,y:-dy/l*k+y});};
   switch(R.k){
-  case'human':{const H=HUMANFOE[e.type]||{};rigPlay(R,mv?H.clip||'march':'idle',{sp:clamp(Math.abs(e.vx)/2.2,.6,1.8)});
+  case'human':{const H=HUMANFOE[e.type]||{};e.throwT=Math.max(0,(e.throwT||0)-dt);
+    if(R.S.whole){rigPlay(R,e.flash>0||e.stun>0?'phurt':a==='wind'||a==='dash'||a==='rest'?'p'+a:e.throwT>0?'pthrow':e.type==='zombie'&&Math.abs(p.x-e.x)<1.8&&Math.abs(p.y-e.y)<2?'patk':mv?'pwalk':'pidle',{sp:mv&&!a?clamp(Math.abs(e.vx)/2.6,.7,1.6):1});break;}
+    rigPlay(R,mv?H.clip||'march':'idle',{sp:clamp(Math.abs(e.vx)/2.2,.6,1.8)});
     if(H.arm!=null)rigSet(R,'armA',{r:H.arm});if(e.type==='zombie'&&!mv){rigSet(R,'armA',{r:-1.45});rigSet(R,'armB',{r:-1.3});}if(e.flash>0||e.stun>0)rigSet(R,'head',{sw:'hurt',snap:1});break;}
   case'slime':case'king':case'snowroll':case'snowlet':rigPlay(R,e.onGround&&e.timer<.25?'crouch':e.onGround?'idle':'air');break;
   case'crumple':rigPlay(R,'idle',{sp:1+Math.min(3,Math.abs(e.vx)/2.5)});break;
@@ -912,7 +914,7 @@ export function updateNPC(dt){for(const n of npcs){n.t+=dt;n.timer-=dt;const h=n
   let want=near?0:(n.want||0);if(near)n.face=player.x>n.x?1:-1;if(h){if(n.x<h.minX+.7)want=1;if(n.x>h.maxX+.3)want=-1;}n.vx=want*1.6;if(want)n.face=want;n.vy-=50*dt;collide(n,dt);
   n.rot+=((n.face>0?0:Math.PI)-n.rot)*Math.min(1,dt*14);n.mesh.rotation.y=n.rot;n.mesh.position.set(n.x,n.y-.08,n.mesh.position.z);setTint(n.mesh.material,n.x,n.y+1);
   // townsfolk amble about, and stand holding their tool (FOLK arm) when they stop
-  const R=n.rig,F=FOLK[n.type];rigPlay(R,want?'amble':'idle');if(!want){rigSet(R,'armA',{r:F.arm});if(F.armB!=null)rigSet(R,'armB',{r:F.armB});}rigUpdate(R,dt);
+  const R=n.rig,F=FOLK[n.type];rigPlay(R,R.S.whole?want?'pwalk':'pidle':want?'amble':'idle');if(!want&&!R.S.whole){rigSet(R,'armA',{r:F.arm});if(F.armB!=null)rigSet(R,'armB',{r:F.armB});}rigUpdate(R,dt);
   if(n.y<-3&&h){n.x=(h.minX+h.maxX)/2+.5;n.y=h.y;}
   n.bubT-=dt;if(near&&n.bubT<=0&&!n.bub){n.bub=document.createElement('div');n.bub.className='bubble';n.bub.textContent=plain(npcLine(n.type,true));$('nums').appendChild(n.bub);n.bubLife=3.2;n.bubT=rand(9,16);}
   if(n.bub){n.bubLife-=dt;pv.set(n.x,n.y+2.5,.5).project(camera);n.bub.style.left=upx((pv.x+1)/2*innerWidth);n.bub.style.top=upx((1-pv.y)/2*innerHeight);if(n.bubLife<=0){n.bub.remove();n.bub=null;}}}}
