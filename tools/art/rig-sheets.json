@@ -614,5 +614,11 @@
    ]
   ],
   "human_foes": "2 foes per sheet in the player style (head, torso, arms, legs), then one sheet per foe of its head in 8 expressions from that render; hacc and hairB (their old drawn headwear) are blank pictures, since the painted heads carry their own hats and hoods."
+ },
+ "frames": {
+  "how": "Whole-body frame sheets, one render per character so the frames share a scale: the character's whole painted cut-out (or its drawn still, for townsfolk) as the first reference and a painted style sheet as the second; cut with build.blobs() and build.frame_set(name, {frame: figure index}). Foes: '', blink, w1, w2, wind, atk, hurt. Townsfolk: '', blink, w1, w2, happy, surprised, sad, angry.",
+  "foe_prompt": "An animation sprite sheet for <who>, an enemy in a 2D papercraft adventure game in the style of Paper Mario... Seven frames in ONE horizontal row... 1. Idle 2. Blink 3. Walk step A 4. Walk step B 5. Wind-up: <wind> 6. Attack: <attack> (projectiles NOT drawn, the game adds them) 7. Hurt. IMPORTANT: the held item and signature pose stay the same in every frame. Plain flat light grey background, no ground line, no ghost or faded copies.",
+  "folk_prompt": "An animation sprite sheet for <who>, a friendly townsperson... Eight frames: 1. Idle 2. Blink 3. Walk step A 4. Walk step B 5. Happy 6. Surprised 7. Sad 8. Angry; frames 5 to 8 change only the face.",
+  "player_layers": "Two layout sheets of the drawn layer shapes (hair caps, hats, head, hands, shirt, sleeve, trouser leg, boot, cape, scarves, armour), painted as tintable greyscale pieces in the player style; hair caps must be painted without any head or face. Cut per piece, stretched to the drawn layer's size, mirrored where the render faced the wrong way."
  }
 }

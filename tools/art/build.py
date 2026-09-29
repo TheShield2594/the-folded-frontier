@@ -259,6 +259,46 @@ def row_stickers(img, rows, per_row, thr=16, join=12):
             items.append(Image.fromarray(np.dstack([q.astype(np.uint8), (mask * 255).astype(np.uint8)])[sl], 'RGBA'))
     return items
 
+def blobs(img, thr=16, join=12, min_frac=.25):
+    """Every figure in a render, in reading order (rows found by the figures' vertical centres), as RGBA crops; for frame
+    sheets whose frames wrap onto a second row. Pieces within join px count as one figure; specks under min_frac of the
+    biggest are dropped."""
+    a = np.asarray(img.convert('RGB')).astype(int); bg = np.median(np.concatenate([a[3], a[-4], a[:, 3], a[:, -4]]), axis=0)
+    f = np.abs(a - bg).max(axis=2) >= thr
+    f &= ~ndimage.binary_dilation(ndimage.binary_opening(f, np.ones((1, a.shape[1] // 4), bool)), iterations=2)  # ground lines drawn under a row
+    lab, n = ndimage.label(ndimage.binary_dilation(f, iterations=join))
+    sz = ndimage.sum(f, lab, range(1, n + 1)); objs = ndimage.find_objects(lab); ks = [k + 1 for k in range(n) if sz[k] >= min_frac * sz.max()]
+    ks.sort(key=lambda k: objs[k - 1][0].start); rows = []
+    for k in ks:
+        cy = (objs[k - 1][0].start + objs[k - 1][0].stop) / 2
+        if rows and abs(cy - rows[-1][0]) < (objs[k - 1][0].stop - objs[k - 1][0].start) / 2: rows[-1][1].append(k)
+        else: rows.append([cy, [k]])
+    out = []
+    for _, r in rows:
+        for k in sorted(r, key=lambda k: objs[k - 1][1].start):
+            mask = ndimage.binary_fill_holes(f & (lab == k)); cl, cn = ndimage.label(mask); cs = ndimage.sum(mask, cl, range(1, cn + 1))
+            mask = np.isin(cl, [i + 1 for i in range(cn) if cs[i] >= .03 * cs.max()])  # slivers left over from a cropped row
+            ys, xs = np.where(mask); sl = (slice(ys.min(), ys.max() + 1), slice(xs.min(), xs.max() + 1))
+            out.append(Image.fromarray(np.dstack([a.astype(np.uint8), (mask * 255).astype(np.uint8)])[sl], 'RGBA'))
+    return out
+
+def frame_set(figs, name, frames, tiles=2.4, h=320, out='assets/art/rigs'):
+    """Whole-body animation frames of one character (figs from blobs(), all from one render so they share a scale) to
+    <name>.webp (frames['']) and <name>.<frame>.webp, all on one canvas: feet on its bottom edge and the hips (the middle
+    of the lower half of the figure) on its centre line, so swapping frames in the game doesn't make the figure jump.
+    tiles: the figure's height in game tiles (for the ink line)."""
+    ppt = figs[frames['']].height / tiles; st = {}
+    for v, i in frames.items():
+        im, _ = restyle(figs[i], ppt, border=False); a = np.asarray(im)[..., 3] > 8; cl, cn = ndimage.label(a); cs = ndimage.sum(a, cl, range(1, cn + 1))
+        keep = np.isin(cl, [j + 1 for j in range(cn) if cs[j] >= .03 * cs.max()]); im = Image.fromarray(np.dstack([np.asarray(im)[..., :3], np.asarray(im)[..., 3] * keep]).astype(np.uint8), 'RGBA'); a = keep; ys, xs = np.where(a)
+        im = im.crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1)); a = np.asarray(im)[..., 3] > 8
+        low = a[a.shape[0] // 2:]; cx = np.where(low)[1].mean(); st[v] = (im, cx)
+    L = max(cx for im, cx in st.values()); R = max(im.width - cx for im, cx in st.values()); Hh = max(im.height for im, _ in st.values())
+    W = int(2 * max(L, R)) + 2; os.makedirs(out, exist_ok=True)
+    for v, (im, cx) in st.items():
+        c = Image.new('RGBA', (W, Hh)); c.alpha_composite(im, (int(round(W / 2 - cx)), Hh - im.height))
+        c.resize((round(W * h / Hh), h), Image.LANCZOS).save(os.path.join(out, name + ('.' + v if v else '') + '.webp'), 'WEBP', quality=90, method=6)
+
 def silhouette(art, drawn, grow=2):
     """Clip a painted rig part to the drawn part's silhouette (drawn: artExport('rigs', ...) at 1x), for parts whose shape
     matters more than the painting's own (a bat's thin wing strip over its face), and ink the new edge. Returns the part at 2x."""

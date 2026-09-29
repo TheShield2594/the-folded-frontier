@@ -589,7 +589,8 @@ test('trading cards: chests and packs give them, a binder files them, a full pag
   await newSmallWorld(page);
   const s=await page.evaluate(async()=>{
     const g=await import('/src/game.js'),P=g.player,out={},cardsIn=()=>P.inv.filter(x=>x&&g.ITEMS[x.id].card).reduce((a,x)=>a+x.n,0),rar=id=>g.CARDS.find(c=>c[0]===g.ITEMS[id].card)[2];
-    // buried treasure always holds one; card faces are painted over the card backs at boot
+    // buried treasure always holds one; card faces are painted over the card backs at boot (and again once the boot art is in)
+    await g.artReady;
     out.treasure=g.treasureLoot().some(x=>x&&g.ITEMS[x.id].card);
     const px=c=>{const[x,y]=g.cellXY(c);return[...g.atlas.getContext('2d').getImageData(x+32,y+20,1,1).data].join();};out.painted=px(g.C.card_king)!==px(g.CARDBACK[2]);
     // a pack gives three cards, one Rare or better; without a binder they stay in the backpack

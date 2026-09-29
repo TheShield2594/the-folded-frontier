@@ -30,7 +30,7 @@ export function paintArt(){let n=0;for(const k in artImg.atlas)n+=paintCell(k,ar
 // puts one picture in place (the loader, and the tests with a canvas); kind is 'atlas' or 'sheets'.
 // refresh=false leaves the normal map and caches to the caller (loadArt refreshes once after the batch)
 function rigPart(k){if(k.startsWith('L.')){const[,l,pt]=k.split('.');if(HL[l]&&pt)return true;console.warn(`art: no human layer "${k}"`);return false;}const m=k.match(/^([a-z_0-9]+)(?:@([\w-]+))?\.([A-Za-z0-9+]+)(?:\.([\w-]+))?$/),d=m&&RIGS[m[1]],ps=m?m[3].split('+'):[];
-  if(!d||ps.some((n,i)=>{const p=d.parts[d.pi[n]];return i&&n==='all'?ps.length>2:!p||(!p.paint&&!(i===0&&ps.length>1))||(!i&&!p.v.includes(m[4]||''));})){console.warn(`art: no rig part "${k}"`);return false;}return true;}
+  if(!d||ps.some((n,i)=>{const p=d.parts[d.pi[n]];return i&&n==='all'?ps.length>2:!p||(!p.paint&&!(i===0&&ps.length>1))||(!i&&ps.length<2&&!p.v.includes(m[4]||''));})){console.warn(`art: no rig part "${k}"`);return false;}return true;}
 export function applyArt(kind,k,img,refresh=true){const ok=kind==='atlas'?paintCell(k,img):kind==='sheets'?paintSheet(k,img):kind==='rigs'&&rigPart(k);if(!ok)return false;
   if(kind==='rigs'){RIGART[k]=img;if(refresh)rigRefresh();return true;}
   artImg[kind][k]=img;if(kind==='atlas')atlasTex.needsUpdate=true;if(refresh)artRefresh(kind==='atlas');return true;}

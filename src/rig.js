@@ -49,6 +49,8 @@ export function setRigArt(){skins.clear();return++rigGen;}
 // the merged pieces a skin uses: {part: [joined parts]} from the art names, the skin key's own first
 function rigMerge(k,key){const out={};for(const pre of key!=null?[k+'@'+key+'.',k+'.']:[k+'.']){for(const n in RIGART){if(!n.startsWith(pre))continue;const ps=n.slice(pre.length).split('.')[0].split('+');
   if(ps.length>1&&!out[ps[0]])out[ps[0]]=ps.slice(1);}if(Object.keys(out).length)break;}return out;}
+// the frames painted for a merged piece (<name>.<frame>: w1, w2, wind, atk, hurt, blink), picked by the clips' sw channel
+const rigFrames=(k,key,n)=>{const pre=[k+(key!=null?'@'+key:'')+'.'+n+'.',k+'.'+n+'.'];return Object.keys(RIGART).filter(a=>pre.some(q=>a.startsWith(q))).map(a=>a.slice(a.lastIndexOf('.')+1));};
 const rigArtFor=(k,key,n,v)=>{const t=n+(v?'.'+v:'');return(key!=null&&RIGART[k+'@'+key+'.'+t])||RIGART[k+'.'+t];};
 // a cut-out piece: w x h of src (drawn at dw x dh) with paper grain and the cream paper edge, PAD px of margin all round
 function paperPiece(src,sx,sy,w,h,dw=w,dh=h){const cw=dw+PAD*2,chh=dh+PAD*2,tmp=mk(cw,chh),t=tmp.getContext('2d',RF);t.drawImage(src,sx,sy,w,h,PAD,PAD,dw,dh);grain(t,0,0,cw,chh,12);
@@ -62,7 +64,7 @@ export function rigSkin(k,skin,key){const ck=key!=null?k+':'+key:null;if(ck&&ski
   const mg=rigMerge(k,key),mn={};for(const n in mg){mn[n]=[n,...mg[n]].join('+');if(mg[n][0]==='all')mg[n]=d.parts.filter(q=>q.n!==n).map(q=>q.n);}const gone=new Set(Object.values(mg).flat());
   const draw=(t,p,v)=>{t.save();if(p.clip){t.beginPath();t.rect(p.clip[0],p.clip[1],p.clip[2]-p.clip[0],p.clip[3]-p.clip[1]);t.clip();}if(p.loc)t.translate(p.at[0],p.at[1]);
     t.lineJoin='round';t.lineCap='round';p.paint(t,skin,v);t.restore();};
-  for(const p of d.parts){if(gone.has(p.n))continue;if(p.slot){const[a,b,c,e]=p.slot;pieces.push({p:p.i,v:'',slot:1,x0:M+p.at[0]+a,y0:M+p.at[1]+b,w:c-a,h:e-b});continue;}if(!p.paint&&!mg[p.n])continue;for(const v of p.v){const c=mk(W,H),t=c.getContext('2d',RF);t.translate(M,M);
+  for(const p of d.parts){if(gone.has(p.n))continue;if(p.slot){const[a,b,c,e]=p.slot;pieces.push({p:p.i,v:'',slot:1,x0:M+p.at[0]+a,y0:M+p.at[1]+b,w:c-a,h:e-b});continue;}if(!p.paint&&!mg[p.n])continue;for(const v of mg[p.n]?[...new Set([...p.v,...rigFrames(k,key,mn[p.n])])]:p.v){const c=mk(W,H),t=c.getContext('2d',RF);t.translate(M,M);
     if(p.paint)draw(t,p,v);if(mg[p.n])for(const n of mg[p.n]){const q=d.parts[d.pi[n]];if(q.paint)draw(t,q,'');}
     const a=t.getImageData(0,0,W,H).data;let x0=W,y0=H,x1=-1,y1=-1;for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(a[(y*W+x)*4+3]>8){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
     if(x1<0)continue;const art=rigArtFor(k,key,mn[p.n]||p.n,v);let pc=c;
@@ -190,7 +192,7 @@ export function rigPic(k,skin,clip,t=0,key,set){const d=RIGS[k],own=!skin?.cells
   // a whole painted cut-out can be wider or taller than the rig's frame: the picture grows to fit it
   const wc=S.whole&&S.cells[0][''],pad=wc?Math.ceil(Math.max(0,-(P[0].at[0]+wc.l[0]),P[0].at[0]+wc.l[2]-d.w,-(P[0].at[1]+wc.l[1]))):0;
   const c=mk(d.w+pad*2,d.h+pad),t2=c.getContext('2d');for(let i=0;i<P.length;i++){if(P[i].slot)continue;const cs=S.cells[i],sw=R.last[i].sw,cell=sw!=='-'&&cs&&(cs[sw]||cs['']);if(!cell)continue;const o=i*6;
-    t2.setTransform(M[o],M[o+1],M[o+2],M[o+3],M[o+4]+pad,M[o+5]+pad);t2.drawImage(S.img,cell.ax,cell.ay,cell.w,cell.h,cell.l[0],cell.l[1],cell.w,cell.h);}if(own)S.tex.dispose();return c;}
+    t2.setTransform(M[o],M[o+1],M[o+2],M[o+3],M[o+4]+pad,M[o+5]+pad);t2.drawImage(S.img,cell.ax,cell.ay,cell.w,cell.h,cell.l[0],cell.l[1],cell.w,cell.h);}if(own)S.tex.dispose();c.whole=!!wc;return c;}
 
 // ================= human rig =================
 // The player, townsfolk and human-shaped foes. Each part bakes the human layers (render.js HL) that belong to it, in
@@ -249,12 +251,14 @@ HC.reel=loopClip(.17,[[0,poseCh(POSES[PF.reel0])],[.085,poseCh(POSES[PF.reel1])]
 // townsfolk and foes: a slower amble, and the shamble of the paper undead (arms out, stiff)
 HC.amble=loopClip(.8,[[0,poseCh({legA:.4,legB:-.4,armA:-.3,armB:.1,bob:-1})],[.2,poseCh({legA:.03,legB:-.03,armA:.1,armB:.1})],[.4,poseCh({legA:-.4,legB:.4,armA:.25,armB:-.2,bob:-1})],[.6,poseCh({legA:.03,legB:-.03,armA:.1,armB:.1})]],'io',.15);
 HC.shamble=loopClip(.8,[[0,poseCh({legA:-.3,legB:.3,armA:-1.45,armB:-1.3,lean:.04})],[.4,poseCh({legA:.4,legB:-.4,armA:-1.35,armB:-1.4,bob:1,lean:.08})]],'io',.15);
-// a whole painted cut-out (human@<foe>.root+all) moves as one piece from its feet: breathe, waddle, wind up, charge, throw, flinch
-HC.pidle=loopClip(2.4,[[0,{root:{sy:1,sx:1}}],[1.2,{root:{sy:1.025,sx:.985}}]],'io',.15);
-HC.pwalk=loopClip(.5,[[0,{root:{r:-.07,y:0,sy:.97,sx:1.02}}],[.125,{root:{r:0,y:-4,sy:1.03,sx:.98}}],[.25,{root:{r:.07,y:0,sy:.97,sx:1.02}}],[.375,{root:{r:0,y:-4,sy:1.03,sx:.98}}]],'io',.12);
-HC.pwind=still({root:{r:-.2,x:-4,sy:.9,sx:1.06}},.12);HC.pdash=still({root:{r:.24,x:5,sy:.95,sx:1.06}},.06);HC.prest=still({root:{r:.06,sy:.98}},.15);
-HC.pthrow=loopClip(.36,[[0,{root:{r:-.22,sy:.93}}],[.12,{root:{r:.26,sy:1.05,x:3}}],[.3,{root:{r:0,sy:1,x:0}}]],'io',.05);HC.pthrow.loop=0;
-HC.phurt=still({root:{r:-.16,x:-3,sx:.94,sy:1.04}},.04);
+// a whole painted cut-out (human@<foe>.root+all) moves as one piece from its feet and swaps painted frames (sw): breathe and
+// blink, a stepping walk, wind up, charge or strike, throw, flinch; a frame that isn't painted falls back to the standing one
+HC.pidle=loopClip(2.4,[[0,{root:{sy:1,sx:1}}],[1.2,{root:{sy:1.02,sx:.99}}]],'io',.15);HC.pidle.tr.root.sw=[[0,''],[1.9,'blink'],[2.02,''],[2.4,'']];
+HC.pwalk=loopClip(.56,[[0,{root:{r:-.03,y:0,sw:'w1'}}],[.14,{root:{r:0,y:-3}}],[.28,{root:{r:.03,y:0,sw:'w2'}}],[.42,{root:{r:0,y:-3}}]],'io',.1);
+HC.pwind=still({root:{r:-.06,x:-2,sy:.97,sw:'wind'}},.08);HC.pdash=still({root:{r:.08,x:3,sw:'atk'}},.05);HC.prest=still({root:{r:.02}},.15);
+HC.patk=loopClip(.5,[[0,{root:{r:0,x:0,sw:'wind'}}],[.18,{root:{r:.08,x:3,sw:'atk'}}],[.4,{root:{r:.04,x:1,sw:'atk'}}]],'io',.06);
+HC.pthrow=loopClip(.36,[[0,{root:{r:-.05,sy:.97,sw:'wind'}}],[.1,{root:{r:.08,sy:1.02,x:2,sw:'atk'}}],[.3,{root:{r:0,sy:1,x:0,sw:'atk'}}],[.36,{root:{r:0,sy:1,x:0,sw:''}}]],'io',.05);HC.pthrow.loop=0;
+HC.phurt=still({root:{r:-.1,x:-3,sw:'hurt'}},.04);
 HC.march=loopClip(.8,[[0,poseCh({legA:-.3,legB:.3,armA:-.4,armB:.2})],[.4,poseCh({legA:.35,legB:-.35,armA:-.4,armB:.2,bob:1})]],'io',.15);
 
 // ================= creature rigs =================

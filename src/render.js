@@ -232,7 +232,7 @@ const folkPose=k=>{const o=FOLK[k];return{armA:{r:o.arm},armB:{r:o.armB??.1}};};
 // facePic(k, expr): an NPC type (or 'player', in the skin the player's rig wears now) standing, with the head swapped to
 // the expression (happy, surprised, sad, angry; null for the plain face), for dialogue portraits
 export function facePic(k,expr){const pl=k==='player';if(!pl&&!FOLK[k])return null;
-  return rigPic('human',pl?player.rig?.S||playerLook():FOLK[k],'idle',0,pl?null:k,Object.assign(pl?{}:folkPose(k),{head:{sw:expr||''}}));}
+  return rigPic('human',pl?player.rig?.S||playerLook():FOLK[k],'idle',0,pl?null:k,Object.assign(pl?{}:folkPose(k),{head:{sw:expr||''},root:{sw:expr||''}}));}
 // Townsfolk looks (the human layers' o): their rigs wear these (rig.js), and SHEETS[k] is the still picture for portraits.
 // arm: the front arm angle they stand with (holding their tool), armB the back arm's.
 export const FOLK={
