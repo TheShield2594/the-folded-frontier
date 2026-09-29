@@ -91,7 +91,7 @@ function recruit(k){const d=PARTNERS[k];setPartner(k);partnerCheer(2.4);playerCh
   burst(player.x,player.y+2,['#fbf8f0','#f1c04f','#d4483b','#8fc9ec'],36,7,{grav:5,life:1.2});toast(`${d.name} joined your party! Press ${KEYNAME(SET.bind.partner)} to switch partners and ${KEYNAME(SET.bind.ability)} for ${d.move}.`,'gold');
   say(partnerSpeaker(k),d.hi,{wait:1.5,done:()=>say(playerSpeaker(),d.re,{done:()=>partnerCheer(1)})});}
 export function syncPartners(quiet){if(hasNPC('guide'))unlockPartner('lumi',quiet);if(quests.king)unlockPartner('snip',quiet);if(quests.crane)unlockPartner('smudge',quiet);if(quests.lev)unlockPartner('ember',quiet);}
-export function setPartner(k){player.partner=k;pt.type=null;pt.cd=0;pt.act=null;setInvDirty(true);}
+export function setPartner(k){player.partner=k;pt.type=null;pt.cd=0;pt.act=null;pt.fxT=0;setInvDirty(true);}
 export function cyclePartner(){const p=player;if(state!=='play')return;if(!p.partners.length){toast('No partners yet. Your first one joins when the Guide moves in.');return;}const i=p.partners.indexOf(p.partner);const k=p.partners[(i+1)%p.partners.length];setPartner(k);partnerCheer(.7);toast(`${PARTNERS[k].name} is now with you.`);SFX.pick();burst(player.x-player.face,player.y+1.2,['#fbf8f0','#f1c04f'],10,3,{grav:0});}
 function bestPick(){let b=1;for(const s of player.inv)if(s&&ITEMS[s.id].pick)b=Math.max(b,ITEMS[s.id].pick);return b;}
 export function partnerAbility(){const p=player,k=p.partner;if(state!=='play'||p.dead)return;if(!k){toast('No partner with you yet.');return;}if(pt.cd>0){toast(`${PARTNERS[k].move} is recharging (${Math.ceil(pt.cd)}s).`);return;}
