@@ -204,13 +204,21 @@ const hl=(...L)=>(t,o)=>{for(const[p,l]of L){const k=LIMB[p]?LIMB[p][2]:1;if(!hl
 // painted layers (art.js, assets/art/rigs/L.<layer>.<part>[.<style>]): a light greyscale picture that replaces one layer's
 // drawing on one human part, fitted to the bounds that drawing covers and tinted (multiply) with the look's colour for the
 // layer, so every hair, shirt, skin and armour colour and any mix of them still comes from one picture per shape
-const LSTY={face:o=>o.blink?'blink':o.face||'',hair:o=>o.hairS||'short',hat:o=>o.hatS,cape:(o,p)=>p==='neck'&&o.cape?'short':''};
-const LCOL={body:o=>o.skin,hair:o=>o.hair,hat:o=>o.hatS==='straw'?null:o.hat,shirt:o=>o.tunic,pants:o=>o.pants,boots:o=>o.boots,
-  cape:(o,p)=>p==='back'?o.cape&&sh(o.cape,.8):o.scarf,armor:(o,p)=>p==='head'?o.helm:p==='torso'||p[0]==='a'?o.mail:o.greaves};
-function hlArt(t,p,l,o,k){const st=LSTY[l]?LSTY[l](o,p):'',art=RIGART['L.'+l+'.'+p+(st?'.'+st:'')];if(!art)return false;
-  const c=t.canvas,W=c.width,H=c.height,u=mk(W,H).getContext('2d',RF);u.setTransform(t.getTransform());u.lineJoin='round';u.lineCap='round';HL[l](u,p,o,k);
+// the face is painted per expression in colour (L.face.head, .blink, .happy, .hurt, .ko, .surprised, .sad, .angry), only for the
+// plain face (a foe's coloured eyes or missing blush stay drawn); the pack is the player's (its draw callback carries art:'pack')
+const LSTY={face:o=>o.eyeCol||o.noBlush||o.eyeY?'-':o.blink?'blink':o.face||'',hair:o=>o.hairS||'short',hat:o=>o.hatS,cape:(o,p)=>p==='neck'&&o.cape?'short':'',
+  acc:(o,p)=>(p==='back'?o.back:p==='head'?o.extra:o.front)?.art||'-'};
+const LCOL={body:o=>o.skin,hair:o=>o.hair,hat:o=>o.hatS==='straw'?null:o.hat,shirt:o=>o.tunic,pants:(o,p)=>p==='torso'?o.belt||'#5a3a22':o.pants,boots:o=>o.boots,
+  cape:(o,p)=>p==='back'?o.cape&&sh(o.cape,.8):o.scarf,armor:(o,p)=>p==='head'?o.helm:p==='torso'||p[0]==='a'?o.mail:o.greaves,acc:()=>'#b9874f'};
+// the box a painting fills: the drawn layer's bounds, or another drawing's (every face fills the head, so expressions don't shift)
+const LBOX={face:(u,p,o,k)=>HL.body(u,'head',o,k)};
+// a painting that shouldn't fill its whole box: [scale, x anchor, y anchor] (0 left/top, 1 right/bottom)
+const LFIT={'L.hat.head.cap':[.9,.35,1]};
+function hlArt(t,p,l,o,k){const st=LSTY[l]?LSTY[l](o,p):'';if(st==='-')return false;const n='L.'+l+'.'+p+(st?'.'+st:''),art=RIGART[n];if(!art)return false;
+  const c=t.canvas,W=c.width,H=c.height,u=mk(W,H).getContext('2d',RF);u.setTransform(t.getTransform());u.lineJoin='round';u.lineCap='round';(LBOX[l]||HL[l])(u,p,o,k);
   const a=u.getImageData(0,0,W,H).data;let x0=W,y0=H,x1=-1,y1=-1;for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(a[(y*W+x)*4+3]>8){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
   if(x1<0)return true;let col=LCOL[l]&&LCOL[l](o,p);if(col&&k<1)col=sh(col,k);
+  const f=LFIT[n];if(f){const w0=x1-x0+1,h0=y1-y0+1;x0+=Math.round(w0*(1-f[0])*f[1]);y0+=Math.round(h0*(1-f[0])*f[2]);x1=x0+Math.round(w0*f[0])-1;y1=y0+Math.round(h0*f[0])-1;}
   const w=x1-x0+1,h=y1-y0+1,pc=mk(w,h),q=pc.getContext('2d');q.drawImage(art,0,0,w,h);
   if(col){q.globalCompositeOperation='multiply';q.fillStyle=col;q.fillRect(0,0,w,h);q.globalCompositeOperation='destination-in';q.drawImage(art,0,0,w,h);}
   t.save();t.setTransform(1,0,0,1,0,0);t.drawImage(pc,x0,y0);t.restore();return true;}

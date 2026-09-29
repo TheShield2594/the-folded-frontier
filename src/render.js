@@ -223,7 +223,9 @@ export function lookColors(l){l=cleanLook(l);const a=LOOK.acc[l.acc],c=LOOK.cape
   return{skin:LOOK.skin[l.skin],hair:LOOK.hair[l.hair],hairS:LOOK.hairS[l.hairS],tunic:LOOK.tunic[l.tunic],hatS:LOOK.hatS[l.hatS],hat:a,scarf:c==='none'?null:a,cape:c==='cape'?a:null};}
 // playerLook(): what the player wears now (the look picked at world creation plus worn armor), the skin of the player's rig
 export function playerLook(look=player.look,a=player.armor||[]){const eq={};if(a[0])eq.helm=ITEMS[a[0].id].color;if(a[1])eq.mail=ITEMS[a[1].id].color;if(a[2])eq.greaves=ITEMS[a[2].id].color;
-  return Object.assign({pants:'#3b3552',boots:'#6b4430',back:tt=>{tt.beginPath();tt.moveTo(38,74);tt.lineTo(58,104);ink(tt,3.5,'#6b4430');rr(tt,24,92,16,16,4);fi(tt,'#b9874f',2);}},lookColors(look),eq);}
+  return Object.assign({pants:'#3b3552',boots:'#6b4430',back:PACK},lookColors(look),eq);}
+// the player's satchel on its strap (painted as L.acc.back.pack, tinted with its leather colour)
+const PACK=Object.assign(tt=>{tt.beginPath();tt.moveTo(38,74);tt.lineTo(58,104);ink(tt,3.5,'#6b4430');rr(tt,24,92,16,16,4);fi(tt,'#b9874f',2);},{art:'pack'});
 // Still pictures of humans come from the human rig (rigPic), so a portrait is the same paper cut-out as the one in the world.
 // lookPic(look): the player standing in a given look, for the New World dialog's preview (a new world starts with no armor)
 export function lookPic(look){return rigPic('human',playerLook(look,[]),'idle',0);}
