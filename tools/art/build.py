@@ -260,7 +260,7 @@ def icon_cells(img, rows, cols, cells, native=False, out='assets/art/atlas', ope
         t.resize((64, 64), Image.LANCZOS).save(os.path.join(out, cell + '.png'), optimize=True)
 
 def rig_parts(img, rows, cols, parts, out='assets/art/rigs', open_cells=(), thr=16):
-    """Rig part sheet to assets/art/rigs/<name>.png. parts = [(name, (w, h))...] in reading order, w x h the part's drawn
+    """Rig part sheet to assets/art/rigs/<name>.webp. parts = [(name, (w, h))...] in reading order, w x h the part's drawn
     size from artList().rigs (design px, 60 per tile). Each sticker gets the house ink line and no cream edge (the rig
     adds its own) and is saved at 2x that size; the game stretches it over the drawn part's bounds, so the render
     should already have about the drawn part's proportions (a big mismatch is reported)."""
@@ -269,7 +269,7 @@ def rig_parts(img, rows, cols, parts, out='assets/art/rigs', open_cells=(), thr=
         im, _ = restyle(im, im.width / (w / 60), border=False); a = np.asarray(im)[..., 3] > 8
         ys, xs = np.where(a); im = im.crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
         if abs(math.log(im.width / im.height / (w / h))) > .12: print(f'{name}: render is {im.width}x{im.height}, the part is {w}x{h}; it will be stretched')
-        im.resize((w * 2, h * 2), Image.LANCZOS).save(os.path.join(out, name + '.png'), optimize=True)
+        im.resize((w * 2, h * 2), Image.LANCZOS).save(os.path.join(out, name + '.webp'), 'WEBP', quality=90, method=6)  # a quarter of the PNG's size
 
 if __name__ == '__main__':
     d = sys.argv[1]; src = {k: Image.open(os.path.join(d, f)) for k, f in RENDERS.items()}
