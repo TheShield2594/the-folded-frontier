@@ -395,3 +395,12 @@ body.touch{-webkit-touch-callout:none;touch-action:manipulation;}
 #perf{position:fixed;right:8px;top:190px;z-index:50;max-width:calc(100vw - 16px);background:rgba(20,16,26,.8);color:#f4ecd8;border-radius:8px;padding:6px 8px;font:11px/1.4 ui-monospace,Menlo,Consolas,monospace;pointer-events:none;}
 #perf pre{margin:0;white-space:pre-wrap;font:inherit;}
 #perf button{pointer-events:auto;margin:4px 4px 0 0;font:inherit;padding:2px 6px;border-radius:5px;border:1px solid #f4ecd8;background:#3a2f44;color:#f4ecd8;cursor:pointer;}
+/* trading cards (cards.js): the Binder page, four cards to a row; halo cards shimmer, full arts sit on gold */
+.cardG{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:4px;}
+.tcard{position:relative;display:flex;flex-direction:column;align-items:center;padding:3px 2px 4px;border:2px solid rgba(42,33,48,.2);border-radius:8px;background:#fbf5e8;text-align:center;}
+.tcard img{width:56px;height:56px;} .tcard span{font-size:calc(10.5px*var(--ts));line-height:1.15;} .tcard i{position:absolute;top:2px;right:4px;font-style:normal;font-weight:700;font-size:calc(11px*var(--ts));}
+.tcard.miss{background:transparent;border-style:dashed;} .tcard.miss img{opacity:.45;} .tcard.miss span{color:var(--ink2);}
+.tcard.r1{border-color:#8fb4ee;} .tcard.r3{border-color:#c9a24a;background:linear-gradient(160deg,#fff3c0,#f4d8e4);}
+.tcard.r2{border-color:#f1c04f;background:linear-gradient(120deg,#fff3c0,#ffd6e0,#d6ecff,#e0f7d6,#fff3c0);background-size:300% 300%;animation:halo 4s linear infinite;} .tcard.r2 img{filter:drop-shadow(0 0 3px #ffd66b);}
+@keyframes halo{from{background-position:0% 50%;}to{background-position:300% 50%;}}
+body.rm .tcard.r2{animation:none;}

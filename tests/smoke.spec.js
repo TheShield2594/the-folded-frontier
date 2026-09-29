@@ -582,6 +582,51 @@ test('?perf shows the performance overlay with world and save numbers',async({pa
   expect(r).toContain('Small 420×200');
 });
 
+// Trading cards (#67): cards come from chests and packs, a binder files them, a full page pays its reward, and the
+// collection is saved per world. updateCards() runs by hand, as the frame loop barely moves in software WebGL.
+test('trading cards: chests and packs give them, a binder files them, a full page pays out, and the collection is saved',async({page})=>{
+  await boot(page);
+  await newSmallWorld(page);
+  const s=await page.evaluate(async()=>{
+    const g=await import('/src/game.js'),P=g.player,out={},cardsIn=()=>P.inv.filter(x=>x&&g.ITEMS[x.id].card).reduce((a,x)=>a+x.n,0),rar=id=>g.CARDS.find(c=>c[0]===g.ITEMS[id].card)[2];
+    // buried treasure always holds one; card faces are painted over the card backs at boot
+    out.treasure=g.treasureLoot().some(x=>x&&g.ITEMS[x.id].card);
+    const px=c=>{const[x,y]=g.cellXY(c);return[...g.atlas.getContext('2d').getImageData(x+32,y+20,1,1).data].join();};out.painted=px(g.C.card_king)!==px(g.CARDBACK[2]);
+    // a pack gives three cards, one Rare or better; without a binder they stay in the backpack
+    g.openPack(0);const got=P.inv.filter(x=>x&&g.ITEMS[x.id].card);out.pack=cardsIn();out.best=Math.max(...got.map(x=>rar(x.id)));g.updateCards(1);out.kept=cardsIn();out.hint=g.cards.hint;
+    // with a binder they file themselves in; a full page pays its reward once
+    g.addItem('binder',1);g.updateCards(1);out.filed=Object.values(g.cards.have).reduce((a,b)=>a+b,0);out.left=cardsIn();
+    const packs=g.countItem('cardpack'),coins=P.coins;for(const c of g.CARDS.filter(c=>c[4]==='field'))g.addItem('card_'+c[0],1);g.updateCards(1);g.updateCards(1);
+    out.page=g.cards.pg.field;out.reward=[g.countItem('cardpack')-packs,P.coins-coins];out.html=g.binderHTML().includes('Field Guide · 8/8');
+    out.tab=!!document.querySelector('#tabs [data-tab="binder"]');
+    // saved per world; unknown cards are dropped on load, and older saves start with an empty binder
+    g.save();const sv=JSON.parse(localStorage.getItem('folded-frontier-save-v1'));out.saved=Object.keys(sv.cards.have).length;
+    sv.cards.have.bogus=2;const k0=Object.keys(sv.cards.have)[0];g.loadWorld(JSON.parse(JSON.stringify(sv)));out.loaded=Object.keys(g.cards.have).length;out.bogus='bogus' in g.cards.have;out.pgKept=g.cards.pg.field;
+    // a count that isn't a whole number and a page this build doesn't know are dropped too
+    const bad=JSON.parse(JSON.stringify(sv));bad.cards.have[k0]='1';bad.cards.pg.nope=1;g.loadWorld(bad);out.strCount=k0 in g.cards.have;out.badPage='nope' in g.cards.pg;
+    delete sv.cards;g.loadWorld(sv);out.old=Object.keys(g.cards.have).length;return out;
+  });
+  expect(s.treasure).toBe(true);
+  expect(s.painted).toBe(true);
+  expect(s.pack).toBe(3);
+  expect(s.best).toBeGreaterThanOrEqual(1);
+  expect(s.kept).toBe(3);
+  expect(s.hint).toBe(1);
+  expect(s.filed).toBe(3);
+  expect(s.left).toBe(0);
+  expect(s.page).toBe(1);
+  expect(s.reward).toEqual([2,300]);
+  expect(s.html).toBe(true);
+  expect(s.tab).toBe(true);
+  expect(s.saved).toBeGreaterThanOrEqual(8);
+  expect(s.loaded).toBe(s.saved);
+  expect(s.bogus).toBe(false);
+  expect(s.pgKept).toBe(1);
+  expect(s.strCount).toBe(false);
+  expect(s.badPage).toBe(false);
+  expect(s.old).toBe(0);
+});
+
 // The dev server globs the art from tests/fixtures/art/ (FF_ART_DIR in playwright.config.js), so this covers
 // finding the files, reading their paths and the loadArt() call at boot. A dev server already running on the
 // test port without FF_ART_DIR loads no pictures here.
