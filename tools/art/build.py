@@ -259,6 +259,14 @@ def row_stickers(img, rows, per_row, thr=16, join=12):
             items.append(Image.fromarray(np.dstack([q.astype(np.uint8), (mask * 255).astype(np.uint8)])[sl], 'RGBA'))
     return items
 
+def silhouette(art, drawn, grow=2):
+    """Clip a painted rig part to the drawn part's silhouette (drawn: artExport('rigs', ...) at 1x), for parts whose shape
+    matters more than the painting's own (a bat's thin wing strip over its face), and ink the new edge. Returns the part at 2x."""
+    w, h = drawn.size; art = art.convert('RGBA').resize((w * 2, h * 2), Image.LANCZOS)
+    m = ndimage.binary_dilation(np.asarray(drawn.convert('RGBA').resize((w * 2, h * 2), Image.LANCZOS))[..., 3] > 60, iterations=grow)
+    a = np.asarray(art).copy(); a[..., 3] = np.minimum(a[..., 3], m * 255)
+    im, pad = restyle(Image.fromarray(a), w * 2 / (w / 60), border=False); return im.crop((pad, pad, pad + w * 2, pad + h * 2))
+
 def icon_cells(img, rows, cols, cells, native=False, out='assets/art/atlas', open_cells=(), thr=16, floor=()):
     """Icon sheet (rows x cols, reading order) to one 64x64 assets/art/atlas/<cell>.png per C name, for docs/ART.md's
     pipeline: each sticker (see stickers()) restyled to the house outline unless native (keep the render's own outline,
