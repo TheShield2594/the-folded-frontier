@@ -498,6 +498,21 @@ defRig('bookmoth',{w:300,h:220,oy:110,parts:[{n:'root',at:[cx,cy]},
     wind:osc(.16,{wingA:{sy:[.08,0,1.05]},wingB:{sy:[.08,1,1.05]},hindA:{sy:[.05]},hindB:{sy:[.05,1]},root:{r:[.02,0,-.22]}},.12),
     dive:still({wingA:{sy:.25,r:.4},wingB:{sy:.25,r:.35},hindA:{sy:.5,r:.2},hindB:{sy:.5,r:.2},root:{r:.28},head:{r:.1}},.1),
     dust:osc(.22,{wingA:{sy:[.6,0,.45]},wingB:{sy:[.6,.6,.45]},hindA:{sy:[.3,0,.8]},hindB:{sy:[.3,.6,.8]},root:{y:[3]}},.1)}});}
+// The Starfold (the Origami Observatory's boss): a paper star folded from two layers of points, each point a light and a shaded
+// face meeting at its crease. Gameplay turns the layers against each other; the whole star folds shut edge-on to cross the sky
+{const cx=130,cy=130,ray=(R,r,rot,c1,c2)=>t=>{for(let k=0;k<5;k++){const a=rot-Math.PI/2+k*Math.PI*2/5,b1=a-Math.PI/5,b2=a+Math.PI/5,tip=[cx+Math.cos(a)*R,cy+Math.sin(a)*R];
+    poly(t,[cx,cy,cx+Math.cos(b1)*r,cy+Math.sin(b1)*r,...tip]);fi(t,c1,3.5);poly(t,[cx,cy,...tip,cx+Math.cos(b2)*r,cy+Math.sin(b2)*r]);fi(t,c2,3.5);}};
+defRig('starfold',{w:260,h:260,oy:130,parts:[{n:'root',at:[cx,cy]},
+  {n:'back',at:[cx,cy],up:'root',wob:0,paint:ray(98,52,Math.PI/5,'#3a4a8a','#232a58')},
+  {n:'rays',at:[cx,cy],up:'root',wob:0,paint:ray(122,54,0,'#fbe9a0','#e0b84a')},
+  {n:'face',at:[cx,cy],up:'root',wob:.004,paint:t=>{circ(t,cx,cy,48);fi(t,'#fbf5e6',4);t.beginPath();t.moveTo(cx-44,cy+18);t.lineTo(cx+44,cy-18);ink(t,1.4,'rgba(42,33,48,.22)');}},
+  {n:'eyes',at:[cx,cy-8],up:'face',v:['','blink'],paint:(t,s,v)=>{for(const ex of[cx-17,cx+17]){if(v){t.beginPath();t.moveTo(ex-9,cy-8);t.lineTo(ex+9,cy-8);ink(t,4);continue;}
+    t.beginPath();t.ellipse(ex,cy-8,8,11,0,0,6.28);t.fillStyle=INK;t.fill();circ(t,ex+3,cy-12,3);t.fillStyle='#fff3c0';t.fill();}}},
+  {n:'mouth',at:[cx,cy+20],up:'face',v:['','open'],paint:(t,s,v)=>{if(v){t.beginPath();t.ellipse(cx,cy+20,12,9,0,0,6.28);fi(t,'#2a3160',3);return;}t.beginPath();t.arc(cx,cy+10,13,.5,Math.PI-.5);ink(t,3.5);}}],
+  clips:{idle:blinkAt(osc(2,{face:{y:[3]},rays:{sx:[.03],sy:[.03,1.57]}},.15),'eyes',1.4),
+    wind:still({face:{sx:1.08,sy:.92},rays:{sx:1.1,sy:1.1},back:{sx:1.12,sy:1.12}},.1),
+    fold:osc(.5,{root:{sx:[.45,1.57,.55]}},.08),
+    shoot:swk(osc(.3,{face:{sx:[.04,0,1.04],sy:[.04,0,1.04]}},.08),'mouth',[[0,'open']])}});}
 // which rig and skin an enemy sheet name uses (entities.js spawnEnemy); arms: the arm pose a human foe holds
 export const HUMANFOE={
   zombie:{skin:'#a8c79a',hair:'#3e5a3a',tunic:'#6b5b8a',pants:'#4a4058',boots:'#3a3040',eyeCol:'#c0392b',noBlush:1,extra:t=>{t.fillStyle='#2a2130';t.fillRect(40,95,6,10);t.fillRect(52,85,4,8);},clip:'shamble'},
@@ -509,14 +524,19 @@ export const HUMANFOE={
   warden:{skin:'#e9dcc0',tunic:'#5a3c78',pants:'#3a2a4a',boots:'#2a1e2a',belt:'#c9a24a',eyeCol:'#7a3fb0',noBlush:1,eyeY:51,
     extra:t=>{t.beginPath();t.moveTo(24,60);t.quadraticCurveTo(20,22,50,20);t.quadraticCurveTo(80,22,76,56);t.lineTo(70,46);t.quadraticCurveTo(50,34,32,48);t.closePath();fi(t,'#3a2a4a');rr(t,40,72,20,40,4);t.fillStyle='rgba(201,162,74,.5)';t.fillRect(48,74,3,36);},
     front:t=>{t.save();t.translate(68,90);t.rotate(-.2);poly(t,[-14,-10,0,-6,0,10,-14,6]);fi(t,'#f4ecd8',2);poly(t,[0,-6,14,-10,14,6,0,10]);fi(t,'#fbf8f0',2);t.fillStyle='rgba(42,33,48,.45)';for(const y of[-4,0,4]){t.fillRect(-11,y,8,1.2);t.fillRect(3,y-1,8,1.2);}t.restore();},clip:'march',arm:-.7},
+  // the Origami Observatory's keeper: a star-chart robe, a tall folded hat with stars on it and a brass astrolabe
+  gazer:{skin:'#dfe6f7',tunic:'#2a3160',pants:'#1e2448',boots:'#141833',belt:'#c9a24a',eyeCol:'#f7d046',noBlush:1,eyeY:51,
+    extra:t=>{poly(t,[22,42,78,42,60,2]);fi(t,'#2a3160',3);t.beginPath();t.moveTo(41,42);t.lineTo(60,2);ink(t,1.4,'rgba(143,160,224,.6)');t.beginPath();t.ellipse(50,42,32,6,0,0,6.28);fi(t,'#3a4a8a',2.5);
+      for(const[x,y,r]of[[50,26,4],[62,16,3],[40,36,2.6]]){const pts=[];for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,d=i%2?r*.45:r;pts.push(x+Math.cos(a)*d,y+Math.sin(a)*d);}poly(t,pts);t.fillStyle='#f7d046';t.fill();}},
+    front:t=>{circ(t,70,88,12);fi(t,'#c9a24a',2.5);circ(t,70,88,7);ink(t,1.6,'#6b5234');t.beginPath();t.moveTo(60,92);t.lineTo(80,84);ink(t,2.4);circ(t,70,88,2.5);t.fillStyle=INK;t.fill();},clip:'march',arm:-.7},
   ashimp:{skin:'#9a3b2a',tunic:'#3a2a24',pants:'#2a1e1a',boots:'#1e1614',eyeCol:'#ffd66b',noBlush:1,
     extra:t=>{poly(t,[34,34,28,14,40,28]);fi(t,'#3a2a24',2);poly(t,[62,30,72,10,68,32]);fi(t,'#3a2a24',2);},front:t=>{circ(t,70,84,7);t.fillStyle='rgba(255,138,61,.6)';t.fill();},clip:'march',arm:-.8}};
 export const FOERIG={slime:['slime',{col:'#6cc57a'}],bslime:['slime',{col:'#5aa7e0'}],blot:['slime',{col:'#4a3570'}],king:['king',{col:'#5aa7e0'}],
   bat:['bat',{c1:'#6b4c8f',c2:'#5a3f7a',eye:'#f1c04f',fang:1}],cinderbat:['bat',{c1:'#3a2a24',c2:'#2a1e1a',eye:'#ff8a3d'}],eye:['eye',{}],
-  zombie:['human',HUMANFOE.zombie],knight:['human',HUMANFOE.knight],sentinel:['human',HUMANFOE.sentinel],ashimp:['human',HUMANFOE.ashimp],warden:['human',HUMANFOE.warden],
+  zombie:['human',HUMANFOE.zombie],knight:['human',HUMANFOE.knight],sentinel:['human',HUMANFOE.sentinel],ashimp:['human',HUMANFOE.ashimp],warden:['human',HUMANFOE.warden],gazer:['human',HUMANFOE.gazer],
   mothling:['bat',{c1:'#e8dcc4',c2:'#b8a0d0',eye:'#2a2130'}],
   // every other foe and boss wears its own rig's colors
   ...Object.fromEntries(['crumple','toadstool','dunefin','scarab','clockbug','sunkite','snowroll','snowlet','frostpuff','flurry','inkwisp','quillfish','inksquid','foldfox','cracker','ashspider','wraith','skyray',
-    'crane','lev','levseg','levtail','folio','unfolded','mainspring','bookmoth'].map(k=>[k,[k,{}]]))};
+    'crane','lev','levseg','levtail','folio','unfolded','mainspring','bookmoth','starfold'].map(k=>[k,[k,{}]]))};
 // the enemies' still pictures (bestiary sketches) come from their rigs; the T textures stay for anything that still wants a sheet
 export function buildRigSheets(SHEETS){for(const k in FOERIG){if(SHEETS[k])continue;const[r,s]=FOERIG[k],d=RIGS[r];SHEETS[k]=rigPic(r,s,r==='human'?'idle':['fly','idle','swim'].find(c=>d.clips[c]),0,k);SHEETS[k+'T']=canvasTex(SHEETS[k]);}}

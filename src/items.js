@@ -2,7 +2,7 @@
 import {C,METAL,SETCOL} from './game.js';
 
 // ================= tiles =================
-export const T={STACKS:81,SEAM:77,RIP:78,SEWN:79,CREASE:80,SKYSTONE:68,CLOUD:69,SKYORE:70,DEEP:71,MACHINE:72,BONE:73,GATE:74,CRANK:75,TOWER:76,FAKE:64,DRIFT:65,THIN:66,SEAL:67,MURAL:63,RARE:62,FOIL:61,PEEL:55,SKETCH:56,SIGN:57,PEDESTAL:58,RUBBLE:59,ALTAR:60,CROP:52,ALCHEMY:53,PAINT5:54,PAINT1:39,PAINT2:40,PAINT3:41,PAINT4:42,BANR:43,BANB:44,BANG:45,LANTERNP:46,SHELF:47,CANDLE:48,POT:49,CLOCK:50,ARMCHAIR:51,SNOW:28,ICE:29,FROST:30,INKSTONE:31,INKORE:32,ASH:33,EMBERORE:34,ROPE:35,INK:36,LAVA:37,BLOOM:38,AIR:0,GRASS:1,DIRT:2,STONE:3,PLANK:4,TRUNK:5,COPPER:6,IRON:7,GOLD:8,SAND:9,TORCH:10,DOOR:11,TABLE:12,CHAIR:13,CHEST:14,BENCH:15,BRICK:16,GLASS:17,PLATFORM:18,FURNACE:19,ANVIL:20,BED:21,HEART:22,TUFT:23,FLOWER:24,MUSH:25,CORE:26,FLOWER2:27};
+export const T={DOME:82,SCOPE:83,STARDOOR:84,STACKS:81,SEAM:77,RIP:78,SEWN:79,CREASE:80,SKYSTONE:68,CLOUD:69,SKYORE:70,DEEP:71,MACHINE:72,BONE:73,GATE:74,CRANK:75,TOWER:76,FAKE:64,DRIFT:65,THIN:66,SEAL:67,MURAL:63,RARE:62,FOIL:61,PEEL:55,SKETCH:56,SIGN:57,PEDESTAL:58,RUBBLE:59,ALTAR:60,CROP:52,ALCHEMY:53,PAINT5:54,PAINT1:39,PAINT2:40,PAINT3:41,PAINT4:42,BANR:43,BANB:44,BANG:45,LANTERNP:46,SHELF:47,CANDLE:48,POT:49,CLOCK:50,ARMCHAIR:51,SNOW:28,ICE:29,FROST:30,INKSTONE:31,INKORE:32,ASH:33,EMBERORE:34,ROPE:35,INK:36,LAVA:37,BLOOM:38,AIR:0,GRASS:1,DIRT:2,STONE:3,PLANK:4,TRUNK:5,COPPER:6,IRON:7,GOLD:8,SAND:9,TORCH:10,DOOR:11,TABLE:12,CHAIR:13,CHEST:14,BENCH:15,BRICK:16,GLASS:17,PLATFORM:18,FURNACE:19,ANVIL:20,BED:21,HEART:22,TUFT:23,FLOWER:24,MUSH:25,CORE:26,FLOWER2:27};
 export const TP=[];export const SOLID=new Uint8Array(128),OPAQUE=new Uint8Array(128),LB=new Uint8Array(128),LIGHT=new Uint8Array(128);
 function def(id,o){TP[id]=Object.assign({hard:.5,pick:0,drop:null,light:0,solid:false,col:'#888'},o);SOLID[id]=o.solid?1:0;OPAQUE[id]=o.solid&&id!==T.DOOR?1:0;LB[id]=OPAQUE[id]&&id!==T.GLASS?1:0;LIGHT[id]=o.light||0;}
 def(T.AIR,{hard:0,col:'#000'});
@@ -89,6 +89,10 @@ def(T.CREASE,{hard:99,pick:99,cell:C.crease,col:'#b8a07a',light:2});
 def(T.CRANK,{hard:99,pick:99,cell:C.crank[0],col:'#c9a24a'});
 // the ink-sealed shelves in front of the Lost Stacks (dungeons.js): the Hollow Archive's key opens them
 def(T.STACKS,{solid:1,hard:99,pick:99,cell:C.stacks,col:'#5a3c78',light:3});
+// the Origami Observatory (dungeons.js): its star-chart shell, the great telescope, and the star-sealed doors of the Star Vaults that its lens opens
+def(T.DOME,{solid:1,hard:99,pick:99,cell:C.dome,col:'#2a3160'});
+def(T.SCOPE,{hard:99,pick:99,cell:C.scope,col:'#c9a24a',light:4});
+def(T.STARDOOR,{solid:1,hard:99,pick:99,cell:C.stardoor,col:'#3a4a8a',light:5});
 export const WALLCELL=[0,C.wDirt,C.wWood,C.wStone,C.wRed,C.wBlue,C.wGreen,C.wYellow],WALLCOL=['#000','#4e3824','#5e4128','#55576a','#6a2e28','#2e4262','#3a583a','#806832'],WALLDROP=[null,null,'woodwall','stonewall','wallred','wallblue','wallgreen','wallyellow'];
 
 // ================= items =================
@@ -306,6 +310,7 @@ item('skybar',{name:'Skyglass Bar',cell:C.barSky,value:45});
 item('deepslate',{name:'Pressed Slate',cell:C.deep,place:T.DEEP,desc:'Pages pressed flat for ages. Needs a Frostsilver Pickaxe or better.'});
 item('cog',{name:'Ancient Cog',cell:C.cog,value:15,desc:'Pried from the old machines of the Pressed Deep.'});
 item('clockwings',{name:'Clockwork Wings',cell:C.clockwings,acc:['fly','djump'],max:1,value:400,desc:'Brass and paper wings from the Folded Clocktower. Hold Jump in mid-air to fly for a moment; they rewind on the ground. Reaches the sky islands.'});
+item('starlens',{name:'Star Lens',cell:C.starlens,max:1,value:520,desc:'The great telescope\'s lens, from the Origami Observatory. While it is in your backpack, right-click a star-sealed door high in the sky to open the Star Vault behind it.'});
 item('archkey',{name:'Archive Key',cell:C.archkey,max:1,value:420,desc:'From the heart of the Hollow Archive. While it is in your backpack, right-click an ink-sealed shelf deep underground to open the Lost Stacks behind it.'});
 item('ripper',{name:'Seam Ripper',cell:C.ripper,max:1,value:90,desc:'A paper trick: while it is in your backpack, right-click a stitched seam in the rock to tear it open.'});
 item('needle',{name:'Golden Needle',cell:C.needle,max:1,value:150,desc:'A paper trick: while it is in your backpack, right-click a torn hole in the page to sew it shut.'});

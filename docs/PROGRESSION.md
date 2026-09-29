@@ -38,6 +38,7 @@ That puts it close to Frostsilver. Existing saves keep the tiles they were gener
 | Great Crane | Crane Charm (paper, Frostsilver bars) | 1,500 | 12 | 30 | Frostsilver (blade, armor, warhammer; the pickaxe needs its plumes) |
 | Inkwell Leviathan | Bottomless Inkwell (Inkstone bars, ink sacs) | 2,300 | 14 | 34 | Frostsilver, Inkstone armor |
 | Charred Folio | Burnt Bookmark (Emberite bars, ash) | 3,300 | 18 | 40 | Inkstone (the cutlass and warhammer use the Leviathan's ink hearts) |
+| The Starfold (the Origami Observatory) | Its front door opens once the Folio is defeated | 4,200 | 21 | 42 | Emberite |
 | The Unfolded | 5 candles on the shrine pedestals during an Ink Moon | 5,400 | 22 | 44 | Emberite |
 
 Each summon needs the previous tier's bars, and each tier's pickaxe needs the previous boss's drop, so the order is enforced by crafting. The exception is The Unfolded: `checkRitual()` does not check that the Folio is dead, so a player who finds the shrine and lights the candles on an Ink Moon can fight it early. That is hard to do by accident and nothing breaks, so it is left alone.
@@ -99,6 +100,20 @@ With the Ink Cutlass (41) the Bookmoth takes about 91 hits, close to the Leviath
 
 It is only placed when a world is generated, where it takes the spot that cuts the fewest generated structures; it found a spot on every one of 16 seeds tried (small, medium and large). Worlds saved before it existed don't get it or the Lost Stacks.
 
+## The Origami Observatory
+
+The third hand-built dungeon (`dungeons.js`, issue #81), floating in empty sky beside one of the sky islands, so the Clockwork Wings (or the Skyglass Hook) are the way up. Its front door opens once the Charred Folio is defeated, and its puzzle needs the Bone Folder (fossils from the Pressed Deep and a cinder core from the Folio):
+
+| Floor | What's there |
+|---|---|
+| Hall | A crease on the floor folds you into a sealed vault with the crank (Bone Folder); the vault's own crease folds you back out, tool or not. The crank opens a hatch over the rope. A peel wall stands in front of the rope |
+| Arena | The Stargazer (mini-boss, always an elite: 1,040 life, defense 19, contact 42; throws fans of stars or calls one down when you keep your distance). A fake wall hides a chest and a Paper Heart |
+| Dome | The Starfold (boss, 4,200 life, defense 21, contact 42): dives and fans of stars; after 50% it folds the dome along its middle and steps out on the other side with a ring of stars; at 25% stars fall from the dome |
+
+With the Emberite Greatsword (54) the Starfold takes about 97 hits, between the Folio (104 with the Ink Cutlass) and The Unfolded (126). In Emberite armor (24) its contact hit does 30. Its reward is the Star Lens, which opens the Star Vaults: sealed rooms floating in the high sky (2 in a small world, about W/180), each with a chest of treasure. Nothing on the main boss path needs the Observatory.
+
+It needs only empty sky near an island, so it is placed at generation and, for older saves, the first time they load. It found a spot on all nine seeds tried (six small, two medium, one large), each with its Star Vaults.
+
 ## Still needs a human playtest
 
 - Total playtime, fresh start to The Unfolded.
@@ -106,3 +121,4 @@ It is only placed when a world is generated, where it takes the spot that cuts t
 - Whether finding the Ink Lake inkstone, the Snowfield depths and the Underworld is obvious without the map.
 - Whether the Clocktower's puzzle reads without hints, and whether the Mainspring's gear rain in its small chamber is fair.
 - Whether the Hollow Archive's seam and torn curtain read as "come back with a tool", and whether the Bookmoth's dust storm plus mothlings is too busy.
+- Whether the Origami Observatory is easy to reach from its island with the Clockwork Wings, whether the crease on the hall floor reads as the way to the crank, and whether the Starfold's fold is readable before it lands.
