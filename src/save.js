@@ -57,6 +57,8 @@ function migrateSave(d){if(!d||typeof d!=='object'||typeof d.tiles!=='string'||t
   // The Origami Observatory and its Star Vaults (issue #81) need no version step either: they only take empty sky, so any save
   // with sky islands gets them on its next load (planDungeons() runs again after planSky()); a world with no empty sky that
   // fits gets null for both.
+  // The Great Scrapworks and its Supply Crates (issue #81) are placed on load like the Clocktower, only on untouched ground; the
+  // Sunken Inkwell Temple and its Ink Wells, dug into the rock like the Archive, are not: older saves get null for them.
   if(d.v<4){const b=d.bio;if(b&&b.dun&&typeof b.dun!=='object')delete b.dun;if(b&&b.sky&&(typeof b.sky!=='object'||!Array.isArray(b.sky.is)))delete b.sky;d.v=4;}
   return d;}
 // Every load cleans the parts that reference game data, so a save that names an item, NPC, partner or badge

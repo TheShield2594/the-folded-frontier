@@ -35,11 +35,13 @@ That puts it close to Frostsilver. Existing saves keep the tiles they were gener
 | Boss | Summoned with | Life | Defense | Contact damage | Gear you can have by then |
 |---|---|---|---|---|---|
 | King Slime | Gel Crown (gel, gold bars) | 750 | 6 | 26 | Gold |
+| The Pulper (the Great Scrapworks) | Its front door opens once the King Slime is defeated | 1,100 | 8 | 26 | Gold |
 | Great Crane | Crane Charm (paper, Frostsilver bars) | 1,500 | 12 | 30 | Frostsilver (blade, armor, warhammer; the pickaxe needs its plumes) |
 | Inkwell Leviathan | Bottomless Inkwell (Inkstone bars, ink sacs) | 2,300 | 14 | 34 | Frostsilver, Inkstone armor |
 | Charred Folio | Burnt Bookmark (Emberite bars, ash) | 3,300 | 18 | 40 | Inkstone (the cutlass and warhammer use the Leviathan's ink hearts) |
 | The Starfold (the Origami Observatory) | Its front door opens once the Folio is defeated | 4,200 | 21 | 42 | Emberite |
 | The Unfolded | 5 candles on the shrine pedestals during an Ink Moon | 5,400 | 22 | 44 | Emberite |
+| The Grand Nib (the Sunken Inkwell Temple) | Its front door opens once The Unfolded is defeated | 6,200 | 24 | 48 | Foilite |
 
 Each summon needs the previous tier's bars, and each tier's pickaxe needs the previous boss's drop, so the order is enforced by crafting. The exception is The Unfolded: `checkRitual()` does not check that the Folio is dead, so a player who finds the shrine and lights the candles on an Ink Moon can fight it early. That is hard to do by accident and nothing breaks, so it is left alone.
 
@@ -114,6 +116,33 @@ With the Emberite Greatsword (54) the Starfold takes about 97 hits, between the 
 
 It needs only empty sky near an island, so it is placed at generation and, for older saves, the first time they load. It found a spot on all nine seeds tried (six small, two medium, one large), each with its Star Vaults.
 
+## The Great Scrapworks
+
+The first hand-built dungeon in play order (`dungeons.js`, issue #81), a paper mill on the surface. Its front door opens once the King Slime is defeated, and its puzzle only uses the paper tricks every player starts with:
+
+| Floor | What's there |
+|---|---|
+| Mill floor | A peel wall at the door, then a crawlspace to flatten through to the crank; the crank opens a hatch over the rope up |
+| Sorting floor | A sketched bridge over a pit of shredders (they bite for 16 and throw you up). A fake wall hides a chest and a Paper Heart |
+| Arena | The Scrap Foreman (mini-boss, always an elite: 390 life, defense 6, contact 25; throws gears when you keep your distance) |
+| Pulping room | The Pulper (boss, 1,100 life, defense 8, contact 26): walks, charges wall to wall, shreds fans of pages, spits crumples; at 25% it hops and slams while scraps rain from the ceiling |
+
+It sits between the King Slime (750) and the Great Crane (1,500). Its reward is the Crowbar, which opens the Supply Crates: nailed-shut storerooms in the shallow caves (about W/140, at least 3), each with early supplies. At generation it may cut through generated structures like the dug-in dungeons, so it fits every small world tried (21 seeds); older saves get it on load only where there's untouched ground.
+
+## The Sunken Inkwell Temple
+
+The post-game dungeon (`dungeons.js`, issue #81), dug in beside the Ink Lake under a small gatehouse. Its front door opens once The Unfolded is defeated, and it needs every paper trick:
+
+| Floor | What's there |
+|---|---|
+| Ink shaft | Swim down a flooded shaft from the gatehouse |
+| Hall | A stitched seam (Seam Ripper) in front of a crease that folds into the crank's sealed vault (Bone Folder; its own crease folds you back out). The crank opens a gate in the floor |
+| Stacks | A torn curtain (Golden Needle), then a peel wall and a rope down |
+| Arena | The Drowned Scribe (mini-boss, always an elite: 1,456 life, defense 24, contact 48; flings fans of ink). A fake wall hides a chest and a Paper Heart |
+| Nib chamber | The Grand Nib (boss, 6,200 life, defense 24, contact 48): stabs down, writes a line of ink across the chamber, calls Ink Blots (up to four), rings of ink after 50%, an ink flood from the ceiling at 25% |
+
+With the Foilite Saber (66) it takes about 115 hits, past The Unfolded, as the post-game's hardest fight. Its reward is the Well Nib, which opens the Ink Wells: sealed grottos in and around the Pressed Deep (about W/180, at least 2), each with post-game treasure. It is only placed at generation (near the lake when it fits, anywhere otherwise); it placed on all 21 seeds tried. Worlds saved before it existed don't get it or the Ink Wells.
+
 ## Still needs a human playtest
 
 - Total playtime, fresh start to The Unfolded.
@@ -121,4 +150,6 @@ It needs only empty sky near an island, so it is placed at generation and, for o
 - Whether finding the Ink Lake inkstone, the Snowfield depths and the Underworld is obvious without the map.
 - Whether the Clocktower's puzzle reads without hints, and whether the Mainspring's gear rain in its small chamber is fair.
 - Whether the Hollow Archive's seam and torn curtain read as "come back with a tool", and whether the Bookmoth's dust storm plus mothlings is too busy.
+- Whether the Scrapworks' crawlspace and sketched bridge read for a new player, and whether the Pulper's charge in a small room is fair that early.
+- Whether the Temple's ink shaft reads as the way in, and whether the Grand Nib's ink flood plus blots is too busy.
 - Whether the Origami Observatory is easy to reach from its island with the Clockwork Wings, whether the crease on the hall floor reads as the way to the crank, and whether the Starfold's fold is readable before it lands.

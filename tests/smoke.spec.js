@@ -368,6 +368,106 @@ test('new worlds get the Origami Observatory among the sky islands: a fold to th
   expect(s.oldVaults).toBeGreaterThan(0);
 });
 
+test('new worlds get the Great Scrapworks: a peel wall, a crank, a shredder pit, the Foreman, the Pulper, and a crowbar for the Supply Crates',async({page})=>{
+  await boot(page);
+  await newSmallWorld(page);
+  const s=await page.evaluate(async()=>{
+    const g=await import('/src/game.js'),d=g.BIO.dun.scrap,P=g.player,T=g.T,out={};
+    const tpl=g.DUNGEONS.scrap.rows,xy=(c,r)=>[d.x+c,d.y+d.h-1-r],at=(c,r)=>{const[x,y]=xy(c,r);return g.tiles[y*g.W+x];},
+      put=(c,r)=>{const[x,y]=xy(c,r);P.x=x+.5;P.y=y;P.vx=P.vy=0;P.onGround=true;},tick=()=>{for(let k=0;k<4;k++){put(...tick.at);g.updateDungeons(.3);}},wait=ms=>new Promise(r=>setTimeout(r,ms));
+    const want={'#':T.SCRAP,Z:T.SHRED,K:T.CRANK,L:T.PEEL,k:T.SKETCH,E:T.GATE,G:T.GATE,A:T.GATE,B:T.GATE,r:T.ROPE};let diff=0;
+    tpl.forEach((row,r)=>[...row].forEach((ch,c)=>{if(want[ch]!=null&&at(c,r)!==want[ch])diff++;}));out.diff=diff;out.lay=g.layerAt(...xy(8,31));
+    g.gateAt(...xy(22,32));out.shut=at(22,32)===T.GATE;g.quests.king=true;g.gateAt(...xy(22,32));out.door=at(22,32);
+    // the shredders bite and throw you up
+    put(9,26);P.onGround=false;P.inv_t=0;const hp=P.hp;g.updateDungeons(.01);out.shred=[P.hp<hp,P.vy>0];P.hp=P.max;
+    g.crankAt(...xy(3,33));await wait(900);out.gateG=[1,2,3].map(c=>at(c,24));
+    tick.at=[8,17];tick();const mini=g.enemies.find(e=>e.type==='foreman');out.mini=!!mini&&mini.elite;g.hurtEnemy(mini,1e6,1);for(let k=0;k<30;k++)g.updateEnemies(.05);tick();out.gateA=[10,11,12].map(c=>at(c,10));
+    tick.at=[6,9];tick();out.boss=g.boss&&g.boss.type;g.boss.act=null;g.hurtEnemy(g.boss,1e6,1);for(let k=0;k<120;k++)g.updateEnemies(.05);tick();
+    out.quest=!!g.quests.scrap;out.B=[10,11,12].map(c=>at(c,2));const[rx,ry]=xy(16,9),rw=g.chests.get(ry*g.W+rx);out.bar=!!rw&&rw.some(i=>i&&i.id==='crowbar');
+    // the Supply Crates open only with the crowbar
+    const c=g.BIO.dun.crates,c0=c[0];out.crates=c.length;g.crateAt(c0[0],c0[1]);out.locked=g.tiles[c0[1]*g.W+c0[0]]===T.CRATE;
+    g.addItem('crowbar',1);const n0=g.META.stats.crates||0;g.crateAt(c0[0],c0[1]+1);g.crateAt(c0[0],c0[1]);out.once=(g.META.stats.crates||0)-n0;await wait(600);out.open=[0,1,2].map(k=>g.tiles[(c0[1]+k)*g.W+c0[0]]);
+    g.save();const sv=JSON.parse(localStorage.getItem('folded-frontier-save-v1'));out.st=sv.bio.dun.scrap.st;out.saved=sv.bio.dun.crates[0][2];
+    // a save from before the Scrapworks loads: it gets one only on untouched ground, and crates only with it
+    const old=JSON.parse(JSON.stringify(sv));delete old.bio.dun.scrap;delete old.bio.dun.crates;g.loadWorld(old);const o=g.BIO.dun.scrap;
+    out.oldOk=o===null?g.BIO.dun.crates===null:!!o.w&&Array.isArray(g.BIO.dun.crates);out.oldClock=!!g.BIO.dun.clock;
+    out.T={AIR:T.AIR,ROPE:T.ROPE,PLATFORM:T.PLATFORM};return out;
+  });
+  const{AIR,ROPE,PLATFORM}=s.T;
+  expect(s.diff).toBe(0);
+  expect(s.lay).toBe('scrapworks');
+  expect(s.shut).toBe(true);
+  expect(s.door).toBe(AIR);
+  expect(s.shred).toEqual([true,true]);
+  expect(s.gateG).toEqual([PLATFORM,ROPE,PLATFORM]);
+  expect(s.mini).toBe(true);
+  expect(s.gateA).toEqual([PLATFORM,ROPE,PLATFORM]);
+  expect(s.boss).toBe('pulper');
+  expect(s.quest).toBe(true);
+  expect(s.B).toEqual([AIR,ROPE,AIR]);
+  expect(s.bar).toBe(true);
+  expect(s.crates).toBeGreaterThanOrEqual(2);
+  expect(s.locked).toBe(true);
+  expect(s.open).toEqual([AIR,AIR,AIR]);
+  expect(s.once).toBe(1);
+  expect(s.st).toMatchObject({e:1,g:1,m:1,c:1});
+  expect(s.saved).toBe(1);
+  expect(s.oldOk).toBe(true);
+  expect(s.oldClock).toBe(true);
+});
+
+test('new worlds get the Sunken Inkwell Temple: an ink shaft, every paper trick, the Scribe, the Grand Nib, and a nib for the Ink Wells',async({page})=>{
+  await boot(page);
+  await newSmallWorld(page);
+  const s=await page.evaluate(async()=>{
+    const g=await import('/src/game.js'),d=g.BIO.dun.temple,P=g.player,T=g.T,out={};
+    const tpl=g.DUNGEONS.temple.rows,xy=(c,r)=>[d.x+c,d.y+d.h-1-r],at=(c,r)=>{const[x,y]=xy(c,r);return g.tiles[y*g.W+x];},cell=()=>[Math.floor(P.x),Math.floor(P.y)].join(),
+      put=(c,r)=>{const[x,y]=xy(c,r);P.x=x+.5;P.y=y;P.vx=P.vy=0;P.onGround=true;},tick=()=>{for(let k=0;k<4;k++){put(...tick.at);g.updateDungeons(.3);}},wait=ms=>new Promise(r=>setTimeout(r,ms));
+    const want={'#':T.SEAL,S:T.SEAM,P:T.RIP,Q:T.CREASE,q:T.CREASE,K:T.CRANK,L:T.PEEL,i:T.INK,E:T.GATE,G:T.GATE,A:T.GATE,B:T.GATE,r:T.ROPE};let diff=0;
+    tpl.forEach((row,r)=>[...row].forEach((ch,c)=>{if(want[ch]!=null&&at(c,r)!==want[ch])diff++;}));out.diff=diff;out.lay=g.layerAt(...xy(12,30));
+    g.gateAt(...xy(0,4));out.shut=at(0,4)===T.GATE;g.quests.unfolded=true;g.gateAt(...xy(0,4));out.door=at(0,4);
+    // tear the seam, fold into the crank's vault and back, sew the curtain
+    put(12,13);g.addItem('ripper',1);g.trickAt(T.SEAM,...xy(15,10));await wait(1100);out.seam=[7,10,13].map(r=>at(15,r));
+    const[qx,qy]=xy(19,13),[ix,iy]=xy(1,10);put(19,13);g.addItem('folder',1);g.trickAt(T.CREASE,qx,qy);out.folded=cell()===[ix,iy].join();
+    g.crankAt(...xy(3,10));await wait(900);out.gateG=[19,20,21].map(c=>at(c,14));g.removeItem('folder',1);g.trickAt(T.CREASE,ix,iy);out.back=cell()===[qx,qy].join();
+    put(16,19);g.addItem('needle',1);g.trickAt(T.RIP,...xy(10,17));await wait(1200);out.curtain=[15,16,19].map(r=>at(10,r));
+    tick.at=[8,27];tick();const mini=g.enemies.find(e=>e.type==='scribe');out.mini=!!mini&&mini.elite;g.hurtEnemy(mini,1e6,1);for(let k=0;k<30;k++)g.updateEnemies(.05);tick();out.gateA=[10,11,12].map(c=>at(c,28));
+    tick.at=[6,38];tick();out.boss=g.boss&&g.boss.type;g.boss.act=null;g.hurtEnemy(g.boss,1e6,1);for(let k=0;k<120;k++)g.updateEnemies(.05);tick();
+    out.quest=!!g.quests.temple;out.B=[36,37,38].map(r=>at(22,r));const[rx,ry]=xy(16,38),rw=g.chests.get(ry*g.W+rx);out.nib=!!rw&&rw.some(i=>i&&i.id==='wellnib');out.blots=g.enemies.filter(e=>e.type==='blot'&&!e.dying).length;
+    // the Ink Wells open only with the Well Nib
+    const w=g.BIO.dun.wells,w0=w[0];out.wells=w.length;g.wellAt(w0[0],w0[1]);out.locked=g.tiles[w0[1]*g.W+w0[0]]===T.WELLDOOR;
+    g.addItem('wellnib',1);g.wellAt(w0[0],w0[1]);await wait(600);out.open=[0,1,2].map(k=>g.tiles[(w0[1]+k)*g.W+w0[0]]);
+    g.save();const sv=JSON.parse(localStorage.getItem('folded-frontier-save-v1'));out.st=sv.bio.dun.temple.st;out.saved=sv.bio.dun.wells[0][2];
+    // a save from before the Temple keeps its terrain: it gets neither the Temple nor the Ink Wells
+    const old=JSON.parse(JSON.stringify(sv));delete old.bio.dun.temple;delete old.bio.dun.wells;g.loadWorld(old);out.oldTemple=g.BIO.dun.temple;out.oldWells=g.BIO.dun.wells;
+    out.T={AIR:T.AIR,ROPE:T.ROPE,PLATFORM:T.PLATFORM,SEWN:T.SEWN};return out;
+  });
+  const{AIR,ROPE,PLATFORM,SEWN}=s.T;
+  expect(s.diff).toBe(0);
+  expect(s.lay).toBe('inkwell');
+  expect(s.shut).toBe(true);
+  expect(s.door).toBe(AIR);
+  expect(s.seam).toEqual([AIR,AIR,AIR]);
+  expect(s.folded).toBe(true);
+  expect(s.gateG).toEqual([PLATFORM,ROPE,PLATFORM]);
+  expect(s.back).toBe(true);
+  expect(s.curtain).toEqual([SEWN,AIR,AIR]);
+  expect(s.mini).toBe(true);
+  expect(s.gateA).toEqual([PLATFORM,PLATFORM,PLATFORM]);
+  expect(s.boss).toBe('nib');
+  expect(s.quest).toBe(true);
+  expect(s.B).toEqual([AIR,AIR,AIR]);
+  expect(s.nib).toBe(true);
+  expect(s.blots).toBe(0);
+  expect(s.wells).toBeGreaterThanOrEqual(2);
+  expect(s.locked).toBe(true);
+  expect(s.open).toEqual([AIR,AIR,AIR]);
+  expect(s.st).toMatchObject({e:1,g:1,m:1,c:1});
+  expect(s.saved).toBe(1);
+  expect(s.oldTemple).toBeNull();
+  expect(s.oldWells).toBeNull();
+});
+
 test('paper tricks: seams tear, torn holes stitch and creases fold, only with their tools, and are saved',async({page})=>{
   await boot(page);
   await newSmallWorld(page);
