@@ -1,7 +1,7 @@
 // Staged dialogue: a speech bubble over the speaker with a portrait, typed-out text and a voice blip per character.
 import {
   $,camera,circ,facePic,fi,ink,invOpen,mapOpen,mk,NPCDEF,PARTNERS,player,poly,pt,pv,rr,SET,setInv,
-  setState,SHEETS,state,tone,upx,
+  setState,SHEETS,state,tone,upx,pBox,
 } from './game.js';
 
 // ================= dialogue =================
@@ -25,7 +25,7 @@ function emote(t,x,y,e){
 // portraits are 96x96 canvases cached per speaker and expression; the player's is redrawn each conversation (armor changes)
 const PICS={};
 function portrait(k,e){const key=k+':'+e;if(PICS[key])return PICS[key];const c=mk(96,96),t=c.getContext('2d');
-  if(PARTNERS[k]){const s=SHEETS['p_'+k];if(s)t.drawImage(s,8,8,80,80,0,4,96,96);}
+  if(PARTNERS[k]){const s=SHEETS['p_'+k];if(s&&s.whole){const[x,y,z]=pBox(s);t.drawImage(s,x,y,z,z,4,6,88,88);}else if(s)t.drawImage(s,8,8,80,80,0,4,96,96);}
   else{const s=facePic(k,e==='neutral'?null:e);if(s&&s.whole){const[x,y,z]=headBox(s);t.drawImage(s,x,y,z,z,0,2,96,96);}else if(s)t.drawImage(s,12,8,76,76,0,2,96,96);}
   if(e!=='neutral')emote(t,80,18,e);return PICS[key]=c;}
 // a whole painted cut-out (rig.js root+all): a square around the head, the top of the figure, centred on it

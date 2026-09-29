@@ -68,7 +68,8 @@ export function rigSkin(k,skin,key){const ck=key!=null?k+':'+key:null;if(ck&&ski
     if(p.paint)draw(t,p,v);if(mg[p.n])for(const n of mg[p.n]){const q=d.parts[d.pi[n]];if(q.paint)draw(t,q,'');}
     const a=t.getImageData(0,0,W,H).data;let x0=W,y0=H,x1=-1,y1=-1;for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(a[(y*W+x)*4+3]>8){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
     if(x1<0)continue;const art=rigArtFor(k,key,mn[p.n]||p.n,v);let pc=c;
-    if(art&&mg[p.n]){const w=Math.min(W-2,Math.round(art.width/art.height*(y1-y0+1)));x0=Math.max(0,Math.round((x0+x1-w)/2));x1=Math.min(W-1,x0+w-1);}
+    // a part's artS scales its merged painting about the drawn bounds' centre (a flier whose frames share one tall canvas, wings up and down)
+    if(art&&mg[p.n]){const S2=p.artS||1,h=Math.round((y1-y0+1)*S2),w=Math.min(W-2,Math.round(art.width/art.height*h));y0=Math.max(0,Math.round((y0+y1-h)/2));y1=Math.min(H-1,y0+h-1);x0=Math.max(0,Math.round((x0+x1-w)/2));x1=Math.min(W-1,x0+w-1);}
     if(art){pc=mk(W,H);pc.getContext('2d').drawImage(art,x0,y0,x1-x0+1,y1-y0+1);}
     pieces.push({p:p.i,v,c:pc,x0,y0,w:x1-x0+1,h:y1-y0+1});}}
   // shelf packing, tallest first

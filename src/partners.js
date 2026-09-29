@@ -4,7 +4,7 @@ import {
   ITEMS,KEYNAME,makeSheet,mk,mouse,nearestEnemy,pickups,player,poly,portraitCache,quests,rr,
   scene,SET,setInvDirty,setTint,SFX,SHEETS,spriteMesh,stat,state,T,tileAt,toast,TP,partnerSpeaker,say,
   chapterCard,moveName,palUp,playerSpeaker,renderQuests,
-  playerCheer,defRig,loopClip,RIGS,rigPic,makeRig,rigFree,rigPlay,rigUpdate,
+  playerCheer,defRig,loopClip,still,RIGS,rigPic,makeRig,rigFree,rigPlay,rigUpdate,
 } from './game.js';
 
 // ================= partners =================
@@ -56,36 +56,56 @@ defRig('p_smudge',{w:96,h:96,oy:48,s:PS,parts:[{n:'root',at:[46,72]},
   {n:'ear',at:[64,32],up:'head',paint:t=>{poly(t,[62,32,58,16,70,30]);fi(t,'#4a3570',2);}}],
   clips:{idle:loopClip(2.2,[[0,{tail:{r:.25},ear:{r:0},head:{r:0,sw:''}}],[.35,{tail:{r:-.2}}],[.7,{tail:{r:.25},ear:{r:-.15}}],[1.05,{tail:{r:-.2},ear:{r:0}}],[1.5,{head:{r:.06}}],[1.9,{head:{sw:'blink'}}],[2,{head:{sw:''}}]],'io',.15),
     walk:loopClip(.3,[[0,{legA:{r:.4},legB:{r:-.4},legC:{r:-.4},legD:{r:.4},body:{y:0},tail:{r:.3},head:{r:.03}}],[.15,{legA:{r:-.4},legB:{r:.4},legC:{r:.4},legD:{r:-.4},body:{y:-2},tail:{r:-.25},head:{r:-.03}}]],'io',.08)}});
-defRig('p_ember',{w:96,h:96,oy:48,s:PS,parts:[{n:'root',at:[48,52]},
+defRig('p_ember',{w:96,h:96,oy:48,s:PS,parts:[{n:'root',at:[48,52],artS:1.9},
   {n:'tail',at:[22,54],up:'body',paint:t=>{t.beginPath();t.moveTo(18,50);t.quadraticCurveTo(6,43,4,58);t.quadraticCurveTo(12,62,24,58);t.closePath();fi(t,'#ff7a2d',2);}},
   {n:'body',at:[48,52],up:'root',wob:.01,paint:t=>{poly(t,[22,52,50,38,76,44,56,62,30,64]);fi(t,'#e0823d');poly(t,[70,42,86,46,72,50]);fi(t,'#f1c04f',2);circ(t,68,44,2.5);t.fillStyle=INK;t.fill();}},
   {n:'crest',at:[50,36],up:'body',paint:t=>{t.beginPath();t.moveTo(46,34);t.quadraticCurveTo(50,22,56,28);t.lineTo(52,37);t.closePath();t.fillStyle='#ffd66b';t.fill();}},
   {n:'wing',at:[48,50],up:'body',wob:0,paint:t=>{poly(t,[36,50,52,23,60,50]);fi(t,'#ffb45a',2);}}],
   clips:{fly:loopClip(.5,[[0,{wing:{r:-.3,sy:1.1},body:{y:-2},tail:{r:.18},crest:{r:-.1}}],[.25,{wing:{r:.35,sy:.75},body:{y:2},tail:{r:-.12},crest:{r:.08}}]],'io',.1)}});
 RIGS.p_ember.clips.idle=RIGS.p_ember.clips.fly;
+// painted partners (assets/art/rigs/p_<key>.root+all[.<frame>], docs/ART.md): a whole cut-out moved by its root that swaps
+// painted frames (sw) like the painted foes: pidle breathes, bobs and blinks, pmove walks (w1/w2) or flaps (flap), pact is
+// the partner's move (flare, snip/snip2, dig) and pcheer the celebration; a frame that isn't painted falls back to the standing one
+{const C=k=>RIGS['p_'+k].clips,blink=(len,at)=>[[0,''],[at,'blink'],[at+.12,''],[len,'']];
+  Object.assign(C('lumi'),{pidle:loopClip(2.4,[[0,{root:{r:.06,y:0}}],[.6,{root:{y:2}}],[1.2,{root:{r:-.06,y:0}}],[1.8,{root:{y:2}}]],'io',.2),
+    pact:still({root:{sx:1.08,sy:1.08,sw:'flare'}},.05),pcheer:still({root:{sw:'cheer'}},.08)});
+  C('lumi').pidle.tr.root.sw=blink(2.4,2.05);C('lumi').pmove=C('lumi').pidle;
+  const walk=len=>loopClip(len,[[0,{root:{r:-.03,y:0,sw:'w1'}}],[len/4,{root:{r:0,y:-2}}],[len/2,{root:{r:.03,y:0,sw:'w2'}}],[len*3/4,{root:{r:0,y:-2}}]],'io',.08);
+  Object.assign(C('snip'),{pidle:loopClip(3,[[0,{root:{sy:1,sx:1}}],[1.5,{root:{sy:1.03,sx:.99}}]],'io',.15),pmove:walk(.25),
+    pact:loopClip(.16,[[0,{root:{r:-.05,sw:'snip'}}],[.08,{root:{r:.05,sw:'snip2'}}]],'io',.04),pcheer:still({root:{sw:'cheer'}},.08)});
+  C('snip').pidle.tr.root.sw=blink(3,2.5);
+  Object.assign(C('smudge'),{pidle:loopClip(2.2,[[0,{root:{sy:1,sx:1}}],[1.1,{root:{sy:1.03,sx:.99}}]],'io',.15),pmove:walk(.3),
+    pact:loopClip(.2,[[0,{root:{x:-1,r:.04,sw:'dig'}}],[.1,{root:{x:1,r:-.02,sw:'dig'}}]],'io',.04),pcheer:still({root:{sw:'cheer'}},.08)});
+  C('smudge').pidle.tr.root.sw=blink(2.2,1.9);
+  // Ember flies all the time: its wing beats in pidle (and pmove), and it blinks once a loop on an upstroke
+  Object.assign(C('ember'),{pidle:loopClip(2,[0,1,2,3,4,5,6,7].map(i=>[i*.25,{root:{y:i%2?2:-2,sw:i===4?'blink':i%2?'flap':''}}]),'io',.1),
+    pact:still({root:{sx:1.1,sy:1.1,sw:'flare'}},.06),pcheer:still({root:{sw:'cheer'}},.08)});C('ember').pmove=C('ember').pidle;}
 export function buildPartnerSheets(){for(const k of PORDER){SHEETS['p_'+k]=rigPic('p_'+k,{},'idle',0,'p_'+k);SHEETS['p_'+k+'T']=canvasTex(SHEETS['p_'+k]);}}
-export function pPortrait(k){if(portraitCache['p_'+k])return portraitCache['p_'+k];return portraitCache['p_'+k]=SHEETS['p_'+k].toDataURL?(()=>{const c=mk(96,96);c.getContext('2d').drawImage(SHEETS['p_'+k],0,0,96,96,0,0,96,96);return c.toDataURL();})():'';}
+export function pPortrait(k){if(portraitCache['p_'+k])return portraitCache['p_'+k];return portraitCache['p_'+k]=SHEETS['p_'+k].toDataURL?(()=>{const c=mk(96,96),s=SHEETS['p_'+k];if(s.whole){const[x,y,z]=pBox(s);c.getContext('2d').drawImage(s,x,y,z,z,0,0,96,96);}else c.getContext('2d').drawImage(s,0,0,96,96,0,0,96,96);return c.toDataURL();})():'';}
+// a painted partner (rigPic of a whole cut-out, which can be bigger than the 96px frame): the square around the figure, a little margin
+export function pBox(s){const W=s.width,H=s.height,a=s.getContext('2d').getImageData(0,0,W,H).data;let x0=W,y0=H,x1=0,y1=0;for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(a[(y*W+x)*4+3]>40){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}
+  if(x1<x0)return[0,0,Math.min(W,H)];const z=Math.round(Math.max(x1-x0,y1-y0)*1.08);return[Math.round((x0+x1-z)/2),Math.round((y0+y1-z)/2),z];}
 function unlockPartner(k,quiet){const p=player;if(p.partners.includes(k))return;p.partners.push(k);if(!p.partner)setPartner(k);if(!quiet){recruit(k);}}
 // the recruitment moment: the new partner comes along at once, a card announces them, they hop and say hello and you answer
 function recruit(k){const d=PARTNERS[k];setPartner(k);partnerCheer(2.4);playerCheer(1.4);SFX.nice();stat('partners');chapterCard(null,d.name,d.desc,'A new friend joins');
   burst(player.x,player.y+2,['#fbf8f0','#f1c04f','#d4483b','#8fc9ec'],36,7,{grav:5,life:1.2});toast(`${d.name} joined your party! Press ${KEYNAME(SET.bind.partner)} to switch partners and ${KEYNAME(SET.bind.ability)} for ${d.move}.`,'gold');
   say(partnerSpeaker(k),d.hi,{wait:1.5,done:()=>say(playerSpeaker(),d.re,{done:()=>partnerCheer(1)})});}
 export function syncPartners(quiet){if(hasNPC('guide'))unlockPartner('lumi',quiet);if(quests.king)unlockPartner('snip',quiet);if(quests.crane)unlockPartner('smudge',quiet);if(quests.lev)unlockPartner('ember',quiet);}
-export function setPartner(k){player.partner=k;pt.type=null;pt.cd=0;pt.act=null;setInvDirty(true);}
+export function setPartner(k){player.partner=k;pt.type=null;pt.cd=0;pt.act=null;pt.fxT=0;setInvDirty(true);}
 export function cyclePartner(){const p=player;if(state!=='play')return;if(!p.partners.length){toast('No partners yet. Your first one joins when the Guide moves in.');return;}const i=p.partners.indexOf(p.partner);const k=p.partners[(i+1)%p.partners.length];setPartner(k);partnerCheer(.7);toast(`${PARTNERS[k].name} is now with you.`);SFX.pick();burst(player.x-player.face,player.y+1.2,['#fbf8f0','#f1c04f'],10,3,{grav:0});}
 function bestPick(){let b=1;for(const s of player.inv)if(s&&ITEMS[s.id].pick)b=Math.max(b,ITEMS[s.id].pick);return b;}
 export function partnerAbility(){const p=player,k=p.partner;if(state!=='play'||p.dead)return;if(!k){toast('No partner with you yet.');return;}if(pt.cd>0){toast(`${PARTNERS[k].move} is recharging (${Math.ceil(pt.cd)}s).`);return;}
   const bosses=['king','crane','lev','folio'].filter(q=>quests[q]).length,up=palUp(k);pt.cd=PARTNERS[k].cd*(hasBadge('quick')?.7:1);stat('pmoves');
-  if(k==='lumi'){burst(pt.x,pt.y,['#fff3c0','#ffe58a','#fbf8f0'],up?70:40,up?13:9,{grav:0,life:.7,bright:1});SFX.nice();for(const e of enemies){if(e.dying)continue;if(Math.hypot(e.x-pt.x,e.y+e.h/2-pt.y)<(up?13:9)){e.stun=e.d.boss?(up?1.2:.7):(up?3.5:2.2);hurtEnemy(e,10+bosses*6,e.x>pt.x?1:-1,2);}}}
+  if(k==='lumi'){pt.fxT=.7;burst(pt.x,pt.y,['#fff3c0','#ffe58a','#fbf8f0'],up?70:40,up?13:9,{grav:0,life:.7,bright:1});SFX.nice();for(const e of enemies){if(e.dying)continue;if(Math.hypot(e.x-pt.x,e.y+e.h/2-pt.y)<(up?13:9)){e.stun=e.d.boss?(up?1.2:.7):(up?3.5:2.2);hurtEnemy(e,10+bosses*6,e.x>pt.x?1:-1,2);}}}
   else if(k==='snip'){pt.act='spin';pt.at=up?5:3;pt.hitT=0;SFX.swing();}
   else if(k==='smudge'){const a=Math.atan2(mouse.wy-(p.y+.9),mouse.wx-p.x),pw=bestPick()+(up?1:0);let n=0;for(let s=1;s<=(up?9:6);s++){const cx=Math.floor(p.x+Math.cos(a)*s),cy=Math.floor(p.y+.9+Math.sin(a)*s);for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){const x=cx+dx,y=cy+dy,t=tileAt(x,y);if(t===T.AIR||TP[t].liq||t===T.CHEST||t===T.DOOR||t===T.BED||!TP[t].solid&&t!==T.TUFT&&t!==T.FLOWER&&t!==T.FLOWER2&&t!==T.BLOOM)continue;if(TP[t].pick>pw)continue;if(breakTile(x,y)){n++;stat('mined');}}}
     pt.act='dig';pt.at=.5;pt.digA=a;burst(p.x+Math.cos(a)*2,p.y+1+Math.sin(a)*2,['#3a2a5a','#8a78b0'],20,6);if(!n){toast('Nothing here Smudge can dig.');pt.cd=1;}}
-  else if(k==='ember'){heal(Math.round(p.max*(up?.75:.5)));if(up)for(const e of enemies)if(!e.dying&&Math.hypot(e.x-p.x,e.y+e.h/2-p.y-1)<6)hurtEnemy(e,16+bosses*8,e.x>p.x?1:-1,4,false,'fire');burst(p.x,p.y+1,['#ff7a2d','#ffd66b','#fbf8f0'],30,6,{grav:-2,bright:1});SFX.potion();}
+  else if(k==='ember'){pt.fxT=.9;heal(Math.round(p.max*(up?.75:.5)));if(up)for(const e of enemies)if(!e.dying&&Math.hypot(e.x-p.x,e.y+e.h/2-p.y-1)<6)hurtEnemy(e,16+bosses*8,e.x>p.x?1:-1,4,false,'fire');burst(p.x,p.y+1,['#ff7a2d','#ffd66b','#fbf8f0'],30,6,{grav:-2,bright:1});SFX.potion();}
 }
 export function updatePartner(dt){const p=player,k=p.partner;
   if(!k||p.dead||state==='title'){if(pt.mesh)pt.mesh.visible=false;$('partnerHud').hidden=true;return;}
   if(pt.type!==k){if(pt.rig)rigFree(pt.rig);pt.rig=makeRig('p_'+k,{},'p_'+k);pt.mesh=pt.rig.mesh;pt.mesh.position.z=.16;pt.type=k;pt.x=p.x-p.face;pt.y=p.y+1;pt.cd=Math.min(pt.cd,PARTNERS[k].cd);pt.hudKey='';}
-  pt.t+=dt;pt.cd=Math.max(0,pt.cd-dt);const def=PARTNERS[k],bosses=['king','crane','lev','folio'].filter(q=>quests[q]).length;
+  pt.t+=dt;pt.cd=Math.max(0,pt.cd-dt);pt.fxT=Math.max(0,(pt.fxT||0)-dt);const def=PARTNERS[k],bosses=['king','crane','lev','folio'].filter(q=>quests[q]).length;
   let tx=p.x-p.face*1.3,ty=p.y+(def.fly?1.9+Math.sin(pt.t*2.5)*.25:.62);
   if(k==='snip'){pt.atkT-=dt;if(pt.act==='spin'){pt.at-=dt;pt.hitT-=dt;const a=pt.t*9,r=palUp('snip')?1.3:1;tx=p.x+Math.cos(a)*1.8*r;ty=p.y+1+Math.sin(a)*1.4*r;if(pt.hitT<=0){pt.hitT=.25;for(const e of enemies)if(!e.dying&&Math.hypot(e.x-p.x,e.y+e.h/2-p.y-1)<(palUp('snip')?3.6:2.8))hurtEnemy(e,10+bosses*5,e.x>p.x?1:-1,3);}if(Math.random()<dt*20)burst(pt.x,pt.y,['#fbf8f0','#d4483b'],1,2,{grav:0,life:.3});if(pt.at<=0)pt.act=null;}
     else if(pt.target&&!pt.target.dying&&pt.atkT>0){tx=pt.target.x;ty=pt.target.y+pt.target.h/2;if(Math.hypot(pt.x-tx,pt.y-ty)<.8&&!pt.hit){pt.hit=true;hurtEnemy(pt.target,8+bosses*5,pt.x<tx?1:-1,3);SFX.swing();}}
@@ -95,7 +115,8 @@ export function updatePartner(dt){const p=player,k=p.partner;
   const sp=(k==='snip'&&(pt.act||pt.atkT>0))?18:7;pt.x+=(tx-pt.x)*Math.min(1,dt*sp);pt.y+=(ty-pt.y)*Math.min(1,dt*sp);
   const face=pt.act==='spin'?(Math.sin(pt.t*9)>0?1:-1):(Math.abs(tx-pt.x)>.2?(tx>pt.x?1:-1):p.face);pt.rot+=((face>0?0:Math.PI)-pt.rot)*Math.min(1,dt*14);
   const m=pt.mesh;m.visible=true;m.rotation.y=pt.rot;const moving=Math.abs(tx-pt.x)>.3;const hop=!def.fly&&moving?Math.abs(Math.sin(pt.t*12))*.25:0;m.position.set(pt.x,pt.y+hop,.16);
-  rigPlay(pt.rig,def.fly?'fly':k==='snip'&&(pt.act==='spin'||pt.atkT>0)?'snip':moving&&RIGS[pt.rig.k].clips.walk?'walk':'idle');
+  const acting=pt.fxT>0||pt.act==='dig'||k==='snip'&&(pt.act==='spin'||pt.atkT>0);
+  rigPlay(pt.rig,pt.rig.S.whole?pt.cheer>0?'pcheer':acting?'pact':moving?'pmove':'pidle':def.fly?'fly':k==='snip'&&acting?'snip':moving&&RIGS[pt.rig.k].clips.walk?'walk':'idle');
   // celebration: hops with a spin and sparkles; idle (player standing still): each partner has its own fidget
   pt.idle=Math.abs(p.vx)<.1&&!pt.act&&!moving?pt.idle+dt:0;let sx=1,sy=1,rz=0;
   if(pt.cheer>0){pt.cheer-=dt;const c=1-Math.max(0,pt.cheer)/pt.cheerMax;m.position.y+=Math.abs(Math.sin(c*Math.PI*3))*.8*(1-c*.6);rz=c<.34?c*3*Math.PI*2:0;sy=1+Math.sin(c*Math.PI*6)*.08;if(Math.random()<dt*14)burst(pt.x,pt.y+.3,['#f1c04f','#fbf8f0','#fff3c0'],1,2.5,{grav:-1,life:.6,bright:1});}
