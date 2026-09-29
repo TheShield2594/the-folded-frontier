@@ -226,6 +226,29 @@ def icons(img, name, rows, cols, ids):
         out.alpha_composite(im, (i * 128 + 64 - im.width // 2, 64 - im.height // 2))
     out.save(f'assets/icons_{name}.webp', quality=92, method=6)
 
+def icon_cells(img, rows, cols, cells, native=False, out='assets/art/atlas'):
+    """Icon sheet (rows x cols, reading order) to one 64x64 assets/art/atlas/<cell>.png per C name, for docs/ART.md's
+    pipeline. Each item is its whole paper sticker (so pale fills close even where the render left no ink), restyled to
+    the house outline unless native (keep the render's own outline, for things like bow strings), and fitted to the cell."""
+    a = np.asarray(img.convert('RGB')).astype(int); H, W = a.shape[:2]
+    bg = np.median(np.concatenate([a[0], a[-1], a[:, 0], a[:, -1]]), axis=0); fg = np.abs(a - bg).max(axis=2) >= 16
+    items = []
+    for i in range(len(cells)):
+        r, c = divmod(i, cols); y0, y1, x0, x1 = int(r * H / rows), int((r + 1) * H / rows), int(c * W / cols), int((c + 1) * W / cols)
+        f = np.zeros_like(fg); f[y0:y1, x0:x1] = fg[y0:y1, x0:x1]
+        fl, fn = ndimage.label(f); fs = ndimage.sum(f, fl, range(1, fn + 1))
+        mask = ndimage.binary_fill_holes(np.isin(fl, [k + 1 for k in range(fn) if fs[k] > max(2000, .05 * fs.max())]))
+        ys, xs = np.where(mask); sl = (slice(ys.min(), ys.max() + 1), slice(xs.min(), xs.max() + 1))
+        items.append(Image.fromarray(np.dstack([a.astype(np.uint8), (mask * 255).astype(np.uint8)])[sl], 'RGBA'))
+    if not native:  # measure every item's outline, then restyle each knowing the sheet's usual width
+        ks = []
+        for im in items: restyle(im, ICON_PPT * max(im.size) / 116); ks.append(restyle.K)
+        typ = float(np.median(ks)); items = [restyle(im, ICON_PPT * max(im.size) / 116, typ=typ)[0] for im in items]
+    os.makedirs(out, exist_ok=True)
+    for cell, im in zip(cells, items):
+        im, _ = fit(im, 124, 124); t = Image.new('RGBA', (128, 128), (0, 0, 0, 0)); t.alpha_composite(im, (64 - im.width // 2, 64 - im.height // 2))
+        t.resize((64, 64), Image.LANCZOS).save(os.path.join(out, cell + '.png'), optimize=True)
+
 if __name__ == '__main__':
     d = sys.argv[1]; src = {k: Image.open(os.path.join(d, f)) for k, f in RENDERS.items()}
     trees(src); fox(src); trunk(src); parts(src)
