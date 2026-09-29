@@ -180,5 +180,122 @@
    "bucketLava"
   ],
   "prompt": "Keys, paper-trick tools and buckets icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Star Lens: a large round telescope lens in a brass ring with a star glint\n2. Archive Key: an old ornate brass key with a book-shaped bow\n3. Seam Ripper: a small sewing seam ripper with a red handle and a forked silver tip\n4. Golden Needle: a golden sewing needle with a loop of red thread\n5. Bone Folder: a smooth cream bone folder, a flat tapered paper-folding tool\n6. Bucket: an empty wooden bucket with an iron handle\n7. Ink Bucket: a wooden bucket full of dark violet ink\n8. Lava Bucket: a wooden bucket full of glowing orange lava\n\nOrientation: every item faces the viewer, upright and centred, filling most of its cell.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no numbers, no shadow, no ground."
+ },
+ "helms": {
+  "cells": [
+   "helmcu",
+   "helmfe",
+   "helmau",
+   "helmfr",
+   "helmik",
+   "helmem",
+   "helmfo",
+   "helm_warden"
+  ],
+  "prompt": "Armour helmets icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Copper Helmet: a rounded knight's helmet with cheek guards and an open face, made of warm copper (#d9853b) with darker copper edges\n2. Iron Helmet: a rounded knight's helmet with cheek guards and an open face, made of cool grey iron (#a9adb8) with rivets\n3. Gold Helmet: a rounded knight's helmet with cheek guards and an open face, made of rich gold (#f0c040) with a small engraved swirl\n4. Frostsilver Helmet: a rounded knight's helmet with cheek guards and an open face, made of pale icy silver-blue (#aee0f2) with little ice crystals\n5. Inkstone Helmet: a rounded knight's helmet with cheek guards and an open face, made of dark violet-black stone (#3a2d4a) with ink drips and a glowing purple seam (#8a6ac0)\n6. Emberite Helmet: a rounded knight's helmet with cheek guards and an open face, made of charcoal (#3b3034) with glowing ember-orange cracks (#ff8a3d)\n7. Foilite Helmet: a rounded knight's helmet with cheek guards and an open face, made of shimmering folded foil (#d9dcec) with a soft rainbow sheen on its creased facets\n8. Crease Warden Helm: a closed great helm of crimson (#c8503c) heavy knightly plate with a sharp folded crease down the middle and dark iron trim\n\nOrientation: every piece is shown on its own as an inventory icon, front view, upright, with no person wearing it, filling most of its cell.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no names written under the items, no numbers, no panels or boxes behind the items, no shadow, no ground."
+ },
+ "mails": {
+  "cells": [
+   "mailcu",
+   "mailfe",
+   "mailau",
+   "mailfr",
+   "mailik",
+   "mailem",
+   "mailfo",
+   "mail_warden"
+  ],
+  "prompt": "Armour chestplates icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Copper Chainmail: a sleeveless chest armour with shoulder guards, made of warm copper (#d9853b) with darker copper edges\n2. Iron Chainmail: a sleeveless chest armour with shoulder guards, made of cool grey iron (#a9adb8) with rivets\n3. Gold Chainmail: a sleeveless chest armour with shoulder guards, made of rich gold (#f0c040) with a small engraved swirl\n4. Frostsilver Chainmail: a sleeveless chest armour with shoulder guards, made of pale icy silver-blue (#aee0f2) with little ice crystals\n5. Inkstone Chainmail: a sleeveless chest armour with shoulder guards, made of dark violet-black stone (#3a2d4a) with ink drips and a glowing purple seam (#8a6ac0)\n6. Emberite Chainmail: a sleeveless chest armour with shoulder guards, made of charcoal (#3b3034) with glowing ember-orange cracks (#ff8a3d)\n7. Foilite Chainmail: a sleeveless chest armour with shoulder guards, made of shimmering folded foil (#d9dcec) with a soft rainbow sheen on its creased facets\n8. Crease Warden Plate: a breastplate with big pauldrons of crimson (#c8503c) heavy knightly plate with a sharp folded crease down the middle and dark iron trim\n\nOrientation: every piece is shown on its own as an inventory icon, front view, upright, with no person wearing it, filling most of its cell.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no names written under the items, no numbers, no panels or boxes behind the items, no shadow, no ground."
+ },
+ "legs": {
+  "cells": [
+   "legscu",
+   "legsfe",
+   "legsau",
+   "legsfr",
+   "legsik",
+   "legsem",
+   "legsfo",
+   "legs_warden"
+  ],
+  "prompt": "Armour leggings icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Copper Greaves: a pair of armoured leg guards with a belt at the top and boots at the bottom, made of warm copper (#d9853b) with darker copper edges\n2. Iron Greaves: a pair of armoured leg guards with a belt at the top and boots at the bottom, made of cool grey iron (#a9adb8) with rivets\n3. Gold Greaves: a pair of armoured leg guards with a belt at the top and boots at the bottom, made of rich gold (#f0c040) with a small engraved swirl\n4. Frostsilver Greaves: a pair of armoured leg guards with a belt at the top and boots at the bottom, made of pale icy silver-blue (#aee0f2) with little ice crystals\n5. Inkstone Greaves: a pair of armoured leg guards with a belt at the top and boots at the bottom, made of dark violet-black stone (#3a2d4a) with ink drips and a glowing purple seam (#8a6ac0)\n6. Emberite Greaves: a pair of armoured leg guards with a belt at the top and boots at the bottom, made of charcoal (#3b3034) with glowing ember-orange cracks (#ff8a3d)\n7. Foilite Greaves: a pair of armoured leg guards with a belt at the top and boots at the bottom, made of shimmering folded foil (#d9dcec) with a soft rainbow sheen on its creased facets\n8. Crease Warden Greaves: a pair of heavy armoured leg guards with boots, crimson (#c8503c) heavy knightly plate with a sharp folded crease down the middle and dark iron trim\n\nOrientation: every piece is shown on its own as an inventory icon, front view, upright, with no person wearing it, filling most of its cell.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no names written under the items, no numbers, no panels or boxes behind the items, no shadow, no ground."
+ },
+ "sets": {
+  "cells": [
+   "helm_sky",
+   "mail_sky",
+   "legs_sky",
+   "helm_weave",
+   "mail_weave",
+   "legs_weave",
+   "hpHeart",
+   "mpStar"
+  ],
+  "prompt": "Armour and pickups icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Skystring Hood: a ranger's hood of sea-green cloth (#5fb08e) with a small white feather\n2. Skystring Vest: a ranger's leather vest in sea-green (#5fb08e) with a quiver strap and a feather\n3. Skystring Leggings: a pair of light sea-green (#5fb08e) ranger leggings with soft boots\n4. Inkweaver Hat: a pointed wizard hat of deep violet cloth (#6a55b0) with a small gold star\n5. Inkweaver Robe: a flowing deep violet (#6a55b0) wizard robe with gold star trim\n6. Inkweaver Leggings: a pair of deep violet (#6a55b0) cloth leggings with curled slippers\n7. Heart: a plump pink-red paper heart (#e0506b) with a shine\n8. Mana Star: a plump blue five-pointed paper star (#5a8fe0) with a shine\n\nOrientation: every piece is shown on its own as an inventory icon, front view, upright, with no person wearing it, filling most of its cell.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no names written under the items, no numbers, no panels or boxes behind the items, no shadow, no ground."
+ },
+ "badges1": {
+  "cells": [
+   "bStomp",
+   "bDip",
+   "bNice",
+   "bPower",
+   "bDefend",
+   "bHeartF",
+   "bFlowerF",
+   "bMoney"
+  ],
+  "prompt": "Badges icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Power Stomp Badge: a round gold-rimmed medal badge with a red and a blue ribbon tab at the top, a brown enamel face and a cream boot symbol in the middle\n2. Double Dip Badge: a round gold-rimmed medal badge with a red and a blue ribbon tab at the top, a pink enamel face and a cream potion bottle symbol in the middle\n3. Nice Streak Badge: a round gold-rimmed medal badge with a red and a blue ribbon tab at the top, a yellow enamel face and a cream sparkle star symbol in the middle\n4. Power Plus Badge: a round gold-rimmed medal badge with a red and a blue ribbon tab at the top, a red enamel face and a cream fist symbol in the middle\n5. Defend Plus Badge: a round gold-rimmed medal badge with a red and a blue ribbon tab at the top, a blue enamel face and a cream shield symbol in the middle\n6. Heart Finder Badge: a round gold-rimmed medal badge with a red and a blue ribbon tab at the top, a pink-red enamel face and a cream heart symbol in the middle\n7. Flower Finder Badge: a round gold-rimmed medal badge with a red and a blue ribbon tab at the top, a cornflower blue enamel face and a cream five-petal flower symbol in the middle\n8. Money Money Badge: a round gold-rimmed medal badge with a red and a blue ribbon tab at the top, a green enamel face and a cream coin symbol in the middle\n\nOrientation: every item faces the viewer, upright and centred, filling most of its cell.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no names written under the items, no numbers, no panels or boxes behind the items, no shadow, no ground."
+ },
+ "badges2": {
+  "cells": [
+   "bQuick",
+   "bHappy",
+   "bClose",
+   "bFeather",
+   "bLast",
+   "bSpike",
+   "bLure",
+   "coin"
+  ],
+  "prompt": "(redone with the badges1 render as the reference image, so the two sheets match)\nBadges and coin icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Quick Change Badge: a round gold-rimmed medal badge with a red and a blue ribbon tab at the top, a teal enamel face and a cream lightning bolt symbol in the middle\n2. Happy Heart Badge: a round gold-rimmed medal badge with a red and a blue ribbon tab at the top, a red enamel face and a cream smiling heart symbol in the middle\n3. Close Call Badge: a round gold-rimmed medal badge with a red and a blue ribbon tab at the top, a purple enamel face and a cream dodging swirl symbol in the middle\n4. Feather Fall Badge: a round gold-rimmed medal badge with a red and a blue ribbon tab at the top, a sky blue enamel face and a cream feather symbol in the middle\n5. Last Stand Badge: a round gold-rimmed medal badge with a red and a blue ribbon tab at the top, a dark red enamel face and a cream cracked shield symbol in the middle\n6. Spike Shield Badge: a round gold-rimmed medal badge with a red and a blue ribbon tab at the top, a grey enamel face and a cream spiky ball symbol in the middle\n7. Angler's Luck Badge: a round gold-rimmed medal badge with a red and a blue ribbon tab at the top, a teal enamel face and a cream fishing hook symbol in the middle\n8. Coin: a round gold coin (#f1c04f) with an embossed star\n\nOrientation: every item faces the viewer, upright and centred, filling most of its cell.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no names written under the items, no numbers, no panels or boxes behind the items, no shadow, no ground."
+ },
+ "furn1": {
+  "cells": [
+   "torch",
+   "table",
+   "chair",
+   "chest",
+   "bench",
+   "furnace",
+   "anvil",
+   "bed"
+  ],
+  "prompt": "Furniture icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Torch: a short wooden torch stick with a bright orange flame on top\n2. Table: a small wooden table on one central leg with a red apple on it\n3. Chair: a wooden chair with a tall back, seen from the side\n4. Chest: a wooden treasure chest with gold bands and a gold lock\n5. Workbench: a sturdy wooden workbench with a saw resting on top\n6. Furnace: a rounded grey stone furnace with a chimney and a glowing orange mouth\n7. Anvil: a dark iron blacksmith's anvil\n8. Bed: a wooden bed with a white pillow and a cream blanket, seen from the side\n\nOrientation: every piece of furniture is in straight side view (like a 2D side-scrolling game), standing upright on its base, filling most of its cell.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no names written under the items, no numbers, no panels or boxes behind the items, no shadow, no ground."
+ },
+ "furn2": {
+  "cells": [
+   "alchemy",
+   "shelf",
+   "candle",
+   "pot",
+   "clock",
+   "armchair",
+   "plant",
+   "fcrate"
+  ],
+  "prompt": "Furniture icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Alchemy Desk: a wooden desk with coloured potion flasks and a little burner on it\n2. Bookshelf: a tall wooden bookshelf with three shelves of colourful books\n3. Candle: a cream candle in a small brass holder with a flame\n4. Potted Plant: a leafy green plant in a terracotta pot\n5. Grandfather Clock: a tall wooden grandfather clock with a cream face and a pendulum\n6. Armchair: a plump red velvet armchair with wooden feet\n7. Paper Lantern: a round red paper lantern hanging from a short cord, glowing warm inside\n8. Fishing Crate: a small wooden crate with a fish tail poking out\n\nOrientation: every piece of furniture is in straight side view (like a 2D side-scrolling game), standing upright on its base, filling most of its cell.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no names written under the items, no numbers, no panels or boxes behind the items, no shadow, no ground."
+ },
+ "paint": {
+  "cells": [
+   "paint1",
+   "paint2",
+   "paint3",
+   "paint4",
+   "paint5",
+   "banR",
+   "banB",
+   "banG"
+  ],
+  "prompt": "Paintings and banners icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Painting 'Paper Moon': a gold-framed painting of a cream crescent moon and yellow stars on a navy night sky\n2. Painting 'Crane at Dusk': a gold-framed painting of a black paper crane flying over an orange-red sunset\n3. Painting 'Folded Meadow': a gold-framed painting of green paper hills, a blue sky and a yellow sun\n4. Painting 'Still Life with Glowcap': a gold-framed still life of a candle, an orange mushroom and a glass jar on a table, muted purple background\n5. Painting 'Ink Moon': a gold-framed painting of a huge violet ink moon dripping over dark hills\n6. Red Banner: a hanging red cloth banner on a wooden rod with a swallowtail bottom and a gold star\n7. Blue Banner: a hanging blue cloth banner on a wooden rod with a swallowtail bottom and a cream paper plane\n8. Green Banner: a hanging green cloth banner on a wooden rod with a swallowtail bottom and a pale green leaf\n\nOrientation: every item faces the viewer, upright, filling most of its cell; the paintings are square-ish.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no names written under the items, no numbers, no panels or boxes behind the items, no shadow, no ground."
  }
 }
