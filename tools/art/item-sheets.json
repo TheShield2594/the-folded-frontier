@@ -297,5 +297,70 @@
    "banG"
   ],
   "prompt": "Paintings and banners icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Painting 'Paper Moon': a gold-framed painting of a cream crescent moon and yellow stars on a navy night sky\n2. Painting 'Crane at Dusk': a gold-framed painting of a black paper crane flying over an orange-red sunset\n3. Painting 'Folded Meadow': a gold-framed painting of green paper hills, a blue sky and a yellow sun\n4. Painting 'Still Life with Glowcap': a gold-framed still life of a candle, an orange mushroom and a glass jar on a table, muted purple background\n5. Painting 'Ink Moon': a gold-framed painting of a huge violet ink moon dripping over dark hills\n6. Red Banner: a hanging red cloth banner on a wooden rod with a swallowtail bottom and a gold star\n7. Blue Banner: a hanging blue cloth banner on a wooden rod with a swallowtail bottom and a cream paper plane\n8. Green Banner: a hanging green cloth banner on a wooden rod with a swallowtail bottom and a pale green leaf\n\nOrientation: every item faces the viewer, upright, filling most of its cell; the paintings are square-ish.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no names written under the items, no numbers, no panels or boxes behind the items, no shadow, no ground."
+ },
+ "plants1": {
+  "cells": [
+   "herbs.0",
+   "herbs.1",
+   "herbs.2",
+   "herbs.3",
+   "herbs.4",
+   "rareHerbs.0",
+   "rareHerbs.1",
+   "rareHerbs.2"
+  ],
+  "prompt": "Herbs and rare plants icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Sunpetal: a cheerful yellow sun-shaped flower with a short green stem\n2. Frostleaf: a pale icy blue leaf with frost crystals on its tips\n3. Inkreed: a bundle of dark violet reeds with ink-drop tips\n4. Emberbloom: an orange-red flower whose petals are little flames\n5. Paper Wheat: a small sheaf of cream paper wheat tied with twine\n6. Moon Lily: a pale white lily glowing softly silver-blue, with a crescent shape in its petals\n7. Thunderroot: a gnarled brown root crackling with bright yellow lightning veins\n8. Sunfruit: a round golden fruit that glows like a little sun, with a green leaf\n\nOrientation: every item faces the viewer, upright and centred, filling most of its cell.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no names written under the items, no numbers, no panels or boxes behind the items, no shadow, no ground."
+ },
+ "plants2": {
+  "cells": [
+   "seeds.0",
+   "seeds.1",
+   "seeds.2",
+   "seeds.3",
+   "seeds.4",
+   "rareSeeds.0",
+   "rareSeeds.1",
+   "rareSeeds.2"
+  ],
+  "prompt": "Seed packets icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Sunpetal Seeds: a small cream paper seed packet with a folded-over top edge and a round picture of a yellow sun flower on its front\n2. Frostleaf Seeds: a small cream paper seed packet with a folded-over top edge and a round picture of an icy blue leaf on its front\n3. Inkreed Seeds: a small cream paper seed packet with a folded-over top edge and a round picture of dark violet reeds on its front\n4. Emberbloom Seeds: a small cream paper seed packet with a folded-over top edge and a round picture of an orange flame flower on its front\n5. Paper Wheat Seeds: a small cream paper seed packet with a folded-over top edge and a round picture of a cream wheat ear on its front\n6. Moon Lily Bulb: a pale lilac flower bulb with a tiny glowing crescent on it\n7. Thunderroot Seeds: a small dark lilac paper seed packet with a yellow lightning bolt on its front\n8. Sunfruit Seeds: a small lilac paper seed packet with a golden sun fruit on its front\n\nOrientation: every item faces the viewer, upright and centred, filling most of its cell.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no names written under the items, no numbers, no panels or boxes behind the items, no shadow, no ground."
+ },
+ "misc1": {
+  "cells": [
+   "rareHerbs.3",
+   "rareSeeds.3",
+   "mush",
+   "soggy",
+   "tackle",
+   "tmap",
+   "binder",
+   "cardpack"
+  ],
+  "prompt": "Plants and treasures icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Ghost Mushroom: a pale, translucent, softly glowing ghostly white-blue mushroom\n2. Ghost Mushroom Spores: a tiny corked glass jar of pale glowing blue spores\n3. Glowcap: a small mushroom with an orange cap with cream spots and a cream stem, softly glowing\n4. Soggy Paper: a crumpled, wet, droopy grey sheet of paper with a water drip\n5. Tackle Box: a small grey metal fishing tackle box with a handle\n6. Torn Treasure Map: a torn, old parchment map with a dotted path and a red X\n7. Card Binder: a thick purple ring binder for trading cards with a gold star on the cover\n8. Card Pack: a sealed red foil trading card pack with a crimped top and a white star\n\nOrientation: every item faces the viewer, upright and centred, filling most of its cell.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no names written under the items, no numbers, no panels or boxes behind the items, no shadow, no ground."
+ },
+ "fossils": {
+  "cells": [
+   "fosAmm",
+   "fosTri",
+   "fosFern",
+   "fosSkull",
+   "fosSpine",
+   "fosClaw",
+   "fosWing",
+   "cardpackg"
+  ],
+  "prompt": "Fossils icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Paper Ammonite: a spiral ammonite fossil made of rolled cream paper in stone\n2. Folded Trilobite: a trilobite fossil folded from pale grey paper\n3. Pressed Fern: a fern leaf pressed flat into a small slab of stone\n4. Inkosaur Skull: a dinosaur skull fossil of pale bone with ink-stained teeth\n5. Paperback Spine: a curved section of fossil vertebrae made of bone\n6. Crease Claw: a big curved fossil claw of pale bone with fold lines\n7. Folded Wingbone: a fossil wing bone of a pterosaur, folded like paper\n8. Gilded Card Pack: a sealed shiny gold foil trading card pack with a crimped top and a sparkle\n\nOrientation: every item faces the viewer, upright and centred, filling most of its cell.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no names written under the items, no numbers, no panels or boxes behind the items, no shadow, no ground."
+ },
+ "pets": {
+  "cells": [
+   "petFrog",
+   "petKit",
+   "petMoth",
+   "petCrease",
+   "stag",
+   "crane",
+   "ropeIt",
+   "doorIcon"
+  ],
+  "prompt": "Pets and mount icon sheet for a 2D papercraft game, matching the art style of the reference image exactly (Paper Mario-like paper cut-outs, thick dark plum-black ink outlines #2a2130, white paper cut-out border, subtle paper grain, flat soft colours with one highlight stroke on the upper left, chunky rounded shapes, no glossy 3D rendering, no text).\n\nDraw exactly 8 separate items in a neat grid of 2 rows and 4 columns, reading left to right then top to bottom in this order, all the same size, each centred in its own grid cell with generous empty space around it, none touching or overlapping:\n1. Paper Frog: a cute green origami frog sitting\n2. Fox Kit: a tiny cute orange paper fox cub sitting\n3. Lamp Moth: a cute moth with cream wings with lilac spots and a glowing yellow lamp belly\n4. Little Crease: a tiny cute square sheet of cream paper with a face, a purple fold line across it and a little purple ink tail\n5. Origami Stag: a proud folded paper stag with big antlers, standing\n6. Paper Crane: a white origami paper crane in flight\n7. Rope: a coil of brown rope\n8. Wooden Door: a wooden door with planks, a round window and a brass knob, standing upright\n\nOrientation: every creature is in side view facing right, filling most of its cell.\n\nEach item is its own paper cut-out with a complete ink outline and its own white border. Plain flat light grey background, no text, no labels, no names written under the items, no numbers, no panels or boxes behind the items, no shadow, no ground."
  }
 }
