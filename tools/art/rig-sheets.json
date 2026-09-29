@@ -334,5 +334,26 @@
    ],
    "prompt": "(the first run: same layout, crane.head mirrored after cutting)"
   }
+ },
+ "human_foes": {
+  "how": "2 foes per sheet (rows), parts head (face blanked with hface.blank), torso, armA, armB, legA, legB; cut as human@<foe>.<part> with build.rig_parts(render, 2, 6, ...), then each of the 8 head variants is the painted blank head with hface.features() laid over it.",
+  "sheets": [
+   [
+    "zombie",
+    "knight"
+   ],
+   [
+    "sentinel",
+    "ashimp"
+   ],
+   [
+    "warden",
+    "gazer"
+   ],
+   [
+    "foreman",
+    "scribe"
+   ]
+  ]
  }
 }
