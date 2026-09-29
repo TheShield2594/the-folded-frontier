@@ -31,7 +31,7 @@ export function applyArt(kind,k,img,refresh=true){const ok=kind==='atlas'?paintC
   artImg[kind][k]=img;if(kind==='atlas')atlasTex.needsUpdate=true;if(refresh)artRefresh(kind==='atlas');return true;}
 function artRefresh(atlasN){if(atlasN)buildNormals();clearIcons();for(const k in bestCache)delete bestCache[k];setInvDirty(true);}
 export function loadArt(){const jobs=[];
-  for(const[p,url]of Object.entries(ART_FILES)){const m=p.match(/\/art\/(atlas|sheets)\/([^/]+)\.(png|webp)$/);if(!m){console.warn(`art: ignoring ${p} (use assets/art/atlas/ or assets/art/sheets/)`);continue;}
+  for(const[p,url]of Object.entries(ART_FILES)){const m=p.match(/\/(atlas|sheets)\/([^/]+)\.(png|webp)$/);if(!m){console.warn(`art: ignoring ${p} (use assets/art/atlas/ or assets/art/sheets/)`);continue;}
     jobs.push(new Promise(res=>{const img=new Image();img.onload=()=>res([m[1],m[2],img]);img.onerror=()=>{console.warn(`art: could not load ${p}`);res(null);};img.src=url;}));}
   if(!jobs.length)return artReady;
   return artReady=Promise.all(jobs).then(r=>{let a=0,n=0;for(const j of r)if(j&&applyArt(...j,false)){n++;if(j[0]==='atlas')a++;}artRefresh(a);return n;});}
