@@ -114,15 +114,25 @@ body.rm #chapter.in .ch-page,body.rm #chapter.out .ch-page{animation:none}
 .slot.ph::after{content:attr(data-ph);font-size:calc(9.5px*var(--ts));font-weight:800;color:rgba(42,33,48,.35);text-transform:uppercase;letter-spacing:.06em;}
 #hotbar{padding:6px;background:rgba(42,33,48,.55);border-radius:12px;}
 /* Panel */
-#panel{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;justify-content:center;width:max-content;max-width:calc(100vw / var(--ui) - 44px);max-height:calc(100vh / var(--ui) - 32px);overflow-y:auto;padding:6px 6px 8px;pointer-events:none;}
-#panel>*{pointer-events:auto;animation:unfold .28s cubic-bezier(.2,.9,.3,1.2);transform-origin:50% 100%;}
+/* the backpack book (#142): the tabs over one centred spread, the left page shows Crafting or the open tab's page
+   (a chest, shop or townsperson too), the right page is always the backpack and gear. Both pages have a fixed size, so
+   nothing moves when the tabs change; fitBook() in ui.js zooms #spread down as a unit when the screen is too small. */
+#panel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+#spread{display:flex;flex-direction:column;align-items:stretch;padding:6px;pointer-events:none;animation:unfold .28s cubic-bezier(.2,.9,.3,1.2);transform-origin:50% 100%;}
+#book{display:flex;align-items:stretch;pointer-events:auto;filter:drop-shadow(4px 5px 0 rgba(20,14,26,.55));}
+#book>.page{box-sizing:border-box;width:510px;height:436px;display:flex;flex-direction:column;box-shadow:none;}
+#leftPage{border-radius:12px 3px 3px 14px/12px 3px 3px 12px!important;border-right-width:1.5px;background:linear-gradient(270deg,#e6d6b8 0,var(--paper) 22px);}
+#rightPage{border-radius:3px 12px 14px 3px/3px 12px 12px 3px!important;border-left-width:1.5px;background:linear-gradient(90deg,#e6d6b8 0,var(--paper) 22px);}
+#leftPage::before{right:6px;} #rightPage::before{left:6px;}
+#craft,#sideSheet{display:flex;flex-direction:column;flex:1;min-height:0;}
 @keyframes unfold{from{transform:perspective(900px) rotateX(-75deg);opacity:0}to{transform:none;opacity:1}}
-#leftCol{display:flex;flex-direction:column;gap:10px;}
-#equip{display:grid;grid-template-columns:44px 44px;gap:4px 10px;}
-#equip .lab{font-size:calc(10.5px*var(--ts));font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--ink2);}
-#defTxt{margin-top:8px;font-weight:800;font-size:calc(13px*var(--ts));}
+/* gear on one row under the backpack: three armor slots, then three accessories */
+#gear{display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:10px;border-top:1.5px dashed rgba(42,33,48,.25);}
+#equip{display:flex;gap:4px;}
+#equip .slot[data-kind="acc"]{order:1;} #equip .slot[data-kind="acc"][data-i="0"]{margin-left:12px;}
+#gear .lab{font-size:calc(10.5px*var(--ts));font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--ink2);}
+#defTxt{margin-left:auto;font-weight:800;font-size:calc(13px*var(--ts));}
 .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center;}
-#craft{width:300px;}
 #stations{font-size:calc(11.5px*var(--ts));color:var(--ink2);margin-bottom:6px;font-weight:700;display:flex;flex-wrap:wrap;gap:0 8px;}
 #stations span{white-space:nowrap;} #stations .on{color:var(--good);}
 /* recipe filters: search, Can make, and category chips with a count of what each can make */
@@ -137,7 +147,7 @@ body.rm #chapter.in .ch-page,body.rm #chapter.out .ch-page{animation:none}
 #craftCat em{font-style:normal;font-size:calc(9.5px*var(--ts));margin-left:3px;color:var(--good);} #craftCat em:empty{display:none;}
 #craftCat button.on em{color:var(--ink);}
 #recipes .hint{margin:6px 2px;}
-#recipes{max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;padding-right:4px;}
+#recipes{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:5px;padding-right:4px;}
 .rec{display:flex;gap:8px;align-items:center;padding:4px 6px;border:2px solid rgba(42,33,48,.25);border-radius:8px;background:#fbf5e8;cursor:pointer;}
 .rec.can{border-color:var(--ink);background:#fff8e4;}
 .rec.can:hover{background:#fff0bf;}
@@ -148,7 +158,6 @@ body.rm #chapter.in .ch-page,body.rm #chapter.out .ch-page{animation:none}
 .rec .ing span{display:inline-flex;align-items:center;gap:2px;}
 .rec .ing img{width:15px;height:15px;}
 .rec .ing .miss{color:var(--red);font-weight:800;}
-#sideSheet .grid{grid-template-columns:repeat(5,44px);}
 /* the backpack's first row is the hotbar: set it a little apart */
 #grid .slot:nth-child(-n+10){margin-bottom:6px;}
 #grid .slot:nth-child(-n+10):not(.sel){background:linear-gradient(160deg,#f3dfb8,#dcbf8e);}
@@ -228,11 +237,9 @@ body.rm #chapter.in .ch-page,body.rm #chapter.out .ch-page{animation:none}
 .seg{display:flex;gap:6px;flex-wrap:wrap;} .seg button{background:var(--paper2);} .seg button.on{background:var(--gold);}
 #seedIn{font:inherit;font-weight:700;font-size:calc(14px*var(--ts));padding:6px 10px;border:2px solid var(--ink);border-radius:8px;background:#fffaf0;color:var(--ink);width:100%;box-sizing:border-box;min-width:0;}
 .seedRow{display:flex;gap:8px;align-items:center;min-width:0;}
-#sideSheet{position:fixed;left:16px;bottom:16px;width:min(310px,calc(100vw / var(--ui) - 32px));max-height:calc(100vh / var(--ui) - 32px);box-sizing:border-box;display:flex;flex-direction:column;z-index:6;}
-#sideSheet[hidden]{display:none!important;}
-#sideBody{overflow-y:auto;padding-right:4px;min-height:0;}
+#sideBody{flex:1;overflow-y:auto;padding-right:4px;min-height:0;}
+#sideBody .sideTip{max-width:none;}
 #sideBody .shopi,#sideBody .npcRow{min-width:0;}
-#panel.withSide{left:auto;right:10px;transform:none;max-width:calc(100vw / var(--ui) - 370px);}
 #panel{z-index:5;}
 .npcRow{display:flex;gap:10px;align-items:center;padding:5px 6px;border:2px solid rgba(42,33,48,.25);border-radius:8px;background:#fbf5e8;margin-bottom:5px;min-width:250px;}
 .npcRow.home{border-color:var(--ink);background:#fff8e4;}
@@ -272,8 +279,8 @@ body.rm #chapter.in .ch-page,body.rm #chapter.out .ch-page{animation:none}
 #mapC{display:block;max-width:100%;height:auto;image-rendering:pixelated;border:2px solid var(--ink);border-radius:6px;background:#1c1520;}
 .mapLeg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:calc(12.5px*var(--ts));font-weight:700;margin-top:8px;color:var(--ink2);}
 .mapLeg i{display:inline-block;width:11px;height:11px;border-radius:50%;border:2px solid var(--ink);margin-right:5px;vertical-align:-1px;}
-@media (max-width:900px){#craft{width:260px}#recipes{max-height:200px}.grid{grid-template-columns:repeat(10,36px)}.slot{width:36px;height:36px}.slot img{width:28px;height:28px}#help{display:none}}
-body.rm #panel>*,body.rm .logo span,body.rm .toast,body.rm #achPop,body.rm #sideSheet.turn,body.rm #craft.turn,body.rm #guide{animation:none}
+@media (max-width:900px){#hotbar.grid{grid-template-columns:repeat(10,36px)}#hotbar .slot{width:36px;height:36px}#hotbar .slot img{width:28px;height:28px}#help{display:none}}
+body.rm #spread,body.rm .logo span,body.rm .toast,body.rm #achPop,body.rm #leftPage.turn,body.rm #guide{animation:none}
 /* settings select */
 .set select{font:inherit;font-weight:700;font-size:calc(13px*var(--ts));color:var(--ink);background:#fffaf0;border:2px solid var(--ink);border-radius:8px;padding:4px 8px;justify-self:start;max-width:100%;}
 /* tutorial card */
@@ -337,20 +344,17 @@ body.rm .book,body.rm .cover,body.rm #intro.dive .book{transition:opacity .4s ea
 body.rm #dlgTxt .em,body.rm #dlgTxt .sh,body.rm #dlgNext,body.rm #dlgPic.pop{animation:none;}body.rm #dlgTxt .em{text-decoration:underline wavy;}
 
 /* paper UI: hand-drawn frames with tape, pins and a sticker (panels in #panel and the side page) */
-#panel .sheet,#sideSheet{border-radius:12px 9px 14px 8px/9px 13px 8px 12px;}
-#panel .sheet:nth-child(odd){rotate:-.25deg;} #panel .sheet:nth-child(even){rotate:.3deg;}
 .sheet.taped::after{content:"";position:absolute;top:-11px;left:50%;width:78px;height:22px;margin-left:-39px;background:rgba(238,224,180,.82);transform:rotate(-3deg);box-shadow:0 1px 2px rgba(20,14,26,.25);pointer-events:none;
   clip-path:polygon(0 8%,4% 0,8% 10%,12% 0,88% 0,92% 10%,96% 0,100% 8%,100% 92%,96% 100%,92% 90%,88% 100%,12% 100%,8% 90%,4% 100%,0 92%);}
 .sheet.taped.tr::after{left:auto;right:18px;margin-left:0;transform:rotate(4deg);width:62px;}
 .sheet.pinned::after{content:"";position:absolute;top:-8px;left:16px;width:15px;height:15px;border-radius:50%;background:radial-gradient(circle at 35% 32%,#f7a79d 0 18%,#d4483b 45%,#8c2a22 100%);border:2px solid var(--ink);box-shadow:2px 3px 0 rgba(20,14,26,.35);pointer-events:none;}
-#sideSheet.pinned::after,#panel .sheet.pinned::after{left:auto;right:14px;}
+#panel .sheet.pinned::after{left:auto;right:14px;}
 .sheet.taped.tl::after{left:-14px;margin-left:0;top:4px;transform:rotate(-38deg);width:64px;}
 h3.stk{display:inline-block;position:relative;padding-right:30px;}
 h3.stk::after{content:"";position:absolute;right:0;top:-5px;width:24px;height:24px;background:var(--gold);rotate:12deg;filter:drop-shadow(0 0 0 var(--ink)) drop-shadow(1.5px 1.5px 0 rgba(20,14,26,.5));
   clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);}
-#panel{padding-top:14px;align-items:flex-start;}
 /* page tabs over the backpack: paper index tabs with a little picture each */
-#tabs{flex-basis:100%;display:flex;justify-content:center;flex-wrap:wrap;gap:4px;margin-bottom:-12px;padding:0 10px;position:relative;z-index:1;pointer-events:none;animation:none!important;}
+#tabs{display:flex;justify-content:center;flex-wrap:wrap;gap:4px;margin-bottom:-12px;padding:0 10px;position:relative;z-index:1;pointer-events:none;animation:none!important;}
 #tabs button{pointer-events:auto;display:flex;align-items:center;gap:5px;background:var(--kraft);color:var(--ink);border:2.5px solid var(--ink);border-bottom:none;border-radius:12px 12px 0 0/10px 10px 0 0;padding:4px 11px 12px 7px;box-shadow:none;font-size:calc(12.5px*var(--ts));transform:translateY(6px);transition:transform .15s,background .15s;}
 #tabs button:nth-child(even){background:var(--kraft2);}
 #tabs button img{width:24px;height:24px;margin:-2px 0;filter:drop-shadow(1px 1px 0 rgba(20,14,26,.3));}
@@ -360,13 +364,13 @@ h3.stk::after{content:"";position:absolute;right:0;top:-5px;width:24px;height:24
 /* locked tabs, and every tab but the open one on short or narrow screens, show only their picture (the name is the tooltip) */
 #tabs button.lock:not(.on){padding-right:7px;} #tabs button.lock:not(.on) span{display:none;}
 @media (max-width:760px),(max-height:480px){#tabs button:not(.on){padding-right:7px;} #tabs button:not(.on) span{display:none;}}
-/* the Gear sheet's pin sits inside its corner so it doesn't cover the tab above it */
+/* the right page's pin sits inside its corner so it doesn't cover the tab above it */
 #panel .sheet.pinned::after{top:6px;right:8px;}
 #tabs button:active{box-shadow:none;}
 /* page turn between pages */
-#sideSheet.turn{animation:pageTurn .42s cubic-bezier(.25,.8,.3,1.05) both;transform-origin:0 50%;}
-#craft.turn{animation:pageTurn .42s cubic-bezier(.25,.8,.3,1.05) both;transform-origin:0 50%;}
-@keyframes pageTurn{0%{transform:perspective(1100px) rotateY(88deg);filter:brightness(.75)}55%{filter:brightness(1.05)}100%{transform:none;filter:none}}
+/* only the left page turns, hinged on the spine */
+#leftPage.turn{animation:pageTurn .42s cubic-bezier(.25,.8,.3,1.05) both;transform-origin:100% 50%;}
+@keyframes pageTurn{0%{transform:perspective(1100px) rotateY(-88deg);filter:brightness(.75)}55%{filter:brightness(1.05)}100%{transform:none;filter:none}}
 /* party page: a partner's personal quest */
 .pcard .pq{display:block;margin-top:3px;font-size:calc(11px*var(--ts));font-weight:800;color:var(--teal);}
 /* large item cards (the #tip) */
@@ -435,3 +439,12 @@ body.touch{-webkit-touch-callout:none;touch-action:manipulation;}
 .tcard.r2{border-color:#f1c04f;background:linear-gradient(120deg,#fff3c0,#ffd6e0,#d6ecff,#e0f7d6,#fff3c0);background-size:300% 300%;animation:halo 4s linear infinite;} .tcard.r2 img{filter:drop-shadow(0 0 3px #ffd66b);}
 @keyframes halo{from{background-position:0% 50%;}to{background-position:300% 50%;}}
 body.rm .tcard.r2{animation:none;}
+/* backpack quality of life (#145): chest buttons, shop headings and owned counts, the sell box, Used in on item cards */
+.chestBtns{margin:8px 0 2px;} .chestBtns button{font-size:calc(12px*var(--ts));padding:3px 10px;box-shadow:1px 2px 0 var(--ink);}
+.shopH{margin:8px 0 4px;font-size:calc(10.5px*var(--ts));font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--ink2);}
+.shopH:first-child{margin-top:0;}
+.shopi small.own{display:block;font-size:calc(10.5px*var(--ts));font-weight:800;color:var(--teal);}
+.shopG{display:grid;grid-template-columns:1fr 1fr;gap:0 6px;}
+#sellBox{position:sticky;bottom:0;display:block;width:100%;margin-top:6px;padding:7px 10px;border:2.5px dashed var(--ink);border-radius:10px;background:#f3e6c6;font-size:calc(12.5px*var(--ts));box-shadow:0 -6px 8px -4px rgba(247,238,220,.9);}
+#sellBox.on{border-style:solid;background:var(--gold);}
+#tip .use{color:var(--ink2);} #tip .use b{color:var(--ink);}

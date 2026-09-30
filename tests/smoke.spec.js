@@ -628,6 +628,73 @@ test('trading cards: chests and packs give them, a binder files them, a full pag
   expect(s.old).toBe(0);
 });
 
+// The backpack book (#142) and its quality of life (#145): the left page (Crafting, a tab's page, a chest or a shop) sits
+// beside the backpack and neither moves when the tabs change; chest buttons, sort by kind, recipes that take any fish on one
+// row, Ctrl-click to craft as many as you can, Used in on item cards, owned counts and the sell box on shop pages.
+test('the backpack is one book: pages side by side, chest buttons, sort, grouped recipes, Max, shop counts and selling',async({page})=>{
+  await boot(page);
+  await newSmallWorld(page);
+  const s=await page.evaluate(async()=>{
+    const g=await import('/src/game.js'),P=g.player,out={},$=id=>document.getElementById(id),shown=id=>!$(id).hidden;
+    for(let i=10;i<40;i++)P.inv[i]=null;g.setInv(true);g.refreshUI();
+    const L=$('leftPage'),R=$('rightPage');out.book=[L.offsetTop===R.offsetTop,L.offsetLeft+L.offsetWidth===R.offsetLeft,L.offsetWidth===R.offsetWidth,L.offsetHeight===R.offsetHeight];
+    out.craft=shown('craft')&&!shown('sideSheet');
+    // tabs turn the left page only
+    const x0=R.offsetLeft;g.setTab('bestiary');out.best=!shown('craft')&&shown('sideSheet')&&R.offsetLeft===x0;g.setTab('craft');out.back=shown('craft')&&!shown('sideSheet')&&R.offsetLeft===x0;
+    // a chest: ten slots to a row like the backpack, and its three buttons (the hotbar stays put)
+    const k=5,box=Array(20).fill(null);box[0]={id:'wood',n:10};g.chests.set(k,box);P.inv[12]={id:'wood',n:5};P.inv[13]={id:'dirt',n:7};const hot=JSON.stringify(P.inv.slice(0,10));
+    g.openSide('chest',k);g.refreshUI();const cs=[...$('sideBody').querySelectorAll('.slot')];out.row=cs.filter(el=>el.offsetTop===cs[0].offsetTop).length;
+    const btn=c=>{$('sideBody').querySelector(`.chestBtns [data-c="${c}"]`).click();g.refreshUI();};
+    btn('stack');out.stack=[box[0].n,P.inv[12],P.inv[13]&&P.inv[13].id];
+    btn('dep');out.dep=[box.filter(Boolean).map(b=>b.id+b.n).join(),P.inv.slice(10).every(x=>!x),JSON.stringify(P.inv.slice(0,10))===hot];
+    const w0=g.countItem('wood'),d0=g.countItem('dirt');btn('loot');out.loot=[box.every(x=>!x),g.countItem('wood')-w0,g.countItem('dirt')-d0];
+    g.setTab('craft');
+    // Sort: by kind (tools, weapons, armor, gear, potions, building, other), then name
+    for(let i=10;i<40;i++)P.inv[i]=null;[['ironbar',2],['dirt',5],['potion',1],['ironsword',1],['ironpick',1],['copperbar',3]].forEach(([id,n],i)=>P.inv[10+i]={id,n});
+    $('sortBtn').click();out.sort=P.inv.slice(10,16).map(x=>x&&x.id);
+    // Grilled Fish is one row for every fish, and Ctrl-click makes as many as the fish allow
+    const px=Math.floor(P.x),py=Math.floor(P.y+.5);g.tiles[g.idx(px+1,py)]=g.T.FURNACE;
+    for(let i=10;i<40;i++)P.inv[i]=null;P.inv[20]={id:'minnow',n:4};P.inv[21]={id:'koi',n:2};
+    $('craftQ').value='grilled';$('craftQ').dispatchEvent(new Event('input'));g.refreshUI();
+    const rows=[...$('recipes').querySelectorAll('.rec')].filter(el=>el.querySelector('.nm').textContent.startsWith('Grilled Fish'));out.rows=rows.length;out.variants=rows[0]&&rows[0].dataset.r.split(',').length;out.can=rows[0]&&rows[0].classList.contains('can');
+    rows[0].dispatchEvent(new MouseEvent('mousedown',{bubbles:true,button:0,ctrlKey:true}));out.max=[g.countItem('grilledfish'),g.countItem('minnow'),g.countItem('koi')];
+    $('craftQ').value='';$('craftQ').dispatchEvent(new Event('input'));
+    // the item card lists what an item goes into
+    P.inv[22]={id:'ironbar',n:1};g.refreshUI();$('grid').children[22].dispatchEvent(new MouseEvent('mouseover',{bubbles:true}));out.used=$('tip').innerHTML.includes('Used in');
+    // a shop: headings over a long list, how many you own, and the sell box
+    P.inv[23]={id:'torch',n:9};g.openSide('shop',null,g.SHOP,'Merchant');g.refreshUI();
+    out.heads=$('sideBody').querySelectorAll('.shopH').length;const trow=[...$('sideBody').querySelectorAll('.shopi')].find(el=>el.textContent.includes('Torch'));out.own=[trow&&trow.querySelector('.own')&&trow.querySelector('.own').textContent,'Have '+g.countItem('torch')];
+    P.coins=0;g.updateCoins();g.setCursor({id:'ironbar',n:3});g.setInvDirty(true);g.refreshUI();out.sellTxt=$('sellBox').textContent;$('sellBox').click();out.sold=[P.coins,g.cursor];
+    return out;
+  });
+  expect(s.book).toEqual([true,true,true,true]);
+  expect(s.craft).toBe(true);
+  expect(s.best).toBe(true);
+  expect(s.back).toBe(true);
+  expect(s.row).toBe(10);
+  expect(s.stack).toEqual([15,null,'dirt']);
+  expect(s.dep).toEqual(['wood15,dirt7',true,true]);
+  expect(s.loot).toEqual([true,15,7]);
+  expect(s.sort).toEqual(['ironpick','ironsword','potion','dirt','copperbar','ironbar']);
+  expect(s.rows).toBe(1);
+  expect(s.variants).toBeGreaterThan(5);
+  expect(s.can).toBe(true);
+  expect(s.max).toEqual([4,0,0]);
+  expect(s.used).toBe(true);
+  expect(s.heads).toBeGreaterThan(1);
+  expect(s.own[0]).toBe(s.own[1]);
+  expect(s.sellTxt).toContain('6 coins');
+  expect(s.sold).toEqual([6,null]);
+  // on a small screen the whole book zooms down to fit instead of wrapping
+  await page.setViewportSize({width:640,height:360});
+  // (resize events come with the next frame, which is slow in software WebGL)
+  await page.waitForFunction(()=>+document.getElementById('spread').style.zoom>0);
+  const z=await page.evaluate(()=>{const sp=document.getElementById('spread'),pn=document.getElementById('panel'),k=+sp.style.zoom;
+    return {k,fits:sp.offsetWidth*k<=pn.clientWidth&&sp.offsetHeight*k<=pn.clientHeight};});
+  expect(z.k).toBeLessThan(1);
+  expect(z.fits).toBe(true);
+});
+
 // Atlas cells are allocated in order around the two bands of 256px tree canopies; none may land in a band or past the atlas.
 test('atlas cells stay clear of the canopy regions',async({page})=>{
   await boot(page);

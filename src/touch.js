@@ -1,6 +1,6 @@
 // Touch controls for phones and tablets: joystick, action buttons, tap the world to use or interact, touch backpack.
 import {
-  $,craft,cursor,cyclePartner,dashPress,dlgNext,dropItem,fireHook,initAudio,invOpen,ITEMS,jumpPress,mapOpen,mouse,npcs,
+  $,craftRec,cursor,cyclePartner,dashPress,dlgNext,dropItem,fireHook,initAudio,invOpen,ITEMS,jumpPress,mapOpen,mouse,npcs,
   pad,padInteract,partnerAbility,pause,player,quickHeal,reachOK,renderer,screenToWorld,setCursor,setInv,
   setInvDirty,shieldItem,slotClick,state,T,tileAt,toggleMap,toggleMount,touch,upx,
 } from './game.js';
@@ -56,11 +56,11 @@ $('map').addEventListener('click',()=>{if(touch.on)toggleMap(false);});
 // backpack by touch: tap = click, long-press = right-click (split / drop one), Quick move makes taps shift-clicks
 let sl=null;
 document.addEventListener('touchstart',e=>{const el=e.target.closest&&e.target.closest('.slot,.rec');if(sl)clearTimeout(sl.timer);sl=null;if(!el||e.touches.length>1)return;const t=e.changedTouches[0];initAudio();
-  sl={el,x:t.clientX,y:t.clientY,timer:setTimeout(()=>{if(!sl||sl.el!==el)return;sl.long=true;if(el.classList.contains('slot'))slotClick(el,2,false);else craft(+el.dataset.r,5);setInvDirty(true);if(navigator.vibrate)navigator.vibrate(12);},450)};},{passive:true});
+  sl={el,x:t.clientX,y:t.clientY,timer:setTimeout(()=>{if(!sl||sl.el!==el)return;sl.long=true;if(el.classList.contains('slot'))slotClick(el,2,false);else craftRec(el,5);setInvDirty(true);if(navigator.vibrate)navigator.vibrate(12);},450)};},{passive:true});
 document.addEventListener('touchmove',e=>{if(!sl)return;const t=e.changedTouches[0];if(Math.hypot(t.clientX-sl.x,t.clientY-sl.y)>10){clearTimeout(sl.timer);sl=null;}},{passive:true});
 document.addEventListener('touchcancel',()=>{if(!sl)return;clearTimeout(sl.timer);sl=null;},{passive:true});
 document.addEventListener('touchend',e=>{if(!sl)return;const{el,x,y,long}=sl;clearTimeout(sl.timer);sl=null;e.preventDefault(); // no emulated mousedown after this
-  if(!long){if(el.classList.contains('slot'))slotClick(el,0,touch.quick);else craft(+el.dataset.r,touch.quick?5:1);}setInvDirty(true);
+  if(!long){if(el.classList.contains('slot'))slotClick(el,0,touch.quick);else craftRec(el,touch.quick?5:1);}setInvDirty(true);
   if(invOpen){el.dispatchEvent(new MouseEvent('mouseover',{bubbles:true,clientX:x,clientY:y}));const c=$('cursorItem');c.style.left=upx(x);c.style.top=upx(y-40);}},{passive:false});
 $('quickBtn').addEventListener('click',()=>{touch.quick=!touch.quick;$('quickBtn').classList.toggle('on',touch.quick);$('quickBtn').textContent=touch.quick?'Quick move: on':'Quick move';});
 

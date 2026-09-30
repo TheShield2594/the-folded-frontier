@@ -27,8 +27,7 @@ function mkSlot(kind,i,parent,ph){const el=document.createElement('div');el.clas
 const hotEls=[],gridEls=[],armorEls=[],accEls=[];let sideEls=[];
 for(let i=0;i<10;i++){hotEls.push(mkSlot('inv',i,hotbarEl));}
 for(let i=0;i<40;i++)gridEls.push(mkSlot('inv',i,gridEl));
-['Head','Body','Legs'].forEach((l,i)=>{const lab=document.createElement('div');lab.className='lab';lab.textContent=i===0?'Armor':'';armorEls.push(mkSlot('armor',i,equipEl,l));const a=mkSlot('acc',i,equipEl,'Acc');accEls.push(a);});
-{const labs=document.createElement('div');}
+['Head','Body','Legs'].forEach((l,i)=>{armorEls.push(mkSlot('armor',i,equipEl,l));const a=mkSlot('acc',i,equipEl,'Acc');accEls.push(a);});
 function slotData(kind,i){if(kind==='inv')return player.inv[i];if(kind==='armor')return player.armor[i];if(kind==='acc')return player.acc[i];if(kind==='chest')return chests.get(side.key)[i];return null;}
 function setSlot(kind,i,v){if(kind==='inv'&&v&&v.id==='coin'){player.coins+=v.n;updateCoins();v=null;}if(kind==='inv')player.inv[i]=v;else if(kind==='armor'){player.armor[i]=v;player.sheetDirty=true;}else if(kind==='acc')player.acc[i]=v;else if(kind==='chest')chests.get(side.key)[i]=v;invDirty=true;}
 function paint(el,s){const key=s?s.id+':'+s.n:'';if(el.dataset.k===key)return;el.dataset.k=key;const kl=el.querySelector('.k');el.innerHTML=s?`<img src="${icon(s.id)}" alt="${ITEMS[s.id].name}"><b>${s.n>1?s.n:''}</b>`:'';if(el.parentNode===hotbarEl||el.parentNode===gridEl){const i=+el.dataset.i;if(i<10){const k=document.createElement('span');k.className='k';k.textContent=(i+1)%10;el.appendChild(k);}}if(s)el.classList.remove('ph');else if(el.dataset.ph)el.classList.add('ph');}
@@ -52,20 +51,46 @@ $('craftCan').addEventListener('click',()=>{craftCan=!craftCan;$('craftCan').set
 $('craftQ').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();if(e.target.value){e.target.value='';craftQ='';craftKey='';invDirty=true;}else e.target.blur();}});
 $('craftQ').addEventListener('input',e=>{craftQ=e.target.value.trim().toLowerCase();$('recipes').scrollTop=0;craftKey='';invDirty=true;});
 document.addEventListener('mousedown',e=>{if(e.target!==$('craftQ'))$('craftQ').blur();},true);
-function renderCraft(){const st=stationsNear();const avail=RECIPES.map((r,i)=>{const stOK=!r[3]||st[r[3]];const ok=stOK&&r[2].every(([id,n])=>countItem(id)>=n);return{r,i,ok,stOK,c:craftCat(r[0])};});
+// recipes that make the same thing at the same station from one ingredient each (Grilled Fish from any fish) share one row
+const RGRP={};{const m={};RECIPES.forEach((r,i)=>(m[r[0]+'|'+r[3]]??=[]).push(i));for(const g of Object.values(m))if(g.length>1&&g.every(i=>RECIPES[i][2].length===1))for(const i of g)RGRP[i]=g;}
+const recOK=(r,st)=>(!r[3]||st[r[3]])&&r[2].every(([id,n])=>countItem(id)>=n);
+// a recipe row's recipes (data-r lists a group's, the ones you can make first), for the mouse, touch and gamepad
+export const recIdx=el=>el.dataset.r.split(',').map(Number);
+export function craftRec(el,times){craft(recIdx(el),times);}
+export const CRAFT_MAX=999;
+function renderCraft(){const st=stationsNear();const avail=[];RECIPES.forEach((r,i)=>{const g=RGRP[i];if(g&&g[0]!==i)return;
+    const ids=(g||[i]).slice().sort((a,b)=>recOK(RECIPES[b],st)-recOK(RECIPES[a],st)),rr=RECIPES[ids[0]],stOK=!rr[3]||st[rr[3]];avail.push({r:rr,i,ids,ok:recOK(rr,st),stOK,c:craftCat(r[0])});});
   const key=JSON.stringify(st)+avail.map(a=>a.ok?1:0).join('')+player.inv.map(s=>s?s.id+s.n:'').join(',')+'|'+craftF+'|'+craftQ+'|'+craftCan;if(key===craftKey)return;craftKey=key;
   $('stations').innerHTML=['bench','furnace','anvil','alchemy'].map(k=>`<span class="${st[k]?'on':''}">${st[k]?'●':'○'} ${ITEMS[k].name}</span>`).join('');
-  const q=craftQ,hit=a=>!q||ITEMS[a.r[0]].name.toLowerCase().includes(q)||a.r[2].some(([id])=>ITEMS[id].name.toLowerCase().includes(q));
+  const q=craftQ,hit=a=>!q||ITEMS[a.r[0]].name.toLowerCase().includes(q)||a.ids.some(j=>RECIPES[j][2].some(([id])=>ITEMS[id].name.toLowerCase().includes(q)));
   for(const[k]of CCAT){const n=avail.filter(a=>a.ok&&(k==='all'||a.c===k)&&hit(a)).length;catEls[k].classList.toggle('on',k===craftF);catEls[k].setAttribute('aria-pressed',k===craftF);catEls[k].querySelector('em').textContent=n||'';}
   $('craftCan').classList.toggle('on',craftCan);
   const list=avail.filter(a=>(craftF==='all'||a.c===craftF)&&(!craftCan||a.ok)&&hit(a));
   list.sort((a,b)=>(b.ok-a.ok)||(b.stOK-a.stOK)||a.i-b.i);
-  $('recipes').innerHTML=list.length?list.map(({r,i,ok,stOK})=>`<div class="rec ${ok?'can':'no'}" data-r="${i}"><img src="${icon(r[0])}" alt=""><div><div class="nm">${ITEMS[r[0]].name}${r[1]>1?' ×'+r[1]:''}</div><div class="ing">${r[2].map(([id,n])=>`<span class="${countItem(id)>=n?'':'miss'}"><img src="${icon(id)}" alt="">${n} ${ITEMS[id].name}</span>`).join('')}${r[3]&&!stOK?`<span class="miss">at ${ITEMS[r[3]].name}</span>`:''}</div></div></div>`).join('')
+  const ingH=a=>{if(a.ids.length<2)return a.r[2].map(([id,n])=>`<span class="${countItem(id)>=n?'':'miss'}"><img src="${icon(id)}" alt="">${n} ${ITEMS[id].name}</span>`).join('');
+    const have=a.ids.map(j=>RECIPES[j][2][0]).filter(([id])=>countItem(id)>0),fish=a.ids.every(j=>ITEMS[RECIPES[j][2][0][0]].fish);
+    return have.length?have.map(([id,n])=>`<span class="${countItem(id)>=n?'':'miss'}"><img src="${icon(id)}" alt="">${n} ${ITEMS[id].name}</span>`).join(''):`<span class="miss">${fish?'Any fish':'Any one of '+a.ids.length+' ingredients'}</span>`;};
+  $('recipes').innerHTML=list.length?list.map(a=>{const{r,ok,stOK}=a;return `<div class="rec ${ok?'can':'no'}" data-r="${a.ids.join(',')}"><img src="${icon(r[0])}" alt=""><div><div class="nm">${ITEMS[r[0]].name}${r[1]>1?' ×'+r[1]:''}</div><div class="ing">${ingH(a)}${r[3]&&!stOK?`<span class="miss">at ${ITEMS[r[3]].name}</span>`:''}</div></div></div>`;}).join('')
     :`<p class="hint">${craftCan&&!q?'Nothing here you can make yet. Gather more, or stand by a station.':'No recipes match.'}</p>`;}
-export function craft(i,times=1){const r=RECIPES[i];for(let k=0;k<times;k++){const st=stationsNear();if(r[3]&&!st[r[3]])return;if(!r[2].every(([id,n])=>countItem(id)>=n))return;r[2].forEach(([id,n])=>removeItem(id,n));const left=addItem(r[0],r[1]);guideEv('craft');if(left)dropItem(r[0],left,player.x,player.y+1,0,3);
-  SFX.craft();burst(player.x,player.y+1.2,['#f1c04f','#fbf8f0'],8,3);if(['copperbar','ironbar','goldbar'].includes(r[0]))questDone('bar');if(ITEMS[r[0]].use==='buff'||r[0]==='potion')stat('brews');if(['ironsword','ironpick','helmfe','mailfe','legsfe'].includes(r[0]))questDone('iron');}craftKey='';invDirty=true;}
-$('recipes').addEventListener('mousedown',e=>{const el=e.target.closest('.rec');if(!el||e.button!==0)return;craft(+el.dataset.r,e.shiftKey?5:1);});
-function shopHTML(list){return list.map(([id,p],i)=>`<div class="shopi ${player.coins<p?'poor':''}" data-s="${i}"><img src="${icon(id)}" alt=""><span>${ITEMS[id].name}</span><span class="pr"><img src="${icon('coin')}" alt="">${p}</span></div>`).join('');}
+// crafts a recipe (or the first of a group you can make) up to `times` times; stops early when the backpack fills
+export function craft(i,times=1){const ids=Array.isArray(i)?i:[i],st=stationsNear();let made=0;
+  for(let k=0;k<times;k++){const r=ids.map(j=>RECIPES[j]).find(r=>recOK(r,st));if(!r)break;r[2].forEach(([id,n])=>removeItem(id,n));const left=addItem(r[0],r[1]);made++;guideEv('craft');
+    if(['copperbar','ironbar','goldbar'].includes(r[0]))questDone('bar');if(ITEMS[r[0]].use==='buff'||r[0]==='potion')stat('brews');if(['ironsword','ironpick','helmfe','mailfe','legsfe'].includes(r[0]))questDone('iron');
+    if(left){dropItem(r[0],left,player.x,player.y+1,0,3);break;}}
+  if(made){SFX.craft();burst(player.x,player.y+1.2,['#f1c04f','#fbf8f0'],made>1?12:8,3);}craftKey='';invDirty=true;return made;}
+$('recipes').addEventListener('mousedown',e=>{const el=e.target.closest('.rec');if(!el||e.button!==0)return;craftRec(el,e.ctrlKey||e.metaKey?CRAFT_MAX:e.shiftKey?5:1);});
+// how many of an item you have: in the backpack, worn, or (for a badge) owned
+export function owned(id){const it=ITEMS[id];if(it.badge)return player.badges.includes(it.badge)?1:0;return countItem(id)+player.armor.concat(player.acc).filter(s=>s&&s.id===id).length;}
+const sellPrice=s=>Math.max(1,Math.floor(ITEMS[s.id].value/5))*s.n;
+// pages with a shop list buy your things too: shift-click a backpack slot, or drop the held stack on the sell box
+const selling=()=>!!side&&(side.kind==='shop'||(!!side.list&&side.list.length>0&&side.kind!=='chest'));
+function sellHTML(){return `<button type="button" id="sellBox" class="${cursor?'on':''}">${cursor?`Sell ${ITEMS[cursor.id].name}${cursor.n>1?' ×'+cursor.n:''} for <b>${sellPrice(cursor)}</b> coins`:'Sell: pick up an item and drop it here'}</button>`;}
+function sellCursor(){if(!cursor){toast('Pick up an item from your backpack, then drop it here to sell it. Shift-click sells too.');return;}
+  const v=sellPrice(cursor),nm=ITEMS[cursor.id].name;player.coins+=v;updateCoins();cursor=null;SFX.coin();toast(`Sold ${nm} for ${v} coins`);$('tip').hidden=true;invDirty=true;}
+// a long stock list is grouped under small headings by kind (the crafting categories)
+function shopHTML(list){const row=([id,p],i)=>{const n=owned(id);return `<div class="shopi ${player.coins<p?'poor':''}" data-s="${i}"><img src="${icon(id)}" alt=""><span>${ITEMS[id].name}${n?`<small class="own">Have ${n}</small>`:''}</span><span class="pr"><img src="${icon('coin')}" alt="">${p}</span></div>`;};
+  if(list.length<=8)return `<div class="shopG">${list.map(row).join('')}</div>`;
+  return CCAT.slice(1).map(([k,nm])=>{const g=list.map((e,i)=>[e,i]).filter(([e])=>craftCat(e[0])===k);return g.length?`<h4 class="shopH">${nm}</h4><div class="shopG">${g.map(([e,i])=>row(e,i)).join('')}</div>`:'';}).join('');}
 function nextTip(){const q=quests,has=id=>countItem(id)>0||player.armor.some(s=>s&&s.id===id);
   if(!q.tree)return 'Chop down a tree with your pickaxe. Wood builds almost everything early on.';
   if(!q.bar)return 'Build a Furnace at your Workbench (stone, wood and torches), then smelt ore into bars.';
@@ -79,10 +104,10 @@ function nextTip(){const q=quests,has=id=>countItem(id)>0||player.armor.some(s=>
   if(q.folio&&!q.unfolded)return 'They say an old shrine hums beneath the ground on Ink Moon nights. Five small flames, and a riddle carved in stone.';
   if(!q.folio)return 'Ink Hearts make an Inkstone Pickaxe for Emberite deep down. Brew Fire Resistance Potions from Emberbloom first. A Burnt Bookmark summons the Charred Folio.';
   return 'You have beaten every boss in this world. Maybe try a Large world with a new seed?';}
-function sideHTML(){const k=side.kind;if(k==='folk')return folkHTML(side.key,side.line)+(side.list&&side.list.length?`<h3 style="margin-top:10px">For sale</h3>`+shopHTML(side.list):'');
-  return (side.line?`<div class="sideTip talk"><b>${side.title}</b>${side.line}</div>`:'')+sideBody(k);}
+function sideHTML(){const k=side.kind;if(k==='folk')return folkHTML(side.key,side.line)+(side.list&&side.list.length?`<h3 style="margin-top:10px">For sale</h3>`+shopHTML(side.list)+sellHTML():'');
+  return (side.line?`<div class="sideTip talk"><b>${side.title}</b>${side.line}</div>`:'')+sideBody(k)+(k!=='shop'&&selling()?sellHTML():'');}
 function sideBody(k){
-  if(k==='shop'){const list=side.list||SHOP;return shopHTML(list)+`<p class="hint">Shift-click to buy 10. Shift-click items in your backpack to sell them.</p>`;}
+  if(k==='shop'){const list=side.list||SHOP;return shopHTML(list)+`<p class="hint">Shift-click to buy 10. Shift-click items in your backpack to sell them.</p>`+sellHTML();}
   if(k==='nurse'){const miss=Math.ceil(player.max-player.hp),cost=Math.max(miss>0||player.potT>0?1:0,Math.ceil(miss*.8)+(player.potT>0?10:0));
     return `<div class="sideTip"><b>Patch-up</b>${miss>0||player.potT>0?`Heal ${miss} life${player.potT>0?' and clear potion sickness':''}.`:'You look perfectly smooth already.'}</div>${cost?`<div class="shopi ${player.coins<cost?'poor':''}" data-a="heal"><img src="${icon('heart')}" alt=""><span>Heal me</span><span class="pr"><img src="${icon('coin')}" alt="">${cost}</span></div>`:''}`;}
   if(k==='guide'){const it=selItem();let rec='';if(it){const uses=RECIPES.filter(r=>r[2].some(([id])=>id===it.id)).slice(0,8);rec=`<div class="sideTip"><b>${it.name} is used in</b>${uses.length?uses.map(r=>`<div class="mini-rec"><img src="${icon(r[0])}" alt="">${ITEMS[r[0]].name}${r[3]?` <span style="color:var(--ink2)">(${ITEMS[r[3]].name})</span>`:''}</div>`).join(''):'Nothing I know of. Try selling it.'}</div>`;}
@@ -123,21 +148,35 @@ $('sideBody').addEventListener('mousedown',e=>{if(side&&side.kind==='travel'){co
     player.coins-=fee;updateCoins();const left=addItem(out,1);if(left)dropItem(out,1,player.x,player.y+1);SFX.craft();toast(`Tinkered a ${ITEMS[out].name}!`,'gold');return;}
   if(el.dataset.s==null)return;const list=side.list||SHOP;const[id,p]=list[+el.dataset.s];const qty=e.shiftKey?10:1;let bought=0;for(let k=0;k<qty;k++){if(player.coins<p)break;player.coins-=p;bought++;}
   if(!bought){toast('Not enough coins.','bad');return;}updateCoins();if(side.key==='traveler')stat('travbuys');const left=addItem(id,bought);if(left)dropItem(id,left,player.x,player.y+1);SFX.coin();});
-export function openSide(kind,key,list,title,line){side={kind,key,list,line,title:title||'Merchant'};$('sideSheet').hidden=false;$('panel').classList.add('withSide');$('sideBody').dataset.h='';
-  if(kind==='chest'){$('sideTitle').textContent='Chest';$('sideBody').innerHTML='<div class="grid"></div><p class="hint">Shift-click to move stacks between chest and backpack.</p>';const g=$('sideBody').querySelector('.grid');sideEls=[];for(let i=0;i<20;i++){const el=mkSlot('chest',i,g);el.dataset.k='x';sideEls.push(el);}}
-  else{$('sideTitle').textContent=title||(kind==='town'?'Town':'Merchant');renderSide();}if(!invOpen)setInv(true);else turnPage($('sideSheet'));syncTabs();}
+export function openSide(kind,key,list,title,line){side={kind,key,list,line,title:title||'Merchant'};showLeft();$('sideBody').dataset.h='';$('sideBody').scrollTop=0;
+  if(kind==='chest'){$('sideTitle').textContent='Chest';$('sideBody').innerHTML='<div class="grid"></div><div class="row chestBtns"><button type="button" class="ghost" data-c="loot" title="Take everything you have room for">Loot all</button><button type="button" class="ghost" data-c="dep" title="Put in everything but your hotbar">Deposit all</button><button type="button" class="ghost" data-c="stack" title="Put in only what the chest already holds (not your hotbar)">Stack to chest</button></div><p class="hint">Shift-click to move one stack between chest and backpack.</p>';const g=$('sideBody').querySelector('.grid');sideEls=[];for(let i=0;i<20;i++){const el=mkSlot('chest',i,g);el.dataset.k='x';sideEls.push(el);}}
+  else{$('sideTitle').textContent=title||(kind==='town'?'Town':'Merchant');renderSide();}if(!invOpen)setInv(true);else turnPage($('leftPage'));syncTabs();}
+// a stack into a chest: onto its own kind first, then the first empty slot; returns how many didn't fit
+function toChest(box,s){let n=s.n;const mx=maxOf(s.id);for(let k=0;k<box.length&&n>0;k++){const b=box[k];if(b&&b.id===s.id&&b.n<mx){const m=Math.min(n,mx-b.n);b.n+=m;n-=m;}}
+  for(let k=0;k<box.length&&n>0;k++)if(!box[k]){const m=Math.min(n,mx);box[k]={id:s.id,n:m};n-=m;}return n;}
+// the chest page's buttons: Loot all, Deposit all (the pack, not the hotbar) and Stack to chest (only kinds the chest already holds)
+export function chestAct(a){if(!side||side.kind!=='chest')return 0;const box=chests.get(side.key);let moved=0;
+  if(a==='loot'){for(let k=0;k<box.length;k++){const b=box[k];if(!b)continue;const left=addItem(b.id,b.n);moved+=b.n-left;box[k]=left?{id:b.id,n:left}:null;}}
+  else{const has=new Set(box.filter(Boolean).map(b=>b.id));for(let i=10;i<40;i++){const s=player.inv[i];if(!s||(a==='stack'&&!has.has(s.id)))continue;const left=toChest(box,s);moved+=s.n-left;if(left)s.n=left;else player.inv[i]=null;}}
+  if(moved)SFX.pick();else toast(a==='loot'?(box.some(Boolean)?'Your backpack is full.':'The chest is empty.'):a==='stack'?'Nothing in your pack matches what the chest holds.':box.every(Boolean)?'The chest is full.':'Nothing to put in (your hotbar stays).');
+  invDirty=true;return moved;}
 // ================= pages =================
-// Tabs over the backpack: Backpack tucks the crafting sheet away, Crafting brings it back, and the others open
-// their page on the left with a page turn. Chests, shops and townsfolk open their own page with no tab lit.
+// Tabs over the book pick the left page: Crafting (the page when nothing else is open) and the others, each with a
+// page turn. Chests, shops and townsfolk open their own left page with no tab lit. The right page is always the backpack.
 // [tab, title, icon item or null for the partner's portrait]
-const TABS=[['inv','Backpack','chest'],['craft','Crafting','bench'],['party','Party',null],['bestiary','Bestiary','lens'],['museum','Museum','fos_amm'],['binder','Binder','binder'],['town','Town','lanternp'],['story','Journal',C.murals[0]]];
-let craftOn=true;
+const TABS=[['craft','Crafting','bench'],['party','Party',null],['bestiary','Bestiary','lens'],['museum','Museum','fos_amm'],['binder','Binder','binder'],['town','Town','lanternp'],['story','Journal',C.murals[0]]];
 function turnPage(el){SFX.rustle(.25,.5);if(reduceMotion())return;el.classList.remove('turn');void el.offsetWidth;el.classList.add('turn');}
-function closeSide(){side=null;$('sideSheet').hidden=true;$('panel').classList.remove('withSide');}
-function curTab(){return side?(TABS.some(t=>t[0]===side.kind)?side.kind:''):craftOn?'craft':'inv';}
+function showLeft(){$('craft').hidden=!!side;$('sideSheet').hidden=!side;}
+function closeSide(){side=null;showLeft();}
+function curTab(){return side?(TABS.some(t=>t[0]===side.kind)?side.kind:''):'craft';}
+// the book keeps its size; on a screen too small for it, the whole spread zooms down as a unit
+// (layout sizes against #panel, which covers the screen, so the opening unfold animation doesn't skew the measure)
+export function fitBook(){const sp=$('spread'),pn=$('panel');if(!invOpen)return;sp.style.zoom='';const w=sp.offsetWidth,h=sp.offsetHeight;if(!w)return;
+  const k=Math.min(1,(pn.clientWidth-8)/w,(pn.clientHeight-8)/h);if(k<1)sp.style.zoom=k.toFixed(3);}
+addEventListener('resize',fitBook);
 function syncTabs(){const on=curTab();for(const b of $('tabs').children){const t=TABS.find(t=>t[0]===b.dataset.tab),a=t[0]===on;b.classList.toggle('on',a);b.setAttribute('aria-selected',a);b.setAttribute('aria-label',t[1]);b.title=t[1];
   b.querySelector('img').src=typeof t[2]==='number'?cellIcon(t[2]):t[2]?icon(t[2]):pPortrait(player.partner||'lumi');if(t[0]==='museum')b.classList.toggle('lock',!hasNPC('curator'));if(t[0]==='binder')b.classList.toggle('lock',!countItem('binder')&&!Object.keys(cards.have).length);if(t[0]==='party')b.classList.toggle('lock',!player.partners.length);}}
-export function setTab(k){if(k==='inv'||k==='craft'){const was=craftOn;craftOn=k==='craft';$('craft').hidden=!craftOn;if(side)closeSide();if(craftOn&&!was)turnPage($('craft'));else SFX.pick();syncTabs();invDirty=true;return;}
+export function setTab(k){if(k==='inv'||k==='craft'){if(!invOpen)setInv(true);if(side){closeSide();turnPage($('leftPage'));}else SFX.pick();syncTabs();invDirty=true;return;}
   openSide(k,null,null,TABS.find(t=>t[0]===k)[1]);}
 // gamepad LB: the next tab along (a chest or shop page counts as sitting before the first one)
 export function cycleTab(d=1){const i=TABS.findIndex(t=>t[0]===curTab());setTab(TABS[(i+d+TABS.length)%TABS.length][0]);}
@@ -148,14 +187,14 @@ function openTalk(n,line,bub){const d=NPCDEF[n.type],t=n.type;SFX.pick();
   if(t==='merchant')openSide('shop',null,townShop(SHOP),'Merchant',line);else if(t==='painter')openSide('shop',null,SHOPS.painter,'Painter',line);else if(t==='nurse')openSide('nurse',null,null,'Nurse',line);else if(t==='guide')openSide('guide',null,null,'Guide',line);else if(t==='angler')openSide('angler',null,SHOPS.angler,'Angler',line);else if(t==='tinkerer')openSide('tinker',null,SHOPS.tinkerer,'Tinkerer',line);
   else openSide('folk',t,t==='traveler'?(wev.trav?wev.trav.stock:[]):SHOPS[t],d.name,line);
   if(n.bub){n.bub.remove();n.bub=null;}if(!bub)return;n.bub=document.createElement('div');n.bub.className='bubble';n.bub.textContent=line;$('nums').appendChild(n.bub);n.bubLife=3;n.bubT=10;}
-export function setInv(o){if(!o){if(padFocus)padFocus.classList.remove('padfocus');setPadFocus(null);$('padHint').hidden=true;}if(!o&&side&&!$('sideSheet').hidden){}invOpen=o;$('help').hidden=o;$('ui').classList.toggle('inv',o);if(!o)$('craftQ').blur();$('panel').hidden=!o;$('hotwrap').style.visibility=o?'hidden':'visible';if(o){$('craft').hidden=!craftOn;syncTabs();}if(!o){closeSide();if(cursor){const l=addItem(cursor.id,cursor.n);if(l)dropItem(cursor.id,l,player.x,player.y+1);cursor=null;}$('tip').hidden=true;}
-  gridEls.concat(armorEls,accEls).forEach(el=>el.dataset.k='x');craftKey='';invDirty=true;}
+export function setInv(o){if(!o){if(padFocus)padFocus.classList.remove('padfocus');setPadFocus(null);$('padHint').hidden=true;}if(!o&&side&&!$('sideSheet').hidden){}invOpen=o;$('help').hidden=o;$('ui').classList.toggle('inv',o);if(!o)$('craftQ').blur();$('panel').hidden=!o;$('hotwrap').style.visibility=o?'hidden':'visible';if(o){showLeft();syncTabs();}if(!o){closeSide();if(cursor){const l=addItem(cursor.id,cursor.n);if(l)dropItem(cursor.id,l,player.x,player.y+1);cursor=null;}$('tip').hidden=true;}
+  gridEls.concat(armorEls,accEls).forEach(el=>el.dataset.k='x');craftKey='';invDirty=true;if(o)fitBook();}
 function canGo(kind,i,s){if(!s)return true;const it=ITEMS[s.id];if(kind==='armor')return it.slot===i;if(kind==='acc')return !!it.acc&&!player.acc.some((a,k)=>k!==i&&a&&a.id===s.id);return true;}
 export function slotClick(el,btn,shift){const kind=el.dataset.kind,i=+el.dataset.i;let s=slotData(kind,i);
   if(!invOpen){if(kind==='inv'&&i<10){player.sel=i;invDirty=true;}return;}
   if(shift&&btn===0&&s){ // quick move / sell / equip
-    if(side&&side.kind==='shop'&&kind==='inv'){const v=Math.max(1,Math.floor(ITEMS[s.id].value/5))*s.n;player.coins+=v;updateCoins();setSlot(kind,i,null);SFX.coin();toast(`Sold ${ITEMS[s.id].name} for ${v} coins`);return;}
-    if(kind==='inv'&&side&&side.kind==='chest'){const box=chests.get(side.key);let n=s.n;for(let k=0;k<20&&n>0;k++){const b=box[k];if(b&&b.id===s.id&&b.n<maxOf(s.id)){const m=Math.min(n,maxOf(s.id)-b.n);b.n+=m;n-=m;}}for(let k=0;k<20&&n>0;k++)if(!box[k]){box[k]={id:s.id,n};n=0;}if(n)s.n=n;else setSlot(kind,i,null);invDirty=true;return;}
+    if(selling()&&kind==='inv'){const v=sellPrice(s);player.coins+=v;updateCoins();setSlot(kind,i,null);SFX.coin();toast(`Sold ${ITEMS[s.id].name} for ${v} coins`);return;}
+    if(kind==='inv'&&side&&side.kind==='chest'){const n=toChest(chests.get(side.key),s);if(n)s.n=n;else setSlot(kind,i,null);invDirty=true;return;}
     if(kind==='inv'){const it=ITEMS[s.id];if(it.slot!=null){const old=player.armor[it.slot];player.armor[it.slot]=s;player.inv[i]=old;player.sheetDirty=true;invDirty=true;return;}if(it.acc){const k=player.acc.findIndex(a=>!a);if(k>=0&&canGo('acc',k,s)){player.acc[k]=s;player.inv[i]=null;invDirty=true;}return;}
       // move between hotbar and pack
       const range=i<10?[10,40]:[0,10];for(let k=range[0];k<range[1];k++)if(!player.inv[k]){player.inv[k]=s;player.inv[i]=null;invDirty=true;return;}return;}
@@ -172,15 +211,20 @@ const KIND=it=>it.pick&&it.dmg?'Tool & weapon':it.pick?'Tool':it.rod?'Fishing ro
 // each weapon family's extra moves, and an armor set's bonus with how many pieces are worn
 function moveHint(it){const h=it.heavy?'Hold at the top of the swing to charge. A full charge sends a shockwave that cracks shells and armor.':it.dmg&&!it.use&&!it.ranged&&!it.magic&&!it.pick&&!it.ammoOf?'The third cut of a combo is a finisher. In the air, hits keep you aloft and the third spikes foes down. Swing right after a parry to counter.':it.ranged&&it.ammo==='arrow'?'Let go just as the draw fills for a Perfect shot.':it.magic?'Cast again as the rune ring closes for a Rune cast: stronger, and half the mana.':'';return h?`<div class="ds mv">${h}</div>`:'';}
 function setCard(k){const S=SETS[k],n=setCount(k),on=fullSet()===k;return `<div class="ds set${on?' on':''}"><b>${S.name} set</b> · ${S.kind} · ${n}/3 worn<br>${on?'Set bonus':'Full set'}: ${S.bonus}</div>`;}
+// what an item goes into (each thing it makes once), for the item card
+let USES=null;function usesOf(id){if(!USES){USES={};for(const r of RECIPES)for(const[i]of r[2])if(!(USES[i]??=[]).includes(r[0]))USES[i].push(r[0]);}return USES[id]||[];}
+function usedIn(id){const u=usesOf(id);return u.length?`<div class="ds use"><b>Used in</b> ${u.slice(0,4).map(o=>ITEMS[o].name).join(', ')}${u.length>4?` and ${u.length-4} more`:''}</div>`:'';}
 function itemCard(id,n,extra=''){const it=ITEMS[id];const lines=[],et=it.elem||(it.proj&&PK[it.proj]&&PK[it.proj].elem);if(it.dmg)lines.push(`${it.dmg} damage`);if(et)lines.push(`${ELEM[et].name} type`);if(it.heavy)lines.push('Heavy');if(it.block)lines.push(`Blocks ${Math.round(it.block*100)}% of a hit`);if(it.ranged)lines.push(it.ammo==='arrow'?'Uses arrows · hold to draw':'Uses Paper Sheets');if(it.magic)lines.push(`${it.mana} mana per cast`);if(it.adm)lines.push(`+${it.adm} damage as ammo`);if(it.pick)lines.push(`Pick power ${it.pick}`);if(it.rod)lines.push(`Fishing power ${it.fpow}${it.lava?' · Fishes in lava':''}`);if(it.bait)lines.push(`Bait power ${it.bait}`);if(it.def)lines.push(`+${it.def} defense`);if(it.place!=null||it.wall)lines.push('Can be placed');
-  return `<div class="icard"><div class="icArt"><img src="${icon(id)}" alt=""></div><div class="icHead"><b>${it.name}</b><small>${KIND(it)}${n>1?` · ×${n}`:''}</small></div></div>${lines.length?`<div class="st">${lines.join(' · ')}</div>`:''}${it.desc?`<div class="ds">${it.desc}</div>`:''}${moveHint(it)}${it.set?setCard(it.set):''}${it.block?`<div class="ds">Wear it in an accessory slot, then hold right-click (or ${KEYNAME(SET.bind.block)}) to block. Raise it just as a hit lands to parry.</div>`:''}${extra}`;}
+  return `<div class="icard"><div class="icArt"><img src="${icon(id)}" alt=""></div><div class="icHead"><b>${it.name}</b><small>${KIND(it)}${n>1?` · ×${n}`:''}</small></div></div>${lines.length?`<div class="st">${lines.join(' · ')}</div>`:''}${it.desc?`<div class="ds">${it.desc}</div>`:''}${moveHint(it)}${it.set?setCard(it.set):''}${it.block?`<div class="ds">Wear it in an accessory slot, then hold right-click (or ${KEYNAME(SET.bind.block)}) to block. Raise it just as a hit lands to parry.</div>`:''}${usedIn(id)}${extra}`;}
 document.addEventListener('mouseover',e=>{const el=e.target.closest&&e.target.closest('.slot,.rec');hoverSlot=el&&el.classList.contains('slot')?el:null;if(!el){$('tip').hidden=true;return;}
-  if(el.classList.contains('rec')){const r=RECIPES[+el.dataset.r];if(!r){$('tip').hidden=true;return;}$('tip').innerHTML=itemCard(r[0],r[1],`<div class="ds mk">${el.classList.contains('can')?'Click to craft · Shift-click for 5':'Missing something'}${r[3]?` · at ${ITEMS[r[3]].name}`:''}</div>`);$('tip').hidden=false;placeTip(e.clientX+16,e.clientY+14);return;}
+  if(el.classList.contains('rec')){const r=RECIPES[recIdx(el)[0]];if(!r){$('tip').hidden=true;return;}$('tip').innerHTML=itemCard(r[0],r[1],`<div class="ds mk">${el.classList.contains('can')?'Click to craft · Shift-click for 5 · Ctrl-click for as many as you can':'Missing something'}${r[3]?` · at ${ITEMS[r[3]].name}`:''}</div>`);$('tip').hidden=false;placeTip(e.clientX+16,e.clientY+14);return;}
   const s=slotData(el.dataset.kind,+el.dataset.i);if(!s){$('tip').hidden=true;return;}
-  $('tip').innerHTML=itemCard(s.id,s.n,side&&side.kind==='shop'&&el.dataset.kind==='inv'?`<div class="ds mk">Sells for ${Math.max(1,Math.floor(ITEMS[s.id].value/5))*s.n} coins</div>`:'');$('tip').hidden=false;placeTip(e.clientX+16,e.clientY+14);});
+  $('tip').innerHTML=itemCard(s.id,s.n,selling()&&el.dataset.kind==='inv'?`<div class="ds mk">Sells for ${sellPrice(s)} coins · Shift-click to sell</div>`:'');$('tip').hidden=false;placeTip(e.clientX+16,e.clientY+14);});
 // the room check lives on the Town page (click, or A on a gamepad, which clicks buttons)
-$('sideBody').addEventListener('click',e=>{if(e.target.closest('#houseBtn'))tryMoveIn(checkRoom(Math.floor(player.x),Math.floor(player.y+.5)),true);});
-$('sortBtn').addEventListener('click',()=>{const rest=player.inv.slice(10).filter(Boolean);const merged=[];for(const s of rest){const m=merged.find(x=>x.id===s.id&&x.n<maxOf(s.id));if(m){const k=Math.min(s.n,maxOf(s.id)-m.n);m.n+=k;s.n-=k;if(s.n)merged.push(s);}else merged.push(s);}const order=Object.keys(ITEMS);merged.sort((a,b)=>order.indexOf(a.id)-order.indexOf(b.id));for(let i=10;i<40;i++)player.inv[i]=merged[i-10]||null;invDirty=true;});
+$('sideBody').addEventListener('click',e=>{if(e.target.closest('#houseBtn'))tryMoveIn(checkRoom(Math.floor(player.x),Math.floor(player.y+.5)),true);
+  const c=e.target.closest('.chestBtns button');if(c)chestAct(c.dataset.c);if(e.target.closest('#sellBox'))sellCursor();});
+// Sort: the pack (not the hotbar) merged into full stacks, by kind in the crafting categories' order, then by name
+$('sortBtn').addEventListener('click',()=>{const rest=player.inv.slice(10).filter(Boolean);const merged=[];for(const s of rest){const m=merged.find(x=>x.id===s.id&&x.n<maxOf(s.id));if(m){const k=Math.min(s.n,maxOf(s.id)-m.n);m.n+=k;s.n-=k;if(s.n)merged.push(s);}else merged.push(s);}const cat=CCAT.slice(1).map(c=>c[0]);merged.sort((a,b)=>cat.indexOf(craftCat(a.id))-cat.indexOf(craftCat(b.id))||ITEMS[a.id].name.localeCompare(ITEMS[b.id].name)||b.n-a.n);for(let i=10;i<40;i++)player.inv[i]=merged[i-10]||null;invDirty=true;});
 export let heartsKey='';
 export function renderHearts(){const per=20,n=Math.ceil(player.max/per);const key=player.hp+'/'+player.max+'/'+Math.floor(player.mana)+'/'+player.maxMana;if(key===heartsKey)return;heartsKey=key;let h='';for(let i=0;i<n;i++){const f=clamp((player.hp-i*per)/per,0,1);h+=`<img src="${icon('heart')}" alt="" style="opacity:${f>0?1:.28};transform:scale(${f>0?.65+.35*f:.8});filter:${f>0?'none':'grayscale(1)'}">`;}$('hearts').innerHTML=h;
   let m='';for(let i=0;i<player.maxMana/20;i++){const f=clamp((player.mana-i*20)/20,0,1);m+=`<img src="${icon('manacrystal')}" alt="" style="opacity:${f>0?1:.3};transform:scale(${f>0?.6+.4*f:.75});filter:${f>0?'none':'grayscale(1)'}">`;}$('mana').innerHTML=m;

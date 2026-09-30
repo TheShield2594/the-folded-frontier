@@ -36,14 +36,19 @@
     </div>
   </div>
   <div id="panel" hidden>
-    <div id="tabs" role="tablist" aria-label="Backpack pages"><button type="button" role="tab" data-tab="inv"><img alt=""><span>Backpack</span></button><button type="button" role="tab" data-tab="craft"><img alt=""><span>Crafting</span></button><button id="partyBtn" type="button" role="tab" data-tab="party"><img alt=""><span>Party</span></button><button id="bestBtn" type="button" role="tab" data-tab="bestiary"><img alt=""><span>Bestiary</span></button><button id="musBtn" type="button" role="tab" data-tab="museum"><img alt=""><span>Museum</span></button><button type="button" role="tab" data-tab="binder"><img alt=""><span>Binder</span></button><button id="townBtn" type="button" role="tab" data-tab="town"><img alt=""><span>Town</span></button><button id="loreBtn" type="button" role="tab" data-tab="story"><img alt=""><span>Journal</span></button></div>
-    <div class="sheet pinned" id="sideSheet" hidden><h3 id="sideTitle">Chest</h3><div id="sideBody"></div></div>
-    <div id="leftCol">
-      <div class="sheet taped tl"><h3 class="stk">Backpack</h3><div id="grid" class="grid"></div>
-        <div class="row"><button id="sortBtn" class="ghost" type="button">Sort</button><button id="quickBtn" class="ghost touchOnly" type="button">Quick move</button></div></div>
+    <!-- the backpack is one book: the tabs over it pick the left page (Crafting, a tab's page, a chest, shop or townsperson), the right page is always the backpack and gear -->
+    <div id="spread">
+      <div id="tabs" role="tablist" aria-label="Backpack pages"><button type="button" role="tab" data-tab="craft"><img alt=""><span>Crafting</span></button><button id="partyBtn" type="button" role="tab" data-tab="party"><img alt=""><span>Party</span></button><button id="bestBtn" type="button" role="tab" data-tab="bestiary"><img alt=""><span>Bestiary</span></button><button id="musBtn" type="button" role="tab" data-tab="museum"><img alt=""><span>Museum</span></button><button type="button" role="tab" data-tab="binder"><img alt=""><span>Binder</span></button><button id="townBtn" type="button" role="tab" data-tab="town"><img alt=""><span>Town</span></button><button id="loreBtn" type="button" role="tab" data-tab="story"><img alt=""><span>Journal</span></button></div>
+      <div id="book">
+        <div class="sheet page taped tl" id="leftPage">
+          <div id="craft"><h3>Crafting</h3><div id="craftBar"><input id="craftQ" type="search" placeholder="Search recipes" aria-label="Search recipes" autocomplete="off" spellcheck="false"><button id="craftCan" class="ghost" type="button" aria-pressed="false">Can make</button></div><div id="craftCat" role="group" aria-label="Recipe categories"></div><div id="stations"></div><div id="recipes"></div></div>
+          <div id="sideSheet" hidden><h3 id="sideTitle">Chest</h3><div id="sideBody"></div></div>
+        </div>
+        <div class="sheet page pinned" id="rightPage"><h3 class="stk">Backpack</h3><div id="grid" class="grid"></div>
+          <div id="gear"><span class="lab">Gear</span><div id="equip"></div><div id="defTxt"></div></div>
+          <div class="row"><button id="sortBtn" class="ghost" type="button" title="Sort the pack (not the hotbar) by kind, then name">Sort</button><button id="quickBtn" class="ghost touchOnly" type="button">Quick move</button></div></div>
+      </div>
     </div>
-    <div class="sheet pinned"><h3>Gear</h3><div id="equip"></div><div id="defTxt"></div></div>
-    <div class="sheet taped tr" id="craft"><h3>Crafting</h3><div id="craftBar"><input id="craftQ" type="search" placeholder="Search recipes" aria-label="Search recipes" autocomplete="off" spellcheck="false"><button id="craftCan" class="ghost" type="button" aria-pressed="false">Can make</button></div><div id="craftCat" role="group" aria-label="Recipe categories"></div><div id="stations"></div><div id="recipes"></div></div>
   </div>
   <div id="toasts"></div>
   <div id="nums"></div>
@@ -68,7 +73,7 @@
           <dt><kbd>Left click</kbd></dt><dd>Use the held item: mine, swing, place blocks</dd>
           <dt><kbd>Right click</kbd></dt><dd>Open doors and chests, talk to the Merchant, set spawn at a bed</dd>
           <dt><kbd>1</kbd>–<kbd>0</kbd> / wheel</dt><dd>Pick a hotbar slot</dd>
-          <dt><kbd>E</kbd></dt><dd>Backpack, gear and crafting. Shift-click moves items fast. The tabs on top turn to your Party, the Bestiary (every enemy you've defeated and what they dropped), the Museum and the Town</dd>
+          <dt><kbd>E</kbd></dt><dd>Backpack, gear and crafting. Shift-click moves items fast, and Ctrl-click on a recipe crafts as many as you can. The tabs on top turn to your Party, the Bestiary (every enemy you've defeated and what they dropped), the Museum and the Town</dd>
           <dt><kbd>Q</kbd> · <kbd>R</kbd></dt><dd>Switch partner · Use your partner's special move</dd>
           <dt><kbd>C</kbd></dt><dd>Hold to flatten: crawl through one-tile gaps and dodge hits</dd>
           <dt><kbd>Shift</kbd></dt><dd>Dash. You can't be hit mid-dash, and you get one dash in the air per jump. The ring at your feet shows the cooldown</dd>
