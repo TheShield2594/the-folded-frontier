@@ -81,9 +81,9 @@ function menuPad(h,e){const now=performance.now(),dt=(now-padLast)/1000;padLast=
 // what Interact reaches on a gamepad: every tile interact() (gameplay.js) handles; crops only once they are ripe unless aimed at
 const PADT=new Set([T.PEEL,T.SKETCH,T.CRANK,T.GATE,T.STACKS,T.STARDOOR,T.CRATE,T.WELLDOOR,T.SEAM,T.RIP,T.CREASE,T.SIGN,T.MURAL,T.ALTAR,T.DOOR,T.CHEST,T.CLOCK,T.BED]);
 const padTile=(x,y,aim)=>{const t=tileAt(x,y);return PADT.has(t)||((t===T.CROP||t===T.RARE)&&(aim||(meta[idx(x,y)]&3)>=2));};
-// the townsperson or tile under the right-stick aim first, else the nearest one around the player; true when it reached something
+// the townsperson (in talking range, as interact() needs) or tile under the right-stick aim first, else the nearest one around the player; true when it reached something
 export function padInteract(){const p=player;
-  if(pad.aimT>0){const tx=Math.floor(mouse.wx),ty=Math.floor(mouse.wy);if(npcs.some(n=>Math.abs(mouse.wx-n.x)<.8&&mouse.wy>n.y-.2&&mouse.wy<n.y+2)||(padTile(tx,ty,true)&&reachOK(tx,ty,6.5))){mouse.rp=true;return true;}}
+  if(pad.aimT>0){const tx=Math.floor(mouse.wx),ty=Math.floor(mouse.wy);if(npcs.some(n=>Math.abs(n.x-p.x)<6&&Math.abs(mouse.wx-n.x)<.8&&mouse.wy>n.y-.2&&mouse.wy<n.y+2)||(padTile(tx,ty,true)&&reachOK(tx,ty,6.5))){mouse.rp=true;return true;}}
   let best=null,bd=9;for(const n of npcs){if(Math.abs(n.x-p.x)>=3||Math.abs(n.y-p.y)>=2.5)continue;const d=Math.hypot(n.x-p.x,n.y+1-(p.y+.9));if(d<bd){bd=d;best=[n.x,n.y+1];}}
   for(let y=Math.floor(p.y)-1;y<=Math.floor(p.y)+3;y++)for(let x=Math.floor(p.x)-3;x<=Math.floor(p.x)+3;x++){if(!padTile(x,y))continue;const d=Math.hypot(x+.5-p.x,y+.5-(p.y+.9));if(d<bd){bd=d;best=[x+.5,y+.5];}}
   if(best){mouse.wx=best[0];mouse.wy=best[1];mouse.rp=true;return true;}return false;}

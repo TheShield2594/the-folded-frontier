@@ -1073,6 +1073,14 @@ test('gamepad: menus, interact, quick heal and block',async({page})=>{
   // B held with nothing in reach blocks: out on open ground away from the cabin (the button is still held from above: release it first)
   await page.evaluate(async()=>{const g=await import('/src/game.js'),p=g.player,x=Math.floor(g.W*.85);let y=g.H-2;while(y>1&&!(g.tileAt(x,y-1)&&!g.tileAt(x,y)&&!g.tileAt(x,y+1)))y--;
     for(let dy=-1;dy<=3;dy++)for(let dx=-3;dx<=3;dx++)if(g.tileAt(x+dx,y+dy)===g.T.DOOR||g.tileAt(x+dx,y+dy)===g.T.CHEST)g.setTile(x+dx,y+dy,0);p.x=x+.5;p.y=y;p.vx=p.vy=0;g.pad.aimT=0;});
+  // a townsperson aimed at beyond talking range (6 tiles, as with the Reach accessory's longer aim) isn't reached
+  const far=await page.evaluate(async()=>{const g=await import('/src/game.js'),p=g.player,n={x:p.x+7,y:p.y,type:'guide'};g.npcs.push(n);
+    g.pad.aimT=1;g.mouse.wx=n.x;g.mouse.wy=n.y+1;const r=g.padInteract();g.mouse.rp=false;g.npcs.splice(g.npcs.indexOf(n),1);g.pad.aimT=0;return r;});
+  expect(far).toBe(false);
+  // Block on its own button (here R3) raises the shield through held('block'), without Interact
+  const own=await page.evaluate(async()=>{const g=await import('/src/game.js'),b=window.__gp.buttons;g.SET.pad.block=11;b[11].pressed=true;g.handlePad();g.updatePlayer(1/60);const r=[g.player.blocking,g.pad.blk];
+    b[11].pressed=false;g.handlePad();g.updatePlayer(1/60);r.push(g.player.blocking);g.SET.pad.block=-1;return r;});
+  expect(own).toEqual([true,false,false]);
   r=await pad([{up:[1]},{down:[1],hold:1,ev:'import("/src/game.js").then(g=>g.pad.blk)'}]);
   expect(r.out[0]).toBe(true);
   // the pad dropping out while B is held lowers the shield
