@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import {
   bossIntro,
   $,BADGES,BIO,blk,burst,clamp,H,heal,hurtPlayer,iconTex,inkMoon,isNight,isSolid,ITEMS,pad,rand,
-  renderQuests,scene,setInvDirty,FOERIG,makeRig,SFX,shake,sky,spriteMat,stat,T,tileAt,toast,U,NDL,
+  APEX_V,CORNER_NUDGE,renderQuests,scene,setInvDirty,FOERIG,makeRig,SFX,shake,sky,spriteMat,stat,T,tileAt,toast,U,NDL,
   updateCoins,W,
 } from './game.js';
 
@@ -21,12 +21,17 @@ export function collide(e,dt){const steps=Math.max(1,Math.ceil(Math.max(Math.abs
   for(let s=0;s<steps;s++){
     const ox=e.x;e.x+=e.vx*sdt;
     if(boxHits(e.x,e.y,e.w,e.h)){
-      if(e.step&&wasGround&&!boxHits(e.x,Math.floor(e.y+1e-3)+1,e.w,e.h)&&!boxHits(ox,Math.floor(e.y+1e-3)+1,e.w,e.h)){e.y=Math.floor(e.y+1e-3)+1;e.stepped=.12;}
+      const top=Math.floor(e.y+1e-3)+1,lift=top-e.y;
+      // step up a 1-tile ledge; a rising (or topping out) player who clips a ledge's top corner by a hair is pushed up onto it.
+      // stepOff keeps where the body was drawn, so the sprite and camera ease up instead of popping (updatePlayer)
+      if(((e.step&&wasGround)||(e===player&&!wasGround&&e.vy>-APEX_V&&lift<=CORNER_NUDGE))&&!boxHits(e.x,top,e.w,e.h)&&!boxHits(ox,top,e.w,e.h)){e.y=top;e.stepOff=Math.max(-1.5,(e.stepOff||0)-lift);if(e.vy<0)e.vy=0;}
       else{if(e.vx>0)e.x=Math.floor(e.x+e.w/2)-e.w/2-1e-4;else if(e.vx<0)e.x=Math.floor(e.x-e.w/2)+1+e.w/2+1e-4;else e.x=ox;e.hitWall=e.vx>0?1:-1;e.vx=0;}}
     const py=e.y;e.y+=e.vy*sdt;
     if(e.vy<=0){if(boxHits(e.x,e.y,e.w,e.h,py,e.drop)){e.y=Math.floor(e.y)+1;if(e.vy<-1)e.landV=e.vy;e.vy=0;e.onGround=true;}}
-    else if(boxHits(e.x,e.y,e.w,e.h)){e.y=Math.floor(e.y+e.h)-e.h-1e-4;e.vy=0;e.hitCeil=true;}}
+    else if(boxHits(e.x,e.y,e.w,e.h)){const nx=e===player?cornerX(e):null;if(nx!=null)e.x=nx;else{e.y=Math.floor(e.y+e.h)-e.h-1e-4;e.vy=0;e.hitCeil=true;}}}
   e.x=clamp(e.x,1+e.w/2,W-1-e.w/2);}
+// a rising player whose head clips a ceiling corner slides aside (nearest side first, up to CORNER_NUDGE) and keeps rising
+function cornerX(e){for(let d=.04;d<=CORNER_NUDGE+1e-6;d+=.04)for(const s of[1,-1])if(!boxHits(e.x+s*d,e.y,e.w,e.h))return e.x+s*d;return null;}
 
 export const EN={
   slime:{w:.9,h:.7,hp:14,dmg:7,def:0,sheet:'slime',slimy:1,fw:96,fh:80,coins:[1,4],drops:[['gel',1,2,1]],col:['#6cc57a','#8fe09a','#4f9d5a']},

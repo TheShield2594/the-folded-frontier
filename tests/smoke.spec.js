@@ -804,3 +804,39 @@ test('weapon moves and armor sets',async({page})=>{
   expect(r.tip).toContain('Inkweaver set');
   expect(r.tip).toContain('3/3 worn');
 });
+
+// Jump shape (#134), stepped by hand in a cleared box underground: a held jump reaches the old height (about 4.2 tiles) within a
+// few percent, a tap is a short hop, the fall is quicker than the rise, a head that clips a ceiling corner slides past it, a foot that
+// clips a ledge's corner is lifted onto it, and a staircase eases the drawn body up instead of popping.
+test('jump shape',async({page})=>{
+  await boot(page);
+  await newSmallWorld(page);
+  const r=await page.evaluate(async()=>{
+    const g=await import('/src/game.js'),p=g.player,t=g.touch,dt=1/60;g.setState('pause');
+    const x0=30,y0=Math.floor(g.H*.3),set=(x,y,v)=>{g.tiles[g.idx(x,y)]=v;};
+    const room=()=>{for(let x=x0;x<x0+40;x++)for(let y=y0;y<y0+14;y++)set(x,y,y===y0||y===y0+13?g.T.STONE:g.T.AIR);};
+    const place=x=>{p.x=x;p.y=y0+1;p.vx=p.vy=0;p.jbuf=0;p.stepOff=0;for(let i=0;i<5;i++)g.updatePlayer(dt);};
+    // jump, holding it for hold seconds (Infinity: the whole way); returns the peak and the frames up and down
+    const jump=(hold,dx=0)=>{t.held.jump=true;if(dx)t.held.right=true;g.jumpPress();let top=0,up=0,down=0,f=0;
+      for(let i=0;i<300;i++){f+=dt;if(f>hold)t.held.jump=false;g.updatePlayer(dt);top=Math.max(top,p.y-y0-1);if(p.vy>0)up++;else if(!p.onGround)down++;if(p.onGround&&i>2)break;}
+      t.held.jump=t.held.right=false;return{top,up,down};};
+    const out={};room();
+    place(x0+10);out.full=jump(Infinity);
+    place(x0+10);out.tap=jump(.08);
+    // a 1-tile overhang whose edge the head clips by 0.2 tiles
+    room();set(x0+10,y0+3,g.T.STONE);place(x0+11+p.w/2-.2);const cx=p.x;out.corner=jump(Infinity);out.nudge=p.x-cx;
+    // a foot 0.2 tiles under a ledge's top while moving into it and rising
+    room();for(let y=y0+1;y<=y0+2;y++)set(x0+12,y,g.T.STONE);p.x=x0+12-p.w/2-.05;p.y=y0+2.8;p.vx=6;p.vy=2;p.onGround=false;t.held.right=true;
+    for(let i=0;i<3;i++)g.updatePlayer(dt);t.held.right=false;out.ledge=p.y-y0;
+    // walking up a staircase: the drawn feet (y + stepOff) never jump more than a fraction of a tile in a frame
+    room();for(let s=0;s<5;s++)for(let y=y0+1;y<=y0+1+s;y++)set(x0+14+s,y,g.T.STONE);place(x0+10);t.held.right=true;
+    let prev=p.y+(p.stepOff||0),maxJ=0,stepped=0;for(let i=0;i<90;i++){g.updatePlayer(dt);const v=p.y+(p.stepOff||0);maxJ=Math.max(maxJ,Math.abs(v-prev));prev=v;if(p.stepOff<-.5)stepped++;}
+    t.held.right=false;out.climbed=p.y-y0-1;out.maxJ=maxJ;out.stepped=stepped;return out;
+  });
+  expect(r.full.top).toBeGreaterThan(4.05);expect(r.full.top).toBeLessThan(4.45);
+  expect(r.tap.top).toBeGreaterThan(1.1);expect(r.tap.top).toBeLessThan(2.8);
+  expect(r.full.down).toBeLessThan(r.full.up);
+  expect(r.corner.top).toBeGreaterThan(3.5);expect(Math.abs(r.nudge)).toBeGreaterThan(.1);expect(Math.abs(r.nudge)).toBeLessThanOrEqual(.31);
+  expect(r.ledge).toBeGreaterThanOrEqual(3);
+  expect(r.climbed).toBeGreaterThanOrEqual(4);expect(r.stepped).toBeGreaterThan(0);expect(r.maxJ).toBeLessThan(.5);
+});
