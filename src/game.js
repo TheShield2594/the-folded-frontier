@@ -18,6 +18,7 @@ export * from './ui.js';
 export * from './input.js';
 export * from './gameplay.js';
 export * from './view.js';
+export * from './feel.js';
 export * from './post.js';
 export * from './boss.js';
 export * from './partners.js';

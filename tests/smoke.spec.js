@@ -885,3 +885,48 @@ test('camera and animation feel',async({page})=>{
   expect(r.kick).toBeGreaterThan(.2);expect(r.kick).toBeLessThan(.4);expect(r.kickBack).toBeLessThan(.02);
   expect(r.rmTrauma).toBe(0);expect(r.rmKick).toBe(0);expect(r.rmLive).toEqual([0,0,0,0]);
 });
+
+test('footsteps, landings and polish touches',async({page})=>{
+  await boot(page);
+  await newSmallWorld(page);
+  const r=await page.evaluate(async()=>{
+    const g=await import('/src/game.js'),p=g.player,t=g.touch,dt=1/60;g.setState('pause');g.SET.motion='full';g.SET.hitstop=true;
+    const x0=30,y0=Math.floor(g.H*.3),set=(x,y,v)=>{g.tiles[g.idx(x,y)]=v;};
+    const room=fl=>{for(let x=x0;x<x0+60;x++)for(let y=y0;y<y0+22;y++)set(x,y,y===y0?fl:y===y0+21?g.T.STONE:g.T.AIR);};
+    const step=(n=1)=>{for(let i=0;i<n;i++)g.updatePlayer(dt);};
+    const place=x=>{p.x=x;p.y=y0+1;p.vx=p.vy=0;p.jbuf=0;p.stepOff=0;p.face=1;p.swing=null;step(60);};
+    // record the movement sounds instead of playing them
+    const heard=[],spy=k=>{const f=g.SFX[k];g.SFX[k]=(...a)=>{heard.push([k,...a]);return f(...a);};};for(const k of['step','land','skid','cloth','heart'])spy(k);
+    const run=fl=>{room(fl);place(x0+5);heard.length=0;t.held.right=true;let cyc=0,g0=p.gait;for(let i=0;i<150;i++){step();if(p.gait<g0)cyc++;g0=p.gait;}t.held.right=false;step(40);
+      const st=heard.filter(h=>h[0]==='step');return{mats:[...new Set(st.map(h=>h[1]))],n:st.length,cyc};};
+    const out={};
+    const n0=g.printCount();out.sand=run(g.T.SAND);out.sandPrints=g.printCount()-n0;
+    out.stone=run(g.T.STONE);out.wood=run(g.T.PLANK);out.snow=run(g.T.SNOW);out.cloud=run(g.T.CLOUD);
+    // a hop lands softly, a long fall lands hard
+    room(g.T.STONE);place(x0+20);heard.length=0;t.held.jump=true;g.jumpPress();step(4);t.held.jump=false;step(80);
+    out.cloth=heard.some(h=>h[0]==='cloth');const hop=heard.find(h=>h[0]==='land');
+    p.y=y0+19;p.vy=0;p.onGround=false;heard.length=0;step(120);const fall=heard.find(h=>h[0]==='land');
+    out.hop=hop&&[hop[2],hop[3]];out.fall=fall&&[fall[2],fall[3]];
+    // speed lines while dashing
+    p.dashT=.2;p.dashDir=1;step(5);out.lines=g.speedLineCount();p.dashT=0;step(30);
+    // slow motion eases game time down and back; reduced motion turns it off
+    g.slowMo(.3);let lo=1;for(let i=0;i<6;i++)lo=Math.min(lo,g.slowScale(dt));let s=lo;for(let i=0;i<60;i++)s=g.slowScale(dt);out.slow=[lo,s];
+    g.SET.motion='reduce';g.slowMo(.3);out.slowRm=g.slowScale(dt);g.SET.motion='full';
+    // a connecting hit flashes the weapon
+    g.hitConfirm(p.x+1,p.y+1,1);out.flash=p.hitFlash;
+    // low health: a heartbeat and the red edge
+    heard.length=0;p.hp=p.max*.1;step(120);out.beats=heard.filter(h=>h[0]==='heart').length;out.low=g.lowF;p.hp=p.max;step(120);out.lowAfter=g.lowF;
+    return out;
+  });
+  expect(r.sand.mats).toEqual(['sand']);expect(r.stone.mats).toEqual(['stone']);expect(r.wood.mats).toEqual(['wood']);
+  expect(r.snow.mats).toEqual(['snow']);expect(r.cloud.mats).toEqual(['cloud']);
+  // two steps per stride
+  expect(Math.abs(r.sand.n-2*r.sand.cyc)).toBeLessThanOrEqual(2);expect(r.sand.cyc).toBeGreaterThan(2);
+  expect(r.sandPrints).toBeGreaterThan(3);
+  expect(r.cloth).toBe(true);expect(r.hop).toBeTruthy();expect(r.fall).toBeTruthy();
+  expect(r.fall[0]).toBeGreaterThan(r.hop[0]);expect(r.fall[1]).toBe(true);expect(r.hop[1]).toBe(false);
+  expect(r.lines).toBeGreaterThan(0);
+  expect(r.slow[0]).toBeLessThan(.5);expect(r.slow[1]).toBe(1);expect(r.slowRm).toBe(1);
+  expect(r.flash).toBeGreaterThan(0);
+  expect(r.beats).toBeGreaterThan(0);expect(r.low).toBeGreaterThan(.5);expect(r.lowAfter).toBeLessThan(.05);
+});

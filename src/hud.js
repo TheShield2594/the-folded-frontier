@@ -17,7 +17,7 @@ export function renderBinds(){$('binds').innerHTML=Object.keys(BINDLAB).map(a=>`
   $('padBinds').innerHTML=Object.keys(PADLAB).map(a=>`<div class="bind"><span>${PADLAB[a]}</span><button type="button" data-a="${a}" class="${padRebinding===a?'wait':''}">${padRebinding===a?'Press a button…':PADNAME(SET.pad[a])}</button></div>`).join('');}
 $('binds').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;padRebinding=null;rebinding=b.dataset.a;renderBinds();});
 $('padBinds').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;rebinding=null;padRebinding=b.dataset.a;renderBinds();});
-function openSettings(){$('sndC').checked=soundOn;$('volMaster').value=SET.vol;$('volMusic').value=SET.music;$('volSfx').value=SET.sfx;$('volAmb').value=SET.amb;$('zoomR').value=SET.zoom;$('uiR').value=SET.ui;$('txtR').value=SET.text;uiLabels();$('shakeC').checked=SET.shake;$('hitC').checked=SET.hitstop;$('numsC').checked=SET.nums;$('fgC').checked=SET.fg;$('postC').checked=SET.post!==false;$('postC').disabled=!postOK;$('cbS').value=SET.cb;$('introC').checked=SET.intro;$('hintsC').checked=SET.hints;$('motionS').value=SET.motion;$('teleC').checked=SET.tele;$('tspdS').value=SET.tspd;$('blockS').value=SET.blockTog?'tog':'hold';$('drawS').value=SET.drawTog?'tog':'hold';rebinding=null;renderBinds();$('settings').hidden=false;}
+function openSettings(){$('sndC').checked=soundOn;$('volMaster').value=SET.vol;$('volMusic').value=SET.music;$('volSfx').value=SET.sfx;$('volAmb').value=SET.amb;$('zoomR').value=SET.zoom;$('uiR').value=SET.ui;$('txtR').value=SET.text;uiLabels();$('shakeC').checked=SET.shake;$('hitC').checked=SET.hitstop;$('heartC').checked=SET.heart!==false;$('numsC').checked=SET.nums;$('fgC').checked=SET.fg;$('postC').checked=SET.post!==false;$('postC').disabled=!postOK;$('cbS').value=SET.cb;$('introC').checked=SET.intro;$('hintsC').checked=SET.hints;$('motionS').value=SET.motion;$('teleC').checked=SET.tele;$('tspdS').value=SET.tspd;$('blockS').value=SET.blockTog?'tog':'hold';$('drawS').value=SET.drawTog?'tog':'hold';rebinding=null;renderBinds();$('settings').hidden=false;}
 export function closeSettings(){$('settings').hidden=true;rebinding=padRebinding=null;saveSettings();}
 $('sndC').addEventListener('change',e=>{SET.snd=e.target.checked;setSoundOn(SET.snd);initAudio();applyVolumes();});
 $('volMaster').addEventListener('input',e=>{SET.vol=+e.target.value;initAudio();applyVolumes();});
@@ -30,7 +30,7 @@ function uiLabels(){$('uiV').textContent=SET.ui+'%';$('txtV').textContent=SET.te
 $('uiR').addEventListener('input',e=>{SET.ui=+e.target.value;uiLabels();});$('txtR').addEventListener('input',e=>{SET.text=+e.target.value;uiLabels();});
 $('uiR').addEventListener('change',()=>{applyUI();saveSettings();});$('txtR').addEventListener('change',()=>{applyUI();saveSettings();});
 $('shakeC').addEventListener('change',e=>{SET.shake=e.target.checked;});
-$('hitC').addEventListener('change',e=>{SET.hitstop=e.target.checked;});
+$('hitC').addEventListener('change',e=>{SET.hitstop=e.target.checked;});$('heartC').addEventListener('change',e=>{SET.heart=e.target.checked;});
 $('numsC').addEventListener('change',e=>{SET.nums=e.target.checked;});
 $('fgC').addEventListener('change',e=>{SET.fg=e.target.checked;});
 $('postC').addEventListener('change',e=>{SET.post=e.target.checked;});

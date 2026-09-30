@@ -15,7 +15,7 @@ import {
   worldClock,worldTime,digFossil,evKill,fcount,npcLine,plain,clockRoom,dunRoom,stacksAt,vaultAt,crateAt,wellAt,layerAt,crankAt,gateAt,
   guideEv,trickAt,dismount,MOUNTS,petS,toggleMount,togglePet,NDL,emit,loreChest,readMural,PF,lookColors,SHEETS,canvasTex,fullSet,setOn,setMul,SETS,
   openPack,openBinder,
-  makeRig,rigFree,playerLook,playerRigKind
+  makeRig,rigFree,playerLook,playerRigKind,dipFx,skidFx,jumpFx,landFx,feelUpdate,hitConfirm,HITFLASH_T,slowMo
 } from './game.js';
 
 // ================= gameplay =================
@@ -66,7 +66,7 @@ export function hurtEnemy(e,dmg,dir,kb=5,crit=false,elem=null){if(e.dying)return
   floatText(e.x,e.y+e.h,crit?real+'!':real,crit?'crit':tag==='weak'?'weak':'');if(tag&&!(e.tagT>0)){e.tagT=1.2;floatText(e.x,e.y+e.h+.6,tag==='weak'?'weak!':'resist',tag==='weak'?'tag '+elem:'miss');}burst(e.x,e.y+e.h/2,e.d.col,5,4);emit('hit',e.x-dir*e.w*.3,e.y+e.h/2,{n:crit?9:5});SFX.hit();shake(crit?.25:.1);hitPause(crit?.09:.04);e.hpShow=3;
   if(e.hp<=0)killEnemy(e);else if(elem&&tag!=='res')applyStatus(e,elem,real);}
 // a boss's last hit starts its defeat sequence (updateEnemies holds it for DEFEAT_T, then kills it for real and the loot drops)
-function killEnemy(e){if(e.d.boss&&!e.parent){if(!e.defeat){e.defeat=true;e.act='defeat';e.at=DEFEAT_T;e.hp=0;e.st=null;hitPause(.35);bossDefeatFx(e);return;}if(e.act==='defeat')return;}e.dying=.3;stat('kills');bestKill(e);evKill(e);palEv('kill',e);hitPause(e.d.boss?.35:.07);SFX.brk();burst(e.x,e.y+e.h/2,e.d.col.concat(['#fbf8f0']),e.d.boss?80:22,e.d.boss?9:6,{grav:9,life:1.3});
+function killEnemy(e){if(e.d.boss&&!e.parent){if(!e.defeat){e.defeat=true;e.act='defeat';e.at=DEFEAT_T;e.hp=0;e.st=null;hitPause(.35);slowMo(.4);bossDefeatFx(e);return;}if(e.act==='defeat')return;}e.dying=.3;if(e.elite)slowMo(.3);stat('kills');bestKill(e);evKill(e);palEv('kill',e);hitPause(e.d.boss?.35:.07);SFX.brk();burst(e.x,e.y+e.h/2,e.d.col.concat(['#fbf8f0']),e.d.boss?80:22,e.d.boss?9:6,{grav:9,life:1.3});
   const[c0,c1]=e.d.coins;const coins=Math.round(randi(c0,c1)*(hasBadge('money')?1.5:1)*(e.elite?3:1)*(e.awake?1.5:1));if(!e.parent&&!e.d.boss){if(hasBadge('heartf')&&Math.random()<.22)dropItem('hpheart',1,e.x,e.y+e.h/2);if(hasBadge('flowerf')&&Math.random()<.22)dropItem('mpstar',1,e.x,e.y+e.h/2);}dropItem('coin',e.inked?coins*2:coins,e.x,e.y+e.h/2);if(e.inked||e.type==='wraith'){if(Math.random()<.5)dropItem('moonink',randi(1,e.type==='wraith'?3:2),e.x,e.y+e.h/2);if(e.inked&&Math.random()<.05)dropItem('seed_moon',1,e.x,e.y+e.h/2);}else if(isNight()&&!e.d.boss&&!e.parent&&Math.random()<.04)dropItem('moonink',1,e.x,e.y+e.h/2);for(const[id,a,b,p]of e.d.drops)if(Math.random()<(e.elite?Math.min(1,p*2):p)){const n=randi(a,b)+(e.elite?1:0);dropItem(id,n,e.x,e.y+e.h/2);bestDrop(e,id,n);}
   if(e.trait==='golden'){dropItem('coin',coins*4+randi(20,60),e.x,e.y+e.h/2);if(Math.random()<.35)dropItem('goldbar',1,e.x,e.y+e.h/2);burst(e.x,e.y+e.h/2,['#f1c04f','#fff3c0','#d4a02a'],30,6,{bright:1});}
   else if(e.trait==='inky'&&Math.random()<.7)dropItem('moonink',randi(1,3),e.x,e.y+e.h/2);
@@ -112,7 +112,7 @@ function statusOverlay(dt){const p=player,st=p.st||{},m=p.mesh,f=st.burn>0?0:st.
 // shields: the best shield worn in an accessory slot blocks. Raising it within PARRY_W of a hit parries: no damage, attacker staggered, projectiles bounce back.
 const PARRY_W=.2,COUNTER_W=.9;
 function parry(src){const p=player;p.inv_t=.35;p.parryT=.3;p.counterT=COUNTER_W;p.parryOK=false;p.shieldFlash=.3;stat('parries');const cx=p.x+p.face*.7,cy=p.y+1.1;
-  floatText(cx,p.y+2.4,'PARRY!','nice');SFX.parry();hitPause(.12);shake(.22);if(src&&src.x!=null)kick(src.x-p.x,0,.2);punch();burst(cx,cy,['#fff3c0','#f1c04f','#fbf8f0'],18,7,{grav:0,life:.35,bright:1});$('vig').classList.add('parry');setTimeout(()=>$('vig').classList.remove('parry'),200);
+  floatText(cx,p.y+2.4,'PARRY!','nice');SFX.parry();hitPause(.12);slowMo(.25);shake(.22);if(src&&src.x!=null)kick(src.x-p.x,0,.2);punch();burst(cx,cy,['#fff3c0','#f1c04f','#fbf8f0'],18,7,{grav:0,life:.35,bright:1});$('vig').classList.add('parry');setTimeout(()=>$('vig').classList.remove('parry'),200);
   if(src.k){const sp=Math.hypot(src.vx,src.vy)*1.2;src.hostile=false;src.src='parry';src.hit=new Set();src.dmg*=1.5;src.t=0;src.vx=p.face*Math.max(Math.abs(src.vx),sp*.8);src.vy=-src.vy*.5;return;}
   const e=src.parent||src;if(e.dying)return;e.stun=e.d.boss?.5:1.4;e.vx=(e.x>p.x?1:-1)*(e.d.boss?2:9);if(!e.d.fly)e.vy=Math.max(e.vy,5);e.flash=.2;burst(e.x,e.y+e.h+.2,['#fff3c0','#ffe58a'],8,2,{grav:0,life:.6,bright:1});}
 export function hurtPlayer(dmg,from,src,elem){if(player.dead)return;if(player.dashI>0){if(!player.dodged){player.dodged=true;floatText(player.x,player.y+2.1,'DODGE!','nice');stat('dodges');}return;}if(player.inv_t>0)return;
@@ -435,12 +435,12 @@ function interact(){const tx=Math.floor(mouse.wx),ty=Math.floor(mouse.wy);
   if(t===T.BED){player.spawn={x:tx+.5,y:ty};toast('Spawn point set.','good');SFX.pick();return;}}
 
 // a jump that letting go of jump can cut short (ground, coyote and double jumps, stomp bounces), plus its takeoff squash
-function jumpFired(){const p=player;p.jumpCut=true;p.jumpT=0;p.takeT=TAKE_T;}
+function jumpFired(){const p=player;p.jumpCut=true;p.jumpT=0;p.takeT=TAKE_T;jumpFx();}
 // a platform within 3 rows under the feet: holding down drops through it, so no fast-fall there
 function platBelow(p){const y=Math.floor(p.y+1e-3);for(let x=Math.floor(p.x-p.w/2);x<=Math.floor(p.x+p.w/2);x++)for(let d=0;d<=3;d++)if(tileAt(x,y-d)===T.PLATFORM)return true;return false;}
 export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();setCheck();updateDashHud(dt);updateDrawHud();if(p.dead){p.dashT=0;updateTool(null);updateShield(dt);updateNock();dieAnim(dt);p.deadT-=dt;$('deadTxt').textContent=`Refolding in ${Math.max(0,Math.ceil(p.deadT))}…`;if(p.deadT<=0)respawn();return;}
   const cx=Math.floor(p.x);const lt=tileAt(cx,Math.floor(p.y+.7));p.inLiq=TP[lt].liq?lt:0;
-  if(p.inLiq===T.INK&&!p.wasInk)stat('swims');p.wasInk=p.inLiq===T.INK;
+  if(p.inLiq===T.INK&&!p.wasInk)stat('swims');if((p.inLiq===T.INK)!==!!p.wasInk)dipFx(!!p.wasInk);p.wasInk=p.inLiq===T.INK;
   if(p.inLiq===T.LAVA&&!hasBuff('fire')){if(p.inv_t<=0)hurtPlayer(30,p.x-p.face,null,'fire');burst(p.x,p.y+.5,['#ff8a3d','#ffd66b'],1,2,{grav:-4,bright:1});}
   const hooked=hook.state===2;
   const onRope=tileAt(cx,Math.floor(p.y+.9))===T.ROPE||tileAt(cx,Math.floor(p.y+.2))===T.ROPE;
@@ -458,7 +458,7 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();se
   // from it, and brakes a little harder so the turn feels quick rather than slippery
   if(p.skidT>0){p.skidT-=dt;if(!p.onGround||hooked)p.skidT=0;else if(Math.random()<dt*30)emit('dust',p.x+p.skidDir*.35,p.y+.05,{n:1,spd:1.5});}
   else if(p.onGround&&!hooked&&!p.swing&&!p.blocking&&!p.flat&&!p.mount&&!p.climb&&p.dashT<=0&&((left&&!right&&p.vx>SKID_V)||(right&&!left&&p.vx<-SKID_V))){
-    p.skidT=SKID_T;p.skidDir=Math.sign(p.vx);emit('dust',p.x+p.skidDir*.4,p.y+.05,{n:7,spd:2.6});SFX.rustle(.08,.3);}
+    p.skidT=SKID_T;p.skidDir=Math.sign(p.vx);emit('dust',p.x+p.skidDir*.4,p.y+.05,{n:7,spd:2.6});skidFx();}
   const skid=p.skidT>0;const spd=6.2*(hasAcc('speed')?1.2:1)*(hasBuff('swift')?1.25:1)*(hasBuff('charged')?1.2:1)*(hasBuff('fed')?1.05:1)*(p.inLiq?.62:1)*(p.climb?.35:1)*(p.blocking?.45:1)*(p.draw?.6:1)*(heavyWind?.5:1)*(st.ink>0?.7:1)*(p.mount?MOUNTS[p.mount].spd:1);const acc=(p.onGround?55:30)*(p.mount?1.4:1)*(skid?1.5:1);
   if(!hooked){if(left&&!right){p.vx=Math.max(p.vx-acc*dt,-spd);if(!p.swing&&!p.blocking&&!skid)p.face=-1;}else if(right&&!left){p.vx=Math.min(p.vx+acc*dt,spd);if(!p.swing&&!p.blocking&&!skid)p.face=1;}else p.vx*=Math.pow(p.onGround?.0004:.25,dt);
     if(Math.abs(p.vx)>spd)p.vx*=Math.pow(.05,dt);}
@@ -477,7 +477,7 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();se
   // jump cut: letting go early cuts the rise once per jump (not the hook's release, the Wings or swimming, which never set jumpCut)
   if(p.jumpCut){p.jumpT+=dt;if(p.vy<=0||p.inLiq||p.climb||hooked)p.jumpCut=false;else if(!held('jump')&&p.jumpT>=JUMP_MINT){p.vy*=JUMP_CUT;p.jumpCut=false;}}
   if(p.climb){p.vy=upH?5.5:dnH?-5.5:0;p.climbT=(p.climbT||0)+Math.abs(p.vy)*dt*.6;p.x+=(cx+.5-p.x)*Math.min(1,dt*12);p.usedDouble=false;}
-  else if(!hooked){const fly=hasAcc('fly')&&held('jump')&&!p.onGround&&!p.inLiq&&!p.flat&&p.flyT>0&&p.vy<9;if(fly)p.jumpCut=false;
+  else if(!hooked){const fly=hasAcc('fly')&&held('jump')&&!p.onGround&&!p.inLiq&&!p.flat&&p.flyT>0&&p.vy<9;p.flying=fly;if(fly)p.jumpCut=false;
     // plain gravity is shaped: lighter at the top of a held jump, heavier falling, heavier still fast-falling (down held, no platform
     // below to drop through). The Feather glide, swimming and the Wings keep their own terms.
     if(hasBadge('feather')&&held('jump')&&p.vy<-4&&!p.inLiq){p.vy-=52*dt;p.vy=Math.max(p.vy,-4);}else if(p.inLiq){p.vy-=16*dt;if(held('jump'))p.vy=Math.min(p.vy+34*dt,6);if(p.vy<-5)p.vy=-5;}
@@ -489,8 +489,8 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();se
   updateHook(dt);
   p.prevY=p.y;p.step=true;
   collide(p,dt);if(p.stepOff)p.stepOff=p.stepOff>-.01?0:p.stepOff*Math.exp(-3*dt/STEP_T);if(p.onGround||p.climb||hooked){p.flyT=FLY_T;}if(p.onGround){p.usedDouble=false;p.airDashed=false;}
+  if(p.landV<-4)landFx(p.landV);
   if(p.landV<-9){emit('dust',p.x,p.y,{n:p.landV<-18?10:5,spd:p.landV<-18?3.5:2});p.squash=.14;p.landT=.12;p.hardLand=p.landV<HARD_LAND;if(p.hardLand){p.landT=Math.abs(p.vx)>2?.18:.34;kick(0,-1,.2);}}p.landV=0;
-  if(p.onGround&&Math.abs(p.vx)>3.5){p.stepT=(p.stepT||0)-dt;if(p.stepT<=0){p.stepT=.24;const gt=tileAt(Math.floor(p.x),Math.floor(p.y-.5));if(gt&&TP[gt]&&OPAQUE[gt])burst(p.x-p.face*.25,p.y+.05,[sh(TP[gt].col,1.1),'#e9dfc9'],2,1.2,{up:1.2,grav:6,life:.5});}}
   p.squash=Math.max(0,(p.squash||0)-dt);p.takeT=Math.max(0,(p.takeT||0)-dt);
   if(p.y<-5){p.hp=0;die();}
   p.manaT=(p.manaT||0)+dt;if(p.manaT>.8&&p.mana<p.maxMana)p.mana=Math.min(p.maxMana,p.mana+dt*(3+p.maxMana*.05)*(Math.abs(p.vx)<.5?1.6:1)*(setOn('weave')?2:1));
@@ -510,7 +510,7 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();se
   if(useHeld&&!cursor&&!p.blocking){if(it)useItem(it,dt,usePr);}else{if(p.draw)releaseBow();if(p.mineTile!==-2)p.mineP=Math.max(0,p.mineP-dt*2);if(p.mineTile===-2)p.mineTile=-1;p.placeT=0;}
   if(mouse.rp)interact();
   if(p.swing){const s=p.swing;s.t+=dt;if(s.heavy&&!s.slam&&!s.rel&&s.t>=s.dur*HAM_TOP){if(useHeld&&!p.blocking){s.t=s.dur*HAM_TOP;hamCharge(s,dt);}else s.rel=true;}if(s.sword){const k=s.t/s.dur;const[tipX,tipY]=swingTip(s,Math.min(1,k));if(!s.heavy)swingStep(s,k);if(s.heavy&&!s.slam&&k>=HAM_HIT)hammerImpact(s,tipX,tipY);if(inNiceWin(s)){if(!s.cued){s.cued=true;SFX.cue();emit('sparks',tipX,tipY);}burst(tipX,tipY,['#fff3c0','#ffe58a'],1,1,{grav:0,life:.3,bright:1});}
-      if(s.heavy?k>.46&&k<.8:k>=SWKEYS[s.combo][0][0]*.5)for(const e of enemies){if(e.dying||s.hit.has(e))continue;const cx=e.x,cy=e.y+e.h/2;const dx=cx-p.x,dy=cy-(p.y+1);if((dx*p.face>-.6)&&Math.hypot(dx,dy)<2.1+(s.reach||0)+e.w/2){s.hit.add(e);if(s.charged)crack(e);const air=!s.heavy&&!p.onGround&&!p.climb&&!e.d.boss;hurtEnemy(e,s.dmg*(s.nice?1.8:1)*(s.counter?2:1)*(air&&s.combo===2?1.25:1)*rand(.9,1.1),p.face,s.kb,s.nice||s.counter,s.elem);if(s.heavy)stagger(e);if(air)airHit(s,e);if(setOn('warden')&&p.hp<p.max)p.hp=Math.min(p.max,p.hp+1);}}}
+      if(s.heavy?k>.46&&k<.8:k>=SWKEYS[s.combo][0][0]*.5)for(const e of enemies){if(e.dying||s.hit.has(e))continue;const cx=e.x,cy=e.y+e.h/2;const dx=cx-p.x,dy=cy-(p.y+1);if((dx*p.face>-.6)&&Math.hypot(dx,dy)<2.1+(s.reach||0)+e.w/2){s.hit.add(e);if(s.charged)crack(e);const air=!s.heavy&&!p.onGround&&!p.climb&&!e.d.boss;hurtEnemy(e,s.dmg*(s.nice?1.8:1)*(s.counter?2:1)*(air&&s.combo===2?1.25:1)*rand(.9,1.1),p.face,s.kb,s.nice||s.counter,s.elem);hitConfirm(cx-p.face*e.w*.35,clamp(tipY,e.y+.2,e.y+e.h-.2),p.face);if(s.counter&&e.hp<=0)slowMo(.3);if(s.heavy)stagger(e);if(air)airHit(s,e);if(setOn('warden')&&p.hp<p.max)p.hp=Math.min(p.max,p.hp+1);}}}
     if(s.t>=s.dur){p.swing=null;if(s.sword){p.lastSwingEnd=worldClock;p.swEnd=s.heavy?null:swingArm(s,1);p.lastEarly=!!s.early;if(p.niceNext){p.niceNext=false;startSwing(ITEMS[s.tool],true);}else if((mouse.l||(pad.active&&pad.held.use))&&it&&it.dmg&&!it.use&&!it.ranged&&!it.magic&&!cursor)startSwing(it,false);}}}
   // pickups magnet handled in pickups
   // mesh
@@ -528,7 +528,7 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();se
   // idle fidgets: after FIDGET_T s standing still, now and then a stretch, a look around or dusting off
   if(c==='idle'&&ct==null&&!p.mount){p.idleT=(p.idleT||0)+dt;if(!p.fid&&p.idleT>FIDGET_T&&Math.random()<dt*.4)p.fid={k:pick(['stretch','look','dust']),t:0};
     if(p.fid){const cl=p.rig.d.clips[p.fid.k];p.fid.t+=dt;if(cl&&p.fid.t<cl.len){c=p.fid.k;ct=p.fid.t;}else{p.fid=null;p.idleT=rand(2,5);}}}else{p.idleT=0;p.fid=null;}if(c==='reel0'||c==='reel1')c='reel';
-  rigPlay(p.rig,c,{t:ct});m.position.set(p.x,p.y-.08+(p.rideY||0)+(p.stepOff||0),.15);setTint(p.mat,p.x,p.y+1);statusOverlay(dt);p.mat.uniforms.uFlash.value=p.inv_t>0&&!(p.inv_t>1.3)?(Math.floor(p.inv_t*14)%2?.6:0):0;
+  rigPlay(p.rig,c,{t:ct});feelUpdate(dt,c);m.position.set(p.x,p.y-.08+(p.rideY||0)+(p.stepOff||0),.15);setTint(p.mat,p.x,p.y+1);statusOverlay(dt);p.mat.uniforms.uFlash.value=p.inv_t>0&&!(p.inv_t>1.3)?(Math.floor(p.inv_t*14)%2?.6:0):0;
   const sq=(p.takeT>0?1-.14*p.takeT/TAKE_T:p.onGround?(p.squash>0?1-p.squash*.9:1):clamp(1+p.vy*.006,.92,1.08))*(sp?sp.sq:1);m.scale.set(1/Math.sqrt(sq),sq,1);if(p.flat)m.scale.set(1.3,.42,1);if(p.cheerT>0&&!reduceMotion())m.position.y+=Math.abs(Math.sin(p.cheerT*10))*.12;
   if(p.dashT>0){m.scale.x*=1.22;m.scale.y*=.9;p.ghostT-=dt;if(p.ghostT<=0){p.ghostT=.03;spawnGhost();}}
   headTrack(dt,null,sp);p.rig.vel=[p.vx*p.face,p.vy];updateArm(sp);updateTool(sp);updateShield(dt);rigUpdate(p.rig,dt);
@@ -644,7 +644,7 @@ function updateTool(sp){const p=player,s=p.swing,R=p.rig;if(!s||!s.tool||p.dead)
   const k=clamp(s.t/s.dur,0,1),ang=sp?sp.blade:s.aim!=null?(p.face>0?s.aim:Math.PI-s.aim):lerp(1.9,-.5,Math.sin(k*Math.PI*.5)),ts=s.heavy?1.2:1,o={r:Math.PI/4-ang,sx:ts,sy:ts,abs:1,snap:1};
   // the aimed item sits behind the hand along the aim (the held piece is rigid, but its pivot rides the stretched arm)
   if(s.aim!=null)o.y=-(.55+.2*(1-k))*60*(R.d.blade||1)/(sp?sp.sc:1);rigSet(R,'held',o);
-  const f=inNiceWin(s)||s.draw>=1?.55+.2*Math.sin(worldClock*30):s.nice?.35:s.draw?s.draw*.25:0,u=R.mat.uniforms.uPF.value;u.x=R.d.pi.held;u.y=f;}
+  const f=Math.max(inNiceWin(s)||s.draw>=1?.55+.2*Math.sin(worldClock*30):s.nice?.35:s.draw?s.draw*.25:0,(p.hitFlash||0)/HITFLASH_T*.75),u=R.mat.uniforms.uPF.value;u.x=R.d.pi.held;u.y=f;}
 // a nocked arrow slides back along the bow while drawing
 let nockMesh=null,nockId=null;
 function updateNock(){const p=player,s=p.swing;if(!s||s.draw==null||p.dead){if(nockMesh)nockMesh.visible=false;return;}const ai=findAmmo('arrow'),id=ai>=0?p.inv[ai].id:'arrow';
