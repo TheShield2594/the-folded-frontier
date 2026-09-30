@@ -624,7 +624,10 @@ test('trading cards: chests and packs give them, a binder files them, a full pag
     // buried treasure always holds one; card faces are painted over the card backs at boot (and again once the boot art is in)
     await g.artReady;
     out.treasure=g.treasureLoot().some(x=>x&&g.ITEMS[x.id].card);
-    const px=c=>{const[x,y]=g.cellXY(c);return[...g.atlas.getContext('2d').getImageData(x+32,y+20,1,1).data].join();};out.painted=px(g.C.card_king)!==px(g.CARDBACK[2]);
+    // compared over the whole cell: a face and a back share the frame, and the paper grain alone moves single pixels (by about
+    // 2.5 on average between two paints of the same face), while the picture moves the cell by about 14
+    const cell=c=>{const[x,y]=g.cellXY(c);return g.atlas.getContext('2d').getImageData(x,y,64,64).data;},fa=cell(g.C.card_king),ba=cell(g.CARDBACK[2]);
+    let dv=0;for(let i=0;i<fa.length;i++)dv+=Math.abs(fa[i]-ba[i]);out.painted=dv/fa.length>8;
     // a pack gives three cards, one Rare or better; without a binder they stay in the backpack
     g.openPack(0);const got=P.inv.filter(x=>x&&g.ITEMS[x.id].card);out.pack=cardsIn();out.best=Math.max(...got.map(x=>rar(x.id)));g.updateCards(1);out.kept=cardsIn();out.hint=g.cards.hint;
     // with a binder they file themselves in; a full page pays its reward once
@@ -1028,4 +1031,167 @@ test('footsteps, landings and polish touches',async({page})=>{
   expect(r.slow[0]).toBeLessThan(.5);expect(r.slow[1]).toBe(1);expect(r.slowRm).toBe(1);
   expect(r.flash).toBeGreaterThan(0);
   expect(r.beats).toBeGreaterThan(0);expect(r.low).toBeGreaterThan(.5);expect(r.lowAfter).toBeLessThan(.05);
+});
+
+// A gamepad is faked through navigator.getGamepads(): window.__gp holds its buttons, and each step calls
+// handlePad() directly in the same task, so the frame loop can't take a press in between.
+test('gamepad: menus, interact, quick heal and block',async({page})=>{
+  await page.addInitScript(()=>{
+    const gp={id:'Test pad',connected:true,mapping:'standard',axes:[0,0,0,0],buttons:Array.from({length:17},()=>({pressed:false,value:0}))};
+    window.__gp=gp;navigator.getGamepads=()=>[gp];
+  });
+  await boot(page);
+  // each step presses its buttons (down), polls, reads ev, then releases them (up, or down unless hold) and polls again
+  const pad=(steps)=>page.evaluate(async steps=>{const g=await import('/src/game.js'),b=window.__gp.buttons,out=[];
+    for(const s of steps){if(s.axes)window.__gp.axes=s.axes;for(const i of s.down||[])b[i].pressed=true;g.handlePad();if(s.ev)out.push(await (0,eval)(s.ev));
+      for(const i of s.up||s.down||[])if(!s.hold)b[i].pressed=false;g.handlePad();}
+    const f=document.querySelector('.over .padfocus');return {out,focus:f&&f.id,state:g.state};},steps);
+  // the title menu: the first plain button is focused, A presses it, B backs out
+  let r=await pad([{down:[1]}]);
+  expect(r.focus).toBe('newBtn');
+  r=await pad([{down:[0]}]);
+  await expect(page.locator('#newWorld')).toBeVisible();
+  expect(r.focus).toBe('createBtn');
+  await pad([{down:[1]}]);
+  await expect(page.locator('#newWorld')).toBeHidden();
+  // the menu wraps into rows: down to Achievements, left to Settings, A opens it; a slider moves with right, B closes it
+  r=await pad([{down:[13]},{down:[14]}]);
+  expect(r.focus).toBe('setBtn');
+  r=await pad([{down:[0]}]);
+  await expect(page.locator('#settings')).toBeVisible();
+  expect(r.focus).toBe('sndC');
+  r=await pad([{down:[13]},{down:[15],ev:'document.getElementById("volMaster").value'}]);
+  expect(r.focus).toBe('volMaster');
+  expect(+r.out[0]).toBe(85);
+  await pad([{down:[1]}]);
+  await expect(page.locator('#settings')).toBeHidden();
+
+  await newSmallWorld(page);
+  // B reaches a peel wall beside the player; it peels, and pressing it doesn't raise a shield
+  const px=await page.evaluate(async()=>{const g=await import('/src/game.js'),p=g.player;g.player.acc[0]={id:'quilt',n:1};
+    const x=Math.floor(p.x)+2,y=Math.floor(p.y);for(const k of[0,1])g.setTile(x,y+k,g.T.PEEL);return x;});
+  r=await pad([{down:[1],hold:1,ev:'import("/src/game.js").then(g=>[g.pad.blk,g.pad.noBlk])'}]);
+  expect(r.out[0]).toEqual([false,true]);
+  await page.waitForFunction(async x=>{const g=await import('/src/game.js'),p=g.player;return g.tileAt(x,Math.floor(p.y))!==g.T.PEEL;},px);
+  // B held with nothing in reach blocks: out on open ground away from the cabin (the button is still held from above: release it first)
+  await page.evaluate(async()=>{const g=await import('/src/game.js'),p=g.player,x=Math.floor(g.W*.85);let y=g.H-2;while(y>1&&!(g.tileAt(x,y-1)&&!g.tileAt(x,y)&&!g.tileAt(x,y+1)))y--;
+    for(let dy=-1;dy<=3;dy++)for(let dx=-3;dx<=3;dx++)if(g.tileAt(x+dx,y+dy)===g.T.DOOR||g.tileAt(x+dx,y+dy)===g.T.CHEST)g.setTile(x+dx,y+dy,0);p.x=x+.5;p.y=y;p.vx=p.vy=0;g.pad.aimT=0;});
+  // a townsperson aimed at beyond talking range (6 tiles, as with the Reach accessory's longer aim) isn't reached
+  const far=await page.evaluate(async()=>{const g=await import('/src/game.js'),p=g.player,n={x:p.x+7,y:p.y,type:'guide'};g.npcs.push(n);
+    g.pad.aimT=1;g.mouse.wx=n.x;g.mouse.wy=n.y+1;const r=g.padInteract();g.mouse.rp=false;g.npcs.splice(g.npcs.indexOf(n),1);g.pad.aimT=0;return r;});
+  expect(far).toBe(false);
+  // Block on its own button (here R3) raises the shield through held('block'), without Interact
+  const own=await page.evaluate(async()=>{const g=await import('/src/game.js'),b=window.__gp.buttons;g.SET.pad.block=11;b[11].pressed=true;g.handlePad();g.updatePlayer(1/60);const r=[g.player.blocking,g.pad.blk];
+    b[11].pressed=false;g.handlePad();g.updatePlayer(1/60);r.push(g.player.blocking);g.SET.pad.block=-1;return r;});
+  expect(own).toEqual([true,false,false]);
+  r=await pad([{up:[1]},{down:[1],hold:1,ev:'import("/src/game.js").then(g=>g.pad.blk)'}]);
+  expect(r.out[0]).toBe(true);
+  // the pad dropping out while B is held lowers the shield
+  const lowered=await page.evaluate(async()=>{const g=await import('/src/game.js');g.updatePlayer(1/60);const up=g.player.blocking;const gp=navigator.getGamepads;navigator.getGamepads=()=>[];g.handlePad();g.updatePlayer(1/60);const r=[up,g.player.blocking];navigator.getGamepads=gp;return r;});
+  expect(lowered).toEqual([true,false]);
+  await pad([{up:[1]}]);
+  // D-pad up drinks a potion and no longer counts as up
+  const hp=await page.evaluate(async()=>{const g=await import('/src/game.js');g.addItem('potion',1);g.player.hp=10;g.player.potT=0;window.__gp.buttons[12].pressed=true;g.handlePad();const r=[g.player.hp,g.pad.held.up,g.pad.held.heal];window.__gp.buttons[12].pressed=false;g.handlePad();return r;});
+  expect(hp[0]).toBeGreaterThan(10);
+  expect(hp[1]).toBe(false);
+  expect(hp[2]).toBe(true);
+});
+
+test('gamepad: right stick aim reaches further with tilt, and down flattens at once',async({page})=>{
+  await page.addInitScript(()=>{
+    const gp={id:'Test pad',connected:true,mapping:'standard',axes:[0,0,0,0],buttons:Array.from({length:17},()=>({pressed:false,value:0}))};
+    window.__gp=gp;navigator.getGamepads=()=>[gp];
+  });
+  await boot(page);
+  await newSmallWorld(page);
+  const r=await page.evaluate(async()=>{const g=await import('/src/game.js'),p=g.player,gp=window.__gp,out={};
+    // open ground away from the cabin, settled on it
+    const x=Math.floor(g.W*.85);let y=g.H-2;while(y>1&&!(g.tileAt(x,y-1)&&!g.tileAt(x,y)&&!g.tileAt(x,y+1)&&!g.tileAt(x+1,y)&&!g.tileAt(x-1,y)))y--;
+    for(let dx=-1;dx<=1;dx++)g.setTile(x+dx,y-1,g.T.DIRT);p.x=x+.5;p.y=y;p.vx=p.vy=0;
+    const step=(n=1)=>{for(let i=0;i<n;i++){g.handlePad();g.updatePlayer(1/60);g.updateCamera(1/60);}};
+    g.pad.active=true;step(40);out.ground=p.onGround;
+    // aim: a light tilt stays beside the player, a full one goes out to (but inside) reach
+    const pick=p.inv.findIndex(s=>s&&g.ITEMS[s.id].pick);p.sel=pick;out.pick=pick;
+    gp.axes=[0,0,.4,0];step(40);out.near=g.mouse.wx-p.x;
+    gp.axes=[0,0,1,0];step(40);out.far=g.mouse.wx-p.x;out.snapped=g.mouse.wx%1;out.reach=g.reachOK(Math.floor(g.mouse.wx),Math.floor(g.mouse.wy));
+    const cell=[g.mouse.wx,g.mouse.wy];gp.axes=[0,0,.97,.04];step(10);out.held=g.mouse.wx===cell[0]&&g.mouse.wy===cell[1];
+    // a sudden full tilt (no easing in from a partial one) snaps to a tile in reach, in every direction
+    out.fresh=[];for(const [ax,ay] of [[1,0],[-1,0],[0,-1],[.71,.71]]){gp.axes=[0,0,0,0];g.pad.aimT=0;step();gp.axes=[0,0,ax,ay];step();out.fresh.push(g.reachOK(Math.floor(g.mouse.wx),Math.floor(g.mouse.wy)));}
+    gp.axes=[0,0,0,0];
+    // navigating the backpack with the stick doesn't flatten the player behind it
+    gp.buttons[3].pressed=true;g.handlePad();gp.buttons[3].pressed=false;g.handlePad();gp.axes=[0,.9,0,0];step(2);out.inv=[g.invOpen,!!p.flat];gp.axes=[0,0,0,0];step();g.setInv(false);step(3);
+    // down on the stick flattens on the first frame; pushed more sideways than down it doesn't
+    gp.axes=[0,.9,0,0];step();out.flat=p.flat;gp.axes=[0,0,0,0];step(3);out.up=!p.flat;
+    gp.axes=[.9,.7,0,0];step();out.diag=p.flat;gp.axes=[0,0,0,0];step(3);p.x=x+.5;p.vx=0;step(5);
+    // on a platform down drops through instead
+    for(let dx=-1;dx<=1;dx++)g.setTile(x+dx,y-1,g.T.PLATFORM);step(5);out.platGround=p.onGround;
+    gp.axes=[0,.9,0,0];step();out.platFlat=p.flat;gp.axes=[0,0,0,0];for(let dx=-1;dx<=1;dx++)g.setTile(x+dx,y-1,g.T.DIRT);p.x=x+.5;p.y=y;p.vx=p.vy=0;step(20);
+    // D-pad down is the Flatten button: it flattens and no longer counts as down
+    gp.buttons[13].pressed=true;step();out.dpad=[p.flat,g.pad.held.down];gp.buttons[13].pressed=false;step(3);
+    return out;});
+  expect(r.ground).toBe(true);
+  expect(r.pick).toBeGreaterThanOrEqual(0);
+  expect(r.near).toBeGreaterThan(.5);expect(r.near).toBeLessThan(2.6);
+  expect(r.far).toBeGreaterThan(4.4);
+  expect(r.snapped).toBeCloseTo(.5,5);
+  expect(r.reach).toBe(true);
+  expect(r.held).toBe(true);
+  expect(r.fresh).toEqual([true,true,true,true]);
+  expect(r.inv).toEqual([true,false]);
+  expect(r.flat).toBe(true);expect(r.up).toBe(true);
+  expect(r.diag).toBe(false);
+  expect(r.platGround).toBe(true);expect(r.platFlat).toBe(false);
+  expect(r.dpad).toEqual([true,false]);
+});
+
+test('gamepad: button names follow the controller, and rumble (combining, Low, Off)',async({page})=>{
+  await page.addInitScript(()=>{
+    const gp={id:'DualSense Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 0ce6)',connected:true,mapping:'standard',axes:[0,0,0,0],
+      buttons:Array.from({length:17},()=>({pressed:false,value:0})),vibrationActuator:{playEffect:(t,o)=>{window.__rum.push([t,+o.weakMagnitude.toFixed(3),+o.strongMagnitude.toFixed(3),o.duration]);return Promise.resolve('complete');},reset:()=>{window.__rumReset++;return Promise.resolve('complete');}}};
+    window.__rum=[];window.__rumReset=0;window.__gp=gp;navigator.getGamepads=()=>[gp];
+  });
+  await boot(page);
+  await newSmallWorld(page);
+  const r=await page.evaluate(async()=>{const g=await import('/src/game.js'),gp=window.__gp,b=gp.buttons,out={};
+    b[3].pressed=true;g.handlePad();b[3].pressed=false;g.handlePad();g.setInv(false);
+    out.ps=[g.padStyle(),g.PADNAME(0),g.PADNAME(9),document.querySelector('#padHint [data-pb="0"]').textContent,document.querySelector('#howto [data-pa="use"]').textContent];
+    // taking a hit rumbles both motors (a small screen shake adds none of its own)
+    window.__rum.length=0;const p=g.player;p.inv_t=0;p.hp=p.max;g.hurtPlayer(10);out.hurt=window.__rum.slice();
+    // a weaker effect doesn't cut off a stronger one still playing; a stronger one combines with it, keeping each motor's max
+    window.__rum.length=0;g.rumble(.2,.9,400);g.rumble(.1,.1,40);g.rumble(.95,.2,50);out.mix=window.__rum.slice();
+    // Low halves every effect, Off stops them
+    g.SET.rumble='low';g.rumble(1,1,500);out.low=window.__rum.at(-1);
+    // and turning it Off stops the effect still playing (the Low one above), once
+    g.SET.rumble='off';const n=window.__rum.length;g.rumble(1,1,900);g.shake(.9);out.off=window.__rum.length-n;out.reset=window.__rumReset;g.SET.rumble='full';
+    // Settings > Button names overrides the match, and an Xbox pad isn't taken for a PlayStation one
+    g.SET.padNames='nin';out.nin=g.PADNAME(0);g.SET.padNames='auto';
+    gp.id='Xbox Wireless Controller (STANDARD GAMEPAD Vendor: 045e Product: 0b13)';g.handlePad();out.xbox=[g.padStyle(),document.querySelector('#padHint [data-pb="0"]').textContent];
+    return out;});
+  expect(r.ps).toEqual(['ps','✕','Options','✕','R2']);
+  expect(r.hurt.length).toBe(1);expect(r.hurt[0][0]).toBe('dual-rumble');expect(r.hurt[0][1]).toBeGreaterThan(.15);expect(r.hurt[0][2]).toBeGreaterThan(r.hurt[0][1]);
+  expect(r.mix.length).toBe(2);expect(r.mix[1].slice(1,3)).toEqual([.95,.9]);expect(r.mix[1][3]).toBeGreaterThan(300);
+  expect(r.low.slice(1,3)).toEqual([.5,.5]);
+  expect(r.off).toBe(0);expect(r.reset).toBe(1);
+  expect(r.nin).toBe('B');
+  expect(r.xbox).toEqual(['xbox','A']);
+});
+
+test('gamepad: partners on the d-pad and Mount on L3, and older saved layouts move over once',async({page})=>{
+  // runs after the settings the beforeEach writes, so a layout saved by an older build can stand in for them on a reload
+  await page.addInitScript(()=>{const pad=sessionStorage.getItem('__pad');if(pad)localStorage.setItem('folded-frontier-settings',JSON.stringify({snd:false,intro:false,hints:false,pad:JSON.parse(pad)}));});
+  await boot(page);
+  let r=await page.evaluate(async()=>{const g=await import('/src/game.js');g.SET.padNames='xbox';return [g.SET.pad.partner,g.SET.pad.ability,g.SET.pad.mount,g.PADNAME(g.SET.pad.partner),g.PADNAME(g.SET.pad.ability),document.querySelector('#howto [data-pa="mount"]').textContent];});
+  expect(r).toEqual([14,15,10,'D-pad ←','D-pad →','LS']);
+  // settings saved by an older build: the old default layout moves over; one with the partner move rebound is left alone
+  for(const [pad,want,more] of [[{jump:0,interact:1,dash:2,inv:3,pl:4,pr:5,hook:6,use:7,map:8,ability:10,partner:11,mount:-1},[15,14,10]],
+    [{jump:0,interact:1,dash:2,inv:3,pl:4,pr:5,hook:6,use:7,map:8,ability:3,partner:11,mount:-1},[3,11,-1]],
+    // jump rebound to d-pad up: Quick heal isn't added onto it
+    [{jump:12,interact:1,dash:2,inv:3,pl:4,pr:5,hook:6,use:7,map:8,ability:10,partner:11,mount:-1},[15,14,10],{jump:12,heal:-1,flat:13}]]){
+    await page.evaluate(pad=>sessionStorage.setItem('__pad',JSON.stringify(pad)),pad);
+    await page.reload();
+    await page.waitForFunction(async()=>(await import('/src/game.js')).state==='title');
+    r=await page.evaluate(async()=>{const g=await import('/src/game.js');return [g.SET.pad.ability,g.SET.pad.partner,g.SET.pad.mount,g.SET.padV,g.SET.pad];});
+    expect(r.slice(0,4)).toEqual([...want,2]);
+    if(more)for(const k in more)expect(r[4][k]).toBe(more[k]);
+  }
 });

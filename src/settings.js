@@ -3,14 +3,22 @@
 // ================= settings, meta, keys =================
 export const DEF_BIND={left:'a',right:'d',jump:' ',down:'s',inv:'e',heal:'h',map:'m',hook:'f',partner:'q',ability:'r',flat:'c',dash:'shift',block:'x',mount:'g'};
 const ALT={left:['arrowleft'],right:['arrowright'],jump:['w','arrowup'],down:['arrowdown'],inv:['tab','i'],heal:[],map:[],hook:[],partner:[],ability:[],flat:[],dash:[],block:[],mount:[]};
-export const DEF_SET={snd:true,vol:80,music:50,sfx:90,amb:70,zoom:44,ui:100,text:100,shake:true,hitstop:true,heart:true,nums:true,fg:true,post:true,houseCovers:false,cb:'off',intro:true,hints:true,motion:'auto',tele:false,tspd:'normal',blockTog:false,drawTog:false};
+export const DEF_SET={snd:true,vol:80,music:50,sfx:90,amb:70,zoom:44,ui:100,text:100,shake:true,hitstop:true,heart:true,nums:true,fg:true,post:true,houseCovers:false,cb:'off',intro:true,hints:true,motion:'auto',tele:false,tspd:'normal',blockTog:false,drawTog:false,rumble:'full',padNames:'auto'};
 function loadJSON(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}}
 function saveJSON(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 export const SET=Object.assign({},DEF_SET,loadJSON('folded-frontier-settings')||{});SET.bind=Object.assign({},DEF_BIND,SET.bind||{});
 // gamepad buttons (standard mapping indices); Start and the d-pad/stick stay fixed
-// mount starts unbound (-1): every button is taken, and the mount item can also be used from the hotbar
-export const DEF_PAD={jump:0,interact:1,dash:2,inv:3,pl:4,pr:5,hook:6,use:7,map:8,ability:10,partner:11,mount:-1};
-SET.pad=Object.assign({},DEF_PAD,SET.pad||{});
+// block starts unbound (-1): Interact blocks while held. A d-pad button bound to an action (heal ↑, flatten ↓, switch partner ←,
+// partner move →) stops moving the player; down on the stick still flattens on the ground. R3 is free.
+export const DEF_PAD={jump:0,interact:1,dash:2,inv:3,pl:4,pr:5,hook:6,use:7,map:8,mount:10,heal:12,flat:13,partner:14,ability:15,block:-1};
+// a saved layout keeps every binding; an action it doesn't have yet gets its default button only if nothing uses that button
+{const sv=SET.pad||{},used=Object.values(sv);SET.pad=Object.assign({},sv);for(const a in DEF_PAD)if(!(a in sv))SET.pad[a]=used.includes(DEF_PAD[a])?-1:DEF_PAD[a];}
+// controller vibration is off, low or full (a build before that saved it as on/off)
+if(!['off','low','full'].includes(SET.rumble))SET.rumble=SET.rumble===false?'off':'full';
+// pad layout 2 moved the partner move and switch from the stick clicks to the d-pad and gave Mount L3; a saved layout still on
+// the old defaults (partner move L3, switch R3, Mount unbound, nothing else on d-pad ← →) moves with it, once
+if(!SET.padV){const q=SET.pad,o=Object.keys(q).filter(a=>!['ability','partner','mount'].includes(a)).map(a=>q[a]);
+  if(q.ability===10&&q.partner===11&&!(q.mount>=0)&&!o.includes(14)&&!o.includes(15)){q.ability=15;q.partner=14;q.mount=10;}SET.padV=2;}
 export const saveSettings=()=>saveJSON('folded-frontier-settings',SET);
 // interface size zooms all of #ui (--ui), text size multiplies every CSS font size (--ts); upx() turns screen px into #ui px.
 // Sizes above 100% are capped so the UI still has at least a 960×600 layout to work with on small screens.

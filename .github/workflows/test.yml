@@ -17,7 +17,8 @@ concurrency:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # the suite runs on software WebGL in one worker: about 22 minutes for 32 tests, so leave headroom
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
