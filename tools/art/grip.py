@@ -19,7 +19,8 @@ for sc in np.arange(.94,1.061,.01):
             if s>best[0]:best=(s,sc,dx,dy)
 s,sc,dx,dy=best;print('align',round(s,3),sc,dx,dy)
 a=np.asarray(Image.fromarray(out.astype(np.uint8)).resize((round(1600*sc),)*2,Image.BICUBIC)).astype(float)
-ox,oy=int(round(800*sc-800+dx*4)),int(round(800*sc-800+dy*4));al=np.full((1600,1600,3),200.);h=min(1600,a.shape[0]-oy);w=min(1600,a.shape[1]-ox);al[:h,:w]=a[oy:oy+h,ox:ox+w]
+ox,oy=int(round(800*sc-800+dx*4)),int(round(800*sc-800+dy*4));al=np.full((1600,1600,3),200.)
+sy0,sx0=max(0,oy),max(0,ox);dy0,dx0=sy0-oy,sx0-ox;h=min(1600-dy0,a.shape[0]-sy0);w=min(1600-dx0,a.shape[1]-sx0);al[dy0:dy0+h,dx0:dx0+w]=a[sy0:sy0+h,sx0:sx0+w]
 green=(al[...,1]>al[...,0]+25)&(al[...,1]>al[...,2]+20)
 skn=(al[...,0]>150)&(al[...,0]-al[...,2]>40);near=ndimage.binary_dilation(skn,iterations=6)
 green|=(al.max(2)<120)&ndimage.binary_dilation(green,iterations=10)&~near

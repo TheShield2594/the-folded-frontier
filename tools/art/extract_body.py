@@ -19,7 +19,8 @@ def align(out):
                 s=(q2&R).sum()/max(1,(q2|R).sum())
                 if s>best[0]:best=(s,sc,dx,dy)
     s,sc,dx,dy=best;a=np.asarray(Image.fromarray(out.astype(np.uint8)).resize((round(2048*sc),)*2,Image.BICUBIC)).astype(float)
-    ox,oy=int(round(1024*sc-1024+dx*4)),int(round(1024*sc-1024+dy*4));res=np.zeros((2048,2048,3))+BG;h=min(2048,a.shape[0]-oy);w=min(2048,a.shape[1]-ox);res[:h,:w]=a[oy:oy+h,ox:ox+w];return res,s
+    ox,oy=int(round(1024*sc-1024+dx*4)),int(round(1024*sc-1024+dy*4));res=np.zeros((2048,2048,3))+BG
+    sy0,sx0=max(0,oy),max(0,ox);dy0,dx0=sy0-oy,sx0-ox;h=min(2048-dy0,a.shape[0]-sy0);w=min(2048-dx0,a.shape[1]-sx0);res[dy0:dy0+h,dx0:dx0+w]=a[sy0:sy0+h,sx0:sx0+w];return res,s
 def save(a,m,name,piv,fill=None,src=None):
     if not m.any():print(name,'empty');return None
     if fill is not None:  # colours for the hidden pixels: the nearest painted pixel

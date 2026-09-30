@@ -23,7 +23,7 @@ def align(out):
     # refine at full size around the coarse answer
     img=Image.fromarray(out.astype(np.uint8)).resize((round(2048*sc),)*2,Image.BICUBIC);a=np.asarray(img).astype(float)
     ox=int(round(c+dx*4));oy=int(round(c+dy*4));res=np.zeros((2048,2048,3))+BG;
-    sx0,sy0=max(0,ox),max(0,oy);w=min(a.shape[1]-sx0,2048);h=min(a.shape[0]-sy0,2048);res[:h,:w]=a[sy0:sy0+h,sx0:sx0+w]
+    sy0,sx0=max(0,oy),max(0,ox);dy0,dx0=sy0-oy,sx0-ox;h=min(2048-dy0,a.shape[0]-sy0);w=min(2048-dx0,a.shape[1]-sx0);res[dy0:dy0+h,dx0:dx0+w]=a[sy0:sy0+h,sx0:sx0+w]
     return res,sco
 def cut(name,src,colour=False):
     out=np.asarray(Image.open(src).convert('RGB')).astype(float)

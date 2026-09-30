@@ -53,7 +53,7 @@ const PAD=10,BORDER=3,EDGE=[1.4,4],skins=new Map(),RF={willReadFrequently:true};
 // hand-made parts (art.js, assets/art/rigs/): RIGART['slime.body'], or 'human@guide.head.happy' for one skin key and variant.
 // A picture is fitted to the bounds the drawn part covers, so the pivot and joints stay put; setRigArt() re-bakes every skin.
 export const RIGART={};let rigGen=0;
-export function setRigArt(){skins.clear();for(const k in HREF)delete HREF[k];return++rigGen;}
+export function setRigArt(){skins.clear();for(const k in HREF)delete HREF[k];HTC=new WeakMap();return++rigGen;}
 // the merged pieces a skin uses: {part: [joined parts]} from the art names, the skin key's own first
 function rigMerge(k,key){const out={};for(const pre of key!=null?[k+'@'+key+'.',k+'.']:[k+'.']){for(const n in RIGART){if(!n.startsWith(pre))continue;const ps=n.slice(pre.length).split('.')[0].split('+');
   if(ps.length>1&&!out[ps[0]])out[ps[0]]=ps.slice(1);}if(Object.keys(out).length)break;}return out;}
@@ -402,7 +402,7 @@ const heroPart=(k,dim=1)=>(t,o,v)=>{const[n,x,y,w,h]=HPIC[k],nv=RIGART[n+(v?'.'+
 const HREF={};function heroRef(n,ch){const k=n+ch;if(HREF[k])return HREF[k];const img=RIGART[n],mq=RIGART[n+'.mask'];if(!img||!mq)return null;
   const W=img.width,H=img.height,c=mk(W,H),t=c.getContext('2d',RF);t.drawImage(img,0,0);const a=t.getImageData(0,0,W,H).data;t.clearRect(0,0,W,H);t.drawImage(mq,0,0,W,H);const q=t.getImageData(0,0,W,H).data;
   const s=[0,0,0,0];for(let i=0;i<a.length;i+=4){const w=q[i+ch]/255;if(w>.5){s[0]+=a[i]*w;s[1]+=a[i+1]*w;s[2]+=a[i+2]*w;s[3]+=w;}}return HREF[k]=s[3]?s.slice(0,3).map(x=>x/s[3]):null;}
-const HTC=new WeakMap(),hexv=c=>[1,3,5].map(i=>parseInt(c.slice(i,i+2),16));
+let HTC=new WeakMap();const hexv=c=>[1,3,5].map(i=>parseInt(c.slice(i,i+2),16));
 function heroTint(img,mk2,o,dim){let m=HTC.get(img);if(!m)HTC.set(img,m={});const key=o.tunic+o.skin+dim;if(m[key])return m[key];
   const W=img.width,H=img.height,c=mk(W,H),t=c.getContext('2d',RF);t.drawImage(img,0,0);if(!mk2&&dim===1)return m[key]=c;
   const id=t.getImageData(0,0,W,H),a=id.data;let q=null;if(mk2){const c2=mk(W,H),t2=c2.getContext('2d',RF);t2.drawImage(mk2,0,0,W,H);q=t2.getImageData(0,0,W,H).data;}
