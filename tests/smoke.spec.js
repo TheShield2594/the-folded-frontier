@@ -624,7 +624,10 @@ test('trading cards: chests and packs give them, a binder files them, a full pag
     // buried treasure always holds one; card faces are painted over the card backs at boot (and again once the boot art is in)
     await g.artReady;
     out.treasure=g.treasureLoot().some(x=>x&&g.ITEMS[x.id].card);
-    const px=c=>{const[x,y]=g.cellXY(c);return[...g.atlas.getContext('2d').getImageData(x+32,y+20,1,1).data].join();};out.painted=px(g.C.card_king)!==px(g.CARDBACK[2]);
+    // compared over the whole cell: a face and a back share the frame, and the paper grain alone moves single pixels (by about
+    // 2.5 on average between two paints of the same face), while the picture moves the cell by about 14
+    const cell=c=>{const[x,y]=g.cellXY(c);return g.atlas.getContext('2d').getImageData(x,y,64,64).data;},fa=cell(g.C.card_king),ba=cell(g.CARDBACK[2]);
+    let dv=0;for(let i=0;i<fa.length;i++)dv+=Math.abs(fa[i]-ba[i]);out.painted=dv/fa.length>8;
     // a pack gives three cards, one Rare or better; without a binder they stay in the backpack
     g.openPack(0);const got=P.inv.filter(x=>x&&g.ITEMS[x.id].card);out.pack=cardsIn();out.best=Math.max(...got.map(x=>rar(x.id)));g.updateCards(1);out.kept=cardsIn();out.hint=g.cards.hint;
     // with a binder they file themselves in; a full page pays its reward once
