@@ -26,7 +26,7 @@ drawWarnMark();
 eliteMat.map=canvasTex(makeSheet(1,64,64,t=>{const s=[];for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,r=k%2?11:26;s.push(32+Math.cos(a)*r,34+Math.sin(a)*r);}poly(t,s);fi(t,'#f1c04f',3.5);circ(t,27,28,3);t.fillStyle='#fff8e4';t.fill();},3));eliteMat.needsUpdate=true;
 // the player is a paper rig (rig.js); player.mat is its material, so tints and flashes work as on any sprite
 player.rig=makeRig(playerRigKind(),playerLook(),null);player.mat=player.rig.mat;player.mesh=player.rig.mesh;
-{const d=loadSave();if(d){try{loadWorld(d);}catch(e){loadFailed(e);newWorld(Math.floor(Math.random()*1e9));}$('contBtn').hidden=false;}else newWorld(Math.floor(Math.random()*1e9));}
+{const d=loadSave();if(d){try{loadWorld(d);}catch(e){toast(loadFailed(e),'bad');newWorld(Math.floor(Math.random()*1e9));}$('contBtn').hidden=false;}else newWorld(Math.floor(Math.random()*1e9));}
 renderQuests();updateCoins();
 let ritualT=2,townT=3,cropT=1,liqT=0,bioT=0,starT=8,lastT=performance.now(),autosave=0,housingT=0,achT=2,mapRedraw=0;
 function frame(now){requestAnimationFrame(frame);perfStart();const pf0=performance.now();const el=Math.max(0,(now-lastT)/1000);lastT=now;let dt=Math.min(el,1/30);setWorldClock(worldClock+(dt));

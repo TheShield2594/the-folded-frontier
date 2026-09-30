@@ -559,6 +559,38 @@ test('save code round trip loads the same world',async({page})=>{
   for(const k of['seed','seedText','size','W','H','coins','inv','spawn','npcs'])expect(after[k],k).toEqual(before[k]);
 });
 
+test('save versions: unversioned saves are upgraded, newer saves and codes are refused with a message',async({page})=>{
+  await boot(page);
+  await newSmallWorld(page);
+  await markWorld(page);
+  await pauseGame(page);
+  const before=await snapshot(page),saved=await savedWorld(page);
+  const cur=await page.evaluate(async()=>(await import('/src/game.js')).SAVE_VER);
+  expect(saved.v).toBe(cur);
+
+  // a save with no version is v0: every migration step runs and the world still loads
+  const r=await page.evaluate(async sv=>{const g=await import('/src/game.js');const old=JSON.parse(JSON.stringify(sv));delete old.v;g.loadWorld(old);return window.__snap(g);},saved);
+  for(const k of['seed','size','W','H','tiles','coins','inv'])expect(r[k],k).toEqual(before[k]);
+
+  // a save from a newer build is kept and refused with a clear message on Continue, not loaded wrong
+  await page.evaluate(sv=>localStorage.setItem('folded-frontier-save-v1',JSON.stringify({...sv,v:sv.v+1})),saved);
+  await page.reload();
+  await expect(page.locator('.toast',{hasText:'newer version'})).toBeVisible();
+  await expect(page.locator('#contBtn')).toBeVisible();
+  await page.click('#contBtn');
+  await expect(page.locator('#title')).toBeVisible();
+  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('folded-frontier-save-v1')).v)).toBe(cur+1);
+
+  // save codes carry the version too: a code from a newer build says so in the code box
+  const code=await page.evaluate(async sv=>{const b=new Blob([JSON.stringify({v:sv.v+1,save:sv,meta:{}})]).stream().pipeThrough(new CompressionStream('gzip'));
+    const u8=new Uint8Array(await new Response(b).arrayBuffer());let s='';for(const c of u8)s+=String.fromCharCode(c);return 'FF1:'+btoa(s);},saved);
+  await page.click('#code2Btn');
+  await page.fill('#codeTxt',code);
+  await page.click('#codeLoad');
+  await expect(page.locator('#codeMsg')).toContainText('newer version');
+  await expect(page.locator('#codeBox')).toBeVisible();
+});
+
 test('a save that storage refuses is reported instead of "Game saved."',async({page})=>{
   await boot(page);
   await newSmallWorld(page);

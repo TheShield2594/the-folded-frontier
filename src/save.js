@@ -35,19 +35,25 @@ export function save(){const t0=performance.now();try{const data={v:SAVE_VER,see
 // save format history: v1 original; v2 adds the per-world bestiary; v3 fills in anything builds older than
 // the repo left out (biome ranges, camps, treasure, shrine, mana, world state) and adds seasons and the town; v4 adds the
 // vertical layers and dungeons (BIO.sky, BIO.deep, BIO.dun).
-// Older saves are upgraded on load.
-const SAVE_VER=4;
+// Older saves are upgraded on load by MIGRATE, one step per version in order (MIGRATE[n] takes a save from v n-1 to v n).
+// A save with no version is v0, which the v1 format matches, so it runs every step. A save from a newer build than this one
+// is refused with SaveTooNew instead of being read wrong. To change the format, bump SAVE_VER and add MIGRATE[SAVE_VER].
+export const SAVE_VER=4;
 const arr=(a,n)=>{a=Array.isArray(a)?a.slice(0,n):[];while(a.length<n)a.push(null);return a;};
-function migrateSave(d){if(!d||typeof d!=='object'||typeof d.tiles!=='string'||typeof d.walls!=='string'||typeof d.meta!=='string'||!Array.isArray(d.surf))throw new Error('This save is missing its world data.');d.v=d.v||1;
-  if(d.v<2){d.bestiary={};d.v=2;}
-  if(d.v<3){const b=d.bio=d.bio&&typeof d.bio==='object'?d.bio:{uw:0};
+export class SaveTooNew extends Error{constructor(v){super(`This world was saved by a newer version of The Folded Frontier (save format ${v}; this version reads up to ${SAVE_VER}). Reload the page to get the latest version, then try again.`);this.name='SaveTooNew';this.v=v;}}
+const saveVer=v=>Number.isSafeInteger(v)&&v>0?v:0;
+// throws SaveTooNew for a save (or save code) from a newer build
+export function checkSaveVer(v){v=saveVer(v);if(v>SAVE_VER)throw new SaveTooNew(v);return v;}
+const MIGRATE={
+  2:d=>{d.bestiary={};},
+  3:d=>{const b=d.bio=d.bio&&typeof d.bio==='object'?d.bio:{uw:0};
     // with no biome ranges, biomeAt() and the sky would read b.snow[0] and crash; empty ranges match nothing
     if(b.uw){if(!Array.isArray(b.snow))b.snow=[-1,-2];if(!Array.isArray(b.desert))b.desert=[-1,-2];if(!Array.isArray(b.lake))b.lake=[-1e4,0,0];}
     for(const k of['camps','treasure','shown'])if(!Array.isArray(b[k]))b[k]=[];b.camps=b.camps.filter(c=>c&&typeof c==='object');
     if(b.shrine&&!Array.isArray(b.shrine))delete b.shrine;
     const p=d.p=d.p&&typeof d.p==='object'?d.p:{};p.world=Object.assign({},p.world);if(p.world.day==null)p.world.day=d.angler&&d.angler.day||0;
     if(!Array.isArray(d.chests))d.chests=[];if(typeof d.time!=='number')d.time=7.5;if(!d.quests||typeof d.quests!=='object')d.quests={};
-    d.town={f:{},used:[]};d.v=3;}
+    d.town={f:{},used:[]};},
   // v4, dungeons and layers: older worlds are not regenerated. They get the Folded Clocktower (planDungeons) and the sky islands
   // (planSky) stamped in on this load, but only on untouched natural ground and empty sky, so nothing the player built is covered;
   // a world with no spot that fits goes without. The Pressed Deep needs rows the older world sizes don't have, so those worlds
@@ -60,7 +66,11 @@ function migrateSave(d){if(!d||typeof d!=='object'||typeof d.tiles!=='string'||t
   // fits gets null for both.
   // The Great Scrapworks and its Supply Crates (issue #81) are placed on load like the Clocktower, only on untouched ground; the
   // Sunken Inkwell Temple and its Ink Wells, dug into the rock like the Archive, are not: older saves get null for them.
-  if(d.v<4){const b=d.bio;if(b&&b.dun&&typeof b.dun!=='object')delete b.dun;if(b&&b.sky&&(typeof b.sky!=='object'||!Array.isArray(b.sky.is)))delete b.sky;d.v=4;}
+  4:d=>{const b=d.bio;if(b&&b.dun&&typeof b.dun!=='object')delete b.dun;if(b&&b.sky&&(typeof b.sky!=='object'||!Array.isArray(b.sky.is)))delete b.sky;},
+};
+function migrateSave(d){if(!d||typeof d!=='object')throw new Error('This save is missing its world data.');d.v=checkSaveVer(d.v);
+  if(typeof d.tiles!=='string'||typeof d.walls!=='string'||typeof d.meta!=='string'||!Array.isArray(d.surf))throw new Error('This save is missing its world data.');
+  while(d.v<SAVE_VER){const v=d.v+1;if(MIGRATE[v])MIGRATE[v](d);d.v=v;}
   return d;}
 // Every load cleans the parts that reference game data, so a save that names an item, NPC, partner or badge
 // this build doesn't have still loads instead of crashing later.
@@ -76,8 +86,9 @@ function cleanSave(d){const p=d.p;p.inv=arr(p.inv,40).map(okItem);p.armor=arr(p.
   return d;}
 // If a save can't be loaded, keep a copy of it so a later new world can't overwrite the only one. Each different
 // failed save gets its own timestamped key; the same save failing again (boot, then Continue) is stored once.
-export function loadFailed(e){console.error('Could not load the save:',e);try{const s=localStorage.getItem(SAVE_KEY);if(!s)return;const pre=SAVE_KEY+'-backup';
-  for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(pre)&&localStorage.getItem(k)===s)return;}localStorage.setItem(pre+'-'+Date.now(),s);}catch(_){}}
+// Returns the message to show the player.
+export function loadFailed(e){const tooNew=e instanceof SaveTooNew;if(tooNew)console.warn(e.message);else console.error('Could not load the save:',e);const msg=tooNew?e.message+' Your world was kept in this browser.':'This save could not be loaded. A copy was kept in your browser; start a new world or load a save code.';try{const s=localStorage.getItem(SAVE_KEY);if(!s)return msg;const pre=SAVE_KEY+'-backup';
+  for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(pre)&&localStorage.getItem(k)===s)return;}localStorage.setItem(pre+'-'+Date.now(),s);}catch(_){}return msg;}
 export function loadSave(){try{const s=localStorage.getItem(SAVE_KEY);return s?JSON.parse(s):null;}catch(e){return null;}}
 function hasSave(){try{return !!localStorage.getItem(SAVE_KEY);}catch(e){return false;}}
 
@@ -117,9 +128,9 @@ $('nwCancel').addEventListener('click',()=>{$('newWorld').hidden=true;});
 $('seedIn').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter')$('createBtn').click();});
 $('createBtn').addEventListener('click',()=>{const txt=$('seedIn').value.trim()||randomSeedText();$('newWorld').hidden=true;$('loading').hidden=false;
   setTimeout(()=>{newWorld(seedFrom(txt),nwSize,txt,nwLook);$('loading').hidden=true;save();const go=()=>{startPlay();toast('Welcome to your new world! Your cabin chest has supplies.','gold');};if(SET.intro)playIntro(()=>{go();say(playerSpeaker(),INTROSAY,{wait:2});});else go();},60);});
-$('contBtn').addEventListener('click',()=>{const d=loadSave();if(!d){toast('No save found.','bad');return;}try{loadWorld(d);}catch(e){loadFailed(e);newWorld(Math.floor(Math.random()*1e9));toast('This save could not be loaded. A copy was kept in your browser; start a new world or load a save code.','bad');return;}startPlay();toast('Welcome back!','good');});
+$('contBtn').addEventListener('click',()=>{const d=loadSave();if(!d){toast('No save found.','bad');return;}try{loadWorld(d);}catch(e){const m=loadFailed(e);newWorld(Math.floor(Math.random()*1e9));toast(m,'bad');return;}startPlay();toast('Welcome back!','good');});
 $('resBtn').addEventListener('click',()=>pause(false));
-async function packCode(json){const payload=JSON.stringify({save:JSON.parse(json),meta:META});if(typeof CompressionStream==='undefined')return 'FF0:'+btoa(unescape(encodeURIComponent(payload)));const st=new Blob([payload]).stream().pipeThrough(new CompressionStream('gzip'));return 'FF1:'+b64(new Uint8Array(await new Response(st).arrayBuffer()));}
+async function packCode(json){const payload=JSON.stringify({v:SAVE_VER,save:JSON.parse(json),meta:META});if(typeof CompressionStream==='undefined')return 'FF0:'+btoa(unescape(encodeURIComponent(payload)));const st=new Blob([payload]).stream().pipeThrough(new CompressionStream('gzip'));return 'FF1:'+b64(new Uint8Array(await new Response(st).arrayBuffer()));}
 async function unpackCode(code){code=code.replace(/\s+/g,'');if(code.startsWith('FF0:'))return JSON.parse(decodeURIComponent(escape(atob(code.slice(4)))));if(!code.startsWith('FF1:'))throw new Error('That does not look like a Folded Frontier save code.');const u8=Uint8Array.from(atob(code.slice(4)),c=>c.charCodeAt(0));const st=new Blob([u8]).stream().pipeThrough(new DecompressionStream('gzip'));return JSON.parse(await new Response(st).text());}
 function openCode(fromTitle){$('codeMsg').textContent='';$('codeTxt').value='';$('codeMake').hidden=!!fromTitle;$('codeCopy').hidden=!!fromTitle;$('codeBox').hidden=false;}
 $('codeBtn').addEventListener('click',()=>openCode(false));$('code2Btn').addEventListener('click',()=>{initAudio();openCode(true);});
@@ -127,7 +138,7 @@ $('codeClose').addEventListener('click',()=>{$('codeBox').hidden=true;});
 $('codeTxt').addEventListener('keydown',e=>e.stopPropagation());
 $('codeMake').addEventListener('click',async()=>{if(!save()&&!lastSaveJSON){$('codeMsg').textContent='Could not read your world.';return;}$('codeMsg').textContent='Packing…';try{const c=await packCode(lastSaveJSON);perfCode(c.length);$('codeTxt').value=c;$('codeTxt').select();$('codeMsg').textContent=`Code ready (${Math.round(c.length/1024)} KB of text). Press Copy, or Ctrl+C while it is selected.`;}catch(e){$('codeMsg').textContent='Packing failed: '+e.message;}});
 $('codeCopy').addEventListener('click',()=>{const v=$('codeTxt').value;if(!v)return;const ok=()=>{$('codeMsg').textContent='Copied to your clipboard.';};const fb=()=>{$('codeTxt').select();$('codeMsg').textContent='Your browser blocked copying. The code is selected, so press Ctrl+C (or Cmd+C).';};try{navigator.clipboard.writeText(v).then(ok,fb);}catch(e){fb();}});
-$('codeLoad').addEventListener('click',async()=>{const v=$('codeTxt').value.trim();if(!v){$('codeMsg').textContent='Paste a code first.';return;}try{const d=await unpackCode(v);if(!d.save||!d.save.tiles)throw new Error('That code is missing world data.');
+$('codeLoad').addEventListener('click',async()=>{const v=$('codeTxt').value.trim();if(!v){$('codeMsg').textContent='Paste a code first.';return;}try{const d=await unpackCode(v);checkSaveVer(d&&d.v);if(!d.save||!d.save.tiles)throw new Error('That code is missing world data.');checkSaveVer(d.save.v);
   if(d.meta){Object.assign(META.ach,d.meta.ach||{});for(const k in (d.meta.stats||{}))META.stats[k]=Math.max(META.stats[k]||0,d.meta.stats[k]);saveMeta();}
   loadWorld(d.save);$('codeBox').hidden=true;$('pause').hidden=true;if(state!=='play')startPlay();else setState('play');save();toast('World loaded from save code!','gold');}catch(e){$('codeMsg').textContent=e.message||'That code could not be read.';}});
 $('saveBtn').addEventListener('click',()=>{toast(save()?'Game saved.':'Saving is not available in this browser.',save()?'good':'bad');});
