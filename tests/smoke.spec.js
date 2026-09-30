@@ -143,8 +143,8 @@ test('the storybook intro reads its pages, turns them and can be skipped',async(
   await expect(page.locator('#introNo')).toHaveText(`2 / ${pages}`);
   await expect(page.locator('#introTxt p').first()).toContainText('Folders');
   expect(await page.evaluate(async()=>(await import('/src/game.js')).state)).toBe('intro');
-  // Esc skips the rest of the story into the world
-  await page.keyboard.press('Escape');
+  // Space on the focused Skip button skips (instead of turning the page), as Esc does
+  await page.focus('#introSkip');await page.keyboard.press(' ');
   await page.waitForFunction(async()=>{const g=await import('/src/game.js');return g.state==='play'||g.state==='talk';});
   await expect(page.locator('#intro')).toBeHidden();
 });

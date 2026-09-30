@@ -79,18 +79,20 @@ function stopVo(){if(introVo){introVo.onended=introVo.onerror=null;introVo.pause
 function narrate(i){introPg=i;const pg=INTRO[i],txt=pg.p.join(' '),ps=[...$('introTxt').children],n=txt.length;let t0=null,dur=Math.max(3500,n*62),fin=false;
   const reveal=d=>{let c=0;ps.forEach((p,k)=>{iT(k?c/n*d:0,()=>p.classList.add('on'));c+=pg.p[k].length+1;});};
   const done=()=>{if(fin||introPg!==i)return;fin=true;ps.forEach(p=>p.classList.add('on'));iT(i===INTRO.length-1?1600:1000,()=>next());};
-  const timed=()=>{reveal(dur);iT(dur,done);};
+  let tS=false,last=null;const timed=()=>{if(tS||introPg!==i)return;tS=true;if(last)last.onend=last.onerror=null;reveal(dur);iT(dur,done);};
+  // the system voice (when it sounds like a person), else timed text; a cancel or a failed utterance falls back to timed text once
+  const speak=()=>{const v=sysVoice();if(!v){timed();return;}
+    speechSynthesis.cancel();let started=false;
+    pg.p.forEach((s,k)=>{const u=new SpeechSynthesisUtterance(s);u.voice=v;u.lang=v.lang;u.rate=.9;u.pitch=.85;u.volume=Math.min(1,SET.vol/100);
+      u.onstart=()=>{started=true;ps[k].classList.add('on');};if(k===pg.p.length-1){u.onend=done;u.onerror=timed;last=u;}speechSynthesis.speak(u);});
+    iT(1800,()=>{if(!started&&introPg===i){if(last)last.onend=last.onerror=null;speechSynthesis.cancel();timed();}});iT(dur*2+4000,done);};
   if(!SET.narr||!soundOn){timed();return;}
   const url=voUrl(i);
-  if(url){const a=new Audio(url);introVo=a;a.preload='auto';
+  if(url){const a=new Audio(url);introVo=a;a.preload='auto';const fail=()=>{if(introVo===a){introVo=null;speak();}};
     if(AC&&master){try{if(AC.state==='suspended')AC.resume();const g=AC.createGain();g.gain.value=1.4;AC.createMediaElementSource(a).connect(g).connect(master);}catch(e){a.volume=Math.min(1,SET.vol/100);}}else a.volume=Math.min(1,SET.vol/100);
-    a.onloadedmetadata=()=>{if(introPg===i&&isFinite(a.duration))reveal(a.duration*1000);};a.onended=done;a.onerror=()=>{if(introVo===a){introVo=null;timed();}};
-    a.play().catch(()=>{if(introVo===a){introVo=null;timed();}});iT(90000,done);return;}
-  const v=sysVoice();if(!v){timed();return;}
-  speechSynthesis.cancel();let started=false;
-  pg.p.forEach((s,k)=>{const u=new SpeechSynthesisUtterance(s);u.voice=v;u.lang=v.lang;u.rate=.9;u.pitch=.85;u.volume=Math.min(1,SET.vol/100);
-    u.onstart=()=>{started=true;ps[k].classList.add('on');};if(k===pg.p.length-1){u.onend=done;u.onerror=done;}speechSynthesis.speak(u);});
-  iT(1800,()=>{if(!started&&introPg===i){speechSynthesis.cancel();timed();}});iT(dur*2+4000,done);}
+    a.onloadedmetadata=()=>{if(introPg===i&&isFinite(a.duration))reveal(a.duration*1000);};a.onended=done;a.onerror=fail;
+    a.play().catch(fail);iT(90000,done);return;}
+  speak();}
 function turn(i){introTs.forEach(clearTimeout);introTs=[];stopVo();introPg=i;const el=$('intro'),rm=reduceMotion();SFX.rustle(.35,.5);
   el.classList.add('fade');el.classList.remove('turn');void el.offsetWidth;if(!rm)el.classList.add('turn');
   iT(rm?300:450,()=>{drawIntroArt(i);setPage(i);el.classList.remove('fade');});iT(rm?700:1000,()=>narrate(i));}
