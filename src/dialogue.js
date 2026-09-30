@@ -41,6 +41,8 @@ export const partnerSpeaker=k=>({k,name:PARTNERS[k].name,at:()=>pt.type===k?{x:p
 
 const queue=[];let D=null,prevFocus=null;
 export const talking=()=>!!D;
+// where the one speaking stands (null for the player's own lines), for the player to look at
+export const talkAt=()=>D&&D.sp.k!=='player'&&D.sp.at?D.sp.at():null;
 // a conversation is open or waiting to open
 export const dlgBusy=()=>!!D||queue.length>0;
 // the dialogue takes focus while open and hands it back when it closes

@@ -840,3 +840,48 @@ test('jump shape',async({page})=>{
   expect(r.ledge).toBeGreaterThanOrEqual(3);
   expect(r.climbed).toBeGreaterThanOrEqual(4);expect(r.stepped).toBeGreaterThan(0);expect(r.maxJ).toBeLessThan(.5);
 });
+
+test('camera and animation feel',async({page})=>{
+  await boot(page);
+  await newSmallWorld(page);
+  const r=await page.evaluate(async()=>{
+    const g=await import('/src/game.js'),p=g.player,t=g.touch,dt=1/60;g.setState('pause');g.SET.motion='full';g.SET.shake=true;
+    const x0=30,y0=Math.floor(g.H*.3),set=(x,y,v)=>{g.tiles[g.idx(x,y)]=v;};
+    const room=()=>{for(let x=x0;x<x0+60;x++)for(let y=y0;y<y0+20;y++)set(x,y,y===y0||y===y0+19?g.T.STONE:g.T.AIR);};
+    const step=(n=1)=>{for(let i=0;i<n;i++){g.updatePlayer(dt);g.updateCamera(dt);}};
+    const place=x=>{p.x=x;p.y=y0+1;p.vx=p.vy=0;p.jbuf=0;p.stepOff=0;p.face=1;p.swing=null;step(120);};
+    const out={};room();
+    // a full jump on flat ground leaves the camera where it was
+    place(x0+20);const cy=g.camT.y;t.held.jump=true;g.jumpPress();let dev=0,top=0;for(let i=0;i<120;i++){step();dev=Math.max(dev,Math.abs(g.camT.y-cy));top=Math.max(top,p.y-y0-1);}t.held.jump=false;
+    out.jumpDev=dev;out.jumpTop=top;
+    // running right: the camera leads, and the rig runs with the cape trailing
+    place(x0+10);t.held.right=true;let clips=new Set(),cape=0;for(let i=0;i<120;i++){step();clips.add(p.rig.c);if(p.rig.sa)cape=Math.max(cape,p.rig.sa[p.rig.d.pi.cape]);}
+    out.lead=g.camT.x-p.x;out.ran=clips.has('run');out.cape=cape;
+    // reversing at speed skids before the flip
+    t.held.right=false;t.held.left=true;step();out.skid=p.rig.c;out.skidFace=p.face;step(20);out.after=p.face;t.held.left=false;step(60);
+    // a long drop: a hard landing, and the cape lifts on the way down
+    room();p.x=x0+20;p.y=y0+17;p.vx=p.vy=0;p.onGround=false;let lift=0,land=null;for(let i=0;i<120&&!land;i++){step();if(p.rig.sa)lift=Math.max(lift,p.rig.sa[p.rig.d.pi.cape]);if(p.onGround)land=p.rig.c;}
+    out.land=land;out.lift=lift;step(60);
+    // the head follows an aim up and ahead (updateCamera would put the cursor back where the mouse is, so only the player steps)
+    p.face=1;p.swing={t:0,dur:9,tool:null,aim:0};g.mouse.wx=p.x+3;g.mouse.wy=p.y+1.55+3;for(let i=0;i<20;i++)g.updatePlayer(dt);out.head=p.headR;p.swing=null;
+    // behind the player it doesn't turn
+    p.swing={t:0,dur:9,tool:null,aim:0};g.mouse.wx=p.x-3;for(let i=0;i<20;i++)g.updatePlayer(dt);out.headBack=p.headR;p.swing=null;
+    // trauma: a light hit shakes a hair, a big one shakes hard; a kick shoves the camera and springs back
+    g.setTrauma(0);g.shake(.1);const light=g.trauma**2;g.setTrauma(0);g.shake(.8);const big=g.trauma**2;g.setTrauma(0);
+    g.kick(1,0,.3);let kmax=0;for(let i=0;i<6;i++){step();kmax=Math.max(kmax,g.camKick.x);}step(30);
+    out.light=light;out.big=big;out.kick=kmax;out.kickBack=Math.abs(g.camKick.x);
+    // reduced motion turns shake and kicks off
+    g.SET.motion='reduce';g.shake(.5);g.kick(1,0,.3);out.rmTrauma=g.trauma;out.rmKick=g.camKick.vx;g.SET.motion='full';
+    // and turning motion off mid-shake stops what is already running
+    g.shake(.8);g.kick(1,0,.3);g.punch();g.SET.motion='reduce';step();out.rmLive=[g.trauma,g.camKick.x,g.camKick.vx,g.camPunch];g.SET.motion='full';
+    return out;
+  });
+  expect(r.jumpTop).toBeGreaterThan(4);expect(r.jumpDev).toBeLessThan(.05);
+  expect(r.lead).toBeGreaterThan(1.5);expect(r.ran).toBe(true);expect(r.cape).toBeGreaterThan(.15);
+  expect(r.skid).toBe('skid');expect(r.skidFace).toBe(1);expect(r.after).toBe(-1);
+  expect(r.land).toBe('landh');expect(r.lift).toBeGreaterThan(.2);
+  expect(r.head).toBeLessThan(-.3);expect(Math.abs(r.headBack)).toBeLessThan(.02);
+  expect(r.light*1.1).toBeLessThan(.03);expect(r.big*1.1).toBeGreaterThan(.5);
+  expect(r.kick).toBeGreaterThan(.2);expect(r.kick).toBeLessThan(.4);expect(r.kickBack).toBeLessThan(.02);
+  expect(r.rmTrauma).toBe(0);expect(r.rmKick).toBe(0);expect(r.rmLive).toEqual([0,0,0,0]);
+});

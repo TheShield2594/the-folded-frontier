@@ -20,6 +20,10 @@ import {
 
 // ================= gameplay =================
 export const FLY_T=1.6;
+// player animation (issue #137): skid when reversing faster than SKID_V, for SKID_T s; run above RUN_ON (walk again under RUN_OFF), a run
+// stride RUN_STRIDE walk strides long; landing faster than HARD_LAND is a hard landing; head tracking reaches HEAD_R tiles and turns
+// up to HEAD_MAX; fidgets start after FIDGET_T s standing still
+export const SKID_V=4,SKID_T=.15,RUN_ON=5.2,RUN_OFF=4.6,RUN_STRIDE=1.5,HARD_LAND=-27,HEAD_R=6,HEAD_MAX=.35,FIDGET_T=8;
 export function reachOK(tx,ty,r=6){r+=hasAcc('reach')?2:0;return Math.hypot(tx+.5-player.x,ty+.5-(player.y+.9))<=r;}
 export function breakTile(x,y,drop=true){const i=idx(x,y),t=tiles[i];if(t===T.AIR)return;const d=TP[t];
   if(t===T.CROP){const m=meta[i],ty=Math.min(4,m>>2),st=m&3;setTile(x,y,T.AIR);if(drop){if(st>=2){dropItem(HERBS[ty][0],randi(1,2),x+.5,y+.5);dropItem(SEEDIDS[ty],randi(1,3),x+.5,y+.5);stat('harvests');fcount('harvest');}else dropItem(SEEDIDS[ty],1,x+.5,y+.5);}burst(x+.5,y+.5,['#5aa83c','#86d15f'],6,3);SFX.dig();return true;}
@@ -108,14 +112,14 @@ function statusOverlay(dt){const p=player,st=p.st||{},m=p.mesh,f=st.burn>0?0:st.
 // shields: the best shield worn in an accessory slot blocks. Raising it within PARRY_W of a hit parries: no damage, attacker staggered, projectiles bounce back.
 const PARRY_W=.2,COUNTER_W=.9;
 function parry(src){const p=player;p.inv_t=.35;p.parryT=.3;p.counterT=COUNTER_W;p.parryOK=false;p.shieldFlash=.3;stat('parries');const cx=p.x+p.face*.7,cy=p.y+1.1;
-  floatText(cx,p.y+2.4,'PARRY!','nice');SFX.parry();hitPause(.12);shake(.22);burst(cx,cy,['#fff3c0','#f1c04f','#fbf8f0'],18,7,{grav:0,life:.35,bright:1});$('vig').classList.add('parry');setTimeout(()=>$('vig').classList.remove('parry'),200);
+  floatText(cx,p.y+2.4,'PARRY!','nice');SFX.parry();hitPause(.12);shake(.22);if(src&&src.x!=null)kick(src.x-p.x,0,.2);punch();burst(cx,cy,['#fff3c0','#f1c04f','#fbf8f0'],18,7,{grav:0,life:.35,bright:1});$('vig').classList.add('parry');setTimeout(()=>$('vig').classList.remove('parry'),200);
   if(src.k){const sp=Math.hypot(src.vx,src.vy)*1.2;src.hostile=false;src.src='parry';src.hit=new Set();src.dmg*=1.5;src.t=0;src.vx=p.face*Math.max(Math.abs(src.vx),sp*.8);src.vy=-src.vy*.5;return;}
   const e=src.parent||src;if(e.dying)return;e.stun=e.d.boss?.5:1.4;e.vx=(e.x>p.x?1:-1)*(e.d.boss?2:9);if(!e.d.fly)e.vy=Math.max(e.vy,5);e.flash=.2;burst(e.x,e.y+e.h+.2,['#fff3c0','#ffe58a'],8,2,{grav:0,life:.6,bright:1});}
 export function hurtPlayer(dmg,from,src,elem){if(player.dead)return;if(player.dashI>0){if(!player.dodged){player.dodged=true;floatText(player.x,player.y+2.1,'DODGE!','nice');stat('dodges');}return;}if(player.inv_t>0)return;
   let blk=0;if(player.blocking&&src&&(from-player.x)*player.face>-.25){if(player.parryOK&&player.blockT<PARRY_W*niceW()){parry(src);return 'parry';}blk=(shieldItem()||{block:0}).block;}
   if(hasBadge('close')&&player.hp<player.max*.25&&Math.random()<.25){player.inv_t=.5;floatText(player.x,player.y+2,'MISS!','nice');return;}let real=Math.max(1,Math.round(dmg*(1-blk)-defense()/2));if(hasBadge('last')&&player.hp<player.max*.2)real=Math.max(1,Math.round(real/2));player.hp-=real;player.inv_t=.7;player.regenT=0;const kb=blk?.35:1;player.vx=(player.x<from?-1:1)*7*kb;player.vy=7*kb;
   floatText(player.x,player.y+2,real,'p');if(blk){SFX.block();shake(.1);hitPause(.04);burst(player.x+player.face*.6,player.y+1.1,['#fbf8f0','#dcd3c2','#ffe58a'],8,4,{grav:0,life:.3});stat('blocks');}
-  else{player.hurtT=.3;SFX.hurt();shake(.25);hitPause(.06);$('vig').classList.add('hurt');setTimeout(()=>$('vig').classList.remove('hurt'),180);burst(player.x,player.y+1,['#d4483b','#fbf8f0'],6,4);if(elem)playerStatus(elem);}
+  else{player.hurtT=.3;player.hurtBack=from!=null&&(from-player.x)*player.face<0;SFX.hurt();shake(.2+Math.min(.35,real/player.max*1.5)+(src&&src.d&&src.d.boss?.3:0));if(from!=null)kick(player.x-from||player.face,.25,.3);hitPause(.06);$('vig').classList.add('hurt');setTimeout(()=>$('vig').classList.remove('hurt'),180);burst(player.x,player.y+1,['#d4483b','#fbf8f0'],6,4);if(elem)playerStatus(elem);}
   if(player.hp<=0){player.hp=0;die();}}
 function die(){dismount(true);player.dead=true;player.deadT=4;player.dieT=0;player.swing=null;player.draw=null;const lost=Math.floor(player.coins*.25);player.coins-=lost;updateCoins();SFX.die();stat('deaths');$('dead').hidden=false;if(lost)toast(`Dropped ${lost} coins in the tumble.`,'bad');}
 function respawn(){endDie();player.dead=false;player.dashT=player.dashCD=player.dashI=0;player.st={};player.draw=null;player.blocking=player.blockOn=false;player.hp=player.max;player.x=player.spawn.x;player.y=player.spawn.y;player.vx=player.vy=0;player.mesh.visible=true;$('dead').hidden=true;player.inv_t=2;}
@@ -129,8 +133,15 @@ export function endDie(){const p=player;p.dieT=null;if(p.mesh){p.mesh.rotation.z
 export function playerCheer(t=1.2){if(!player.dead)player.cheerT=Math.max(player.cheerT||0,t);}
 export function quickHeal(){if(player.potT>0){toast(`Potion sickness: wait ${Math.ceil(player.potT)}s.`,'bad');return;}const k=player.inv.findIndex(s=>s&&s.id==='potion');if(k<0){toast('No healing potions.','bad');return;}const s=player.inv[k];s.n--;if(!s.n)player.inv[k]=null;setInvDirty(true);heal(60*(hasBadge('dip')?1.5:1));player.potT=30;SFX.potion();}
 export function heal(n){const h=Math.min(n,player.max-player.hp);player.hp+=h;floatText(player.x,player.y+2,'+'+Math.round(h),'heal');burst(player.x,player.y+1,['#9be27d','#fbf8f0'],10,3,{grav:-2});}
-export let shakeT=0;export let hitStop=0;function hitPause(t){if(SET.hitstop)hitStop=Math.max(hitStop,t);}
-export function shake(a){if(!SET.shake||reduceMotion())return;shakeT=Math.max(shakeT,a);}
+export let hitStop=0;function hitPause(t){if(SET.hitstop)hitStop=Math.max(hitStop,t);}
+// camera feel (issue #136; view.js applies them): shake(a) adds trauma (up to 1), and the offset grows with trauma squared, so a
+// light hit barely moves the camera and a boss's slam hits hard; kick(dx, dy, a) shoves it about a tiles along the hit and
+// springs back; punch() a brief zoom in. Settings > Screen shake off, or reduced motion, turns all three off.
+export let trauma=0;export const camKick={x:0,y:0,vx:0,vy:0},KICK_W=22;export let camPunch=0;
+const feelOn=()=>SET.shake&&!reduceMotion();
+export function shake(a){if(!feelOn())return;trauma=Math.min(1,trauma+a);}
+export function kick(dx,dy,a=.25){if(!feelOn())return;const l=Math.hypot(dx,dy);if(!l)return;const v=a*KICK_W*Math.E;camKick.vx+=dx/l*v;camKick.vy+=dy/l*v;}
+export function punch(a=1){if(!feelOn())return;camPunch=Math.max(camPunch,a);}
 function useItem(it,dt,pressed){const tx=Math.floor(mouse.wx),ty=Math.floor(mouse.wy);const p=player;
   if(it.pet||it.mount){if(mouse.lp){if(it.pet)togglePet(it.pet);else toggleMount(it.mount);}return;}
   if(it.rod){if(mouse.lp)fishClick(it);return;}
@@ -442,8 +453,14 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();se
   if(wantBlock&&!p.blocking){p.blocking=true;p.blockT=0;p.parryOK=!(p.blockCD>0);SFX.raise();}else if(!wantBlock&&p.blocking){p.blocking=false;p.blockCD=.3;}
   p.blockCD=(p.blockCD||0)-dt;if(p.blocking){p.blockT+=dt;p.face=mouse.wx>=p.x?1:-1;}
   const heavyWind=p.swing&&p.swing.heavy&&p.swing.t<p.swing.dur*.6,st=p.st||{};
-  const left=held('left'),right=held('right');const spd=6.2*(hasAcc('speed')?1.2:1)*(hasBuff('swift')?1.25:1)*(hasBuff('charged')?1.2:1)*(hasBuff('fed')?1.05:1)*(p.inLiq?.62:1)*(p.climb?.35:1)*(p.blocking?.45:1)*(p.draw?.6:1)*(heavyWind?.5:1)*(st.ink>0?.7:1)*(p.mount?MOUNTS[p.mount].spd:1);const acc=(p.onGround?55:30)*(p.mount?1.4:1);
-  if(!hooked){if(left&&!right){p.vx=Math.max(p.vx-acc*dt,-spd);if(!p.swing&&!p.blocking)p.face=-1;}else if(right&&!left){p.vx=Math.min(p.vx+acc*dt,spd);if(!p.swing&&!p.blocking)p.face=1;}else p.vx*=Math.pow(p.onGround?.0004:.25,dt);
+  const left=held('left'),right=held('right');
+  // skid (issue #137): reversing at speed on the ground plants the front foot for SKID_T before the card flip, kicking up dust
+  // from it, and brakes a little harder so the turn feels quick rather than slippery
+  if(p.skidT>0){p.skidT-=dt;if(!p.onGround||hooked)p.skidT=0;else if(Math.random()<dt*30)emit('dust',p.x+p.skidDir*.35,p.y+.05,{n:1,spd:1.5});}
+  else if(p.onGround&&!hooked&&!p.swing&&!p.blocking&&!p.flat&&!p.mount&&!p.climb&&p.dashT<=0&&((left&&!right&&p.vx>SKID_V)||(right&&!left&&p.vx<-SKID_V))){
+    p.skidT=SKID_T;p.skidDir=Math.sign(p.vx);emit('dust',p.x+p.skidDir*.4,p.y+.05,{n:7,spd:2.6});SFX.rustle(.08,.3);}
+  const skid=p.skidT>0;const spd=6.2*(hasAcc('speed')?1.2:1)*(hasBuff('swift')?1.25:1)*(hasBuff('charged')?1.2:1)*(hasBuff('fed')?1.05:1)*(p.inLiq?.62:1)*(p.climb?.35:1)*(p.blocking?.45:1)*(p.draw?.6:1)*(heavyWind?.5:1)*(st.ink>0?.7:1)*(p.mount?MOUNTS[p.mount].spd:1);const acc=(p.onGround?55:30)*(p.mount?1.4:1)*(skid?1.5:1);
+  if(!hooked){if(left&&!right){p.vx=Math.max(p.vx-acc*dt,-spd);if(!p.swing&&!p.blocking&&!skid)p.face=-1;}else if(right&&!left){p.vx=Math.min(p.vx+acc*dt,spd);if(!p.swing&&!p.blocking&&!skid)p.face=1;}else p.vx*=Math.pow(p.onGround?.0004:.25,dt);
     if(Math.abs(p.vx)>spd)p.vx*=Math.pow(.05,dt);}
   const wantFlat=held('flat')||(pad.active&&pad.held.down&&p.onGround&&(p.downT=(p.downT||0)+dt)>.3);if(!(pad.active&&pad.held.down))p.downT=0;
   // riders get off to flatten, climb a rope or swing on the hook
@@ -472,7 +489,7 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();se
   updateHook(dt);
   p.prevY=p.y;p.step=true;
   collide(p,dt);if(p.stepOff)p.stepOff=p.stepOff>-.01?0:p.stepOff*Math.exp(-3*dt/STEP_T);if(p.onGround||p.climb||hooked){p.flyT=FLY_T;}if(p.onGround){p.usedDouble=false;p.airDashed=false;}
-  if(p.landV<-9){emit('dust',p.x,p.y,{n:p.landV<-18?10:5,spd:p.landV<-18?3.5:2});p.squash=.14;p.landT=.12;}p.landV=0;
+  if(p.landV<-9){emit('dust',p.x,p.y,{n:p.landV<-18?10:5,spd:p.landV<-18?3.5:2});p.squash=.14;p.landT=.12;p.hardLand=p.landV<HARD_LAND;if(p.hardLand){p.landT=Math.abs(p.vx)>2?.18:.34;kick(0,-1,.2);}}p.landV=0;
   if(p.onGround&&Math.abs(p.vx)>3.5){p.stepT=(p.stepT||0)-dt;if(p.stepT<=0){p.stepT=.24;const gt=tileAt(Math.floor(p.x),Math.floor(p.y-.5));if(gt&&TP[gt]&&OPAQUE[gt])burst(p.x-p.face*.25,p.y+.05,[sh(TP[gt].col,1.1),'#e9dfc9'],2,1.2,{up:1.2,grav:6,life:.5});}}
   p.squash=Math.max(0,(p.squash||0)-dt);p.takeT=Math.max(0,(p.takeT||0)-dt);
   if(p.y<-5){p.hp=0;die();}
@@ -502,14 +519,29 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();se
   // then movement. The rig blends from one clip to the next; walk and climb run on their own phase.
   for(const k of['hurtT','parryT','landT','cheerT','counterT'])if(p[k]>0)p[k]-=dt;if(p.onGround)p.airHits=0;if(p.swing||Math.abs(p.vx)>.5||!p.onGround)p.cheerT=0;
   let c='idle',ct=null;const sp=p.swing&&!p.blocking&&(p.swing.sword||p.swing.tool)?swingPose(p.swing):null;if(sp)c=FCLIP[sp.f]||'hold';else if(p.parryT>0)c='parry';else if(p.blocking)c='block';else if(p.swing&&(p.swing.sword||p.swing.tool))c='hold';
-  else if(p.hurtT>0)c='hurt';else if(p.flat)c='flat';else if(p.dashT>0)c='dash';else if(p.climb){c='climb';ct=p.climbT||0;}else if(!p.onGround)c=p.vy>0?'jump':'fall';else if(p.landT>0)c='land';
-  else if(Math.abs(p.vx)>.5){p.walkT+=dt*Math.abs(p.vx)*1.3;c='walk';const sd=p.rig.d.stride||4;ct=p.walkT%sd/sd;}else if(p.cheerT>0)c='cheer';else p.walkT=0;
-  if(p.mount&&!sp&&!p.blocking){c='idle';ct=null;}if(c==='reel0'||c==='reel1')c='reel';
+  else if(p.hurtT>0)c=p.hurtBack?'hurtb':'hurt';else if(p.flat)c='flat';else if(p.dashT>0)c='dash';else if(p.climb){c='climb';ct=p.climbT||0;}else if(!p.onGround)c=p.vy>0?'jump':'fall';else if(skid)c='skid';else if(p.landT>0)c=p.hardLand?'landh':'land';
+  // walk and run share one phase (p.gait), each cycle one stride long; the stride grows from the walk's toward RUN_STRIDE times it
+  // with speed, and the run clip takes over above RUN_ON (back to walking under RUN_OFF), so the feet carry on across the switch
+  else if(Math.abs(p.vx)>.5){const av=Math.abs(p.vx),sd=p.rig.d.stride||4;p.walkT+=dt*av*1.3;p.running=av>(p.running?RUN_OFF:RUN_ON);p.gait=((p.gait||0)+dt*av*1.3/(sd*lerp(1,RUN_STRIDE,clamp((av-3.5)/2.5,0,1))))%1;c=p.running?'run':'walk';ct=p.gait;}
+  else if(p.cheerT>0)c='cheer';else{p.walkT=0;p.running=false;}
+  if(p.mount&&!sp&&!p.blocking){c='idle';ct=null;}
+  // idle fidgets: after FIDGET_T s standing still, now and then a stretch, a look around or dusting off
+  if(c==='idle'&&ct==null&&!p.mount){p.idleT=(p.idleT||0)+dt;if(!p.fid&&p.idleT>FIDGET_T&&Math.random()<dt*.4)p.fid={k:pick(['stretch','look','dust']),t:0};
+    if(p.fid){const cl=p.rig.d.clips[p.fid.k];p.fid.t+=dt;if(cl&&p.fid.t<cl.len){c=p.fid.k;ct=p.fid.t;}else{p.fid=null;p.idleT=rand(2,5);}}}else{p.idleT=0;p.fid=null;}if(c==='reel0'||c==='reel1')c='reel';
   rigPlay(p.rig,c,{t:ct});m.position.set(p.x,p.y-.08+(p.rideY||0)+(p.stepOff||0),.15);setTint(p.mat,p.x,p.y+1);statusOverlay(dt);p.mat.uniforms.uFlash.value=p.inv_t>0&&!(p.inv_t>1.3)?(Math.floor(p.inv_t*14)%2?.6:0):0;
   const sq=(p.takeT>0?1-.14*p.takeT/TAKE_T:p.onGround?(p.squash>0?1-p.squash*.9:1):clamp(1+p.vy*.006,.92,1.08))*(sp?sp.sq:1);m.scale.set(1/Math.sqrt(sq),sq,1);if(p.flat)m.scale.set(1.3,.42,1);if(p.cheerT>0&&!reduceMotion())m.position.y+=Math.abs(Math.sin(p.cheerT*10))*.12;
   if(p.dashT>0){m.scale.x*=1.22;m.scale.y*=.9;p.ghostT-=dt;if(p.ghostT<=0){p.ghostT=.03;spawnGhost();}}
-  updateArm(sp);updateTool(sp);updateShield(dt);rigUpdate(p.rig,dt);
+  headTrack(dt,null,sp);p.rig.vel=[p.vx*p.face,p.vy];updateArm(sp);updateTool(sp);updateShield(dt);rigUpdate(p.rig,dt);
   if(p.swing&&p.swing.aim!=null)aimHand=sp?swingHand(sp,sq,1):[p.x+p.face*.25,p.y+1.1];updateNock();}
+// head tracking (issue #137): the head tilts toward the cursor while aiming, the nearest foe within HEAD_R, or whoever the player
+// is talking to (at), else down a little in a fast fall; only toward the way the player faces, up to HEAD_MAX, easing over ~0.15 s
+function headTrack(dt,at,sp){const p=player;let goal=0,tp=at;
+  if(!tp&&!p.dead&&!p.flat){if(p.draw||(p.swing&&p.swing.aim!=null&&!(ITEMS[p.swing.tool]||{}).rod))tp=[mouse.wx,mouse.wy];else if(!sp){const e=nearestEnemy(p.x,p.y+1,HEAD_R);if(e)tp=[e.x,e.y+e.h/2];}}
+  if(tp){const dx=(tp[0]-p.x)*p.face,dy=tp[1]-(p.y+1.55+(p.rideY||0));if(dx>.3)goal=clamp(-Math.atan2(dy,dx),-HEAD_MAX,HEAD_MAX);}
+  else if(!p.onGround&&p.vy<-12&&!p.climb&&!p.inLiq)goal=.18;
+  p.headR=(p.headR||0)+(goal-(p.headR||0))*(1-Math.exp(-dt*20));rigSet(p.rig,'head',{dr:p.headR});}
+// while a conversation holds the world (state 'talk'), the player stands and looks at the speaker; the cape settles
+export function playerTalk(dt,at){const p=player;if(p.dead||!p.rig||!p.onGround)return;if(p.swing||p.draw)return;rigPlay(p.rig,'idle');headTrack(dt,at&&[at.x,at.y-1.1]);p.rig.vel=[0,0];rigUpdate(p.rig,dt);}
 // sword: a three-hit combo, each cut keyframed as [k end, arm angle, easing, body frame]. Angles are world radians
 // relative to facing (0 forward, + up). A cut coils back (anticipation), snaps through fast (ease-out-quart), overshoots, then settles.
 // 0 overhead cut, 1 rising cut back up, 2 a wider lunging finisher. Each wind-up starts from where the last cut ended so chains flow.
@@ -543,15 +575,15 @@ function swingHand(sp,sq=1,live){const p=player,[sx,sy]=live?rigJoint(p.rig,'arm
 function swingTip(s,k){const p=player,sp=swingPose(s,k),[hx,hy]=swingHand(sp),r=1.5*(p.rig.d.blade||1)*(s.heavy?1.2:1);return[hx+p.face*Math.cos(sp.blade)*r,hy+Math.sin(sp.blade)*r];}
 // the moment a cut starts its strike: step into it, and the finisher kicks up dust and a little shake
 function swingStep(s,k){const p=player,w=SWKEYS[s.combo][0][0];if(s.stepped||k<w)return;s.stepped=true;
-  if(p.onGround&&!p.blocking){p.vx=p.face*Math.max(p.vx*p.face,LUNGE[s.combo]);if(s.combo===2)emit('dust',p.x-p.face*.3,p.y+.05);}if(s.combo===2){shake(.1);if(!ITEMS[s.tool].wave)fireProj('wave',p.x+p.face*.9,p.y+1+(p.rideY||0),p.face*20,0,Math.round(s.dmg*.4),{src:'melee',life:.22,elem:s.elem});}}
+  if(p.onGround&&!p.blocking){p.vx=p.face*Math.max(p.vx*p.face,LUNGE[s.combo]);if(s.combo===2)emit('dust',p.x-p.face*.3,p.y+.05);}if(s.combo===2){shake(.1);kick(p.face,0,.2);if(!ITEMS[s.tool].wave)fireProj('wave',p.x+p.face*.9,p.y+1+(p.rideY||0),p.face*20,0,Math.round(s.dmg*.4),{src:'melee',life:.22,elem:s.elem});}}
 function swingAngle(k,heavy){if(heavy){if(k<.38)return lerp(1.2,2.55,1-Math.pow(1-k/.38,2));if(k<HAM_HIT){const e=(k-.38)/(HAM_HIT-.38);return lerp(2.55,-1.2,e*e);}return lerp(-1.2,-.95,(k-HAM_HIT)/(1-HAM_HIT));}
   const e=1-Math.pow(1-k,2.2);return lerp(2.1,-1.0,e);}
-function hammerImpact(s,tx,ty){const p=player;s.slam=true;SFX.slam();shake(.3);const gy=Math.floor(ty-.2);
+function hammerImpact(s,tx,ty){const p=player;s.slam=true;SFX.slam();shake(.3);kick(0,-1,.25);const gy=Math.floor(ty-.2);
   if(isSolid(Math.floor(tx),gy)||p.onGround){const y=isSolid(Math.floor(tx),gy)?gy+1:p.y,gt=tileAt(Math.floor(tx),y-1),col=gt&&TP[gt]&&TP[gt].col||'#c9a574';burst(tx,y+.05,[col,sh(col,1.2),'#e9dfc9'],14,4.5,{up:1});
     // the shockwave rolls along the ground in front of the head
     // a full charge sends it much farther and cracks shells and armor (crack)
     for(const e of enemies){if(e.dying||s.hit.has(e)||e.d.fly||!e.onGround)continue;const fx=(e.x-tx)*p.face;if(s.charged?fx>-3-e.w/2&&fx<7.5+e.w/2&&Math.abs(e.y-y)<2:Math.abs(e.x-tx)<1.8+e.w/2&&Math.abs(e.y-y)<1.2){s.hit.add(e);if(s.charged)crack(e);hurtEnemy(e,s.dmg*(s.charged?.7:.5),p.face,s.kb*.6,false,s.elem);stagger(e);}}
-    if(s.charged){SFX.boom();shake(.5);hitPause(.08);stat('shockwaves');for(let d=1;d<=7;d++)burst(tx+p.face*d,y+.05,[col,sh(col,1.2),'#e9dfc9'],5,2+d*.35,{up:1});for(let d=1;d<=3;d++)burst(tx-p.face*d,y+.05,[col,'#e9dfc9'],3,2,{up:1});}}}
+    if(s.charged){SFX.boom();shake(.5);kick(0,-1,.2);hitPause(.08);stat('shockwaves');for(let d=1;d<=7;d++)burst(tx+p.face*d,y+.05,[col,sh(col,1.2),'#e9dfc9'],5,2+d*.35,{up:1});for(let d=1;d<=3;d++)burst(tx-p.face*d,y+.05,[col,'#e9dfc9'],3,2,{up:1});}}}
 const HAM_TOP=.37,HAM_CH=.75;
 // holding the button at the top of a warhammer swing charges it; a full charge adds 50% damage and a shockwave
 function hamCharge(s,dt){const[tx,ty]=swingTip(s,HAM_TOP);if(!s.ch){s.ch=0;SFX.draw();}s.ch+=dt;
@@ -961,7 +993,7 @@ export function updateProjs(dt){for(let i=projs.length-1;i>=0;i--){const q=projs
   if(done&&k.boom&&!q.hostile){for(const e of enemies)if(!e.dying&&!q.hit.has(e)&&Math.hypot(e.x-q.x,e.y+e.h/2-q.y)<k.boom)hurtEnemy(e,q.dmg*.7,e.x>q.x?1:-1,5,false,q.elem);burst(q.x,q.y,k.splat,26,7,{bright:1});SFX.boom();shake(.15);}
   if(done||q.t>q.life){scene.remove(q.m);q.m.geometry.dispose();q.m.material.dispose();projs.splice(i,1);}}}
 // Imported bindings are read-only, so other modules assign these through setters.
-export function setShakeT(v){return shakeT=v;}
+export function setTrauma(v){return trauma=v;}export function setCamPunch(v){return camPunch=v;}
 export function setHitStop(v){return hitStop=v;}
 export function setAngler(v){return angler=v;}
 export function setWeather(v){return weather=v;}

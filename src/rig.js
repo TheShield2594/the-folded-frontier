@@ -12,7 +12,9 @@ import {
 //  paint(t, skin, variant) the drawing, loc 1 if paint draws around the pivot (limbs) rather than in design coordinates,
 //  clip [x0,y0,x1,y1] keeps only that design rect of the drawing, v variant names (swaps, '' first), wob wobble amount,
 //  slot [x0,y0,x1,y1] a held-item slot (no paint: rigHold() cuts a picture into it, that design rect around the pivot),
-//  rigid 1 to follow the parent's pivot and turn but not its stretch (a held sword stays a sword while the arm stretches)}.
+//  rigid 1 to follow the parent's pivot and turn but not its stretch (a held sword stays a sword while the arm stretches),
+//  spr [stiffness, damping, gain x, gain y, max] a damped spring on the part's turn (cape, hair, scarf) driven by R.vel:
+//  [forward speed, vy] in world units that gameplay sets; it trails behind a run and lifts in a fall, on top of the clip's angle}.
 //  A part with no paint or slot is a bare joint (the root).
 // Clips: {len seconds, loop, bl blend-in seconds, tr: {part: {r, x, y, sx, sy, sw: keys}}}. Keys are [time, value, easing
 //  to the next key] (EZR names); r is radians (canvas turn: positive is clockwise on screen), x/y design px, sx/sy scale,
@@ -34,6 +36,7 @@ const SEG=8;
 export const EZR={lin:x=>x,io:x=>x<.5?2*x*x:1-(2-2*x)**2/2,o2:x=>1-(1-x)**2,i2:x=>x*x};
 export function defRig(k,d){d.kind=k;d.ox??=d.w/2;d.oy??=d.h;d.s??=1/60;d.res??=1;d.pi={};d.clips??={};
   d.parts.forEach((p,i)=>{d.pi[p.n]=i;p.i=i;p.v??=[''];p.wob??=p.paint?.018:0;});
+  d.spr=d.parts.filter(p=>p.spr).map(p=>p.i);
   for(const p of d.parts){p.pa=p.up!=null?d.pi[p.up]:-1;p.bi=p.bend!=null?d.pi[p.bend]:-1;p.ns=p.bi>=0?SEG:1;}
   // quads: every part's outline strip first (drawn behind the whole figure), then per part its shadow strip and itself
   let nq=0;for(const p of d.parts){p.oo=nq;nq+=p.ns;}d.NQ=nq;let o=nq;for(const p of d.parts){p.os=o;p.om=o+p.ns;o+=p.ns*2;}
@@ -165,8 +168,8 @@ export function rigFree(R){scene.remove(R.mesh);R.g.dispose();R.mat.dispose();if
 // (phase-driven clips like walk), sp its speed
 export function rigPlay(R,c,o={}){if(c!==R.c){if(!R.d.clips[c])return;for(let i=0;i<R.last.length;i++)Object.assign(R.from[i],R.last[i]);R.c=c;R.ct=0;R.w=R.c0?0:1;R.c0=1;R.bl=o.bl??R.d.clips[c].bl??.1;}
   if(o.t!=null)R.ct=o.t;R.sp=o.sp??1;}
-// rigSet(R, part, {r, x, y, sx, sy, sw, abs, snap}): hold a part this frame (sw swaps it). abs: r is measured on screen, not from the parent;
-// snap: no ease in. When rigSet stops being called the part eases back to the clip.
+// rigSet(R, part, {r, x, y, sx, sy, sw, abs, snap, dr}): hold a part this frame (sw swaps it). abs: r is measured on screen, not from the parent;
+// snap: no ease in; dr: a turn added to the clip's own (the head looking at something). When rigSet stops being called the part eases back to the clip.
 export function rigSet(R,p,o){const i=R.d.pi[p];if(i!=null)R.ov[i]=o;}
 // where a part's pivot is now, in world units from the mesh origin (facing right, before the mesh's own transform)
 export function rigJoint(R,p){const i=R.d.pi[p],d=R.d;return[(R.M[i*6+4]-d.ox)*d.s,(d.oy-R.M[i*6+5])*d.s];}
@@ -186,8 +189,11 @@ export function rigUpdate(R,dt){if(R.S.gen!==rigGen&&R.mesh)rigReskin(R,R.sk,R.k
     const ov=R.ov[i];if(ov){R.ovl[i]=ov;R.ow[i]=ov.snap?1:Math.min(1,R.ow[i]+dt/.08);}else R.ow[i]=Math.max(0,R.ow[i]-dt/.12);R.ov[i]=null;
     const ow=R.ow[i],ol=R.ovl[i];if(ow>0&&ol){for(const ch of CH)if(ol[ch]!=null&&!(ch==='r'&&ol.abs))L[ch]+=(ol[ch]-L[ch])*ow;if(ol.sw!=null&&ow>.5)L.sw=ol.sw;}}
   const M=R.M,P=d.parts;
-  for(const i of d.topo){const p=P[i],L=R.last[i],j=p.pa;let r=L.r;if(p.wob&&!rm)r+=p.wob*(Math.sin(R.t*2.3+i*1.7)+.5*Math.sin(R.t*3.7+i*2.9));
-    const ol=R.ovl[i];if(ol&&ol.abs&&ol.r!=null&&R.ow[i]>0){const pa=j>=0?R.abs[j]:0;r+=(ol.r-pa-r)*R.ow[i];}
+  // springs (spr): semi-implicit Euler in substeps; reduced motion keeps a little of the swing rather than freezing it
+  if(d.spr.length){const V=R.vel||[0,0],g=rm?.3:1,h=Math.min(dt,.05)/3;R.sa??=new Float32Array(n);R.sv??=new Float32Array(n);
+    for(const i of d.spr){const[k,c,gx,gy,mx]=P[i].spr,tg=Math.max(-mx,Math.min(mx,(gx*V[0]-gy*V[1])*g));for(let q=0;q<3;q++){R.sv[i]+=(k*(tg-R.sa[i])-c*R.sv[i])*h;R.sa[i]+=R.sv[i]*h;}}}
+  for(const i of d.topo){const p=P[i],L=R.last[i],j=p.pa;let r=L.r;if(p.wob&&!rm)r+=p.wob*(Math.sin(R.t*2.3+i*1.7)+.5*Math.sin(R.t*3.7+i*2.9));if(p.spr&&R.sa)r+=R.sa[i];
+    const ol=R.ovl[i];if(ol&&ol.abs&&ol.r!=null&&R.ow[i]>0){const pa=j>=0?R.abs[j]:0;r+=(ol.r-pa-r)*R.ow[i];}if(ol&&ol.dr!=null)r+=ol.dr*R.ow[i];
     let px=p.at[0]+L.x,py=p.at[1]+L.y;if(j>=0){px-=P[j].at[0];py-=P[j].at[1];}
     const c=Math.cos(r),s=Math.sin(r),la=c*L.sx,lb=s*L.sx,lc=-s*L.sy,ld=c*L.sy,o=i*6;
     if(j<0){M[o]=la;M[o+1]=lb;M[o+2]=lc;M[o+3]=ld;M[o+4]=px;M[o+5]=py;R.abs[i]=r;}
@@ -265,15 +271,15 @@ const BROW={surprised:1,sad:1,angry:1};
 const headV=(t,o,v)=>hl(['head','body'],['head','hair'],['head','armor'],['head','face'],['head','hat'])(t,v?Object.assign({},o,v==='blink'?{blink:1}:{face:v,brow:BROW[v]}):o);
 defRig('human',{w:96,h:144,arml:22/60,sho:[7,56],parts:[
   {n:'root',at:[48,138]},
-  {n:'cape',at:[44,70],up:'torso',paint:hl(['back','cape']),wob:.03},
-  {n:'hairB',at:[36,42],up:'head',paint:hl(['back','hair']),wob:.03},
+  {n:'cape',at:[44,70],up:'torso',paint:hl(['back','cape']),wob:.03,spr:[90,11,.06,.028,.9]},
+  {n:'hairB',at:[36,42],up:'head',paint:hl(['back','hair']),wob:.03,spr:[150,13,.05,.022,.6]},
   {n:'legB',at:LIMB.legB,up:'root',loc:1,paint:hl(['legB','pants'],['legB','armor'],['legB','boots'])},
   {n:'armB',at:LIMB.armB,up:'torso',loc:1,paint:hl(['armB','shirt'],['armB','armor'],['armB','body'])},
   {n:'pack',at:[44,84],up:'torso',paint:hl(['back','acc'])},
   {n:'torso',at:[48,110],up:'root',paint:hl(['torso','shirt'],['torso','armor'],['torso','pants']),wob:.008},
   {n:'legA',at:LIMB.legA,up:'root',loc:1,paint:hl(['legA','pants'],['legA','armor'],['legA','boots'])},
   {n:'head',at:[50,72],up:'torso',paint:headV,v:['','blink','happy','hurt','ko','surprised','sad','angry'],wob:.01},
-  {n:'scarf',at:[40,72],up:'torso',paint:hl(['neck','cape']),wob:.012},
+  {n:'scarf',at:[40,72],up:'torso',paint:hl(['neck','cape']),wob:.012,spr:[120,11,.05,.025,.5]},
   {n:'hacc',at:[50,72],up:'head',paint:hl(['head','acc']),clip:[-60,-60,160,67],wob:0},
   {n:'bacc',at:[48,90],up:'torso',paint:hl(['head','acc']),clip:[-60,67,160,220],wob:0},
   {n:'armA',at:LIMB.armA,up:'torso',loc:1,paint:hl(['armA','shirt'],['armA','armor'],['armA','body'])},
@@ -283,16 +289,24 @@ defRig('human',{w:96,h:144,arml:22/60,sho:[7,56],parts:[
   {n:'held',at:[LIMB.armA[0],LIMB.armA[1]+22],up:'armA',slot:[-8,-67,67,8],rigid:1,wob:0},
   {n:'shield',at:[66,94],up:'root',slot:[-30,-30,30,30],rigid:1,wob:0}]});
 // a render.js pose (legA, armA, lean, bob, wave, face, blink...) as channel values
-export function poseCh(o){const w=o.wave||0,v={legA:{r:o.legA||0},legB:{r:o.legB||0},armB:{r:o.armB||0},root:{r:o.lean||0,y:o.bob||0},cape:{r:-w/54},hairB:{r:-w/40},scarf:{r:-w*.012},head:{sw:o.face||(o.blink?'blink':'')}};
+export function poseCh(o){const w=o.wave||0,v={legA:{r:o.legA||0},legB:{r:o.legB||0},armB:{r:o.armB||0},root:{r:o.lean||0,y:o.bob||0},cape:{r:-w/54},hairB:{r:-w/40},scarf:{r:-w*.012},head:{r:o.hr||0,sw:o.face||(o.blink?'blink':'')}};
   if(!o.noArm)v.armA={r:o.armA||0};return v;}
 // every pose in POSES becomes a clip: PF names (land, dash, hurt...), sw0-sw3 for the swing bodies (frames 9-12) and the
 // loops built from the same numbers: idle breathes and blinks, walk is the old four frames made continuous
 const HC=RIGS.human.clips;export const FCLIP=[];
 for(const k in PF){FCLIP[PF[k]]=k;HC[k]=still(poseCh(POSES[PF[k]]),.07);}
 for(let i=0;i<4;i++){FCLIP[9+i]='sw'+i;HC['sw'+i]=still(poseCh(POSES[9+i]),.05);}
-for(const k of['hurt','parry','land'])HC[k].bl=.04;HC.death.bl=.08;
+for(const k of['hurt','hurtb','parry','land','skid'])HC[k].bl=.04;HC.death.bl=.08;HC.landh.bl=.03;
 HC.idle=loopClip(2.6,[[0,poseCh(POSES[0])],[1.3,poseCh(POSES[1])]],'io',.16);HC.idle.tr.head.sw=[[0,''],[1.9,'blink'],[2.02,''],[2.6,'']];
 {const K=[];for(let k=0;k<12;k++){const ph=k/12*Math.PI*2,s=Math.sin(ph);K.push([k/12,poseCh({legA:s*.6,legB:-s*.6,armA:-s*.65,armB:s*.65,bob:-Math.abs(Math.cos(ph))*2.5+1,wave:s*3})]);}HC.walk=loopClip(1,K,'lin',.12);delete HC.walk.tr.head;}
+// run (issue #137): the stride extreme in POSES (PF.run) swung like the walk, bigger, leaning in, with a bounce; one cycle per
+// RUN_STRIDE walk strides, so the phase gameplay keeps (p.gait) carries across the walk/run switch
+{const R0=POSES[PF.run],K=[];for(let k=0;k<12;k++){const ph=k/12*Math.PI*2,s=Math.sin(ph);K.push([k/12,poseCh({legA:s*R0.legA,legB:s*R0.legB,armA:s*R0.armA,armB:s*R0.armB,lean:R0.lean,bob:-Math.abs(Math.cos(ph))*R0.bob+R0.bob*.5,wave:R0.wave+s*2})]);}HC.run=loopClip(1,K,'lin',.12);delete HC.run.tr.head;}
+// idle fidgets after standing still a while (one-shot clips: stretch, look around, dust off)
+const fid=(len,keys,pc)=>{const c=loopClip(len,keys.map(([t,o])=>[t,pc(o)]),'io',.3);c.loop=0;return c;};
+{const b=POSES[0],o=x=>Object.assign({},b,x);HC.stretch=fid(1.8,[[0,o({})],[.6,o({armA:1.2,armB:1.4,bob:-2,lean:-.1,hr:-.18,blink:1})],[1.2,o({armA:1.1,armB:1.3,bob:-2,lean:-.08,hr:-.16,blink:1})]],poseCh);
+  HC.look=fid(2.4,[[0,o({})],[.5,o({hr:-.22})],[1.1,o({hr:-.22})],[1.6,o({hr:.16})],[2,o({hr:.16})]],poseCh);
+  HC.dust=fid(1.4,[[0,o({})],[.3,o({lean:.12,hr:.16,armA:-.7,armB:.3})],[.5,o({lean:.12,hr:.16,armA:-.2,armB:.3})],[.7,o({lean:.12,hr:.16,armA:-.7,armB:.3})],[.9,o({lean:.12,hr:.16,armA:-.2,armB:.3})]],poseCh);}
 HC.climb=loopClip(2,[[0,poseCh(POSES[PF.climb0])],[1,poseCh(POSES[PF.climb1])]],'io',.1);
 HC.cheer=loopClip(.4,[[0,poseCh(POSES[PF.cheer0])],[.2,poseCh(POSES[PF.cheer1])]],'io',.08);
 HC.reel=loopClip(.17,[[0,poseCh(POSES[PF.reel0])],[.085,poseCh(POSES[PF.reel1])]],'io',.06);
@@ -416,8 +430,8 @@ function heroTint(img,mk2,o,dim){let m=HTC.get(img);if(!m)HTC.set(img,m={});cons
 const ELB=18,KNEE=26,HAND=35,BL=.62; // BL: the held item's size against the drawn human's (the hero's arms are longer, its weapons smaller)
 defRig('hero',{w:96,h:144,res:3,edge:1,arml:HAND/60,sho:[-5,67],stride:2.5,blade:BL,grip:.87,parts:[
   {n:'root',at:[48,138]},
-  {n:'cape',at:[44,70],up:'torso',loc:1,paint:heroAcc('cape.b'),wob:.02},
-  {n:'scarfB',at:[44,70],up:'torso',loc:1,paint:heroAcc('scarf.b'),wob:.03},
+  {n:'cape',at:[44,70],up:'torso',loc:1,paint:heroAcc('cape.b'),wob:.02,spr:[80,10,.045,.02,.55]},
+  {n:'scarfB',at:[44,70],up:'torso',loc:1,paint:heroAcc('scarf.b'),wob:.03,spr:[120,11,.055,.025,.6]},
   {n:'packB',at:[48,88],up:'torso',loc:1,paint:heroAcc('pack.b'),wob:0},
   {n:'armB',at:[40,71],up:'torso',loc:1,paint:heroPart('arm',HDIM.armB),bend:'foreB'},
   {n:'foreB',at:[40,71+ELB],up:'armB'},
@@ -455,6 +469,10 @@ const HPOSE={hold:{legA:-.22,kA:.3,legB:.22,kB:.18,armA:-1.6,eA:-.2,armB:.25},
   land:{wave:-2,legA:-.6,kA:1.15,legB:-.2,kB:.85,armA:-.55,eA:-.5,armB:.6,eB:-.3,lean:.14,bob:5,sq:.92},
   dash:{wave:9,legA:-1.05,kA:.55,legB:.95,kB:.95,armA:1,eA:-.25,armB:1.3,eB:-.2,lean:.24,sq:.97},
   hurt:{wave:-3,legA:.3,kA:.45,legB:-.45,kB:.2,armA:-.95,eA:-.55,armB:-.6,eB:-.4,lean:-.22,x:-2,bob:1,face:'hurt',hr:-.12},
+  hurtb:{wave:3,legA:-.5,kA:.4,legB:.4,kB:.3,armA:1.1,eA:-.3,armB:1.3,eB:-.3,lean:.24,x:2,bob:1,face:'hurt',hr:.1},
+  // a hard landing: a three-point landing (front thigh level, back knee down, the front hand on the ground); a skid: the front foot planted, leaning back
+  landh:{legA:-2.17,kA:1.57,legB:-.6,kB:1.57,armA:-.6,eA:0,armB:1.2,eB:-.3,lean:.6,bob:16,hr:-.3},
+  skid:{legA:-.9,kA:.1,legB:.5,kB:.9,armA:-1.3,eA:-.5,armB:-.9,eB:-.4,lean:-.24,bob:4,sq:.95,hr:-.08},
   death:{legA:.6,kA:.5,legB:-.2,kB:.3,armA:.4,eA:-.3,armB:.7,lean:-.17,bob:4,face:'ko'},
   flat:{legA:-.75,legB:.75,armA:-1.9,armB:1.9,blink:1},
   mine0:{legA:-.35,kA:.45,legB:.35,kB:.3,armB:.6,lean:-.1,bob:1,noArm:1},mine1:{legA:-.45,kA:.55,legB:.4,kB:.35,armB:-.55,lean:.2,bob:3.5,noArm:1},
@@ -468,7 +486,7 @@ const HPOSE={hold:{legA:-.22,kA:.3,legB:.22,kB:.18,armA:-1.6,eA:-.2,armB:.25},
   sw2:{wave:2,legA:-.45,kA:.35,legB:.35,kB:.25,armB:-.6,eB:-.4,lean:.07,noArm:1},sw3:{wave:4,legA:-.75,kA:.5,legB:.55,kB:.15,armB:-1.1,eB:-.5,lean:.17,bob:3.5,noArm:1}};
 {const HR=RIGS.hero.clips;HR.hold=still(hp(HPOSE.hold),.07);
   for(const k in HPOSE)HR[k]=still(hp(HPOSE[k]),/^sw/.test(k)?.05:.07);
-  for(const k of['hurt','parry','land'])HR[k].bl=.04;HR.death.bl=.08;
+  for(const k of['hurt','hurtb','parry','land','skid'])HR[k].bl=.04;HR.death.bl=.08;HR.landh.bl=.03;
   HR.fall.bl=.18;HR.jump.bl=.06;
   // idle: breathing (the chest swells, the head rides up a hair), arms settle, a blink
   HR.idle=loopClip(2.8,[[0,hp({legA:-.05,legB:.06,kA:.08,kB:.1,armA:.06,armB:-.08,eA:-.15,eB:-.18})],[1.4,hp({legA:-.05,legB:.06,kA:.12,kB:.14,armA:.1,armB:-.03,eA:-.2,eB:-.22,br:1.02,bob:.6,hr:-.02,wave:.8})]],'io',.18);
@@ -479,6 +497,15 @@ const HPOSE={hold:{legA:-.22,kA:.3,legB:.22,kB:.18,armA:-1.6,eA:-.2,armB:.25},
       K.push([ph,hp({legA:-.5*s,legB:.5*s,kA:.1+.85*Math.max(0,c)**1.4,kB:.1+.85*Math.max(0,-c)**1.4,armA:.55*s,armB:-.55*s,
         eA:-.15-.55*Math.max(0,-s),eB:-.15-.55*Math.max(0,s),lean:.06,wave:3+1.2*Math.sin(ph*Math.PI*4),bob:2.2*Math.abs(s)-1.2,hr:.02*Math.abs(c)})]);}
     HR.walk=loopClip(1,K,'lin',.12);delete HR.walk.tr.head.sw;}
+  // run: longer, higher strides, knees driving up, elbows bent and pumping, leaning into it with a bounce
+  {const K=[],N=16;for(let i=0;i<N;i++){const ph=i/N,s=Math.sin(ph*Math.PI*2),c=Math.cos(ph*Math.PI*2);
+      K.push([ph,hp({legA:-.85*s,legB:.85*s,kA:.15+1.35*Math.max(0,c)**1.2,kB:.15+1.35*Math.max(0,-c)**1.2,armA:.95*s,armB:-.95*s,
+        eA:-1.25-.35*Math.max(0,-s),eB:-1.25-.35*Math.max(0,s),lean:.2,wave:5+1.5*Math.sin(ph*Math.PI*4),bob:3.5*Math.abs(s)-2.5,hr:-.05})]);}
+    HR.run=loopClip(1,K,'lin',.12);delete HR.run.tr.head.sw;}
+  {const b={legA:-.05,legB:.06,kA:.08,kB:.1,armA:.06,armB:-.08,eA:-.15,eB:-.18},o=x=>Object.assign({},b,x);
+    HR.stretch=fid(1.8,[[0,o({})],[.6,o({armA:1.3,eA:-.1,armB:1.5,eB:-.1,lean:-.12,br:1.04,bob:-2,sq:1.03,blink:1,hr:-.18})],[1.2,o({armA:1.2,eA:-.15,armB:1.4,eB:-.15,lean:-.1,br:1.04,bob:-2,sq:1.03,blink:1,hr:-.16})]],hp);
+    HR.look=fid(2.4,[[0,o({})],[.5,o({hr:-.22})],[1.1,o({hr:-.22})],[1.6,o({hr:.16})],[2,o({hr:.16})]],hp);
+    HR.dust=fid(1.4,[[0,o({})],[.3,o({lean:.12,hr:.16,armA:-.5,eA:-1.4,armB:.2})],[.5,o({lean:.12,hr:.16,armA:-.15,eA:-1.1,armB:.2})],[.7,o({lean:.12,hr:.16,armA:-.5,eA:-1.4,armB:.2})],[.9,o({lean:.12,hr:.16,armA:-.15,eA:-1.1,armB:.2})]],hp);}
   const mk2=(a,b,len,bl)=>loopClip(len,[[0,hp(HPOSE[a])],[len/2,hp(HPOSE[b])]],'io',bl);
   HR.climb=mk2('climb0','climb1',2,.1);HR.cheer=mk2('cheer0','cheer1',.4,.08);HR.reel=mk2('reel0','reel1',.17,.06);
   for(const k in HC)if(!HR[k])HR[k]=HC[k];}
