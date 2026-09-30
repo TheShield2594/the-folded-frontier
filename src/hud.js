@@ -18,13 +18,24 @@ const PADSET={xbox:['A','B','X','Y','LB','RB','LT','RT','View','Menu','LS','RS',
 export const padStyle=()=>{if(PADSET[SET.padNames])return SET.padNames;const id=pad.name||'';
   return /xbox|xinput|045e/i.test(id)?'xbox':/054c|playstation|dualshock|dualsense|wireless controller/i.test(id)?'ps':/057e|nintendo|pro controller|joy-con/i.test(id)?'nin':'xbox';};
 export const PADNAME=i=>i==null||i<0?'Unbound':PADSET[padStyle()][i]||'Button '+i;
-// fills the button names written into the page: data-pb a fixed button (menus, Start), data-pa an action's bound button
-export function padLabels(){for(const el of document.querySelectorAll('[data-pb]'))el.textContent=PADNAME(+el.dataset.pb);for(const el of document.querySelectorAll('[data-pa]'))el.textContent=PADNAME(SET.pad[el.dataset.pa]);}
+// button pictures (Kenney's Input Prompts, CC0, assets/ui/pad/): the same indices as PADSET, drawn in the text's colour
+// through a CSS mask (.btnpic); a button with no picture ('' here, or past the list) stays a name
+const PADPIC=import.meta.glob('../assets/ui/pad/*.svg',{eager:true,query:'?url',import:'default'});
+const PADFILE={xbox:'xbox_button_a xbox_button_b xbox_button_x xbox_button_y xbox_lb xbox_rb xbox_lt xbox_rt xbox_button_view xbox_button_menu xbox_ls xbox_rs xbox_dpad_up xbox_dpad_down xbox_dpad_left xbox_dpad_right xbox_guide',
+  ps:'playstation_button_cross playstation_button_circle playstation_button_square playstation_button_triangle playstation_trigger_l1 playstation_trigger_r1 playstation_trigger_l2 playstation_trigger_r2 playstation5_button_create playstation5_button_options playstation_button_l3 playstation_button_r3 playstation_dpad_up playstation_dpad_down playstation_dpad_left playstation_dpad_right',
+  nin:'switch_button_b switch_button_a switch_button_y switch_button_x switch_button_l switch_button_r switch_button_zl switch_button_zr switch_button_minus switch_button_plus switch_stick_l_press switch_stick_r_press switch_dpad_up switch_dpad_down switch_dpad_left switch_dpad_right switch_button_home'};
+for(const k in PADFILE)PADFILE[k]=PADFILE[k].split(' ').map(n=>PADPIC[`../assets/ui/pad/${n}.svg`]||'');
+// the button as HTML: its picture with the name for screen readers and hover, else the name
+export const padPic=i=>{const n=PADNAME(i),u=i>=0&&PADFILE[padStyle()][i];return u?`<i class="btnpic" role="img" aria-label="${n}" title="${n}" style="--pg:url('${u.replace(/'/g,'%27')}')"></i>`:n;};
+// fills the buttons written into the page: data-pb a fixed button (menus, Start), data-pa an action's bound button
+export function padLabels(){for(const el of document.querySelectorAll('[data-pb]'))el.innerHTML=padPic(+el.dataset.pb);for(const el of document.querySelectorAll('[data-pa]'))el.innerHTML=padPic(SET.pad[el.dataset.pa]);}
 // the button or key for an action on whatever is being played with (partner toasts and HUD)
 export const actName=a=>pad.active&&SET.pad[a]>=0?PADNAME(SET.pad[a]):KEYNAME(SET.bind[a]);
+// the same as HTML, with the button's picture (the partner card)
+export const actPic=a=>pad.active&&SET.pad[a]>=0?padPic(SET.pad[a]):KEYNAME(SET.bind[a]);
 export let rebinding=null,padRebinding=null;
 export function renderBinds(){$('binds').innerHTML=Object.keys(BINDLAB).map(a=>`<div class="bind"><span>${BINDLAB[a]}</span><button type="button" data-a="${a}" class="${rebinding===a?'wait':''}">${rebinding===a?'Press a key…':KEYNAME(SET.bind[a])}</button></div>`).join('');
-  $('padBinds').innerHTML=Object.keys(PADLAB).map(a=>`<div class="bind"><span>${PADLAB[a]}</span><button type="button" data-a="${a}" class="${padRebinding===a?'wait':''}">${padRebinding===a?'Press a button…':PADNAME(SET.pad[a])}</button></div>`).join('');padLabels();}
+  $('padBinds').innerHTML=Object.keys(PADLAB).map(a=>`<div class="bind"><span>${PADLAB[a]}</span><button type="button" data-a="${a}" class="${padRebinding===a?'wait':''}">${padRebinding===a?'Press a button…':padPic(SET.pad[a])}</button></div>`).join('');padLabels();}
 $('binds').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;padRebinding=null;rebinding=b.dataset.a;renderBinds();});
 $('padBinds').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;rebinding=null;padRebinding=b.dataset.a;renderBinds();});
 function openSettings(){$('sndC').checked=soundOn;$('volMaster').value=SET.vol;$('volMusic').value=SET.music;$('volSfx').value=SET.sfx;$('volAmb').value=SET.amb;$('zoomR').value=SET.zoom;$('uiR').value=SET.ui;$('txtR').value=SET.text;uiLabels();$('shakeC').checked=SET.shake;$('rumbleS').value=SET.rumble;$('padNamesS').value=SET.padNames||'auto';$('hitC').checked=SET.hitstop;$('heartC').checked=SET.heart!==false;$('numsC').checked=SET.nums;$('fgC').checked=SET.fg;$('postC').checked=SET.post!==false;$('postC').disabled=!postOK;$('cbS').value=SET.cb;$('introC').checked=SET.intro;$('narrC').checked=SET.narr!==false;$('hintsC').checked=SET.hints;$('motionS').value=SET.motion;$('teleC').checked=SET.tele;$('tspdS').value=SET.tspd;$('blockS').value=SET.blockTog?'tog':'hold';$('drawS').value=SET.drawTog?'tog':'hold';rebinding=null;renderBinds();$('settings').hidden=false;}

@@ -197,6 +197,9 @@ body.rm #chapter.in .ch-page,body.rm #chapter.out .ch-page{animation:none}
 .menu{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:18px;}
 .menu button{font-size:calc(17px*var(--ts));padding:10px 22px;}
 .ctrl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:calc(13.5px*var(--ts));}
+/* controller button pictures (padPic in hud.js; #ui beats rules like #partnerHud i): the SVG is a mask, so the button takes the text's colour */
+.btnpic,#ui .btnpic{display:inline-block;width:1.45em;height:1.45em;vertical-align:-.38em;margin:0 .05em;background:currentColor;-webkit-mask:var(--pg) center/contain no-repeat;mask:var(--pg) center/contain no-repeat;}
+.bind .btnpic{width:1.9em;height:1.9em;vertical-align:-.6em;}
 .ctrl kbd{font:inherit;font-weight:800;background:var(--paper2);border:1.5px solid var(--ink);border-bottom-width:3px;border-radius:5px;padding:0 6px;font-size:calc(12px*var(--ts));white-space:nowrap;}
 .ctrl dt{text-align:right;} .ctrl dd{margin:0;color:var(--ink2);}
 .note{font-size:calc(12.5px*var(--ts));color:var(--ink2);margin-top:10px;}

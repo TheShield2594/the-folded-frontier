@@ -1,7 +1,7 @@
 // The storybook intro for new worlds and the first-night tutorial (plus hints for paper mechanics).
 import {
   reduceMotion,countItem,TRICKS,
-  $,circ,enclosure,explored,grain,H,held,ink,invOpen,isNight,KEYNAME,META,pad,PADNAME,player,poly,rr,touch,
+  $,circ,enclosure,explored,grain,H,held,ink,invOpen,isNight,KEYNAME,META,pad,padPic,player,poly,rr,touch,
   saveSettings,SET,SFX,setState,SOLID,state,T,tileAt,toast,W,worldTime,
   AC,master,musicG,soundOn,applyVolumes,
 } from './game.js';
@@ -119,8 +119,8 @@ export const newTut=()=>({s:0,seen:{}});
 const PAD=()=>pad.active,TOUCH=()=>touch.on&&!pad.active,kb=s=>`<kbd>${s}</kbd>`;
 // on touch, name the on-screen button
 const TBTN={jump:'Jump',inv:'Bag',flat:'Flat',dash:'Dash',hook:'Hook',heal:'Heal',map:'Map',interact:'Talk',block:'Block'};
-const K=a=>kb(PAD()?PADNAME(SET.pad[a]):TOUCH()&&TBTN[a]?TBTN[a]:KEYNAME(SET.bind[a]));
-const USE=()=>kb(PAD()?PADNAME(SET.pad.use):TOUCH()?'Use':'Left click'),INTER=()=>kb(PAD()?PADNAME(SET.pad.interact):TOUCH()?'Tap':'Right click');
+const K=a=>PAD()?padPic(SET.pad[a]):kb(TOUCH()&&TBTN[a]?TBTN[a]:KEYNAME(SET.bind[a]));
+const USE=()=>PAD()?padPic(SET.pad.use):kb(TOUCH()?'Use':'Left click'),INTER=()=>PAD()?padPic(SET.pad.interact):kb(TOUCH()?'Tap':'Right click');
 const dusk=()=>{const h=19.5-worldTime;return h>0&&h<12?` About ${Math.max(1,Math.round(h*25))} seconds of daylight left.`:'';};
 const STEPS=[
   {t:'Stretch your legs',x:()=>PAD()||TOUCH()?`Walk with the ${TOUCH()?'':'left '}stick and jump with ${K('jump')}.`:`Walk with ${K('left')} ${K('right')} and jump with ${K('jump')}.`,start:g=>{g.x0=player.x;g.jumped=false;},done:g=>Math.abs(player.x-g.x0)>6&&g.jumped},
