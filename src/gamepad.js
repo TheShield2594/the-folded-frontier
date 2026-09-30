@@ -17,10 +17,12 @@ export function handlePad(){const gps=navigator.getGamepads?navigator.getGamepad
   const bnd=Object.values(SET.pad),dp=i=>b(i)&&!bnd.includes(i);
   const dirs={up:ly<-.6||dp(12),left:lx<-.35||dp(14),right:lx>.35||dp(15),down:ly>.6||dp(13),start:b(9)};
   const h=Object.assign({},dirs);for(const a in SET.pad)h[a]=h[a]||b(SET.pad[a]);
+  pad.dn=dirs.down&&(dp(13)||ly>Math.abs(lx)*1.2);
   const fx={up:ly<-.6||b(12),left:lx<-.35||b(14),right:lx>.35||b(15),down:ly>.6||b(13),start:b(9),jump:b(0),use:b(2)||b(7),interact:b(1),inv:b(3),pl:b(4),pr:b(5)};
   const prev=pad.prev,fprev=pad.fprev||{};const e=k=>h[k]&&!prev[k],ef=k=>fx[k]&&!fprev[k];pad.prev=h;pad.fprev=fx;pad.held=h;pad.name=g.id;pad.h=h;
   if(Object.values(h).some(Boolean)||Math.hypot(rx,ry)>.3){if(!pad.active)initAudio();pad.active=true;}
-  if(Math.hypot(rx,ry)>.3){pad.aimX=rx;pad.aimY=-ry;pad.aimT=1.2;}
+  // right stick aim (placed in view.js padAim): its direction, and its tilt past the dead zone (full at .9) as aimR
+  {const m=Math.hypot(rx,ry);if(m>.3){pad.aimX=rx/m;pad.aimY=-ry/m;pad.aimR=Math.min(1,(m-.3)/.6);pad.aimT=1.2;}}
   if(state==='intro'){if(ef('jump')||ef('start')||ef('interact'))skipIntro();return;}
   if(state==='talk'){if(ef('start'))dlgNext(true);else if(ef('jump')||ef('interact')||ef('use'))dlgNext();return;}
   if(state==='title'||state==='paused'){overPad(fx,ef);return;}

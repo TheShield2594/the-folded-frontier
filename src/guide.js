@@ -52,7 +52,7 @@ const PAPER={
   tear:{t:'Tear the seam',x:()=>`That rock is stitched shut. With the Seam Ripper in your backpack, ${INTER()} the seam to tear it open.`},
   stitch:{t:'Stitch it shut',x:()=>`The page is torn through here. With the Golden Needle in your backpack, ${INTER()} the tear to sew it into a paper bridge.`},
   fold:{t:'Fold the page',x:()=>`A crease mark folds the page onto its partner somewhere else. With the Bone Folder in your backpack, ${INTER()} the crease to step through.`},
-  flat:{t:'Fold flat',x:()=>PAD()?'Hold down on the stick to fold flat and crawl through one-tile gaps. Flattening also dodges hits.':`Hold ${K('flat')} to fold flat and crawl through one-tile gaps. Flattening also dodges hits.`},
+  flat:{t:'Fold flat',x:()=>PAD()?`Hold down on the stick${SET.pad.flat>=0?` or ${K('flat')}`:''} to fold flat and crawl through one-tile gaps. Flattening also dodges hits.`:`Hold ${K('flat')} to fold flat and crawl through one-tile gaps. Flattening also dodges hits.`},
 };
 const g={};let cardKey='',scanT=0,paperT=0,paperOn=null;
 export function setTut(v){g.init=false;paperOn=null;cardKey='';return tut=v;}

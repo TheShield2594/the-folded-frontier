@@ -1082,3 +1082,44 @@ test('gamepad: menus, interact, quick heal and block',async({page})=>{
   expect(hp[1]).toBe(false);
   expect(hp[2]).toBe(true);
 });
+
+test('gamepad: right stick aim reaches further with tilt, and down flattens at once',async({page})=>{
+  await page.addInitScript(()=>{
+    const gp={id:'Test pad',connected:true,mapping:'standard',axes:[0,0,0,0],buttons:Array.from({length:17},()=>({pressed:false,value:0}))};
+    window.__gp=gp;navigator.getGamepads=()=>[gp];
+  });
+  await boot(page);
+  await newSmallWorld(page);
+  const r=await page.evaluate(async()=>{const g=await import('/src/game.js'),p=g.player,gp=window.__gp,out={};
+    // open ground away from the cabin, settled on it
+    const x=Math.floor(g.W*.85);let y=g.H-2;while(y>1&&!(g.tileAt(x,y-1)&&!g.tileAt(x,y)&&!g.tileAt(x,y+1)&&!g.tileAt(x+1,y)&&!g.tileAt(x-1,y)))y--;
+    for(let dx=-1;dx<=1;dx++)g.setTile(x+dx,y-1,g.T.DIRT);p.x=x+.5;p.y=y;p.vx=p.vy=0;
+    const step=(n=1)=>{for(let i=0;i<n;i++){g.handlePad();g.updatePlayer(1/60);g.updateCamera(1/60);}};
+    g.pad.active=true;step(40);out.ground=p.onGround;
+    // aim: a light tilt stays beside the player, a full one goes out to (but inside) reach
+    const pick=p.inv.findIndex(s=>s&&g.ITEMS[s.id].pick);p.sel=pick;out.pick=pick;
+    gp.axes=[0,0,.4,0];step(40);out.near=g.mouse.wx-p.x;
+    gp.axes=[0,0,1,0];step(40);out.far=g.mouse.wx-p.x;out.snapped=g.mouse.wx%1;out.reach=g.reachOK(Math.floor(g.mouse.wx),Math.floor(g.mouse.wy));
+    const cell=[g.mouse.wx,g.mouse.wy];gp.axes=[0,0,.97,.04];step(10);out.held=g.mouse.wx===cell[0]&&g.mouse.wy===cell[1];
+    gp.axes=[0,0,0,0];
+    // down on the stick flattens on the first frame; pushed more sideways than down it doesn't
+    gp.axes=[0,.9,0,0];step();out.flat=p.flat;gp.axes=[0,0,0,0];step(3);out.up=!p.flat;
+    gp.axes=[.9,.7,0,0];step();out.diag=p.flat;gp.axes=[0,0,0,0];step(3);p.x=x+.5;p.vx=0;step(5);
+    // on a platform down drops through instead
+    for(let dx=-1;dx<=1;dx++)g.setTile(x+dx,y-1,g.T.PLATFORM);step(5);out.platGround=p.onGround;
+    gp.axes=[0,.9,0,0];step();out.platFlat=p.flat;gp.axes=[0,0,0,0];for(let dx=-1;dx<=1;dx++)g.setTile(x+dx,y-1,g.T.DIRT);p.x=x+.5;p.y=y;p.vx=p.vy=0;step(20);
+    // D-pad down is the Flatten button: it flattens and no longer counts as down
+    gp.buttons[13].pressed=true;step();out.dpad=[p.flat,g.pad.held.down];gp.buttons[13].pressed=false;step(3);
+    return out;});
+  expect(r.ground).toBe(true);
+  expect(r.pick).toBeGreaterThanOrEqual(0);
+  expect(r.near).toBeGreaterThan(.5);expect(r.near).toBeLessThan(2.6);
+  expect(r.far).toBeGreaterThan(4.4);
+  expect(r.snapped).toBeCloseTo(.5,5);
+  expect(r.reach).toBe(true);
+  expect(r.held).toBe(true);
+  expect(r.flat).toBe(true);expect(r.up).toBe(true);
+  expect(r.diag).toBe(false);
+  expect(r.platGround).toBe(true);expect(r.platFlat).toBe(false);
+  expect(r.dpad).toEqual([true,false]);
+});

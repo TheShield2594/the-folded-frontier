@@ -462,7 +462,10 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();se
   const skid=p.skidT>0;const spd=6.2*(hasAcc('speed')?1.2:1)*(hasBuff('swift')?1.25:1)*(hasBuff('charged')?1.2:1)*(hasBuff('fed')?1.05:1)*(p.inLiq?.62:1)*(p.climb?.35:1)*(p.blocking?.45:1)*(p.draw?.6:1)*(heavyWind?.5:1)*(st.ink>0?.7:1)*(p.mount?MOUNTS[p.mount].spd:1);const acc=(p.onGround?55:30)*(p.mount?1.4:1)*(skid?1.5:1);
   if(!hooked){if(left&&!right){p.vx=Math.max(p.vx-acc*dt,-spd);if(!p.swing&&!p.blocking&&!skid)p.face=-1;}else if(right&&!left){p.vx=Math.min(p.vx+acc*dt,spd);if(!p.swing&&!p.blocking&&!skid)p.face=1;}else p.vx*=Math.pow(p.onGround?.0004:.25,dt);
     if(Math.abs(p.vx)>spd)p.vx*=Math.pow(.05,dt);}
-  const wantFlat=held('flat')||(pad.active&&pad.held.down&&p.onGround&&(p.downT=(p.downT||0)+dt)>.3);if(!(pad.active&&pad.held.down))p.downT=0;
+  // flatten: the Flatten key or button, or down on the gamepad on the ground, at once so it can dodge a hit. Starting takes a
+  // push more down than sideways (pad.dn); a platform underfoot drops you through instead, as the keyboard's down does.
+  const fy=Math.floor(p.y-.05),fc=[Math.floor(p.x-p.w/2),Math.floor(p.x+p.w/2-1e-6)],onPlat=!fc.some(x=>isSolid(x,fy))&&fc.some(x=>tileAt(x,fy)===T.PLATFORM);
+  const wantFlat=held('flat')||(pad.active&&p.onGround&&!onPlat&&(p.flat?!!pad.held.down:!!pad.dn));
   // riders get off to flatten, climb a rope or swing on the hook
   if(p.mount&&(wantFlat||p.climb||hooked))dismount();
   if(wantFlat&&!p.flat&&!hooked&&!p.climb){p.flat=true;p.h=.85;if((p.flatCD||0)<=0){p.inv_t=Math.max(p.inv_t,.35);p.flatCD=1.2;burst(p.x,p.y+.4,['#fbf8f0','#e9dcc0'],10,3,{grav:2});SFX.crunch();stat('flats');guideEv('flat');}else SFX.rustle(.12,.4);}

@@ -12,8 +12,10 @@ const crackMesh=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.ShaderMate
 const hlMesh=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:atlasTex,transparent:true,opacity:.75,depthTest:false}));hlMesh.position.z=.55;hlMesh.renderOrder=5;scene.add(hlMesh);
 function setPlaneUV(mesh,uv){const a=mesh.geometry.attributes.uv;a.setXY(0,uv[0],uv[3]);a.setXY(1,uv[2],uv[3]);a.setXY(2,uv[0],uv[1]);a.setXY(3,uv[2],uv[1]);a.needsUpdate=true;}
 setPlaneUV(hlMesh,cellUV(C.hl));
+// items used on one tile (the highlight shows it, and gamepad aim snaps to it)
+export const aimsTile=it=>!!it&&!!(it.pick||it.hammer||it.place!=null||it.wall||it.seed!=null||it.bucket);
 export function updateOverlays(){const p=player;const it=selItem();const tx=Math.floor(mouse.wx),ty=Math.floor(mouse.wy);
-  const show=state==='play'&&!p.dead&&it&&(it.pick||it.hammer||it.place!=null||it.wall||it.seed!=null||it.bucket)&&!cursor;hlMesh.visible=!!show;
+  const show=state==='play'&&!p.dead&&aimsTile(it)&&!cursor;hlMesh.visible=!!show;
   if(show){hlMesh.position.set(tx+.5,ty+.5,.55);const ok=reachOK(tx,ty);hlMesh.material.color.set(ok?0xffffff:0xff7a6a);hlMesh.material.opacity=ok?.8:.45;}
   const mt=p.mineTile;crackMesh.visible=mt>=0&&mt<N&&p.mineP>.05&&tiles[mt]!==T.AIR;if(crackMesh.visible){const x=mt%W,y=(mt/W)|0;crackMesh.position.set(x+.5,y+.5,OPAQUE[tiles[mt]]?.53:.03);setPlaneUV(crackMesh,cellUV(C.crack[Math.min(2,Math.floor(p.mineP*3))]));}}
 
@@ -89,10 +91,20 @@ export function updateCamera(dt){const p=player,play=state!=='title';let tx=p.x,
   camera.position.set(cx+sx,cy+3.6+sy,cd);camera.lookAt(cx+sx,cy+.4+sy,0);if(roll)camera.rotateZ(roll);
   // mouse world
   [mouse.wx,mouse.wy]=screenToWorld(mouse.x,mouse.y);
-  if(pad.active&&state==='play'){pad.aimT-=dt;if(pad.aimT>0){mouse.wx=p.x+pad.aimX*4.5;mouse.wy=p.y+1+pad.aimY*4.5;}else{mouse.wx=p.x+p.face*1.3;mouse.wy=p.y+.5;}}
+  if(pad.active&&state==='play')padAim(p,dt);
   // touch: aim with the Use stick (kept briefly after letting go), else just ahead of the player, unless a finger is on the world
   else if(touch.on&&state==='play'&&!touch.world){if(touch.aim){touch.aimX=touch.aim[0];touch.aimY=touch.aim[1];}touch.aimT-=dt;if(touch.aim||touch.aimT>0){mouse.wx=p.x+touch.aimX*4.5;mouse.wy=p.y+1+touch.aimY*4.5;}else{mouse.wx=p.x+p.face*1.3;mouse.wy=p.y+.5;}}
   const nv=hasBuff('night')||hasBuff('ghost');U.uP.value.set(p.x,p.y+1,hasAcc('light')?11:nv?10:4.5);U.uGlow.value=p.dead?0:(hasAcc('light')?.95:nv?.75:.32);}
+// gamepad aim: the right stick's tilt sets how far out, from beside the player to the edge of reach (the Reach accessory
+// included), eased so a shaky thumb doesn't jitter it; tile tools snap to a tile and keep it until the aim is well into
+// the next one. With the stick let go the aim stays put briefly, then sits just ahead of the player.
+function padAim(p,dt){pad.aimT-=dt;const it=selItem(),snap=aimsTile(it)&&!cursor;
+  if(pad.aimT<=0){pad.ax=null;pad.cell=null;mouse.wx=p.x+p.face*1.3;mouse.wy=p.y+.5;if(snap){mouse.wx=Math.floor(mouse.wx)+.5;mouse.wy=Math.floor(mouse.wy)+.5;}return;}
+  const r=1.2+(pad.aimR??1)*((hasAcc('reach')?7.5:5.5)-1.2),gx=p.x+pad.aimX*r,gy=p.y+.9+pad.aimY*r;
+  if(pad.ax==null){pad.ax=gx;pad.ay=gy;}else{const k=Math.min(1,dt*22);pad.ax+=(gx-pad.ax)*k;pad.ay+=(gy-pad.ay)*k;}
+  if(!snap){pad.cell=null;mouse.wx=pad.ax;mouse.wy=pad.ay;return;}
+  const c=pad.cell,m=.22;if(!c||pad.ax<c[0]-m||pad.ax>c[0]+1+m||pad.ay<c[1]-m||pad.ay>c[1]+1+m)pad.cell=[Math.floor(pad.ax),Math.floor(pad.ay)];
+  mouse.wx=pad.cell[0]+.5;mouse.wy=pad.cell[1]+.5;}
 // screen px to world coordinates on the z=.5 plane the tiles sit on
 export function screenToWorld(x,y){const v=new THREE.Vector3((x/innerWidth)*2-1,-(y/innerHeight)*2+1,.5).unproject(camera).sub(camera.position).normalize();const t=(.5-camera.position.z)/v.z;return[camera.position.x+v.x*t,camera.position.y+v.y*t];}
 // Imported bindings are read-only, so other modules assign these through setters.
