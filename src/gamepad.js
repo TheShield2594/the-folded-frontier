@@ -19,7 +19,7 @@ export function handlePad(){const gps=navigator.getGamepads?navigator.getGamepad
   const h=Object.assign({},dirs);for(const a in SET.pad)h[a]=h[a]||b(SET.pad[a]);
   pad.dn=dirs.down&&(dp(13)||ly>Math.abs(lx)*1.2);
   const fx={up:ly<-.6||b(12),left:lx<-.35||b(14),right:lx>.35||b(15),down:ly>.6||b(13),start:b(9),jump:b(0),use:b(2)||b(7),interact:b(1),inv:b(3),pl:b(4),pr:b(5)};
-  const prev=pad.prev,fprev=pad.fprev||{};const e=k=>h[k]&&!prev[k],ef=k=>fx[k]&&!fprev[k];pad.prev=h;pad.fprev=fx;pad.held=h;if(pad.name!==g.id){pad.name=g.id;padLabels();}pad.g=g;pad.h=h;
+  const prev=pad.prev,fprev=pad.fprev||{};const e=k=>h[k]&&!prev[k],ef=k=>fx[k]&&!fprev[k];pad.prev=h;pad.fprev=fx;pad.held=h;if(pad.name!==g.id){pad.name=g.id;padLabels();}pad.g=g;rumbleTick();pad.h=h;
   if(Object.values(h).some(Boolean)||Math.hypot(rx,ry)>.3){if(!pad.active)initAudio();pad.active=true;}
   // right stick aim (placed in view.js padAim): its direction, and its tilt past the dead zone (full at .9) as aimR
   {const m=Math.hypot(rx,ry);if(m>.3){pad.aimX=rx/m;pad.aimY=-ry/m;pad.aimR=Math.min(1,(m-.3)/.6);pad.aimT=1.2;}}
@@ -87,11 +87,21 @@ export function padInteract(){const p=player;
   let best=null,bd=9;for(const n of npcs){if(Math.abs(n.x-p.x)>=3||Math.abs(n.y-p.y)>=2.5)continue;const d=Math.hypot(n.x-p.x,n.y+1-(p.y+.9));if(d<bd){bd=d;best=[n.x,n.y+1];}}
   for(let y=Math.floor(p.y)-1;y<=Math.floor(p.y)+3;y++)for(let x=Math.floor(p.x)-3;x<=Math.floor(p.x)+3;x++){if(!padTile(x,y))continue;const d=Math.hypot(x+.5-p.x,y+.5-(p.y+.9));if(d<bd){bd=d;best=[x+.5,y+.5];}}
   if(best){mouse.wx=best[0];mouse.wy=best[1];mouse.rp=true;return true;}return false;}
-// controller rumble (Settings > Controller rumble): shake() (gameplay.js) hands over its trauma, so hits, parries, slams and
-// bosses buzz as hard as the camera shakes, even with Screen shake off; a weaker buzz doesn't cut off a stronger one still going
-let rumEnd=0,rumA=0;
-export function rumble(a,ms){const g=pad.g;if(!SET.rumble||!pad.active||!g||!(a>0))return;a=Math.min(1,a);const now=performance.now();if(now<rumEnd&&a<rumA)return;
-  ms=ms||Math.round(70+a*280);rumEnd=now+ms;rumA=a;const st=Math.min(1,a*1.1),wk=Math.min(1,.15+a*1.2);
-  try{const v=g.vibrationActuator,h=g.hapticActuators&&g.hapticActuators[0];if(v&&v.playEffect)Promise.resolve(v.playEffect('dual-rumble',{duration:ms,strongMagnitude:st,weakMagnitude:wk})).catch(()=>{});else if(h&&h.pulse)Promise.resolve(h.pulse(wk,ms)).catch(()=>{});}catch(e){}}
+// controller rumble (issue #133): rumble(weak, strong, ms) runs the pad's two motors (the light high one and the heavy low one) on
+// the pad the last input came from, scaled by Settings > Controller vibration (SET.rumble: off, low, full). A new effect never
+// cuts off a stronger one still playing: the two combine, keeping each motor's max until the longer one ends. Each event calls
+// it with its own profile where it happens (beside its hitPause, so both start on the same frame); shake() adds one only for
+// big moments that have none of their own (rumbledNow()). rumbleFade() eases one down over a boss's defeat.
+const RUMSC={off:0,low:.5,full:1};let rum={w:0,s:0,end:0,at:-1},fade=null;
+function rumPlay(g,w,s,ms){const sc=RUMSC[SET.rumble]||0;w=Math.min(1,w*sc);s=Math.min(1,s*sc);
+  try{const v=g.vibrationActuator,h=g.hapticActuators&&g.hapticActuators[0];if(v&&v.playEffect)Promise.resolve(v.playEffect('dual-rumble',{startDelay:0,duration:Math.round(ms),weakMagnitude:w,strongMagnitude:s})).catch(()=>{});else if(h&&h.pulse)Promise.resolve(h.pulse(Math.max(w,s),Math.round(ms))).catch(()=>{});}catch(e){}}
+export function rumble(w,s,ms){const g=pad.g;if(!RUMSC[SET.rumble]||!pad.active||!g||!(ms>0)||!(w>0||s>0))return;const now=performance.now();rum.at=now;
+  if(now<rum.end){if(w<=rum.w&&s<=rum.s&&now+ms<=rum.end)return;w=Math.max(w,rum.w);s=Math.max(s,rum.s);ms=Math.max(ms,rum.end-now);}
+  rum={w,s,end:now+ms,at:now};fade=null;rumPlay(g,w,s,ms);}
+export const rumbledNow=()=>performance.now()-rum.at<2;
+export function rumbleFade(w,s,ms){rumble(w,s,120);fade={w,s,t0:performance.now(),ms,next:0};}
+// steps a running fade down every 100 ms (called from handlePad each frame)
+function rumbleTick(){if(!fade)return;const now=performance.now(),k=1-(now-fade.t0)/fade.ms;if(k<=0||!pad.active||!pad.g||!RUMSC[SET.rumble]){fade=null;return;}
+  if(now<fade.next)return;fade.next=now+100;rum={w:fade.w*k,s:fade.s*k,end:now+120,at:rum.at};rumPlay(pad.g,fade.w*k,fade.s*k,120);}
 // Imported bindings are read-only, so other modules assign these through setters.
 export function setPadFocus(v){return padFocus=v;}

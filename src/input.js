@@ -5,7 +5,7 @@ import {
   fireHook,held,hook,initAudio,invOpen,ITEMS,keys,mapOpen,pad,padRebinding,partnerAbility,pause,player,
   pv,quickHeal,rebinding,renderBinds,renderer,saveSettings,scene,SET,setCamDist,setCursor,setInv,
   setInvDirty,setPadRebinding,setRebinding,SFX,stat,stompNice,toggleMap,upx,
-  skipIntro,dlgNext,toggleMount,rigSnap,
+  skipIntro,dlgNext,toggleMount,rigSnap,rumble,
 } from './game.js';
 
 // ================= input =================
@@ -42,7 +42,7 @@ export const DASH_T=.17,DASH_I=.24,DASH_CD=.85,DASH_V=21;
 // and the takeoff squashes for TAKE_T s.
 export const JUMP_CUT=.45,JUMP_MINT=.06,APEX_V=3,APEX_G=.55,FALL_G=1.35,FALL_CAP=32,FFALL_G=1.7,FFALL_CAP=40,CORNER_NUDGE=.3,STEP_T=.12,TAKE_T=.06;
 export function dashPress(){const p=player;if(state!=='play'||invOpen||mapOpen||p.dead||p.dashCD>0||p.flat||p.climb||hook.state===2)return;if(!p.onGround&&p.airDashed)return;
-  const l=held('left'),r=held('right');const dir=r&&!l?1:l&&!r?-1:p.face;p.face=p.dashDir=dir;p.dashT=DASH_T;p.dashI=DASH_I;p.dashCD=DASH_CD;p.ghostT=0;p.dodged=false;if(!p.onGround)p.airDashed=true;
+  const l=held('left'),r=held('right');const dir=r&&!l?1:l&&!r?-1:p.face;p.face=p.dashDir=dir;p.dashT=DASH_T;p.dashI=DASH_I;p.dashCD=DASH_CD;rumble(.15,0,50);p.ghostT=0;p.dodged=false;if(!p.onGround)p.airDashed=true;
   SFX.dash();stat('dashes');burst(p.x-dir*.3,p.y+.6,['#fbf8f0','#e9dcc0','#dcd3c2'],9,3,{grav:1,life:.45});}
 const ghosts=[];
 function ghostMat(){return new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,uniforms:{map:{value:null},uFrame:{value:0},uFrames:{value:1},uA:{value:0}},
