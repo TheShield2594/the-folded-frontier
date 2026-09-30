@@ -194,7 +194,7 @@ export function rigUpdate(R,dt){if(R.S.gen!==rigGen&&R.mesh)rigReskin(R,R.sk,R.k
     else if(p.rigid){const q=j*6,a=R.abs[j]+r,ca=Math.cos(a),sa=Math.sin(a);M[o]=ca*L.sx;M[o+1]=sa*L.sx;M[o+2]=-sa*L.sy;M[o+3]=ca*L.sy;M[o+4]=M[q]*px+M[q+2]*py+M[q+4];M[o+5]=M[q+1]*px+M[q+3]*py+M[q+5];R.abs[i]=a;}
     else{const q=j*6,A=M[q],B=M[q+1],C=M[q+2],D=M[q+3];M[o]=A*la+C*lb;M[o+1]=B*la+D*lb;M[o+2]=A*lc+C*ld;M[o+3]=B*lc+D*ld;M[o+4]=A*px+C*py+M[q+4];M[o+5]=B*px+D*py+M[q+5];R.abs[i]=R.abs[j]+r;}}
   const pos=R.g.attributes.position.array,uv=R.g.attributes.uv.array,aq=R.g.attributes.aQ.array,ac=R.g.attributes.aCell.array;let uvDirty=false;
-  for(let i=0;i<n;i++){const p=P[i],ns=p.ns,cs=R.S.cells[i],L=R.last[i],cell=L.sw!=='-'&&(!p.slot||R.hs[i])&&cs&&(cs[L.sw]||cs['']);
+  for(let i=0;i<n;i++){const p=P[i],ns=p.ns,cs=R.S.cells[i],L=R.last[i],hd=R.hs[d.pi.held],cell=L.sw!=='-'&&(!p.slot||R.hs[i])&&(!p.show||R.hs[d.pi[p.show]])&&cs&&((p.hv&&hd&&!L.sw&&cs[p.hv])||cs[L.sw]||cs['']);
     if(!cell){for(const q0 of[p.oo,p.os,p.om])pos.fill(0,q0*12,(q0+ns)*12);continue;}
     const l=cell.l,X=[l[0],l[2],l[2],l[0]];
     for(let sg=0;sg<ns;sg++){const ya=l[1]+(l[3]-l[1])*sg/ns,yb=l[1]+(l[3]-l[1])*(sg+1)/ns,Y=[yb,yb,ya,ya],qs=[p.oo+sg,p.os+sg,p.om+sg];
@@ -223,7 +223,7 @@ export function rigPic(k,skin,clip,t=0,key,set,sc=1){const d=RIGS[k],own=!skin?.
     if(j<0){M.set([la,lb,lc,ld,px,py],o);}else{const q=j*6,A=M[q],B=M[q+1],C=M[q+2],D=M[q+3];M.set([A*la+C*lb,B*la+D*lb,A*lc+C*ld,B*lc+D*ld,A*px+C*py+M[q+4],B*px+D*py+M[q+5]],o);}}
   // a whole painted cut-out can be wider or taller than the rig's frame: the picture grows to fit it
   const wc=S.whole&&S.cells[0][''],pad=wc?Math.ceil(Math.max(0,-(P[0].at[0]+wc.l[0]),P[0].at[0]+wc.l[2]-d.w,-(P[0].at[1]+wc.l[1]))):0;
-  const c=mk(Math.ceil((d.w+pad*2)*sc),Math.ceil((d.h+pad)*sc)),t2=c.getContext('2d');for(let i=0;i<P.length;i++){const p=P[i];if(p.slot)continue;const cs=S.cells[i],sw=R.last[i].sw,cell=sw!=='-'&&cs&&(cs[sw]||cs['']);if(!cell)continue;const o=i*6,l=cell.l,lw=l[2]-l[0],lh=l[3]-l[1];
+  const c=mk(Math.ceil((d.w+pad*2)*sc),Math.ceil((d.h+pad)*sc)),t2=c.getContext('2d');for(let i=0;i<P.length;i++){const p=P[i];if(p.slot||p.show)continue;const cs=S.cells[i],sw=R.last[i].sw,cell=sw!=='-'&&cs&&(cs[sw]||cs['']);if(!cell)continue;const o=i*6,l=cell.l,lw=l[2]-l[0],lh=l[3]-l[1];
     if(p.bi<0){t2.setTransform(M[o]*sc,M[o+1]*sc,M[o+2]*sc,M[o+3]*sc,(M[o+4]+pad)*sc,(M[o+5]+pad)*sc);t2.drawImage(S.img,cell.ax,cell.ay,cell.w,cell.h,l[0],l[1],lw,lh);continue;}
     // a bent limb: each strip as two triangles, each on its own exact affine, clipped a hair wide so no seam shows
     for(let sg=0;sg<p.ns;sg++){const ya=l[1]+lh*sg/p.ns,yb=l[1]+lh*(sg+1)/p.ns,Q=[[l[0],ya],[l[2],ya],[l[2],yb],[l[0],yb]].map(([x,y])=>{const w=skinPt(P,M,p,x,y,[0,0]);return[x,y,(w[0]+pad)*sc,(w[1]+pad)*sc];});
@@ -317,11 +317,38 @@ HC.march=loopClip(.8,[[0,poseCh({legA:-.3,legB:.3,armA:-.4,armB:.2})],[.4,poseCh
 // behind the tunic so the neck goes into the collar. Part names match the human rig, so gameplay (armA, held, shield) and
 // every clip work on either; the player falls back to the drawn human rig until the paintings have loaded (heroReady).
 // HPIC: [picture, x, y, w, h] the rect it fills around the part's pivot, in design px; HDIM darkens the far limbs.
-const HPIC={head:['H.head',-16.2,-37.4,34.1,38.7],torso:['H.torso',-17,-23,34.3,40],arm:['H.arm',-6.8,-2.6,13.6,43.1],leg:['H.leg',-9.5,-3.8,19,56]};
+const HPIC={head:['H.head',-16.2,-37.4,34.1,38.7],torso:['H.torso',-17,-23,34.3,40],arm:['H.arm',-6.8,-2.6,13.6,43.1],leg:['H.leg',-9.5,-3.8,19,56],fist:['H.fist',-6.8,-20.6,13.6,43.1],
+  // hair and hats, painted onto the hero's own head (tools/art, extract.py) and placed around the head's pivot
+  'hair.short':['H.hair.short',-20.7,-42.4,41.9,38.7],'hair.long':['H.hair.long',-20.0,-40.4,38.9,49.4],'hair.spiky':['H.hair.spiky',-26.1,-47.9,49.4,44.1],
+  'hair.bun':['H.hair.bun',-21.3,-38.2,39.2,28.9],'hair.pony':['H.hair.pony',-25.8,-40.1,44.7,40.3],'hair.curly':['H.hair.curly',-22.8,-45.1,44.9,41.2],
+  'hat.cap':['H.hat.cap',-17.4,-40.1,41.3,22.2],'hat.beret':['H.hat.beret',-21.5,-41.7,38.2,24.7],'hat.straw':['H.hat.straw',-27.9,-42.1,54.2,32.3],'hat.beanie':['H.hat.beanie',-18.3,-45.5,36.3,39.9],
+  // cape, scarf and satchel painted onto the hero's body (extract_body.py): .b behind the body, .f in front of it
+  'cape.b':['H.cape.b',-39.1,-8.3,66.3,70.5],'cape.f':['H.cape.f',-12.5,-27.1,25.3,20.4],'scarf.b':['H.scarf.b',-43.7,-10.1,60.8,33.7],'scarf.f':['H.scarf.f',-12.5,-30.8,28.9,22.0],'pack.b':['H.pack.b',-22.6,-3.2,9.8,27.5],'pack.f':['H.pack.f',-16.5,-23.3,27.2,46.7]};
 const HDIM={armB:.72,legB:.78};
 // a hero picture's name (H.<piece>[.<variant>]) that some part paints
 export const heroArt=k=>Object.values(HPIC).some(h=>k===h[0]||k.startsWith(h[0]+'.'));
 export const heroReady=()=>['H.head','H.torso','H.arm','H.leg'].every(k=>RIGART[k]),playerRigKind=()=>heroReady()?'hero':'human';
+// hair and hats: the look's style picks the picture, its colour tints it (luminance, so the painted shading stays; the
+// straw hat keeps its straw and only its red ribbon takes the colour). Under a hat the hair is trimmed to below the hat's
+// lower edge, column by column, so spikes and curls don't poke through the crown.
+const heroWear=k=>(t,o)=>{const hat=o.hatS&&o.hatS!=='none'&&!o.helm&&HPIC['hat.'+o.hatS],st=k==='hat'?hat&&o.hatS:!o.helm&&o.hair&&(o.hairS||'short'),P=st&&HPIC[k+'.'+st],img=P&&RIGART[P[0]];if(!img)return;
+  const[,x,y,w,h]=P,col=k==='hat'?o.hat:o.hair,pic=col?heroLum(img,col,k==='hat'&&st==='straw'):img;
+  if(k!=='hair'||!hat||!RIGART[hat[0]]){t.drawImage(pic,x,y,w,h);return;}
+  const c=mk(Math.ceil(w*4),Math.ceil(h*4)),q=c.getContext('2d');q.drawImage(pic,0,0,c.width,c.height);q.globalCompositeOperation='destination-out';
+  const B=hatFloor(RIGART[hat[0]]),[,hx,hy,hw,hh]=hat,sx=c.width/w;for(let i=0;i<B.length;i++)if(B[i]>=0){const X=(hx+i/B.length*hw-x)*sx;q.fillRect(X,0,hw/B.length*sx+1,(hy+B[i]*hh-y)*sx);}
+  t.drawImage(c,x,y,w,h);};
+// per column of a hat picture, how far down (0..1) its lowest opaque pixel sits (-1: none), a little above it so the hair meets the brim
+const HFL=new WeakMap();function hatFloor(img){let B=HFL.get(img);if(B)return B;const W=Math.min(96,img.width),H=img.height,c=mk(W,H),t=c.getContext('2d',RF);t.drawImage(img,0,0,W,H);
+  const a=t.getImageData(0,0,W,H).data;B=new Array(W).fill(-1);for(let x=0;x<W;x++)for(let y=H-1;y>=0;y--)if(a[(y*W+x)*4+3]>128){B[x]=Math.max(0,(y-H*.12))/H;break;}HFL.set(img,B);return B;}
+// a picture tinted by luminance against its own mean (ink stays dark); red: only its red parts (the straw hat's ribbon)
+const HLC=new WeakMap();function heroLum(img,col,red){let m=HLC.get(img);if(!m)HLC.set(img,m={});const key=col+red;if(m[key])return m[key];
+  const W=img.width,H=img.height,c=mk(W,H),t=c.getContext('2d',RF);t.drawImage(img,0,0);const id=t.getImageData(0,0,W,H),a=id.data,T=hexv(col),lu=(r,g,b)=>.3*r+.59*g+.11*b;
+  const sel=i=>!red||(a[i]>a[i+1]+60&&a[i]>a[i+2]+50);let s=0,n=0;for(let i=0;i<a.length;i+=4)if(a[i+3]>128&&sel(i)){const l=lu(a[i],a[i+1],a[i+2]);if(l>90){s+=l;n++;}}const ref=n?s/n:200;
+  for(let i=0;i<a.length;i+=4)if(a[i+3]&&sel(i)){const k=lu(a[i],a[i+1],a[i+2])/ref;a[i]=Math.min(255,T[0]*k);a[i+1]=Math.min(255,T[1]*k);a[i+2]=Math.min(255,T[2]*k);}
+  t.putImageData(id,0,0);return m[key]=c;}
+// the cape, scarf and satchel: which pieces a look wears (a cape comes with its own collar, so no scarf under it)
+const heroAcc=(...ks)=>(t,o)=>{for(const k of ks){const[w,side]=k.split('.'),on=w==='cape'?o.cape:w==='scarf'?o.scarf&&!o.cape:o.back?.art==='pack';if(!on)continue;
+  const P=HPIC[k],img=P&&RIGART[P[0]];if(!img)continue;const col=w==='cape'?o.cape:w==='scarf'?o.scarf:null;t.drawImage(col?heroLum(img,col):img,P[1],P[2],P[3],P[4]);}};
 const heroPart=(k,dim=1)=>(t,o,v)=>{const[n,x,y,w,h]=HPIC[k],nv=RIGART[n+(v?'.'+v:'')]?n+(v?'.'+v:''):n,img=RIGART[nv];if(!img)return;
   t.drawImage(heroTint(img,RIGART[nv+'.mask'],o,dim),x,y,w,h);};
 // the look's colours on a painting: its mask (H.<piece>.mask) weighs each pixel as tunic (red) or skin (green); the tunic
@@ -346,6 +373,9 @@ function heroTint(img,mk2,o,dim){let m=HTC.get(img);if(!m)HTC.set(img,m={});cons
 const ELB=18,KNEE=26,HAND=35,BL=.62; // BL: the held item's size against the drawn human's (the hero's arms are longer, its weapons smaller)
 defRig('hero',{w:96,h:144,res:3,edge:1,arml:HAND/60,sho:[-5,67],stride:2.5,blade:BL,parts:[
   {n:'root',at:[48,138]},
+  {n:'cape',at:[44,70],up:'torso',loc:1,paint:heroAcc('cape.b'),wob:.02},
+  {n:'scarfB',at:[44,70],up:'torso',loc:1,paint:heroAcc('scarf.b'),wob:.03},
+  {n:'packB',at:[48,88],up:'torso',loc:1,paint:heroAcc('pack.b'),wob:0},
   {n:'armB',at:[40,71],up:'torso',loc:1,paint:heroPart('arm',HDIM.armB),bend:'foreB'},
   {n:'foreB',at:[40,71+ELB],up:'armB'},
   {n:'legB',at:[44,86],up:'root',loc:1,paint:heroPart('leg',HDIM.legB),bend:'shinB',bw:6},
@@ -353,47 +383,52 @@ defRig('hero',{w:96,h:144,res:3,edge:1,arml:HAND/60,sho:[-5,67],stride:2.5,blade
   {n:'legA',at:[52,86],up:'root',loc:1,paint:heroPart('leg'),bend:'shinA',bw:6},
   {n:'shinA',at:[52,86+KNEE],up:'legA'},
   {n:'head',at:[50,67],up:'torso',loc:1,paint:heroPart('head'),v:['','blink','happy','hurt','ko','surprised','sad','angry'],wob:.01},
+  {n:'hair',at:[50,67],up:'head',loc:1,paint:heroWear('hair'),wob:.012},
+  {n:'hat',at:[50,67],up:'head',loc:1,paint:heroWear('hat'),wob:.006},
   {n:'torso',at:[48,88],up:'root',loc:1,paint:heroPart('torso'),wob:.006},
-  {n:'armA',at:[43,71],up:'torso',loc:1,paint:heroPart('arm'),bend:'foreA'},
+  {n:'accF',at:[48,88],up:'torso',loc:1,paint:heroAcc('pack.f','scarf.f','cape.f'),wob:0},
+  {n:'armA',at:[43,71],up:'torso',loc:1,paint:heroPart('arm'),bend:'foreA',v:['','grip'],hv:'grip'},
   {n:'foreA',at:[43,71+ELB],up:'armA'},
-  {n:'held',at:[43,71+HAND-3],up:'foreA',slot:[-8,-67,67,8].map(v=>v*BL),rigid:1,wob:0},
+  {n:'held',at:[43.5,71+HAND],up:'foreA',slot:[-8,-67,67,8].map(v=>v*BL),rigid:1,wob:0},
+  // the front of the fist, over whatever the hand holds (show: only while the held slot is filled; hv: the arm's own hand closes then)
+  {n:'fist',at:[43,71+ELB],up:'foreA',loc:1,paint:heroPart('fist'),show:'held',wob:0},
   {n:'shield',at:[62,100],up:'root',slot:[-22,-22,22,22],rigid:1,wob:0}]});
 // The hero's own animation set. hp(o) turns a pose into channels: thighs legA/legB and knees kA/kB (the shin's bend,
 // positive folds the foot back), upper arms armA/armB and elbows eA/eB (negative bends the forearm forward), lean and
 // bob (the root), sq squash (root sy, with sx the other way so the volume holds), br the chest's breath, hr the head's
 // tilt, face an expression. noArm leaves the front arm to gameplay, straight at the elbow so the weapon lines up.
 const hp=o=>{const sq=o.sq??1,v={root:{r:o.lean||0,y:o.bob||0,x:o.x||0,sy:sq,sx:1/Math.sqrt(sq)},legA:{r:o.legA||0},legB:{r:o.legB||0},shinA:{r:o.kA??.08},shinB:{r:o.kB??.08},
-  armB:{r:o.armB||0},foreB:{r:o.eB??-.15},torso:{sy:o.br||1},head:{r:o.hr||0,sw:o.face||(o.blink?'blink':'')}};
+  armB:{r:o.armB||0},foreB:{r:o.eB??-.15},torso:{sy:o.br||1},head:{r:o.hr||0,sw:o.face||(o.blink?'blink':'')},cape:{r:(o.wave||0)*.03},scarfB:{r:(o.wave||0)*.045}};
   if(!o.noArm){v.armA={r:o.armA||0};v.foreA={r:o.eA??-.15};}else v.foreA={r:0};return v;};
 const HPOSE={hold:{legA:-.22,kA:.3,legB:.22,kB:.18,armA:-1.6,eA:-.2,armB:.25},
-  jump:{legA:-.75,kA:1.1,legB:.3,kB:.95,armA:-.7,eA:-1.1,armB:1.1,eB:-.5,lean:-.04,sq:1.04,hr:-.06},
-  fall:{legA:-.25,kA:.4,legB:.3,kB:.6,armA:-1.25,eA:-.7,armB:2.2,eB:-.6,sq:1.02,hr:.05},
-  land:{legA:-.6,kA:1.15,legB:-.2,kB:.85,armA:-.55,eA:-.5,armB:.6,eB:-.3,lean:.14,bob:5,sq:.92},
-  dash:{legA:-1.05,kA:.55,legB:.95,kB:.95,armA:1,eA:-.25,armB:1.3,eB:-.2,lean:.24,sq:.97},
-  hurt:{legA:.3,kA:.45,legB:-.45,kB:.2,armA:-.95,eA:-.55,armB:-.6,eB:-.4,lean:-.22,x:-2,bob:1,face:'hurt',hr:-.12},
+  jump:{wave:3,legA:-.75,kA:1.1,legB:.3,kB:.95,armA:-.7,eA:-1.1,armB:1.1,eB:-.5,lean:-.04,sq:1.04,hr:-.06},
+  fall:{wave:7,legA:-.25,kA:.4,legB:.3,kB:.6,armA:-1.25,eA:-.7,armB:2.2,eB:-.6,sq:1.02,hr:.05},
+  land:{wave:-2,legA:-.6,kA:1.15,legB:-.2,kB:.85,armA:-.55,eA:-.5,armB:.6,eB:-.3,lean:.14,bob:5,sq:.92},
+  dash:{wave:9,legA:-1.05,kA:.55,legB:.95,kB:.95,armA:1,eA:-.25,armB:1.3,eB:-.2,lean:.24,sq:.97},
+  hurt:{wave:-3,legA:.3,kA:.45,legB:-.45,kB:.2,armA:-.95,eA:-.55,armB:-.6,eB:-.4,lean:-.22,x:-2,bob:1,face:'hurt',hr:-.12},
   death:{legA:.6,kA:.5,legB:-.2,kB:.3,armA:.4,eA:-.3,armB:.7,lean:-.17,bob:4,face:'ko'},
   flat:{legA:-.75,legB:.75,armA:-1.9,armB:1.9,blink:1},
   mine0:{legA:-.35,kA:.45,legB:.35,kB:.3,armB:.6,lean:-.1,bob:1,noArm:1},mine1:{legA:-.45,kA:.55,legB:.4,kB:.35,armB:-.55,lean:.2,bob:3.5,noArm:1},
   bow:{legA:-.45,kA:.4,legB:.45,kB:.25,armB:-1.35,eB:0,lean:-.06,noArm:1},bowrel:{legA:-.45,kA:.4,legB:.45,kB:.25,armB:.75,lean:.04,noArm:1},
   cast:{legA:-.4,kA:.35,legB:.3,kB:.3,armB:-2.3,eB:-.3,lean:-.1,bob:-1,noArm:1},
-  block:{legA:-.5,kA:.6,legB:.5,kB:.4,armA:-1.5,eA:-.6,armB:-.3,lean:-.08,bob:2.5,sq:.97},parry:{legA:-.6,kA:.5,legB:.45,kB:.3,armA:-2.2,eA:-.2,armB:.6,lean:.12,face:'happy'},
+  block:{wave:-1,legA:-.5,kA:.6,legB:.5,kB:.4,armA:-1.5,eA:-.6,armB:-.3,lean:-.08,bob:2.5,sq:.97},parry:{wave:2,legA:-.6,kA:.5,legB:.45,kB:.3,armA:-2.2,eA:-.2,armB:.6,lean:.12,face:'happy'},
   fcast:{legA:-.4,kA:.35,legB:.4,kB:.25,armB:.45,lean:.15,noArm:1},reel0:{legA:-.3,kA:.35,legB:.3,kB:.25,armB:-1.1,eB:-.5,lean:-.12,noArm:1},reel1:{legA:-.3,kA:.4,legB:.3,kB:.3,armB:-.8,eB:-.6,lean:-.16,bob:1,noArm:1},
-  climb0:{legA:-.9,kA:1.4,legB:.1,kB:.2,armA:-2.9,eA:-.15,armB:-2.2,eB:-.5},climb1:{legA:.1,kA:.2,legB:-.9,kB:1.4,armA:-2.2,eA:-.5,armB:-2.9,eB:-.15},
-  cheer0:{legA:-.15,kA:.3,legB:.15,kB:.3,armA:-2.95,eA:-.25,armB:2.8,eB:-.3,bob:-3,sq:1.04,face:'happy',hr:-.08},cheer1:{legA:-.1,kA:.15,legB:.1,kB:.15,armA:-2.7,eA:-.45,armB:2.5,eB:-.5,face:'happy'},
-  sw0:{legA:-.25,kA:.35,legB:.25,kB:.2,armB:.25,noArm:1},sw1:{legA:-.1,kA:.55,legB:.5,kB:.45,armB:.9,eB:-.3,lean:-.13,bob:1.5,sq:.97,noArm:1},
-  sw2:{legA:-.45,kA:.35,legB:.35,kB:.25,armB:-.6,eB:-.4,lean:.07,noArm:1},sw3:{legA:-.75,kA:.5,legB:.55,kB:.15,armB:-1.1,eB:-.5,lean:.17,bob:3.5,noArm:1}};
+  climb0:{wave:1,legA:-.9,kA:1.4,legB:.1,kB:.2,armA:-2.9,eA:-.15,armB:-2.2,eB:-.5},climb1:{legA:.1,kA:.2,legB:-.9,kB:1.4,armA:-2.2,eA:-.5,armB:-2.9,eB:-.15},
+  cheer0:{wave:2,legA:-.15,kA:.3,legB:.15,kB:.3,armA:-2.95,eA:-.25,armB:2.8,eB:-.3,bob:-3,sq:1.04,face:'happy',hr:-.08},cheer1:{wave:1,legA:-.1,kA:.15,legB:.1,kB:.15,armA:-2.7,eA:-.45,armB:2.5,eB:-.5,face:'happy'},
+  sw0:{legA:-.25,kA:.35,legB:.25,kB:.2,armB:.25,noArm:1},sw1:{wave:-2,legA:-.1,kA:.55,legB:.5,kB:.45,armB:.9,eB:-.3,lean:-.13,bob:1.5,sq:.97,noArm:1},
+  sw2:{wave:2,legA:-.45,kA:.35,legB:.35,kB:.25,armB:-.6,eB:-.4,lean:.07,noArm:1},sw3:{wave:4,legA:-.75,kA:.5,legB:.55,kB:.15,armB:-1.1,eB:-.5,lean:.17,bob:3.5,noArm:1}};
 {const HR=RIGS.hero.clips;HR.hold=still(hp(HPOSE.hold),.07);
   for(const k in HPOSE)HR[k]=still(hp(HPOSE[k]),/^sw/.test(k)?.05:.07);
   for(const k of['hurt','parry','land'])HR[k].bl=.04;HR.death.bl=.08;
   HR.fall.bl=.18;HR.jump.bl=.06;
   // idle: breathing (the chest swells, the head rides up a hair), arms settle, a blink
-  HR.idle=loopClip(2.8,[[0,hp({legA:-.05,legB:.06,kA:.08,kB:.1,armA:.06,armB:-.08,eA:-.15,eB:-.18})],[1.4,hp({legA:-.05,legB:.06,kA:.12,kB:.14,armA:.1,armB:-.03,eA:-.2,eB:-.22,br:1.02,bob:.6,hr:-.02})]],'io',.18);
+  HR.idle=loopClip(2.8,[[0,hp({legA:-.05,legB:.06,kA:.08,kB:.1,armA:.06,armB:-.08,eA:-.15,eB:-.18})],[1.4,hp({legA:-.05,legB:.06,kA:.12,kB:.14,armA:.1,armB:-.03,eA:-.2,eB:-.22,br:1.02,bob:.6,hr:-.02,wave:.8})]],'io',.18);
   HR.idle.tr.head.sw=[[0,''],[2,'blink'],[2.12,''],[2.8,'']];
   // walk: one stride per cycle; knees fold on the leg swinging through, the body drops on each contact and rises at
   // the pass, the arms swing against the legs with the elbows bending on the forward swing, a small forward lean
   {const K=[],N=16;for(let i=0;i<N;i++){const ph=i/N,s=Math.sin(ph*Math.PI*2),c=Math.cos(ph*Math.PI*2);
       K.push([ph,hp({legA:-.5*s,legB:.5*s,kA:.1+.85*Math.max(0,c)**1.4,kB:.1+.85*Math.max(0,-c)**1.4,armA:.55*s,armB:-.55*s,
-        eA:-.15-.55*Math.max(0,-s),eB:-.15-.55*Math.max(0,s),lean:.06,bob:2.2*Math.abs(s)-1.2,hr:.02*Math.abs(c)})]);}
+        eA:-.15-.55*Math.max(0,-s),eB:-.15-.55*Math.max(0,s),lean:.06,wave:3+1.2*Math.sin(ph*Math.PI*4),bob:2.2*Math.abs(s)-1.2,hr:.02*Math.abs(c)})]);}
     HR.walk=loopClip(1,K,'lin',.12);delete HR.walk.tr.head.sw;}
   const mk2=(a,b,len,bl)=>loopClip(len,[[0,hp(HPOSE[a])],[len/2,hp(HPOSE[b])]],'io',bl);
   HR.climb=mk2('climb0','climb1',2,.1);HR.cheer=mk2('cheer0','cheer1',.4,.08);HR.reel=mk2('reel0','reel1',.17,.06);
