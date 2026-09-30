@@ -1228,8 +1228,10 @@ test('gamepad: button names follow the controller, and rumble (combining, Low, O
   await boot(page);
   await newSmallWorld(page);
   const r=await page.evaluate(async()=>{const g=await import('/src/game.js'),gp=window.__gp,b=gp.buttons,out={};
+    // button names in the page are pictures (Input Prompts), named for screen readers
+    const L=q=>{const e=document.querySelector(q),i=e.querySelector('.btnpic');return i?'pic:'+i.getAttribute('aria-label'):e.textContent;};
     b[3].pressed=true;g.handlePad();b[3].pressed=false;g.handlePad();g.setInv(false);
-    out.ps=[g.padStyle(),g.PADNAME(0),g.PADNAME(9),document.querySelector('#padHint [data-pb="0"]').textContent,document.querySelector('#howto [data-pa="use"]').textContent];
+    out.ps=[g.padStyle(),g.PADNAME(0),g.PADNAME(9),L('#padHint [data-pb="0"]'),L('#howto [data-pa="use"]')];
     // taking a hit rumbles both motors (a small screen shake adds none of its own)
     window.__rum.length=0;const p=g.player;p.inv_t=0;p.hp=p.max;g.hurtPlayer(10);out.hurt=window.__rum.slice();
     // a weaker effect doesn't cut off a stronger one still playing; a stronger one combines with it, keeping each motor's max
@@ -1240,23 +1242,25 @@ test('gamepad: button names follow the controller, and rumble (combining, Low, O
     g.SET.rumble='off';const n=window.__rum.length;g.rumble(1,1,900);g.shake(.9);out.off=window.__rum.length-n;out.reset=window.__rumReset;g.SET.rumble='full';
     // Settings > Button names overrides the match, and an Xbox pad isn't taken for a PlayStation one
     g.SET.padNames='nin';out.nin=g.PADNAME(0);g.SET.padNames='auto';
-    gp.id='Xbox Wireless Controller (STANDARD GAMEPAD Vendor: 045e Product: 0b13)';g.handlePad();out.xbox=[g.padStyle(),document.querySelector('#padHint [data-pb="0"]').textContent];
+    gp.id='Xbox Wireless Controller (STANDARD GAMEPAD Vendor: 045e Product: 0b13)';g.handlePad();out.xbox=[g.padStyle(),L('#padHint [data-pb="0"]')];
+    // a button with no picture (PlayStation's PS button) stays a name
+    out.nopic=g.padPic(16);g.SET.padNames='ps';out.nopic=[out.nopic.includes('btnpic'),g.padPic(16)];g.SET.padNames='auto';
     return out;});
-  expect(r.ps).toEqual(['ps','✕','Options','✕','R2']);
+  expect(r.ps).toEqual(['ps','✕','Options','pic:✕','pic:R2']);
   expect(r.hurt.length).toBe(1);expect(r.hurt[0][0]).toBe('dual-rumble');expect(r.hurt[0][1]).toBeGreaterThan(.15);expect(r.hurt[0][2]).toBeGreaterThan(r.hurt[0][1]);
   expect(r.mix.length).toBe(2);expect(r.mix[1].slice(1,3)).toEqual([.95,.9]);expect(r.mix[1][3]).toBeGreaterThan(300);
   expect(r.low.slice(1,3)).toEqual([.5,.5]);
   expect(r.off).toBe(0);expect(r.reset).toBe(1);
   expect(r.nin).toBe('B');
-  expect(r.xbox).toEqual(['xbox','A']);
+  expect(r.xbox).toEqual(['xbox','pic:A']);expect(r.nopic).toEqual([true,'PS']);
 });
 
 test('gamepad: partners on the d-pad and Mount on L3, and older saved layouts move over once',async({page})=>{
   // runs after the settings the beforeEach writes, so a layout saved by an older build can stand in for them on a reload
   await page.addInitScript(()=>{const pad=sessionStorage.getItem('__pad');if(pad)localStorage.setItem('folded-frontier-settings',JSON.stringify({snd:false,intro:false,hints:false,pad:JSON.parse(pad)}));});
   await boot(page);
-  let r=await page.evaluate(async()=>{const g=await import('/src/game.js');g.SET.padNames='xbox';return [g.SET.pad.partner,g.SET.pad.ability,g.SET.pad.mount,g.PADNAME(g.SET.pad.partner),g.PADNAME(g.SET.pad.ability),document.querySelector('#howto [data-pa="mount"]').textContent];});
-  expect(r).toEqual([14,15,10,'D-pad ←','D-pad →','LS']);
+  let r=await page.evaluate(async()=>{const g=await import('/src/game.js');g.SET.padNames='xbox';g.padLabels();const L=q=>{const e=document.querySelector(q),i=e.querySelector('.btnpic');return i?'pic:'+i.getAttribute('aria-label'):e.textContent;};return [g.SET.pad.partner,g.SET.pad.ability,g.SET.pad.mount,g.PADNAME(g.SET.pad.partner),g.PADNAME(g.SET.pad.ability),L('#howto [data-pa="mount"]')];});
+  expect(r).toEqual([14,15,10,'D-pad ←','D-pad →','pic:LS']);
   // settings saved by an older build: the old default layout moves over; one with the partner move rebound is left alone
   for(const [pad,want,more] of [[{jump:0,interact:1,dash:2,inv:3,pl:4,pr:5,hook:6,use:7,map:8,ability:10,partner:11,mount:-1},[15,14,10]],
     [{jump:0,interact:1,dash:2,inv:3,pl:4,pr:5,hook:6,use:7,map:8,ability:3,partner:11,mount:-1},[3,11,-1]],
