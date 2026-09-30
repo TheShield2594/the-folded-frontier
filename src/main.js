@@ -2,7 +2,7 @@
 // This is the entry point. Importing game.js runs every other module first, in the order it lists.
 import * as THREE from 'three';
 import {
-  reduceMotion,
+  reduceMotion,playerTalk,talkAt,
   $,AC,ambient,angler,biomeAt,BIONAME,buildChunk,buildPartnerSheets,
   buildSheets,camera,camT,canvasTex,chapterCard,checkAch,checkRitual,checkRoom,circ,clamp,clouds,
   computeLightStrip,crops,fullMoon,updateBossFx,rareGrowChance,drawWarnMark,curBio,CW,dirty,drawMap,eliteMat,explored,fi,H,handlePad,hasNPC,hitStop,
@@ -46,6 +46,7 @@ function frame(now){requestAnimationFrame(frame);perfStart();const pf0=performan
     autosave+=dt;if(autosave>60){autosave=0;save();}
     housingT+=dt;if(housingT>2&&!player.dead){housingT=0;if(NPCORDER.some(t=>!hasNPC(t)&&NPCDEF[t].ok())){const r=checkRoom(Math.floor(player.x),Math.floor(player.y+.5));if(r.ok)tryMoveIn(r,false);}}
     }
+  else if(state==='talk')playerTalk(dt,talkAt());
   else if(state==='title'){$('evbar').hidden=true;camT.x+=dt*2.2;if(camT.x>W-30)camT.x=30;player.x=camT.x;player.y=surf[clamp(Math.floor(camT.x),0,W-1)]+1;player.mesh.visible=false;if(pt.mesh)pt.mesh.visible=false;hidePets();$('partnerHud').hidden=true;setWorldTime((worldTime+dt*.25)%24);}
   if(AC){setMusic(pickMusic());music(dt,isNight());}updateAmbience(dt);mouse.lp=false;mouse.rp=false;
   if(lightDirty){computeLightStrip(lx0-17,lx1+17);setLightDirty(false);setLx0(1e9);setLx1(-1);}

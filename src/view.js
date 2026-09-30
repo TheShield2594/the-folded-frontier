@@ -2,8 +2,8 @@
 import * as THREE from 'three';
 import {
   arenaF,eclF,atlasTex,BIO,biomeAt,boltF,C,camDist,camera,cellUV,clamp,clouds,cursor,dioLight,H,hasAcc,hasBuff,
-  fullMoon,inkMoon,lerp,moonMesh,season,seasonSky,mouse,N,OPAQUE,pad,player,rainF,rand,reachOK,scene,selItem,setShakeT,setSnowF,
-  shakeT,skyMesh,skyU,snowF,SPAWNX,state,sunMesh,surfAvg,T,tiles,U,W,worldMat,
+  fullMoon,inkMoon,lerp,moonMesh,season,seasonSky,mouse,N,OPAQUE,pad,player,rainF,reachOK,scene,selItem,setTrauma,setSnowF,
+  trauma,camKick,KICK_W,camPunch,setCamPunch,makeNoise,hook,boss,enemies,reduceMotion,ITEMS,skyMesh,skyU,snowF,SPAWNX,state,sunMesh,surfAvg,T,tiles,U,W,worldMat,
   worldTime,touch,
 } from './game.js';
 
@@ -52,12 +52,39 @@ export function updateSky(){const h=worldTime,f=dayF(h),warm=f>0&&f<1?Math.sin(f
 export const camT={x:SPAWNX,y:100};
 // camFocus: a short camera move set by boss.js (at() -> [x, y] to look at, zoom multiplies the distance); eases in and out over dur seconds
 export const camFocus={t:0,dur:1,at:null,zoom:1};
-export function updateCamera(dt){const p=player;let tx=p.x+p.vx*.25,ty=p.y+1.2+(p.stepOff||0),zk=1;
-  if(camFocus.t>0&&state!=='title'){camFocus.t-=dt;const e=camFocus.t,w=Math.max(0,Math.min(1,(camFocus.dur-e)/.45,e/.6)),s2=w*w*(3-2*w),f=camFocus.at&&camFocus.at();if(f){tx=lerp(tx,f[0],s2);ty=lerp(ty,f[1],s2);}zk=lerp(1,camFocus.zoom,s2);}
-  const k=state==='title'?1:Math.min(1,dt*6);camT.x+=(tx-camT.x)*k;camT.y+=(ty-camT.y)*Math.min(1,dt*5);
+// How the camera follows the player (issue #136):
+//  vertical deadzone: in the air it holds the last ground height while the player stays within CAM_UP above it (a full jump
+//   is ~4.1 tiles, so jumping on flat ground never moves it) or CAM_DN below; past that, and on ropes, in liquid, on the hook
+//   or dead, it follows (fw eases 0 -> 1); landing eases it to the new ground
+//  lookahead: LOOK_X toward the facing, turning over ~LOOK_T*3 s so quick turns don't whip it, plus a little velocity; aiming a
+//   bow or spell leads partway toward the cursor instead; falling for FALL_LOOK s looks down, more the faster the fall
+//  combat zoom: a few percent closer (CZOOM) while a boss or an elite is near; smoothing is exponential, so it feels the same at any fps
+//  shake: trauma (shake() in gameplay.js) squared times smooth noise, plus a small roll; kick(): a spring offset along a hit
+const CAM_UP=4.6,CAM_DN=2.5,LOOK_X=2.5,LOOK_T=.5,FALL_LOOK=.4,CZOOM=.95,SHAKE_MAX=1.1,SHAKE_ROLL=.035,TRAUMA_DECAY=1.5;
+export const cam={gy:null,fw:1,look:0,ly:0,down:0,fallT:0,zoom:1,nt:0};const camNoise=makeNoise(7);
+const ease=(r,dt)=>1-Math.exp(-dt*r),wig=(t,o)=>clamp((camNoise.n2(t,o)-.5)*3,-1,1);
+export function updateCamera(dt){const p=player,play=state!=='title';let tx=p.x,ty=p.y+1.2,zk=1;
+  if(play){const direct=p.climb||p.inLiq||hook.state===2||p.dead;
+    if(p.onGround||direct||cam.gy==null)cam.gy=p.y;
+    if(direct)cam.fw=1;else if(p.onGround)cam.fw=0;else if(p.y>cam.gy+CAM_UP||p.y<cam.gy-CAM_DN)cam.fw=Math.min(1,cam.fw+dt*4);
+    cam.fallT=!p.onGround&&!direct&&p.vy<-4?cam.fallT+dt:0;const dg=cam.fallT>FALL_LOOK?Math.min(4,(-p.vy-4)*.14):0;cam.down+=(dg-cam.down)*ease(dg>cam.down?3:5,dt);
+    const aim=!p.dead&&(p.draw||(p.swing&&p.swing.aim!=null&&!(ITEMS[p.swing.tool]||{}).rod));let lg=p.dead?0:p.face*LOOK_X,lyg=0;
+    if(aim){lg=clamp((mouse.wx-p.x)*.35,-LOOK_X*1.3,LOOK_X*1.3);lyg=clamp((mouse.wy-p.y-1)*.25,-1.5,1.5);}
+    cam.look+=(lg-cam.look)*ease(aim?4:1/LOOK_T,dt);cam.ly+=(lyg-cam.ly)*ease(4,dt);
+    tx=p.x+cam.look+p.vx*.12;ty=lerp(cam.gy,p.y,cam.fw)+1.2+(p.stepOff||0)-cam.down+cam.ly;
+    let near=false;if(!p.dead&&!reduceMotion()){if(boss&&!boss.dying&&Math.hypot(boss.x-p.x,boss.y-p.y)<24)near=true;else for(const e of enemies)if(e.elite&&!e.dying&&Math.abs(e.x-p.x)<12&&Math.abs(e.y-p.y)<8){near=true;break;}}
+    cam.zoom+=((near?CZOOM:1)-cam.zoom)*ease(near?1.2:.8,dt);zk=cam.zoom*(1-.07*camPunch*camPunch);setCamPunch(Math.max(0,camPunch-dt*3));}
+  else{cam.gy=null;cam.fw=1;cam.look=cam.ly=cam.down=0;cam.zoom=1;}
+  // camFocus (boss intros and defeats) overrides all of the above while it runs
+  if(camFocus.t>0&&play){camFocus.t-=dt;const e=camFocus.t,w=Math.max(0,Math.min(1,(camFocus.dur-e)/.45,e/.6)),s2=w*w*(3-2*w),f=camFocus.at&&camFocus.at();if(f){tx=lerp(tx,f[0],s2);ty=lerp(ty,f[1],s2);}zk=lerp(zk,camFocus.zoom,s2);}
+  // a long fall follows faster, so the player doesn't drop out of the bottom of the view
+  const kx=play?ease(6,dt):1,ky=play?ease(5+cam.fw*Math.max(0,-p.vy)*.25,dt):1;camT.x+=(tx-camT.x)*kx;camT.y+=(ty-camT.y)*ky;
   const cd=camDist*zk,vh=2*cd*Math.tan(16*Math.PI/180),vw=vh*camera.aspect;const cx=clamp(camT.x,vw/2+1,W-vw/2-1),cy=clamp(camT.y,vh/2+2,H-vh/2);
-  let sx=0,sy=0;if(shakeT>0){setShakeT(shakeT-(dt));sx=rand(-1,1)*shakeT*.6;sy=rand(-1,1)*shakeT*.6;}
-  camera.position.set(cx+sx,cy+3.6+sy,cd);camera.lookAt(cx+sx,cy+.4+sy,0);
+  // shake: trauma decays at TRAUMA_DECAY a second; kick: a critically damped spring (KICK_W rad/s), substepped so it holds at 30 fps
+  let sx=0,sy=0,roll=0;cam.nt+=dt;if(trauma>0){setTrauma(Math.max(0,trauma-dt*TRAUMA_DECAY));const s2=trauma*trauma;sx=s2*SHAKE_MAX*wig(cam.nt*17,.5);sy=s2*SHAKE_MAX*wig(cam.nt*17,9.5);roll=s2*SHAKE_ROLL*wig(cam.nt*11,21.5);}
+  const K=camKick;if(K.x||K.y||K.vx||K.vy){const n=4,h=dt/n;for(let i=0;i<n;i++){K.vx+=(-KICK_W*KICK_W*K.x-2*KICK_W*K.vx)*h;K.vy+=(-KICK_W*KICK_W*K.y-2*KICK_W*K.vy)*h;K.x+=K.vx*h;K.y+=K.vy*h;}
+    if(Math.abs(K.x)+Math.abs(K.y)<1e-4&&Math.abs(K.vx)+Math.abs(K.vy)<1e-3)K.x=K.y=K.vx=K.vy=0;sx+=K.x;sy+=K.y;}
+  camera.position.set(cx+sx,cy+3.6+sy,cd);camera.lookAt(cx+sx,cy+.4+sy,0);if(roll)camera.rotateZ(roll);
   // mouse world
   [mouse.wx,mouse.wy]=screenToWorld(mouse.x,mouse.y);
   if(pad.active&&state==='play'){pad.aimT-=dt;if(pad.aimT>0){mouse.wx=p.x+pad.aimX*4.5;mouse.wy=p.y+1+pad.aimY*4.5;}else{mouse.wx=p.x+p.face*1.3;mouse.wy=p.y+.5;}}
