@@ -93,9 +93,12 @@ export function padInteract(){const p=player;
 // it with its own profile where it happens (beside its hitPause, so both start on the same frame); shake() adds one only for
 // big moments that have none of their own (rumbledNow()). rumbleFade() eases one down over a boss's defeat.
 const RUMSC={off:0,low:.5,full:1};let rum={w:0,s:0,end:0,at:-1},fade=null;
+// stops whatever the pad is playing (Controller vibration set to Off mid-effect)
+function rumStop(g){const v=g.vibrationActuator,h=g.hapticActuators&&g.hapticActuators[0],a=v&&typeof v.reset==='function'?v:h&&typeof h.reset==='function'?h:null;
+  if(a)try{Promise.resolve(a.reset()).catch(()=>{});}catch(e){}}
 function rumPlay(g,w,s,ms){const sc=RUMSC[SET.rumble]||0;w=Math.min(1,w*sc);s=Math.min(1,s*sc);
   try{const v=g.vibrationActuator,h=g.hapticActuators&&g.hapticActuators[0];if(v&&v.playEffect)Promise.resolve(v.playEffect('dual-rumble',{startDelay:0,duration:Math.round(ms),weakMagnitude:w,strongMagnitude:s})).catch(()=>{});else if(h&&h.pulse)Promise.resolve(h.pulse(Math.max(w,s),Math.round(ms))).catch(()=>{});}catch(e){}}
-export function rumble(w,s,ms){const g=pad.g;if(!RUMSC[SET.rumble]||!pad.active||!g||!(ms>0)||!(w>0||s>0))return;const now=performance.now();rum.at=now;
+export function rumble(w,s,ms){const g=pad.g;if(!RUMSC[SET.rumble]){if(fade||performance.now()<rum.end){fade=null;rum.end=0;if(g)rumStop(g);}return;}if(!pad.active||!g||!(ms>0)||!(w>0||s>0))return;const now=performance.now();rum.at=now;
   if(now<rum.end){if(w<=rum.w&&s<=rum.s&&now+ms<=rum.end)return;w=Math.max(w,rum.w);s=Math.max(s,rum.s);ms=Math.max(ms,rum.end-now);}
   rum={w,s,end:now+ms,at:now};fade=null;rumPlay(g,w,s,ms);}
 export const rumbledNow=()=>performance.now()-rum.at<2;

@@ -1144,8 +1144,8 @@ test('gamepad: right stick aim reaches further with tilt, and down flattens at o
 test('gamepad: button names follow the controller, and rumble (combining, Low, Off)',async({page})=>{
   await page.addInitScript(()=>{
     const gp={id:'DualSense Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 0ce6)',connected:true,mapping:'standard',axes:[0,0,0,0],
-      buttons:Array.from({length:17},()=>({pressed:false,value:0})),vibrationActuator:{playEffect:(t,o)=>{window.__rum.push([t,+o.weakMagnitude.toFixed(3),+o.strongMagnitude.toFixed(3),o.duration]);return Promise.resolve('complete');}}};
-    window.__rum=[];window.__gp=gp;navigator.getGamepads=()=>[gp];
+      buttons:Array.from({length:17},()=>({pressed:false,value:0})),vibrationActuator:{playEffect:(t,o)=>{window.__rum.push([t,+o.weakMagnitude.toFixed(3),+o.strongMagnitude.toFixed(3),o.duration]);return Promise.resolve('complete');},reset:()=>{window.__rumReset++;return Promise.resolve('complete');}}};
+    window.__rum=[];window.__rumReset=0;window.__gp=gp;navigator.getGamepads=()=>[gp];
   });
   await boot(page);
   await newSmallWorld(page);
@@ -1158,7 +1158,8 @@ test('gamepad: button names follow the controller, and rumble (combining, Low, O
     window.__rum.length=0;g.rumble(.2,.9,400);g.rumble(.1,.1,40);g.rumble(.95,.2,50);out.mix=window.__rum.slice();
     // Low halves every effect, Off stops them
     g.SET.rumble='low';g.rumble(1,1,500);out.low=window.__rum.at(-1);
-    g.SET.rumble='off';const n=window.__rum.length;g.rumble(1,1,900);g.shake(.9);out.off=window.__rum.length-n;g.SET.rumble='full';
+    // and turning it Off stops the effect still playing (the Low one above), once
+    g.SET.rumble='off';const n=window.__rum.length;g.rumble(1,1,900);g.shake(.9);out.off=window.__rum.length-n;out.reset=window.__rumReset;g.SET.rumble='full';
     // Settings > Button names overrides the match, and an Xbox pad isn't taken for a PlayStation one
     g.SET.padNames='nin';out.nin=g.PADNAME(0);g.SET.padNames='auto';
     gp.id='Xbox Wireless Controller (STANDARD GAMEPAD Vendor: 045e Product: 0b13)';g.handlePad();out.xbox=[g.padStyle(),document.querySelector('#padHint [data-pb="0"]').textContent];
@@ -1167,7 +1168,7 @@ test('gamepad: button names follow the controller, and rumble (combining, Low, O
   expect(r.hurt.length).toBe(1);expect(r.hurt[0][0]).toBe('dual-rumble');expect(r.hurt[0][1]).toBeGreaterThan(.15);expect(r.hurt[0][2]).toBeGreaterThan(r.hurt[0][1]);
   expect(r.mix.length).toBe(2);expect(r.mix[1].slice(1,3)).toEqual([.95,.9]);expect(r.mix[1][3]).toBeGreaterThan(300);
   expect(r.low.slice(1,3)).toEqual([.5,.5]);
-  expect(r.off).toBe(0);
+  expect(r.off).toBe(0);expect(r.reset).toBe(1);
   expect(r.nin).toBe('B');
   expect(r.xbox).toEqual(['xbox','A']);
 });
