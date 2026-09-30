@@ -28,6 +28,13 @@ patiently, on every seam at once from under the ink shrine. That is **The Unfold
 The Folders are not dead. At the end, a Folder presses themself into the paper and holds it from the inside. **Wren**,
 the last of them, left letters in the old rooms for whoever came next.
 
+## The storybook intro
+
+A new world opens on a narrated storybook (`INTRO` in `src/guide.js`, read aloud from `assets/voice/intro-<page>.mp3`).
+It tells the setup only: the First Page, the Folders, the three anchors, the four keepers, the folds coming loose and
+Wren's letters. It never says why the folds fail; that stays for The Unfolded. If a page's text changes, re-record its
+narration file too.
+
 ## How The Unfolded fits
 
 The Unfolded is the answer to the mystery, not a villain: the First Page wants to lie flat. Beating it does not refold

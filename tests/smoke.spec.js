@@ -124,6 +124,31 @@ test('creates a small world and spawns the player',async({page})=>{
   await expect(page.locator('canvas').first()).toBeVisible();
 });
 
+test('the storybook intro reads its pages, turns them and can be skipped',async({page})=>{
+  await boot(page);
+  // turn the intro on for this world (the tests boot with it off); no sound, so the pages are timed, not spoken
+  await page.evaluate(async()=>{(await import('/src/game.js')).SET.intro=true;});
+  await page.click('#newBtn');
+  await page.fill('#seedIn',SEED);
+  await page.click('#sizeSeg button[data-s="s"]');
+  await page.click('#createBtn');
+  await page.waitForFunction(async()=>(await import('/src/game.js')).state==='intro');
+  const pages=await page.evaluate(async()=>(await import('/src/game.js')).INTRO.length);
+  expect(pages).toBeGreaterThanOrEqual(5);
+  await expect(page.locator('#introNo')).toHaveText(`1 / ${pages}`);
+  await expect(page.locator('#introTxt p').first()).toContainText('First Page');
+  // once the narration has started (its first paragraph shows), Space turns the page
+  await expect(page.locator('#introTxt p.on').first()).toBeVisible();
+  await page.keyboard.press(' ');
+  await expect(page.locator('#introNo')).toHaveText(`2 / ${pages}`);
+  await expect(page.locator('#introTxt p').first()).toContainText('Folders');
+  expect(await page.evaluate(async()=>(await import('/src/game.js')).state)).toBe('intro');
+  // Esc skips the rest of the story into the world
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(async()=>{const g=await import('/src/game.js');return g.state==='play'||g.state==='talk';});
+  await expect(page.locator('#intro')).toBeHidden();
+});
+
 test('saves to localStorage and continues the same world after a reload',async({page})=>{
   await boot(page);
   await newSmallWorld(page);

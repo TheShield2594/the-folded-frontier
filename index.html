@@ -129,6 +129,7 @@
       <label for="postC">Glow &amp; color grading</label><input type="checkbox" id="postC">
       <label for="cbS">Color vision</label><select id="cbS"><option value="off">Standard colors</option><option value="deut">Deuteranopia (green-weak)</option><option value="prot">Protanopia (red-weak)</option><option value="trit">Tritanopia (blue-weak)</option></select>
       <label for="introC">Story intro on new worlds</label><input type="checkbox" id="introC">
+      <label for="narrC">Narrator voice (story intro)</label><input type="checkbox" id="narrC">
       <label for="hintsC">Tutorial hints</label><input type="checkbox" id="hintsC">
       <label for="motionS">Motion</label><select id="motionS"><option value="auto">Match system setting</option><option value="reduce">Reduced (no page turns or sway)</option><option value="full">Full</option></select>
       <label for="teleC">Outline enemies about to attack</label><input type="checkbox" id="teleC">
@@ -154,10 +155,12 @@
   <div id="chapter" hidden><div class="ch-page"><small id="chKick">A new page</small><b id="chName"></b><span id="chSub"></span></div></div>
   <div id="intro" hidden>
     <div class="bookWrap"><div class="book">
-      <div class="pg pgR"><p>Once upon a page, the world was only a sketch.</p><p>Then someone picked up a pencil…</p><p>…and the whole frontier began to unfold.</p></div>
+      <div class="pg pgR"><div id="introTxt"></div><small id="introNo"></small></div>
+      <div class="leaf"><div class="lf"></div><div class="lb"></div></div>
       <div class="cover"><div class="cf"><span>The</span><b>Folded Frontier</b><i></i></div><div class="cb"><canvas id="introArt" width="360" height="440"></canvas></div></div>
     </div></div>
-    <button id="introSkip" class="ghost" type="button">Skip ›</button>
+    <p id="introHint">Click or Space: turn the page · Esc: skip the story</p>
+    <button id="introSkip" class="ghost" type="button">Skip story ›</button>
   </div>
   <div id="dead" class="over" hidden>
     <div class="card"><h1 class="logo">You got crumpled!</h1><p class="tag" id="deadTxt">Refolding in 4…</p></div>
