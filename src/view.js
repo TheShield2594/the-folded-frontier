@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import {
   arenaF,eclF,atlasTex,BIO,biomeAt,boltF,C,camDist,camera,cellUV,clamp,clouds,cursor,dioLight,H,hasAcc,hasBuff,
   fullMoon,inkMoon,lerp,moonMesh,season,seasonSky,mouse,N,OPAQUE,pad,player,rainF,reachOK,scene,selItem,setTrauma,setSnowF,
-  trauma,camKick,KICK_W,camPunch,setCamPunch,makeNoise,hook,boss,enemies,reduceMotion,ITEMS,skyMesh,skyU,snowF,SPAWNX,state,sunMesh,surfAvg,T,tiles,U,W,worldMat,
+  trauma,camKick,KICK_W,camPunch,setCamPunch,makeNoise,hook,boss,enemies,reduceMotion,ITEMS,SET,skyMesh,skyU,snowF,SPAWNX,state,sunMesh,surfAvg,T,tiles,U,W,worldMat,
   worldTime,touch,
 } from './game.js';
 
@@ -64,6 +64,8 @@ const CAM_UP=4.6,CAM_DN=2.5,LOOK_X=2.5,LOOK_T=.5,FALL_LOOK=.4,CZOOM=.95,SHAKE_MA
 export const cam={gy:null,fw:1,look:0,ly:0,down:0,fallT:0,zoom:1,nt:0};const camNoise=makeNoise(7);
 const ease=(r,dt)=>1-Math.exp(-dt*r),wig=(t,o)=>clamp((camNoise.n2(t,o)-.5)*3,-1,1);
 export function updateCamera(dt){const p=player,play=state!=='title';let tx=p.x,ty=p.y+1.2,zk=1;
+  // Screen shake off or reduced motion stops shake, kicks and the punch-in already under way, not just new ones
+  if(!SET.shake||reduceMotion()){if(trauma)setTrauma(0);if(camPunch)setCamPunch(0);camKick.x=camKick.y=camKick.vx=camKick.vy=0;}
   if(play){const direct=p.climb||p.inLiq||hook.state===2||p.dead;
     if(p.onGround||direct||cam.gy==null)cam.gy=p.y;
     if(direct)cam.fw=1;else if(p.onGround)cam.fw=0;else if(p.y>cam.gy+CAM_UP||p.y<cam.gy-CAM_DN)cam.fw=Math.min(1,cam.fw+dt*4);

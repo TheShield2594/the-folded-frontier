@@ -872,6 +872,8 @@ test('camera and animation feel',async({page})=>{
     out.light=light;out.big=big;out.kick=kmax;out.kickBack=Math.abs(g.camKick.x);
     // reduced motion turns shake and kicks off
     g.SET.motion='reduce';g.shake(.5);g.kick(1,0,.3);out.rmTrauma=g.trauma;out.rmKick=g.camKick.vx;g.SET.motion='full';
+    // and turning motion off mid-shake stops what is already running
+    g.shake(.8);g.kick(1,0,.3);g.punch();g.SET.motion='reduce';step();out.rmLive=[g.trauma,g.camKick.x,g.camKick.vx,g.camPunch];g.SET.motion='full';
     return out;
   });
   expect(r.jumpTop).toBeGreaterThan(4);expect(r.jumpDev).toBeLessThan(.05);
@@ -881,5 +883,5 @@ test('camera and animation feel',async({page})=>{
   expect(r.head).toBeLessThan(-.3);expect(Math.abs(r.headBack)).toBeLessThan(.02);
   expect(r.light*1.1).toBeLessThan(.03);expect(r.big*1.1).toBeGreaterThan(.5);
   expect(r.kick).toBeGreaterThan(.2);expect(r.kick).toBeLessThan(.4);expect(r.kickBack).toBeLessThan(.02);
-  expect(r.rmTrauma).toBe(0);expect(r.rmKick).toBe(0);
+  expect(r.rmTrauma).toBe(0);expect(r.rmKick).toBe(0);expect(r.rmLive).toEqual([0,0,0,0]);
 });
