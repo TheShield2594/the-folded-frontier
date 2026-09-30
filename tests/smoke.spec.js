@@ -885,6 +885,55 @@ test('the painted hero rig takes over the player once its pictures load',async({
 
 // Weapon moves (#78) and armor sets (#37) run through the real update code with the frame loop paused,
 // stepping updatePlayer()/updateProjs() by hand, since software WebGL barely moves game time.
+test('attack cancel windows: dash and block out of the wind-up, jump and dash out of the recovery, buffered through the hit',async({page})=>{
+  await boot(page);
+  await newSmallWorld(page);
+  const r=await page.evaluate(async()=>{
+    const g=await import('/src/game.js'),p=g.player,m=g.mouse,dt=1/30;g.setState('pause');
+    const hold=id=>{p.inv[p.sel]={id,n:1};},step=(k=1)=>{for(let i=0;i<k;i++){g.updatePlayer(dt);m.lp=false;}},press=()=>{m.l=true;m.lp=true;step();m.l=false;};
+    const dash=()=>{p.dashCD=0;p.dashT=0;g.setState('play');g.dashPress();g.setState('pause');},at=k=>{p.swing.t=p.swing.dur*k;};
+    const settle=()=>{m.l=false;p.swing=null;p.dashT=0;p.dashBuf=0;p.combo=0;p.swEnd=null;p.vx=p.vy=0;step(15);};
+    const out={};m.wx=p.x+4;m.wy=p.y+1;hold('embersword');step(10);
+    // wind-up: a dash drops the swing with no hit and resets the combo
+    press();at(.03);dash();out.windup=[p.swing,p.dashT>0,p.combo,p.lastEarly];settle();
+    // active frames: the dash waits, then fires on the first cancellable frame (dashPress only works in play)
+    press();at(.3);dash();out.held=[!!p.swing,p.dashT>0,p.dashBuf>0];g.setState('play');step(3);g.setState('pause');out.buffered=[p.swing,p.dashT>0];settle();
+    // recovery: a jump cuts it short on the ground and keeps the combo going
+    press();out.c0=p.swing.combo;at(.6);g.jumpPress();step();out.jump=[p.swing,p.vy>0];press();out.c1=p.swing&&p.swing.combo;settle();
+    // a jump in the active frames is held back until the recovery
+    press();at(.3);g.jumpPress();step();out.jumpHeld=[!!p.swing,p.vy>0];step(3);out.jumpLate=p.vy>0;settle();
+    // block: out of the wind-up and the recovery, not the active frames
+    const acc0=p.acc[0];p.acc[0]={id:'buckler',n:1};
+    press();at(.03);m.r=true;step();out.blockWind=p.swing;m.r=false;step(8);settle();
+    press();at(.3);m.r=true;step();out.blockActive=!!p.swing;at(.5);step();out.blockRec=p.swing;m.r=false;step(8);p.acc[0]=acc0;settle();
+    // no cancel: the swing runs to the end and the NICE window still chains
+    press();let n=0;while(p.swing&&!g.inNiceWin(p.swing)&&n++<30)step();out.nice=g.inNiceWin(p.swing);const s0=p.swing;m.lp=true;step();n=0;while(p.swing===s0&&n++<30)step();out.niceNext=!!(p.swing&&p.swing.nice);settle();
+    // hammer: a dash out of the charge drops it (no shockwave)
+    hold('hamem');const sw0=g.META.stats.shockwaves||0;m.l=true;m.lp=true;step(30);out.charging=!!(p.swing&&p.swing.ch>0);dash();out.hamDash=[p.swing,p.dashT>0];m.l=false;step(20);out.shock=(g.META.stats.shockwaves||0)-sw0;settle();
+    // bow: a dash lets go of the draw without using the arrow, and the draw waits for the button to be let go
+    hold('goldbow');p.inv[20]={id:'arrow',n:50};m.l=true;step(5);out.drew=!!p.draw;dash();step(3);out.bowDash=[!!p.draw,p.inv[20].n];m.l=false;step();
+    g.setState('play');return out;
+  });
+  expect(r.windup).toEqual([null,true,0,true]);
+  expect(r.held).toEqual([true,false,true]);
+  expect(r.buffered).toEqual([null,true]);
+  expect(r.c0).toBe(0);
+  expect(r.jump).toEqual([null,true]);
+  expect(r.c1).toBe(1);
+  expect(r.jumpHeld).toEqual([true,false]);
+  expect(r.jumpLate).toBe(true);
+  expect(r.blockWind).toBe(null);
+  expect(r.blockActive).toBe(true);
+  expect(r.blockRec).toBe(null);
+  expect(r.nice).toBe(true);
+  expect(r.niceNext).toBe(true);
+  expect(r.charging).toBe(true);
+  expect(r.hamDash).toEqual([null,true]);
+  expect(r.shock).toBe(0);
+  expect(r.drew).toBe(true);
+  expect(r.bowDash).toEqual([false,50]);
+});
+
 test('weapon moves and armor sets',async({page})=>{
   await boot(page);
   await newSmallWorld(page);

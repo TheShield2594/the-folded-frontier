@@ -5,7 +5,7 @@ import {
   fireHook,held,hook,initAudio,invOpen,ITEMS,keys,mapOpen,pad,padRebinding,partnerAbility,pause,player,
   pv,quickHeal,rebinding,renderBinds,renderer,saveSettings,scene,SET,setCamDist,setCursor,setInv,
   setInvDirty,setPadRebinding,setRebinding,SFX,stat,stompNice,toggleMap,upx,
-  skipIntro,introNext,dlgNext,toggleMount,rigSnap,rumble,
+  skipIntro,introNext,dlgNext,toggleMount,rigSnap,rumble,cancelOK,cancelSwing,CANCEL_BUF,
 } from './game.js';
 
 // ================= input =================
@@ -42,6 +42,8 @@ export const DASH_T=.17,DASH_I=.24,DASH_CD=.85,DASH_V=21;
 // and the takeoff squashes for TAKE_T s.
 export const JUMP_CUT=.45,JUMP_MINT=.06,APEX_V=3,APEX_G=.55,FALL_G=1.35,FALL_CAP=32,FFALL_G=1.7,FFALL_CAP=40,CORNER_NUDGE=.3,STEP_T=.12,TAKE_T=.06;
 export function dashPress(){const p=player;if(state!=='play'||invOpen||mapOpen||p.dead||p.dashCD>0||p.flat||p.climb||hook.state===2)return;if(!p.onGround&&p.airDashed)return;
+  // a swing's active frames hold the dash back for CANCEL_BUF s (gameplay.js); otherwise it cuts the swing or bow draw short
+  if(!cancelOK('d')){p.dashBuf=CANCEL_BUF;return;}p.dashBuf=0;cancelSwing('d');
   const l=held('left'),r=held('right');const dir=r&&!l?1:l&&!r?-1:p.face;p.face=p.dashDir=dir;p.dashT=DASH_T;p.dashI=DASH_I;p.dashCD=DASH_CD;rumble(.15,0,50);p.ghostT=0;p.dodged=false;if(!p.onGround)p.airDashed=true;
   SFX.dash();stat('dashes');burst(p.x-dir*.3,p.y+.6,['#fbf8f0','#e9dcc0','#dcd3c2'],9,3,{grav:1,life:.45});}
 const ghosts=[];

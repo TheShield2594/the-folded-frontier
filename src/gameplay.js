@@ -13,7 +13,7 @@ import {
   palEv,partnerCheer,FISH,season,festival,worldDay,hasNPC,META,
   updateCoins,updateDashHud,updateDrawHud,updateEnemyFx,updateGhosts,upx,W,WALLCOL,WALLDROP,walls,
   worldClock,worldTime,digFossil,evKill,fcount,npcLine,plain,clockRoom,dunRoom,stacksAt,vaultAt,crateAt,wellAt,layerAt,crankAt,gateAt,
-  guideEv,trickAt,dismount,MOUNTS,petS,toggleMount,togglePet,NDL,emit,loreChest,readMural,PF,lookColors,SHEETS,canvasTex,fullSet,setOn,setMul,SETS,
+  guideEv,trickAt,dismount,MOUNTS,petS,toggleMount,togglePet,NDL,emit,dashPress,loreChest,readMural,PF,lookColors,SHEETS,canvasTex,fullSet,setOn,setMul,SETS,
   openPack,openBinder,
   makeRig,rigFree,playerLook,playerRigKind,dipFx,skidFx,jumpFx,landFx,feelUpdate,hitConfirm,HITFLASH_T,slowMo
 } from './game.js';
@@ -238,7 +238,7 @@ function fireRanged(it){const ai=findAmmo(it.ammo);if(ai<0){if(mouse.lp)toast(it
 // bows: hold to draw, release to loose. Speed and damage grow with the draw; a full draw is a guaranteed crit,
 // and letting go within PERFECT_W of the draw filling is a Perfect shot (more damage, pierces one more foe).
 export const bowDrawT=it=>it.ut*1.7*(setOn('sky')?.7:1);const PERFECT_W=.14;
-function drawBow(it,dt){const p=player;if(!p.draw){if(findAmmo('arrow')<0){if(mouse.lp)toast('Out of arrows. Craft them at a Workbench from wood and stone.','bad');return;}p.draw={id:it.id,t:0,full:false};SFX.draw();}
+function drawBow(it,dt){const p=player;if(!p.draw){if(p.drawHold)return;if(findAmmo('arrow')<0){if(mouse.lp)toast('Out of arrows. Craft them at a Workbench from wood and stone.','bad');return;}p.draw={id:it.id,t:0,full:false};SFX.draw();}
   const d=p.draw;d.t+=dt;const c=Math.min(1,d.t/bowDrawT(it)),{ox,oy,a}=aimFrom();p.face=Math.cos(a)>=0?1:-1;p.swing={t:0,dur:1,tool:it.id,aim:a,draw:c};const bx=ox+Math.cos(a)*.6,by=oy+Math.sin(a)*.6;
   if(!d.full&&c>=1){d.full=true;d.fullAt=d.t;SFX.full();rumble(.12,0,50);burst(bx,by,['#fff3c0','#f1c04f','#fbf8f0'],12,3.5,{grav:0,life:.35,bright:1});}else if(d.full&&Math.random()<dt*14)burst(bx,by,['#fff3c0','#ffe58a'],1,.8,{grav:0,life:.3,bright:1});}
 function cancelDraw(){const p=player;p.draw=null;if(p.swing&&p.swing.draw!=null)p.swing=null;}
@@ -452,6 +452,11 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();se
   const wantBlock=!!shield&&(SET.blockTog?!!p.blockOn:blkIn)&&!hooked&&!p.climb&&!p.flat&&p.dashT<=0&&!cursor&&!invOpen;
   if(wantBlock&&!p.blocking){p.blocking=true;p.blockT=0;p.parryOK=!(p.blockCD>0);SFX.raise();}else if(!wantBlock&&p.blocking){p.blocking=false;p.blockCD=.3;}
   p.blockCD=(p.blockCD||0)-dt;if(p.blocking){p.blockT+=dt;p.face=mouse.wx>=p.x?1:-1;}
+  // raising the shield cuts a swing short in its cancel windows (cancelOK), and drops a cast's or shot's follow-through pose
+  if(p.blocking&&p.swing){if(p.swing.aim!=null&&p.swing.draw==null)p.swing=null;else if(p.swing.sword&&cancelOK('b'))cancelSwing('b');}
+  // a dash pressed while a swing can't be cancelled waits CANCEL_BUF s for its first cancellable moment (dashPress sets dashBuf)
+  if(p.dashBuf>0){p.dashBuf-=dt;if(cancelOK('d')){p.dashBuf=0;dashPress();}}
+  p.cancelT=Math.max(0,(p.cancelT||0)-dt);
   const heavyWind=p.swing&&p.swing.heavy&&p.swing.t<p.swing.dur*.6,st=p.st||{};
   const left=held('left'),right=held('right');
   // skid (issue #137): reversing at speed on the ground plants the front foot for SKID_T before the card flip, kicking up dust
@@ -477,7 +482,7 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();se
   const jv=21*(hasAcc('speed')?1.08:1)*(p.mount?MOUNTS[p.mount].jump:1);
   if(p.flat&&p.jbuf>0){p.jbuf=0;}
   if(p.jbuf>0&&p.inLiq&&!p.onGround){p.vy=Math.max(p.vy,8.5);p.jbuf=0;burst(p.x,p.y+1.6,['#a894d0','#fbf8f0'],3,1.5,{grav:-3,life:.6});}
-  else if(p.jbuf>0){if(p.coyote>0){p.vy=jv;p.coyote=0;p.jbuf=0;p.climb=false;jumpFired();SFX.jump();}else if(hasAcc('djump')&&!p.usedDouble&&p.stompWin<=0){p.vy=jv*.88;p.usedDouble=true;stat('glides');p.jbuf=0;jumpFired();burst(p.x,p.y,['#fbf8f0','#dcd3c2'],10,3,{grav:2});SFX.jump();}}
+  else if(p.jbuf>0&&cancelOK('j')){if(p.coyote>0){cancelSwing('j');p.vy=jv;p.coyote=0;p.jbuf=0;p.climb=false;jumpFired();SFX.jump();}else if(hasAcc('djump')&&!p.usedDouble&&p.stompWin<=0){cancelSwing('j');p.vy=jv*.88;p.usedDouble=true;stat('glides');p.jbuf=0;jumpFired();burst(p.x,p.y,['#fbf8f0','#dcd3c2'],10,3,{grav:2});SFX.jump();}}
   // jump cut: letting go early cuts the rise once per jump (not the hook's release, the Wings or swimming, which never set jumpCut)
   if(p.jumpCut){p.jumpT+=dt;if(p.vy<=0||p.inLiq||p.climb||hooked)p.jumpCut=false;else if(!held('jump')&&p.jumpT>=JUMP_MINT){p.vy*=JUMP_CUT;p.jumpCut=false;}}
   if(p.climb){p.vy=upH?5.5:dnH?-5.5:0;p.climbT=(p.climbT||0)+Math.abs(p.vy)*dt*.6;p.x+=(cx+.5-p.x)*Math.min(1,dt*12);p.usedDouble=false;}
@@ -509,7 +514,7 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();se
     if(s&&s.sword){if(inNiceWin(s))p.niceNext=true;else if(!s.early&&s.t>.05&&s.dur-s.t>0){s.early=true;floatText(p.x+p.face,p.y+2.3,'early','miss');}}
     else if(!s&&since<NICE_LATE*niceW()&&!p.lastEarly){startSwing(it,true);}}
   // Settings > Bow draw: Toggle keeps drawing after the button is let go and looses on the next press (drawLock waits for that press to end)
-  const useIn=mouse.l||(pad.active&&!!pad.held.use),usePr=useIn&&!p.useWas;p.useWas=useIn;let useHeld=useIn;
+  const useIn=mouse.l||(pad.active&&!!pad.held.use),usePr=useIn&&!p.useWas;p.useWas=useIn;if(!useIn)p.drawHold=false;let useHeld=useIn;
   if(SET.drawTog){if(p.draw){useHeld=!(usePr&&p.draw.t>0);if(!useHeld)p.drawLock=true;}else if(p.drawLock){if(useIn)useHeld=false;else p.drawLock=false;}}
   if(useHeld&&!cursor&&!p.blocking){if(it)useItem(it,dt,usePr);}else{if(p.draw)releaseBow();if(p.mineTile!==-2)p.mineP=Math.max(0,p.mineP-dt*2);if(p.mineTile===-2)p.mineTile=-1;p.placeT=0;}
   if(mouse.rp)interact();
@@ -532,7 +537,7 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();se
   // idle fidgets: after FIDGET_T s standing still, now and then a stretch, a look around or dusting off
   if(c==='idle'&&ct==null&&!p.mount){p.idleT=(p.idleT||0)+dt;if(!p.fid&&p.idleT>FIDGET_T&&Math.random()<dt*.4)p.fid={k:pick(['stretch','look','dust']),t:0};
     if(p.fid){const cl=p.rig.d.clips[p.fid.k];p.fid.t+=dt;if(cl&&p.fid.t<cl.len){c=p.fid.k;ct=p.fid.t;}else{p.fid=null;p.idleT=rand(2,5);}}}else{p.idleT=0;p.fid=null;}if(c==='reel0'||c==='reel1')c='reel';
-  rigPlay(p.rig,c,{t:ct});feelUpdate(dt,c);m.position.set(p.x,p.y-.08+(p.rideY||0)+(p.stepOff||0),.15);setTint(p.mat,p.x,p.y+1);statusOverlay(dt);p.mat.uniforms.uFlash.value=p.inv_t>0&&!(p.inv_t>1.3)?(Math.floor(p.inv_t*14)%2?.6:0):0;
+  rigPlay(p.rig,c,p.cancelT>0?{t:ct,bl:.04}:{t:ct});feelUpdate(dt,c);m.position.set(p.x,p.y-.08+(p.rideY||0)+(p.stepOff||0),.15);setTint(p.mat,p.x,p.y+1);statusOverlay(dt);p.mat.uniforms.uFlash.value=p.inv_t>0&&!(p.inv_t>1.3)?(Math.floor(p.inv_t*14)%2?.6:0):0;
   const sq=(p.takeT>0?1-.14*p.takeT/TAKE_T:p.onGround?(p.squash>0?1-p.squash*.9:1):clamp(1+p.vy*.006,.92,1.08))*(sp?sp.sq:1);m.scale.set(1/Math.sqrt(sq),sq,1);if(p.flat)m.scale.set(1.3,.42,1);if(p.cheerT>0&&!reduceMotion())m.position.y+=Math.abs(Math.sin(p.cheerT*10))*.12;
   if(p.dashT>0){m.scale.x*=1.22;m.scale.y*=.9;p.ghostT-=dt;if(p.ghostT<=0){p.ghostT=.03;spawnGhost();}}
   headTrack(dt,null,sp);p.rig.vel=[p.vx*p.face,p.vy];updateArm(sp);updateTool(sp);updateShield(dt);rigUpdate(p.rig,dt);
@@ -552,6 +557,18 @@ export function playerTalk(dt,at){const p=player;if(p.dead||!p.rig||!p.onGround)
 // Warhammer: wind up behind the head, then slam down in front (impact at HAM_HIT).
 const HAM_HIT=.54,EZ={o2:x=>1-(1-x)**2,o4:x=>1-(1-x)**4,io:x=>x<.5?2*x*x:1-(2-2*x)**2/2};
 export const SWKEYS=[[[.2,2.45,'o2',10],[.46,-.85,'o4',11],[1,-.55,'io',12]],[[.2,-.95,'o2',12],[.46,2.35,'o4',10],[1,1.85,'io',9]],[[.3,2.85,'o2',10],[.52,-1,'o4',11],[1,-.65,'io',12]]];
+// attack cancel windows (issue #135): [k start, k end, actions] per cut of the combo, and the warhammer's (d dash, j jump, b block).
+// The wind-up, before the hit frames, drops the swing with no hit; nothing cancels the active frames; the recovery lets you out early.
+// The hammer lets only a dash out: from the wind-up or the charge (the charge is lost), and late in its recovery.
+export const SWCANCEL=[[[0,.1,'db'],[.46,1,'djb']],[[0,.1,'db'],[.46,1,'djb']],[[0,.15,'db'],[.56,1,'djb']]],HAMCANCEL=[[0,.46,'d'],[.8,1,'d']],CANCEL_BUF=.1;
+export function cancelOK(a){const s=player.swing;if(!s||!s.sword)return true;const k=s.t/s.dur;return(s.heavy?HAMCANCEL:SWCANCEL[s.combo]).some(([k0,k1,f])=>k>=k0&&k<=k1&&f.includes(a));}
+// cutting a swing short: it loses its NICE window (lastEarly stops the late NICE too); a jump keeps the combo going, a dash or block
+// resets it. A dash also lets go of a bow's draw without using the arrow (held until the button is let go). A dust puff and a quick
+// blend into the next clip (cancelT) make it read as meant.
+export function cancelSwing(a){const p=player,s=p.swing;if(a==='d'&&p.draw){cancelDraw();p.drawHold=true;}if(!s||!s.sword)return;
+  p.swing=null;p.niceNext=false;p.lastEarly=true;p.cancelT=.12;
+  if(a==='j'&&!s.heavy){p.lastSwingEnd=worldClock;p.swEnd=swingArm(s,Math.min(1,s.t/s.dur));}else{p.combo=0;p.swEnd=null;}
+  emit('dust',p.x,p.y+.05,{n:4,spd:1.6});}
 const LUNGE=[2.5,2.5,7];
 function swingArm(s,k){if(s.heavy)return swingAngle(k,true);const K=SWKEYS[s.combo];let a=s.from,k0=0;
   for(const[k1,a1,ez]of K){if(k<=k1)return lerp(a,a1,EZ[ez](clamp((k-k0)/(k1-k0),0,1)));a=a1;k0=k1;}return a;}
