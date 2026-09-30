@@ -3,7 +3,7 @@ import {
   $,craftRec,cyclePartner,dashPress,fireHook,initAudio,invOpen,jumpPress,mapOpen,mouse,npcs,
   pad,padRebinding,partnerAbility,pause,placeTip,player,renderBinds,saveSettings,SET,setInv,setInvDirty,
   setPadRebinding,SFX,slotClick,state,T,tileAt,toggleMap,upx,
-  skipIntro,dlgNext,cycleTab,toggleMount,quickHeal,reachOK,meta,idx,
+  skipIntro,dlgNext,cycleTab,toggleMount,quickHeal,reachOK,meta,idx,padLabels,
 } from './game.js';
 
 // ================= gamepad =================
@@ -19,7 +19,7 @@ export function handlePad(){const gps=navigator.getGamepads?navigator.getGamepad
   const h=Object.assign({},dirs);for(const a in SET.pad)h[a]=h[a]||b(SET.pad[a]);
   pad.dn=dirs.down&&(dp(13)||ly>Math.abs(lx)*1.2);
   const fx={up:ly<-.6||b(12),left:lx<-.35||b(14),right:lx>.35||b(15),down:ly>.6||b(13),start:b(9),jump:b(0),use:b(2)||b(7),interact:b(1),inv:b(3),pl:b(4),pr:b(5)};
-  const prev=pad.prev,fprev=pad.fprev||{};const e=k=>h[k]&&!prev[k],ef=k=>fx[k]&&!fprev[k];pad.prev=h;pad.fprev=fx;pad.held=h;pad.name=g.id;pad.h=h;
+  const prev=pad.prev,fprev=pad.fprev||{};const e=k=>h[k]&&!prev[k],ef=k=>fx[k]&&!fprev[k];pad.prev=h;pad.fprev=fx;pad.held=h;if(pad.name!==g.id){pad.name=g.id;padLabels();}pad.g=g;pad.h=h;
   if(Object.values(h).some(Boolean)||Math.hypot(rx,ry)>.3){if(!pad.active)initAudio();pad.active=true;}
   // right stick aim (placed in view.js padAim): its direction, and its tilt past the dead zone (full at .9) as aimR
   {const m=Math.hypot(rx,ry);if(m>.3){pad.aimX=rx/m;pad.aimY=-ry/m;pad.aimR=Math.min(1,(m-.3)/.6);pad.aimT=1.2;}}
@@ -87,5 +87,11 @@ export function padInteract(){const p=player;
   let best=null,bd=9;for(const n of npcs){if(Math.abs(n.x-p.x)>=3||Math.abs(n.y-p.y)>=2.5)continue;const d=Math.hypot(n.x-p.x,n.y+1-(p.y+.9));if(d<bd){bd=d;best=[n.x,n.y+1];}}
   for(let y=Math.floor(p.y)-1;y<=Math.floor(p.y)+3;y++)for(let x=Math.floor(p.x)-3;x<=Math.floor(p.x)+3;x++){if(!padTile(x,y))continue;const d=Math.hypot(x+.5-p.x,y+.5-(p.y+.9));if(d<bd){bd=d;best=[x+.5,y+.5];}}
   if(best){mouse.wx=best[0];mouse.wy=best[1];mouse.rp=true;return true;}return false;}
+// controller rumble (Settings > Controller rumble): shake() (gameplay.js) hands over its trauma, so hits, parries, slams and
+// bosses buzz as hard as the camera shakes, even with Screen shake off; a weaker buzz doesn't cut off a stronger one still going
+let rumEnd=0,rumA=0;
+export function rumble(a,ms){const g=pad.g;if(!SET.rumble||!pad.active||!g||!(a>0))return;a=Math.min(1,a);const now=performance.now();if(now<rumEnd&&a<rumA)return;
+  ms=ms||Math.round(70+a*280);rumEnd=now+ms;rumA=a;const st=Math.min(1,a*1.1),wk=Math.min(1,.15+a*1.2);
+  try{const v=g.vibrationActuator,h=g.hapticActuators&&g.hapticActuators[0];if(v&&v.playEffect)Promise.resolve(v.playEffect('dual-rumble',{duration:ms,strongMagnitude:st,weakMagnitude:wk})).catch(()=>{});else if(h&&h.pulse)Promise.resolve(h.pulse(wk,ms)).catch(()=>{});}catch(e){}}
 // Imported bindings are read-only, so other modules assign these through setters.
 export function setPadFocus(v){return padFocus=v;}

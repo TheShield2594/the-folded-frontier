@@ -4,7 +4,7 @@ import {
   ITEMS,actName,makeSheet,mk,mouse,nearestEnemy,pickups,player,poly,portraitCache,quests,rr,
   scene,setInvDirty,setTint,SFX,SHEETS,spriteMesh,stat,state,T,tileAt,toast,TP,partnerSpeaker,say,
   chapterCard,moveName,palUp,playerSpeaker,renderQuests,
-  playerCheer,defRig,loopClip,still,RIGS,rigPic,makeRig,rigFree,rigPlay,rigUpdate,pad,
+  playerCheer,defRig,loopClip,still,RIGS,rigPic,makeRig,rigFree,rigPlay,rigUpdate,
 } from './game.js';
 
 // ================= partners =================
@@ -127,6 +127,6 @@ export function updatePartner(dt){const p=player,k=p.partner;
     else{const pr=it%5<1.2;sy=pr?1+Math.sin(it*18)*.07:1;rz=pr?Math.sin(it*9)*.1:0;if(pr&&Math.random()<dt*6)burst(pt.x-.3,pt.y,['#ff7a2d','#ffd66b'],1,1,{grav:-2,life:.5,bright:1});}}
   m.scale.set(sx,sy,1);m.rotation.z=rz;
   if(k==='lumi'||k==='ember')m.material.uniforms.uTint.value.set(1.1,1.08,1.02);else setTint(m.material,pt.x,pt.y);rigUpdate(pt.rig,dt);
-  const hk=k+':'+Math.ceil(pt.cd)+moveName(k)+pad.active;if(hk!==pt.hudKey){pt.hudKey=hk;const H=$('partnerHud');H.hidden=false;H.innerHTML=`<img src="${pPortrait(k)}" alt=""><div><b>${def.name}</b><span>${actName('ability')}: ${moveName(k)} · ${pt.cd>0?Math.ceil(pt.cd)+'s':'ready'}</span><i><u style="width:${100*(1-pt.cd/(def.cd*(hasBadge('quick')?.7:1)))}%"></u></i></div>`;}}
+  const hk=k+':'+Math.ceil(pt.cd)+moveName(k)+actName('ability');if(hk!==pt.hudKey){pt.hudKey=hk;const H=$('partnerHud');H.hidden=false;H.innerHTML=`<img src="${pPortrait(k)}" alt=""><div><b>${def.name}</b><span>${actName('ability')}: ${moveName(k)} · ${pt.cd>0?Math.ceil(pt.cd)+'s':'ready'}</span><i><u style="width:${100*(1-pt.cd/(def.cd*(hasBadge('quick')?.7:1)))}%"></u></i></div>`;}}
 export const bpMax=()=>3+['king','crane','lev','folio'].filter(q=>quests[q]).length*3+(player.bpUps||0);
 export const bpUsed=()=>player.badgesOn.reduce((a,k)=>a+BADGES[k][1],0);

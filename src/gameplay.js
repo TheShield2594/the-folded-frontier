@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import {
   bossDefeatFx,bossHeld,bossLook,bossPhaseFx,crops,DEFEAT_T,markChunk,RARE,RARECOL,RAREHOW,reduceMotion,RSEEDS,RSOIL,teleOutline,wev,
   $,AC,addItem,ambBus,BADGES,FCLIP,HUMANFOE,FOLK,rigPlay,rigSet,rigUpdate,rigJoint,rigHold,rigPt,bestDrop,bestKill,BIO,biomeAt,boss,boxHits,BUFFS,burst,camera,camT,chests,
-  clamp,collide,consumeSel,countItem,crackerBoom,cursor,DASH_V,JUMP_CUT,JUMP_MINT,APEX_V,APEX_G,FALL_G,FALL_CAP,FFALL_G,FFALL_CAP,STEP_T,TAKE_T,defense,dormant,dropItem,dummy,edmg,ELEM,
+  rumble,clamp,collide,consumeSel,countItem,crackerBoom,cursor,DASH_V,JUMP_CUT,JUMP_MINT,APEX_V,APEX_G,FALL_G,FALL_CAP,FFALL_G,FFALL_CAP,STEP_T,TAKE_T,defense,dormant,dropItem,dummy,edmg,ELEM,
   ELITE_LOOT,ELITE_TINT,TRAITS,traitOf,eclipseOn,migPick,EN,enemies,floatText,H,hasAcc,hasBadge,hasBuff,held,HERBCOL,HERBS,iconTex,idx,
   INKTINT,inNiceWin,isFest,invOpen,isNight,isOpaque,isSolid,ITEMS,keys,touch,lerp,lightAt,makeElite,markDirty,meta,
   mouse,N,NICE_LATE,niceW,noise,noiseBuf,NPCDEF,npcs,OPAQUE,openSide,pad,parts,pick,pickups,player,
@@ -139,7 +139,7 @@ export let hitStop=0;function hitPause(t){if(SET.hitstop)hitStop=Math.max(hitSto
 // springs back; punch() a brief zoom in. Settings > Screen shake off, or reduced motion, turns all three off.
 export let trauma=0;export const camKick={x:0,y:0,vx:0,vy:0},KICK_W=22;export let camPunch=0;
 const feelOn=()=>SET.shake&&!reduceMotion();
-export function shake(a){if(!feelOn())return;trauma=Math.min(1,trauma+a);}
+export function shake(a){rumble(a);if(!feelOn())return;trauma=Math.min(1,trauma+a);}
 export function kick(dx,dy,a=.25){if(!feelOn())return;const l=Math.hypot(dx,dy);if(!l)return;const v=a*KICK_W*Math.E;camKick.vx+=dx/l*v;camKick.vy+=dy/l*v;}
 export function punch(a=1){if(!feelOn())return;camPunch=Math.max(camPunch,a);}
 function useItem(it,dt,pressed){const tx=Math.floor(mouse.wx),ty=Math.floor(mouse.wy);const p=player;
@@ -240,14 +240,14 @@ function fireRanged(it){const ai=findAmmo(it.ammo);if(ai<0){if(mouse.lp)toast(it
 export const bowDrawT=it=>it.ut*1.7*(setOn('sky')?.7:1);const PERFECT_W=.14;
 function drawBow(it,dt){const p=player;if(!p.draw){if(findAmmo('arrow')<0){if(mouse.lp)toast('Out of arrows. Craft them at a Workbench from wood and stone.','bad');return;}p.draw={id:it.id,t:0,full:false};SFX.draw();}
   const d=p.draw;d.t+=dt;const c=Math.min(1,d.t/bowDrawT(it)),{ox,oy,a}=aimFrom();p.face=Math.cos(a)>=0?1:-1;p.swing={t:0,dur:1,tool:it.id,aim:a,draw:c};const bx=ox+Math.cos(a)*.6,by=oy+Math.sin(a)*.6;
-  if(!d.full&&c>=1){d.full=true;d.fullAt=d.t;SFX.full();burst(bx,by,['#fff3c0','#f1c04f','#fbf8f0'],12,3.5,{grav:0,life:.35,bright:1});}else if(d.full&&Math.random()<dt*14)burst(bx,by,['#fff3c0','#ffe58a'],1,.8,{grav:0,life:.3,bright:1});}
+  if(!d.full&&c>=1){d.full=true;d.fullAt=d.t;SFX.full();rumble(.12,50);burst(bx,by,['#fff3c0','#f1c04f','#fbf8f0'],12,3.5,{grav:0,life:.35,bright:1});}else if(d.full&&Math.random()<dt*14)burst(bx,by,['#fff3c0','#ffe58a'],1,.8,{grav:0,life:.3,bright:1});}
 function cancelDraw(){const p=player;p.draw=null;if(p.swing&&p.swing.draw!=null)p.swing=null;}
 function releaseBow(){const p=player,d=p.draw;p.draw=null;const it=ITEMS[d.id],ai=findAmmo('arrow');if(ai<0){p.swing=null;return;}
   const am=ITEMS[p.inv[ai].id];useAmmo(ai);
   const c=clamp(d.t/bowDrawT(it),.15,1),full=d.full,perf=full&&d.t-d.fullAt<PERFECT_W*niceW(),sp=it.spd*(.45+.55*c)*(full?1.12:1)*(perf?1.1:1),dm=Math.round((it.dmg+am.adm)*(.35+.65*c)*(full?1.6:1)*(perf?1.25:1)*setMul('ranged'));
   const{ox,oy,a}=aimFrom();shootPose(it,a);const n=it.count||1;for(let k=0;k<n;k++){const aa=a+(k-(n-1)/2)*.1;fireProj(am.proj,ox,oy,Math.cos(aa)*sp,Math.sin(aa)*sp,dm,{src:'ranged',pierce:(it.pierce||0)+(PK[am.proj].pierce||0)+(perf?1:0),crit:full});}
   SFX.bow();if(full){SFX.snap();stat('fulldraws');}
-  if(perf){stat('perfects');SFX.nice();floatText(ox+Math.cos(a),oy+1.2,'PERFECT!','nice');for(let k=0;k<12;k++){const g=k/12*Math.PI*2;burst(ox+Math.cos(a)*.6+Math.cos(g)*.5,oy+Math.sin(a)*.6+Math.sin(g)*.5,['#fff3c0','#f1c04f'],1,1.5,{grav:0,life:.35,bright:1});}}}
+  if(perf){stat('perfects');SFX.nice();rumble(.35,120);floatText(ox+Math.cos(a),oy+1.2,'PERFECT!','nice');for(let k=0;k<12;k++){const g=k/12*Math.PI*2;burst(ox+Math.cos(a)*.6+Math.cos(g)*.5,oy+Math.sin(a)*.6+Math.sin(g)*.5,['#fff3c0','#f1c04f'],1,1.5,{grav:0,life:.35,bright:1});}}}
 // rune timing: every cast draws a rune ring that closes on the hand (updateRune); casting again with the same spell as it closes
 // with a fresh press (within RUNE_W) is a Rune cast: more damage, one more bolt, half the mana. Holding the button casts faster, so it never lands on the rune.
 const RUNE_W=.14,RUNE_T=1.8;
@@ -590,7 +590,7 @@ function hammerImpact(s,tx,ty){const p=player;s.slam=true;SFX.slam();shake(.3);k
 const HAM_TOP=.37,HAM_CH=.75;
 // holding the button at the top of a warhammer swing charges it; a full charge adds 50% damage and a shockwave
 function hamCharge(s,dt){const[tx,ty]=swingTip(s,HAM_TOP);if(!s.ch){s.ch=0;SFX.draw();}s.ch+=dt;
-  if(!s.charged&&s.ch>=HAM_CH){s.charged=true;s.dmg*=1.5;SFX.full();burst(tx,ty,['#fff3c0','#f1c04f','#fbf8f0'],14,3.5,{grav:0,life:.35,bright:1});}
+  if(!s.charged&&s.ch>=HAM_CH){s.charged=true;s.dmg*=1.5;SFX.full();rumble(.18,60);burst(tx,ty,['#fff3c0','#f1c04f','#fbf8f0'],14,3.5,{grav:0,life:.35,bright:1});}
   else if(Math.random()<dt*(s.charged?16:6))burst(tx,ty,s.charged?['#fff3c0','#ffe58a']:['#e9dfc9','#fbf8f0'],1,.8,{grav:0,life:.3,bright:s.charged?1:0});}
 // a cracked foe loses its shell (scarab), its armored trait and its defense for a while
 function crack(e){if(e.dying)return;const was=e.broke>worldClock;e.broke=worldClock+6;if(!was&&(e.trait==='armored'||e.type==='scarab'||e.d.def>=8)){floatText(e.x,e.y+e.h+.9,'cracked!','weak');burst(e.x,e.y+e.h*.7,e.d.col.concat(['#fbf8f0']),10,5,{grav:12});tone(900,300,.12,'square',.06);}}

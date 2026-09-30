@@ -4,22 +4,30 @@ import {
   atlasTex,buildNormals,postOK,clearIcons,drawOres,drawWarnMark,H,hexRgb,hintT,icon,initAudio,inkMoon,isNight,lerp,META,npcs,wev,
   ORECOL,player,PSTAT,renderHearts,saveMeta,saveSettings,SET,setCamDist,setHintT,setInvDirty,setSoundOn,SFX,sky,soundOn,
   fullMoon,seasonIdx,seasonInfo,SEASONS,state,surf,T,tiles,TP,W,WALLCOL,walls,weather,worldTime,
-  playerCheer,paintArt,pad,
+  playerCheer,paintArt,pad,rumble,
 } from './game.js';
 
 // ================= settings & achievements UI =================
 export const KEYNAME=k=>({' ':'Space',arrowleft:'←',arrowright:'→',arrowup:'↑',arrowdown:'↓',escape:'Esc',tab:'Tab',shift:'Shift',control:'Ctrl',alt:'Alt',enter:'Enter',backspace:'Backspace'}[k]||k.toUpperCase());
 const BINDLAB={left:'Move left',right:'Move right',jump:'Jump',down:'Drop down',inv:'Backpack',heal:'Quick heal',map:'World map',hook:'Grappling hook',partner:'Switch partner',ability:'Partner move',flat:'Flatten',dash:'Dash',block:'Block (shield)',mount:'Mount / dismount'};
 const PADLAB={jump:'Jump',use:'Use item',interact:'Interact / block (shield)',dash:'Dash',inv:'Backpack',hook:'Grappling hook',ability:'Partner move',partner:'Switch partner',pl:'Previous slot',pr:'Next slot',map:'World map',heal:'Quick heal',mount:'Mount / dismount',block:'Block (shield)',flat:'Flatten'};
-export const PADNAME=i=>i==null||i<0?'Unbound':['A','B','X','Y','LB','RB','LT','RT','Back','Start','L3','R3','D-pad ↑','D-pad ↓','D-pad ←','D-pad →','Home'][i]||'Button '+i;
+// button names per controller family (standard mapping indices): Settings > Button names, or matched from the pad's id
+const PADSET={xbox:['A','B','X','Y','LB','RB','LT','RT','View','Menu','LS','RS','D-pad ↑','D-pad ↓','D-pad ←','D-pad →','Xbox'],
+  ps:['✕','○','□','△','L1','R1','L2','R2','Create','Options','L3','R3','D-pad ↑','D-pad ↓','D-pad ←','D-pad →','PS'],
+  nin:['B','A','Y','X','L','R','ZL','ZR','−','+','L-stick','R-stick','D-pad ↑','D-pad ↓','D-pad ←','D-pad →','Home']};
+export const padStyle=()=>{if(PADSET[SET.padNames])return SET.padNames;const id=pad.name||'';
+  return /xbox|xinput|045e/i.test(id)?'xbox':/054c|playstation|dualshock|dualsense|wireless controller/i.test(id)?'ps':/057e|nintendo|pro controller|joy-con/i.test(id)?'nin':'xbox';};
+export const PADNAME=i=>i==null||i<0?'Unbound':PADSET[padStyle()][i]||'Button '+i;
+// fills the button names written into the page: data-pb a fixed button (menus, Start), data-pa an action's bound button
+export function padLabels(){for(const el of document.querySelectorAll('[data-pb]'))el.textContent=PADNAME(+el.dataset.pb);for(const el of document.querySelectorAll('[data-pa]'))el.textContent=PADNAME(SET.pad[el.dataset.pa]);}
 // the button or key for an action on whatever is being played with (partner toasts and HUD)
 export const actName=a=>pad.active&&SET.pad[a]>=0?PADNAME(SET.pad[a]):KEYNAME(SET.bind[a]);
 export let rebinding=null,padRebinding=null;
 export function renderBinds(){$('binds').innerHTML=Object.keys(BINDLAB).map(a=>`<div class="bind"><span>${BINDLAB[a]}</span><button type="button" data-a="${a}" class="${rebinding===a?'wait':''}">${rebinding===a?'Press a key…':KEYNAME(SET.bind[a])}</button></div>`).join('');
-  $('padBinds').innerHTML=Object.keys(PADLAB).map(a=>`<div class="bind"><span>${PADLAB[a]}</span><button type="button" data-a="${a}" class="${padRebinding===a?'wait':''}">${padRebinding===a?'Press a button…':PADNAME(SET.pad[a])}</button></div>`).join('');}
+  $('padBinds').innerHTML=Object.keys(PADLAB).map(a=>`<div class="bind"><span>${PADLAB[a]}</span><button type="button" data-a="${a}" class="${padRebinding===a?'wait':''}">${padRebinding===a?'Press a button…':PADNAME(SET.pad[a])}</button></div>`).join('');padLabels();}
 $('binds').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;padRebinding=null;rebinding=b.dataset.a;renderBinds();});
 $('padBinds').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;rebinding=null;padRebinding=b.dataset.a;renderBinds();});
-function openSettings(){$('sndC').checked=soundOn;$('volMaster').value=SET.vol;$('volMusic').value=SET.music;$('volSfx').value=SET.sfx;$('volAmb').value=SET.amb;$('zoomR').value=SET.zoom;$('uiR').value=SET.ui;$('txtR').value=SET.text;uiLabels();$('shakeC').checked=SET.shake;$('hitC').checked=SET.hitstop;$('heartC').checked=SET.heart!==false;$('numsC').checked=SET.nums;$('fgC').checked=SET.fg;$('postC').checked=SET.post!==false;$('postC').disabled=!postOK;$('cbS').value=SET.cb;$('introC').checked=SET.intro;$('hintsC').checked=SET.hints;$('motionS').value=SET.motion;$('teleC').checked=SET.tele;$('tspdS').value=SET.tspd;$('blockS').value=SET.blockTog?'tog':'hold';$('drawS').value=SET.drawTog?'tog':'hold';rebinding=null;renderBinds();$('settings').hidden=false;}
+function openSettings(){$('sndC').checked=soundOn;$('volMaster').value=SET.vol;$('volMusic').value=SET.music;$('volSfx').value=SET.sfx;$('volAmb').value=SET.amb;$('zoomR').value=SET.zoom;$('uiR').value=SET.ui;$('txtR').value=SET.text;uiLabels();$('shakeC').checked=SET.shake;$('rumbleC').checked=SET.rumble!==false;$('padNamesS').value=SET.padNames||'auto';$('hitC').checked=SET.hitstop;$('heartC').checked=SET.heart!==false;$('numsC').checked=SET.nums;$('fgC').checked=SET.fg;$('postC').checked=SET.post!==false;$('postC').disabled=!postOK;$('cbS').value=SET.cb;$('introC').checked=SET.intro;$('hintsC').checked=SET.hints;$('motionS').value=SET.motion;$('teleC').checked=SET.tele;$('tspdS').value=SET.tspd;$('blockS').value=SET.blockTog?'tog':'hold';$('drawS').value=SET.drawTog?'tog':'hold';rebinding=null;renderBinds();$('settings').hidden=false;}
 export function closeSettings(){$('settings').hidden=true;rebinding=padRebinding=null;saveSettings();}
 $('sndC').addEventListener('change',e=>{SET.snd=e.target.checked;setSoundOn(SET.snd);initAudio();applyVolumes();});
 $('volMaster').addEventListener('input',e=>{SET.vol=+e.target.value;initAudio();applyVolumes();});
@@ -31,7 +39,8 @@ $('zoomR').addEventListener('input',e=>{SET.zoom=setCamDist(+e.target.value);});
 function uiLabels(){$('uiV').textContent=SET.ui+'%';$('txtV').textContent=SET.text+'%';}
 $('uiR').addEventListener('input',e=>{SET.ui=+e.target.value;uiLabels();});$('txtR').addEventListener('input',e=>{SET.text=+e.target.value;uiLabels();});
 $('uiR').addEventListener('change',()=>{applyUI();saveSettings();});$('txtR').addEventListener('change',()=>{applyUI();saveSettings();});
-$('shakeC').addEventListener('change',e=>{SET.shake=e.target.checked;});
+$('shakeC').addEventListener('change',e=>{SET.shake=e.target.checked;});$('rumbleC').addEventListener('change',e=>{SET.rumble=e.target.checked;if(SET.rumble)rumble(.4,150);});
+$('padNamesS').addEventListener('change',e=>{SET.padNames=e.target.value;padLabels();renderBinds();});
 $('hitC').addEventListener('change',e=>{SET.hitstop=e.target.checked;});$('heartC').addEventListener('change',e=>{SET.heart=e.target.checked;});
 $('numsC').addEventListener('change',e=>{SET.nums=e.target.checked;});
 $('fgC').addEventListener('change',e=>{SET.fg=e.target.checked;});
