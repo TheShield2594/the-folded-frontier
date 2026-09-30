@@ -78,6 +78,10 @@ body.rm #chapter.in .ch-page,body.rm #chapter.out .ch-page{animation:none}
 #hpTxt{font-weight:800;font-size:calc(13px*var(--ts));color:var(--paper);text-shadow:1px 1px 0 var(--ink),-1px 1px 0 var(--ink),1px -1px 0 var(--ink),-1px -1px 0 var(--ink);}
 #quests{background:rgba(247,238,220,.92);border:2px solid var(--ink);border-radius:8px;padding:7px 10px;font-size:calc(12.5px*var(--ts));line-height:1.5;box-shadow:3px 3px 0 rgba(20,14,26,.45);transform:rotate(-.6deg);}
 #quests b{font-family:'Bagel Fat One',sans-serif;font-weight:400;font-size:calc(13px*var(--ts));display:block;margin-bottom:2px;}
+#quests b small{font-family:'Grandstander',sans-serif;font-weight:700;font-size:calc(11px*var(--ts));color:var(--ink2);margin-left:4px;}
+/* the goals, partner card and buffs step aside while the backpack is open (the panel and pages sit where they were) */
+#quests,#partnerHud,#buffs{transition:opacity .15s,visibility .15s;}
+#ui.inv #quests,#ui.inv #partnerHud,#ui.inv #buffs{opacity:0;visibility:hidden;}
 #quests div{display:flex;gap:6px;align-items:baseline;}
 #quests .done{color:#7a7065;text-decoration:line-through;}
 #quests i{font-style:normal;display:inline-block;width:13px;height:13px;border:2px solid var(--ink);border-radius:3px;flex:none;transform:translateY(2px);background:#fff;}
@@ -118,8 +122,20 @@ body.rm #chapter.in .ch-page,body.rm #chapter.out .ch-page{animation:none}
 #defTxt{margin-top:8px;font-weight:800;font-size:calc(13px*var(--ts));}
 .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center;}
 #craft{width:300px;}
-#stations{font-size:calc(11.5px*var(--ts));color:var(--ink2);margin-bottom:6px;font-weight:700;}
-#stations span{margin-right:8px;} #stations .on{color:var(--good);}
+#stations{font-size:calc(11.5px*var(--ts));color:var(--ink2);margin-bottom:6px;font-weight:700;display:flex;flex-wrap:wrap;gap:0 8px;}
+#stations span{white-space:nowrap;} #stations .on{color:var(--good);}
+/* recipe filters: search, Can make, and category chips with a count of what each can make */
+#craftBar{display:flex;gap:6px;margin-bottom:6px;}
+#craftQ{flex:1;min-width:0;font:inherit;font-weight:700;font-size:calc(12.5px*var(--ts));padding:4px 8px;border:2px solid var(--ink);border-radius:8px;background:#fffaf0;color:var(--ink);user-select:text;-webkit-user-select:text;}
+#craftQ:focus-visible{outline:3px solid var(--teal);outline-offset:1px;}
+#craftCan{font-size:calc(11.5px*var(--ts));padding:3px 9px;box-shadow:1px 2px 0 var(--ink);white-space:nowrap;}
+#craftCan.on{background:var(--gold);}
+#craftCat{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;}
+#craftCat button{font-size:calc(11px*var(--ts));padding:1px 7px;border-width:1.5px;border-radius:999px;box-shadow:1px 1.5px 0 var(--ink);}
+#craftCat button.on{background:var(--gold);}
+#craftCat em{font-style:normal;font-size:calc(9.5px*var(--ts));margin-left:3px;color:var(--good);} #craftCat em:empty{display:none;}
+#craftCat button.on em{color:var(--ink);}
+#recipes .hint{margin:6px 2px;}
 #recipes{max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:5px;padding-right:4px;}
 .rec{display:flex;gap:8px;align-items:center;padding:4px 6px;border:2px solid rgba(42,33,48,.25);border-radius:8px;background:#fbf5e8;cursor:pointer;}
 .rec.can{border-color:var(--ink);background:#fff8e4;}
@@ -132,6 +148,9 @@ body.rm #chapter.in .ch-page,body.rm #chapter.out .ch-page{animation:none}
 .rec .ing img{width:15px;height:15px;}
 .rec .ing .miss{color:var(--red);font-weight:800;}
 #sideSheet .grid{grid-template-columns:repeat(5,44px);}
+/* the backpack's first row is the hotbar: set it a little apart */
+#grid .slot:nth-child(-n+10){margin-bottom:6px;}
+#grid .slot:nth-child(-n+10):not(.sel){background:linear-gradient(160deg,#f3dfb8,#dcbf8e);}
 .shopi{display:flex;align-items:center;gap:8px;padding:4px 6px;border:2px solid var(--ink);border-radius:8px;background:#fff8e4;cursor:pointer;margin-bottom:5px;min-width:230px;}
 .shopi:hover{background:#fff0bf;} .shopi img{width:30px;height:30px;}
 .shopi .pr{margin-left:auto;font-weight:800;display:flex;align-items:center;gap:3px;font-variant-numeric:tabular-nums;}
@@ -337,6 +356,11 @@ h3.stk::after{content:"";position:absolute;right:0;top:-5px;width:24px;height:24
 #tabs button:hover{transform:translateY(2px);box-shadow:none;}
 #tabs button.on{background:var(--paper);transform:translateY(0);padding-bottom:16px;}
 #tabs button.lock{opacity:.6;} #tabs button.lock img{filter:grayscale(1);}
+/* locked tabs, and every tab but the open one on short or narrow screens, show only their picture (the name is the tooltip) */
+#tabs button.lock:not(.on){padding-right:7px;} #tabs button.lock:not(.on) span{display:none;}
+@media (max-width:760px),(max-height:480px){#tabs button:not(.on){padding-right:7px;} #tabs button:not(.on) span{display:none;}}
+/* the Gear sheet's pin sits inside its corner so it doesn't cover the tab above it */
+#panel .sheet.pinned::after{top:6px;right:8px;}
 #tabs button:active{box-shadow:none;}
 /* page turn between pages */
 #sideSheet.turn{animation:pageTurn .42s cubic-bezier(.25,.8,.3,1.05) both;transform-origin:0 50%;}
@@ -391,6 +415,12 @@ body.touch{-webkit-touch-callout:none;touch-action:manipulation;}
 .lore{padding:6px 9px;border:2px solid rgba(42,33,48,.25);border-radius:8px;background:#fbf5e8;margin-bottom:5px;transition:background .3s,border-color .3s;}
 .lore b{display:block;font-size:calc(13.5px*var(--ts));} .lore span{display:block;font-size:calc(12px*var(--ts));color:var(--ink2);line-height:1.35;}
 .lore.lock{background:transparent;border-style:dashed;} .lore.hl{background:#fff1c9;border-color:#c9a24a;}
+/* Journal: the main quests (the HUD only shows the next few) */
+.qlist div{display:flex;gap:6px;align-items:baseline;font-size:calc(12.5px*var(--ts));line-height:1.5;}
+.qlist i{font-style:normal;display:inline-block;width:12px;height:12px;border:2px solid var(--ink);border-radius:3px;flex:none;transform:translateY(2px);background:#fff;}
+.qlist .next{font-weight:800;} .qlist .next i{background:var(--gold);}
+.qdone{max-width:none;line-height:1.4;}
+.sideTip #houseBtn{display:block;margin-top:6px;font-style:normal;}
 /* performance overlay (?perf in the URL, src/perf.js): left outside #ui so the UI zoom doesn't scale it */
 #perf{position:fixed;right:8px;top:190px;z-index:50;max-width:calc(100vw - 16px);background:rgba(20,16,26,.8);color:#f4ecd8;border-radius:8px;padding:6px 8px;font:11px/1.4 ui-monospace,Menlo,Consolas,monospace;pointer-events:none;}
 #perf pre{margin:0;white-space:pre-wrap;font:inherit;}

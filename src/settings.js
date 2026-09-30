@@ -18,7 +18,10 @@ let uiZ=1;
 // reduced motion: 'auto' follows the system setting, 'reduce' or 'full' override it; body.rm switches off the CSS motion
 const OSRM=matchMedia('(prefers-reduced-motion: reduce)');
 export const reduceMotion=()=>SET.motion==='reduce'||(SET.motion!=='full'&&OSRM.matches);
-export function applyUI(){const r=document.documentElement.style;uiZ=SET.ui/100;if(uiZ>1)uiZ=Math.max(1,Math.min(uiZ,innerWidth/960,innerHeight/600));r.setProperty('--ui',uiZ);r.setProperty('--ts',SET.text/100);document.body.classList.toggle('uibig',uiZ*SET.text/100>1.25);document.body.classList.toggle('rm',reduceMotion());}
+// The interface is sized to the screen first (uiFit: 1 on a 768px-tall laptop, up to 1.3 on tall screens, down to .8 on short
+// or narrow ones), and the Interface size setting scales that; an enlarged interface still stops where the backpack stops fitting.
+export function uiFit(){return Math.max(.8,Math.min(1.3,.52+innerHeight/1600,innerWidth/1100));}
+export function applyUI(){const r=document.documentElement.style,fit=uiFit();uiZ=fit*SET.ui/100;if(SET.ui>100)uiZ=Math.max(fit,Math.min(uiZ,innerWidth/960,innerHeight/600));r.setProperty('--ui',uiZ);r.setProperty('--ts',SET.text/100);document.body.classList.toggle('uibig',uiZ*SET.text/100>1.25);document.body.classList.toggle('rm',reduceMotion());}
 export function upx(v){return v/uiZ+'px';}
 applyUI();addEventListener('resize',applyUI);OSRM.addEventListener&&OSRM.addEventListener('change',applyUI);
 export const META=Object.assign({ach:{},stats:{}},loadJSON('folded-frontier-meta')||{});

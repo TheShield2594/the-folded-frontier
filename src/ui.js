@@ -17,6 +17,7 @@ import {
   makeRig,FOLK,
   SETS,setCount,fullSet,
   binderHTML,cards,
+  TRICKS,
 } from './game.js';
 
 // ================= UI =================
@@ -38,11 +39,29 @@ export function refreshUI(){if(padFocus&&!document.body.contains(padFocus))setPa
   if(cursor){$('cursorItem').hidden=false;$('cursorItem').innerHTML=`<img src="${icon(cursor.id)}" alt=""><b>${cursor.n>1?cursor.n:''}</b>`;}else $('cursorItem').hidden=true;invDirty=false;}
 function stationsNear(){const s={bench:false,furnace:false,anvil:false,alchemy:false};const px=Math.floor(player.x),py=Math.floor(player.y+.5);for(let y=py-3;y<=py+4;y++)for(let x=px-5;x<=px+5;x++){const t=tileAt(x,y);if(t===T.BENCH)s.bench=true;else if(t===T.ALCHEMY)s.alchemy=true;else if(t===T.FURNACE)s.furnace=true;else if(t===T.ANVIL)s.anvil=true;}return s;}
 let craftKey='';
-function renderCraft(){const st=stationsNear();const avail=RECIPES.map((r,i)=>{const stOK=!r[3]||st[r[3]];const ok=stOK&&r[2].every(([id,n])=>countItem(id)>=n);return{r,i,ok,stOK};}).filter(x=>x.stOK||!x.r[3]||true);
-  const key=JSON.stringify(st)+avail.map(a=>a.ok?1:0).join('')+player.inv.map(s=>s?s.id+s.n:'').join(',');if(key===craftKey)return;craftKey=key;
+// recipe filters over the crafting list: a category chip (read from the item's own fields), a search that matches the
+// recipe or any ingredient, and Can make (only what can be crafted here and now); each chip counts what it can make
+const CCAT=[['all','All'],['tool','Tools'],['weapon','Weapons'],['armor','Armor'],['gear','Gear','Accessories, shields, pets and mounts'],['potion','Potions','Potions and food'],['build','Building','Blocks, walls, furniture and stations'],['other','Other','Bars, boss summons and the rest']];
+export function craftCat(id){const it=ITEMS[id];if(it.slot!=null)return 'armor';if(it.acc||it.pet||it.mount)return 'gear';if(it.dmg||it.ranged||it.magic||it.ammoOf)return 'weapon';
+  if(it.pick||it.hammer||it.hook||it.rod||it.bait||it.bucket||it.use==='binder'||Object.values(TRICKS).some(t=>t.item===id))return 'tool';if(['heal','buff','mana','manapot'].includes(it.use))return 'potion';if(it.place!=null||it.wall)return 'build';return 'other';}
+let craftF='all',craftQ='',craftCan=false;
+const catEls={};for(const[k,n,tip]of CCAT){const b=document.createElement('button');b.type='button';b.className='ghost';b.dataset.c=k;b.innerHTML=`${n}<em></em>`;if(tip)b.title=tip;$('craftCat').appendChild(b);catEls[k]=b;}
+$('craftCat').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;craftF=b.dataset.c;$('recipes').scrollTop=0;craftKey='';invDirty=true;SFX.pick();});
+$('craftCan').addEventListener('click',()=>{craftCan=!craftCan;$('craftCan').setAttribute('aria-pressed',craftCan);$('recipes').scrollTop=0;craftKey='';invDirty=true;SFX.pick();});
+// typing in the search box must not move the player or close the backpack; Esc clears it, then lets go of it
+$('craftQ').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();if(e.target.value){e.target.value='';craftQ='';craftKey='';invDirty=true;}else e.target.blur();}});
+$('craftQ').addEventListener('input',e=>{craftQ=e.target.value.trim().toLowerCase();$('recipes').scrollTop=0;craftKey='';invDirty=true;});
+document.addEventListener('mousedown',e=>{if(e.target!==$('craftQ'))$('craftQ').blur();},true);
+function renderCraft(){const st=stationsNear();const avail=RECIPES.map((r,i)=>{const stOK=!r[3]||st[r[3]];const ok=stOK&&r[2].every(([id,n])=>countItem(id)>=n);return{r,i,ok,stOK,c:craftCat(r[0])};});
+  const key=JSON.stringify(st)+avail.map(a=>a.ok?1:0).join('')+player.inv.map(s=>s?s.id+s.n:'').join(',')+'|'+craftF+'|'+craftQ+'|'+craftCan;if(key===craftKey)return;craftKey=key;
   $('stations').innerHTML=['bench','furnace','anvil','alchemy'].map(k=>`<span class="${st[k]?'on':''}">${st[k]?'●':'○'} ${ITEMS[k].name}</span>`).join('');
-  avail.sort((a,b)=>(b.ok-a.ok)||(b.stOK-a.stOK)||a.i-b.i);
-  $('recipes').innerHTML=avail.map(({r,i,ok,stOK})=>`<div class="rec ${ok?'can':'no'}" data-r="${i}"><img src="${icon(r[0])}" alt=""><div><div class="nm">${ITEMS[r[0]].name}${r[1]>1?' ×'+r[1]:''}</div><div class="ing">${r[2].map(([id,n])=>`<span class="${countItem(id)>=n?'':'miss'}"><img src="${icon(id)}" alt="">${n} ${ITEMS[id].name}</span>`).join('')}${r[3]?`<span class="${stOK?'':'miss'}">at ${ITEMS[r[3]].name}</span>`:''}</div></div></div>`).join('');}
+  const q=craftQ,hit=a=>!q||ITEMS[a.r[0]].name.toLowerCase().includes(q)||a.r[2].some(([id])=>ITEMS[id].name.toLowerCase().includes(q));
+  for(const[k]of CCAT){const n=avail.filter(a=>a.ok&&(k==='all'||a.c===k)&&hit(a)).length;catEls[k].classList.toggle('on',k===craftF);catEls[k].setAttribute('aria-pressed',k===craftF);catEls[k].querySelector('em').textContent=n||'';}
+  $('craftCan').classList.toggle('on',craftCan);
+  const list=avail.filter(a=>(craftF==='all'||a.c===craftF)&&(!craftCan||a.ok)&&hit(a));
+  list.sort((a,b)=>(b.ok-a.ok)||(b.stOK-a.stOK)||a.i-b.i);
+  $('recipes').innerHTML=list.length?list.map(({r,i,ok,stOK})=>`<div class="rec ${ok?'can':'no'}" data-r="${i}"><img src="${icon(r[0])}" alt=""><div><div class="nm">${ITEMS[r[0]].name}${r[1]>1?' ×'+r[1]:''}</div><div class="ing">${r[2].map(([id,n])=>`<span class="${countItem(id)>=n?'':'miss'}"><img src="${icon(id)}" alt="">${n} ${ITEMS[id].name}</span>`).join('')}${r[3]&&!stOK?`<span class="miss">at ${ITEMS[r[3]].name}</span>`:''}</div></div></div>`).join('')
+    :`<p class="hint">${craftCan&&!q?'Nothing here you can make yet. Gather more, or stand by a station.':'No recipes match.'}</p>`;}
 export function craft(i,times=1){const r=RECIPES[i];for(let k=0;k<times;k++){const st=stationsNear();if(r[3]&&!st[r[3]])return;if(!r[2].every(([id,n])=>countItem(id)>=n))return;r[2].forEach(([id,n])=>removeItem(id,n));const left=addItem(r[0],r[1]);guideEv('craft');if(left)dropItem(r[0],left,player.x,player.y+1,0,3);
   SFX.craft();burst(player.x,player.y+1.2,['#f1c04f','#fbf8f0'],8,3);if(['copperbar','ironbar','goldbar'].includes(r[0]))questDone('bar');if(ITEMS[r[0]].use==='buff'||r[0]==='potion')stat('brews');if(['ironsword','ironpick','helmfe','mailfe','legsfe'].includes(r[0]))questDone('iron');}craftKey='';invDirty=true;}
 $('recipes').addEventListener('mousedown',e=>{const el=e.target.closest('.rec');if(!el||e.button!==0)return;craft(+el.dataset.r,e.shiftKey?5:1);});
@@ -82,10 +101,10 @@ function sideBody(k){
       if(!b)return `<div class="bst lock"><img src="${bestSketch(t)}" alt=""><div><b>???</b><span>${where}</span></div></div>`;
       const d=EN[t],known=d.drops.filter(([id])=>b.d[id]),unk=d.drops.length-known.length;
       return `<div class="bst"><img src="${bestSketch(t)}" alt=""><div><b>${name}</b><span>${where}</span><span>Defeated ${b.k}${b.e?` · ${b.e} elite`:''} · ${d.hp} HP</span>${b.tr?`<span class="btr">Elite traits: ${Object.keys(b.tr).filter(k=>TRAITS[k]).map(k=>`<i title="${TRAITS[k].tip}">${TRAITS[k].n}</i>`).join(', ')}</span>`:''}${d.weak||d.res?`<span>${[d.weak&&'Weak to '+ELEM[d.weak].name,d.res&&'Resists '+ELEM[d.res].name].filter(Boolean).join(' · ')}</span>`:''}<span class="bdrops">${known.map(([id])=>`<i title="${ITEMS[id].name}"><img src="${icon(id)}" alt="">${ITEMS[id].name}</i>`).join('')}${unk?`<i class="q">${known.length?'+ ':''}${unk} unknown drop${unk>1?'s':''}</i>`:''}${!d.drops.length?'<i class="q">Drops coins only</i>':''}</span></div></div>`;}).join('');}
-  if(k==='story')return loreHTML();
+  if(k==='story')return questsHTML()+loreHTML();
   if(k==='binder')return binderHTML();
   if(k==='museum')return hasNPC('curator')?museumHTML():`<div class="sideTip"><b>No museum yet</b>The Curator ${NPCDEF.curator.need.replace(/^Arrives/,'arrives')}</div><p class="hint">Fossils, fish, ores and curiosities you find now can all be donated once the museum opens.</p>`;
-  if(k==='town'){return NPCORDER.map(t=>{const n=npcs.find(n=>n.type===t&&n.home);const d=NPCDEF[t];return `<div class="npcRow ${n?'home':''}"><img src="${portrait(t)}" alt=""><div><b>${d.name}</b><span>${n?'<span class="ok">Has a home</span>':d.ok()?'Ready to move in. Stand in an empty house and press Check this room.':d.need}</span></div></div>`;}).join('')+`<p class="hint">A house needs walls behind it, a door, a light, a table and a chair, and must not contain your bed.</p><h3 style="margin-top:10px">${townLevel()} · upgrades</h3>`+TOWN.map(u=>`<div class="npcRow tup ${town.f[u.id]?'home':''}"><div><b>${town.f[u.id]?'✓ ':''}${u.n}</b><span>${town.f[u.id]?'<span class="ok">Built</span>':u.need}</span></div></div>`).join('')+`<p class="hint">The town green beside your cabin grows as townsfolk move in and quests are finished.</p>`;}
+  if(k==='town'){return `<div class="sideTip"><b>Make a house</b>Walls behind it, a door, a light, a table and a chair, and not your bed. Stand inside and check it.<button id="houseBtn" type="button">Check this room</button></div>`+NPCORDER.map(t=>{const n=npcs.find(n=>n.type===t&&n.home);const d=NPCDEF[t];return `<div class="npcRow ${n?'home':''}"><img src="${portrait(t)}" alt=""><div><b>${d.name}</b><span>${n?'<span class="ok">Has a home</span>':d.ok()?'Ready to move in. Stand in an empty house and press Check this room.':d.need}</span></div></div>`;}).join('')+`<h3 style="margin-top:10px">${townLevel()} · upgrades</h3>`+TOWN.map(u=>`<div class="npcRow tup ${town.f[u.id]?'home':''}"><div><b>${town.f[u.id]?'✓ ':''}${u.n}</b><span>${town.f[u.id]?'<span class="ok">Built</span>':u.need}</span></div></div>`).join('')+`<p class="hint">The town green beside your cabin grows as townsfolk move in and quests are finished.</p>`;}
   return '';}
 export const bestCache={};
 function bestSketch(t){if(bestCache[t])return bestCache[t];const d=EN[t],src=SHEETS[d.sheet],c=mk(64,64),g=c.getContext('2d'),s=Math.min(60/d.fw,60/d.fh);g.drawImage(src,0,0,d.fw,d.fh,32-d.fw*s/2,32-d.fh*s/2,d.fw*s,d.fh*s);return bestCache[t]=c.toDataURL();}
@@ -116,7 +135,7 @@ let craftOn=true;
 function turnPage(el){SFX.rustle(.25,.5);if(reduceMotion())return;el.classList.remove('turn');void el.offsetWidth;el.classList.add('turn');}
 function closeSide(){side=null;$('sideSheet').hidden=true;$('panel').classList.remove('withSide');}
 function curTab(){return side?(TABS.some(t=>t[0]===side.kind)?side.kind:''):craftOn?'craft':'inv';}
-function syncTabs(){const on=curTab();for(const b of $('tabs').children){const t=TABS.find(t=>t[0]===b.dataset.tab),a=t[0]===on;b.classList.toggle('on',a);b.setAttribute('aria-selected',a);
+function syncTabs(){const on=curTab();for(const b of $('tabs').children){const t=TABS.find(t=>t[0]===b.dataset.tab),a=t[0]===on;b.classList.toggle('on',a);b.setAttribute('aria-selected',a);b.setAttribute('aria-label',t[1]);b.title=t[1];
   b.querySelector('img').src=typeof t[2]==='number'?cellIcon(t[2]):t[2]?icon(t[2]):pPortrait(player.partner||'lumi');if(t[0]==='museum')b.classList.toggle('lock',!hasNPC('curator'));if(t[0]==='binder')b.classList.toggle('lock',!countItem('binder')&&!Object.keys(cards.have).length);if(t[0]==='party')b.classList.toggle('lock',!player.partners.length);}}
 export function setTab(k){if(k==='inv'||k==='craft'){const was=craftOn;craftOn=k==='craft';$('craft').hidden=!craftOn;if(side)closeSide();if(craftOn&&!was)turnPage($('craft'));else SFX.pick();syncTabs();invDirty=true;return;}
   openSide(k,null,null,TABS.find(t=>t[0]===k)[1]);}
@@ -129,7 +148,7 @@ function openTalk(n,line,bub){const d=NPCDEF[n.type],t=n.type;SFX.pick();
   if(t==='merchant')openSide('shop',null,townShop(SHOP),'Merchant',line);else if(t==='painter')openSide('shop',null,SHOPS.painter,'Painter',line);else if(t==='nurse')openSide('nurse',null,null,'Nurse',line);else if(t==='guide')openSide('guide',null,null,'Guide',line);else if(t==='angler')openSide('angler',null,SHOPS.angler,'Angler',line);else if(t==='tinkerer')openSide('tinker',null,SHOPS.tinkerer,'Tinkerer',line);
   else openSide('folk',t,t==='traveler'?(wev.trav?wev.trav.stock:[]):SHOPS[t],d.name,line);
   if(n.bub){n.bub.remove();n.bub=null;}if(!bub)return;n.bub=document.createElement('div');n.bub.className='bubble';n.bub.textContent=line;$('nums').appendChild(n.bub);n.bubLife=3;n.bubT=10;}
-export function setInv(o){if(!o){if(padFocus)padFocus.classList.remove('padfocus');setPadFocus(null);$('padHint').hidden=true;}if(!o&&side&&!$('sideSheet').hidden){}invOpen=o;$('help').hidden=o;$('panel').hidden=!o;$('hotwrap').style.visibility=o?'hidden':'visible';if(o){$('craft').hidden=!craftOn;syncTabs();}if(!o){closeSide();if(cursor){const l=addItem(cursor.id,cursor.n);if(l)dropItem(cursor.id,l,player.x,player.y+1);cursor=null;}$('tip').hidden=true;}
+export function setInv(o){if(!o){if(padFocus)padFocus.classList.remove('padfocus');setPadFocus(null);$('padHint').hidden=true;}if(!o&&side&&!$('sideSheet').hidden){}invOpen=o;$('help').hidden=o;$('ui').classList.toggle('inv',o);if(!o)$('craftQ').blur();$('panel').hidden=!o;$('hotwrap').style.visibility=o?'hidden':'visible';if(o){$('craft').hidden=!craftOn;syncTabs();}if(!o){closeSide();if(cursor){const l=addItem(cursor.id,cursor.n);if(l)dropItem(cursor.id,l,player.x,player.y+1);cursor=null;}$('tip').hidden=true;}
   gridEls.concat(armorEls,accEls).forEach(el=>el.dataset.k='x');craftKey='';invDirty=true;}
 function canGo(kind,i,s){if(!s)return true;const it=ITEMS[s.id];if(kind==='armor')return it.slot===i;if(kind==='acc')return !!it.acc&&!player.acc.some((a,k)=>k!==i&&a&&a.id===s.id);return true;}
 export function slotClick(el,btn,shift){const kind=el.dataset.kind,i=+el.dataset.i;let s=slotData(kind,i);
@@ -159,13 +178,18 @@ document.addEventListener('mouseover',e=>{const el=e.target.closest&&e.target.cl
   if(el.classList.contains('rec')){const r=RECIPES[+el.dataset.r];if(!r){$('tip').hidden=true;return;}$('tip').innerHTML=itemCard(r[0],r[1],`<div class="ds mk">${el.classList.contains('can')?'Click to craft · Shift-click for 5':'Missing something'}${r[3]?` · at ${ITEMS[r[3]].name}`:''}</div>`);$('tip').hidden=false;placeTip(e.clientX+16,e.clientY+14);return;}
   const s=slotData(el.dataset.kind,+el.dataset.i);if(!s){$('tip').hidden=true;return;}
   $('tip').innerHTML=itemCard(s.id,s.n,side&&side.kind==='shop'&&el.dataset.kind==='inv'?`<div class="ds mk">Sells for ${Math.max(1,Math.floor(ITEMS[s.id].value/5))*s.n} coins</div>`:'');$('tip').hidden=false;placeTip(e.clientX+16,e.clientY+14);});
-$('houseBtn').addEventListener('click',()=>{tryMoveIn(checkRoom(Math.floor(player.x),Math.floor(player.y+.5)),true);});
+// the room check lives on the Town page (click, or A on a gamepad, which clicks buttons)
+$('sideBody').addEventListener('click',e=>{if(e.target.closest('#houseBtn'))tryMoveIn(checkRoom(Math.floor(player.x),Math.floor(player.y+.5)),true);});
 $('sortBtn').addEventListener('click',()=>{const rest=player.inv.slice(10).filter(Boolean);const merged=[];for(const s of rest){const m=merged.find(x=>x.id===s.id&&x.n<maxOf(s.id));if(m){const k=Math.min(s.n,maxOf(s.id)-m.n);m.n+=k;s.n-=k;if(s.n)merged.push(s);}else merged.push(s);}const order=Object.keys(ITEMS);merged.sort((a,b)=>order.indexOf(a.id)-order.indexOf(b.id));for(let i=10;i<40;i++)player.inv[i]=merged[i-10]||null;invDirty=true;});
 export let heartsKey='';
 export function renderHearts(){const per=20,n=Math.ceil(player.max/per);const key=player.hp+'/'+player.max+'/'+Math.floor(player.mana)+'/'+player.maxMana;if(key===heartsKey)return;heartsKey=key;let h='';for(let i=0;i<n;i++){const f=clamp((player.hp-i*per)/per,0,1);h+=`<img src="${icon('heart')}" alt="" style="opacity:${f>0?1:.28};transform:scale(${f>0?.65+.35*f:.8});filter:${f>0?'none':'grayscale(1)'}">`;}$('hearts').innerHTML=h;
   let m='';for(let i=0;i<player.maxMana/20;i++){const f=clamp((player.mana-i*20)/20,0,1);m+=`<img src="${icon('manacrystal')}" alt="" style="opacity:${f>0?1:.3};transform:scale(${f>0?.6+.4*f:.75});filter:${f>0?'none':'grayscale(1)'}">`;}$('mana').innerHTML=m;
   $('hpTxt').textContent=`Life ${Math.ceil(player.hp)} / ${player.max} · Mana ${Math.floor(player.mana)} / ${player.maxMana}`;}
-export function renderQuests(){$('quests').innerHTML='<b>Journal</b>'+QUESTS.map(([k,t])=>`<div class="${quests[k]?'done':''}"><i></i>${t}</div>`).join('')+sideJournal()+palJournal();}
+export const GOALS_SHOWN=3;
+export function renderQuests(){const left=QUESTS.filter(([k])=>!quests[k]);$('quests').innerHTML=`<b>Goals <small>${QUESTS.length-left.length} of ${QUESTS.length}</small></b>`+(left.length?left.slice(0,GOALS_SHOWN).map(([k,t])=>`<div><i></i>${t}</div>`).join(''):'<div class="done"><i></i>Every goal done</div>')+sideJournal()+palJournal();}
+// the Journal tab's quest list: what's left in full, what's done on one line
+function questsHTML(){const left=QUESTS.filter(([k])=>!quests[k]),done=QUESTS.filter(([k])=>quests[k]);
+  return `<h3>Quests · ${done.length} of ${QUESTS.length} done</h3><div class="qlist">`+left.map(([k,t],i)=>`<div class="${i?'':'next'}"><i></i>${t}</div>`).join('')+'</div>'+(done.length?`<p class="hint qdone">Done: ${done.map(q=>q[1]).join(' · ')}</p>`:'')+`<h3 style="margin-top:10px">Story</h3>`;}
 export function updateCoins(){$('coins').innerHTML=`<img src="${icon('coin')}" alt="">${player.coins}`;}
 export function toast(msg,cls=''){const d=document.createElement('div');d.className='toast '+cls;d.textContent=msg;$('toasts').appendChild(d);while($('toasts').children.length>5)$('toasts').firstChild.remove();setTimeout(()=>{d.style.transition='opacity .4s';d.style.opacity=0;setTimeout(()=>d.remove(),400);},3800);}
 const nums=[];export const pv=new THREE.Vector3();
