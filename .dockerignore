@@ -1,0 +1,9 @@
+node_modules
+dist
+test-results
+playwright-report
+tests
+.git
+.github
+shot.png
+**/__pycache__

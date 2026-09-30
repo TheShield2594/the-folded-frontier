@@ -1,4 +1,5 @@
-# Builds the game with Vite and publishes dist/ to GitHub Pages.
+# On every push to main: runs the smoke tests (test.yml), then builds the game with Vite and publishes dist/ to
+# GitHub Pages. The same build is kept as a downloadable artifact and published as a container image for self-hosting.
 # Needs Settings → Pages → Build and deployment → Source set to "GitHub Actions".
 name: Deploy to GitHub Pages
 
@@ -9,15 +10,17 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
+  tests:
+    uses: ./.github/workflows/test.yml
+
   build:
+    needs: tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,16 +30,57 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - run: node tests/check-dist.mjs
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
+      # the static build for any web host: download it from the run's Artifacts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: folded-frontier-dist
+          path: dist
+          retention-days: 30
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # the self-hosting image (Dockerfile): ghcr.io/<owner>/<repo>:latest and :sha-<commit>
+  image:
+    needs: tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest
+            type=sha
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

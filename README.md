@@ -17,6 +17,14 @@ npm run dev       # starts a local server and prints its URL
 
 `npm run build` makes a static build in `dist/` that you can put on GitHub Pages or any static web host (`npm run preview` serves it locally).
 
+Every push to `main` runs the smoke tests, then deploys to GitHub Pages. The same build is attached to each run as the `folded-frontier-dist` artifact, and published as a container image for self-hosting:
+
+```sh
+docker run -p 8080:80 ghcr.io/theshield2594/the-folded-frontier:latest   # or: docker build -t folded-frontier .
+```
+
+Serve it over HTTPS (or on localhost): save codes need a secure context.
+
 `npm test` runs the Playwright smoke tests (boot, new world, saving and loading, save codes). Install the browser once with `npx playwright install chromium`.
 
 ## Controls

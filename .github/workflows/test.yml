@@ -1,11 +1,11 @@
-# Builds the game and runs the Playwright smoke tests (tests/) on every push and pull request.
+# Builds the game and runs the Playwright smoke tests (tests/) on every pull request. Pushes to main run it
+# through pages.yml (workflow_call), which deploys only when it passes.
 name: Tests
 
 on:
-  push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
