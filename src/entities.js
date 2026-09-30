@@ -156,7 +156,7 @@ export function setTint(mat,x,y){const L=lightAt(x,y);mat.uniforms.uTint.value.s
 // ================= inventory helpers =================
 export function maxOf(id){return ITEMS[id].max;}
 export function addItem(id,n){if(id==='hpheart'){heal(10);return 0;}if(id==='mpstar'){player.mana=Math.min(player.maxMana,player.mana+10);return 0;}
-  if(ITEMS[id]&&ITEMS[id].badge){const k=ITEMS[id].badge;if(player.badges.includes(k)){player.coins+=50;updateCoins();toast(`You already own ${BADGES[k][0]}. Got 50 coins instead.`);}else{player.badges.push(k);toast(`New badge: ${BADGES[k][0]}! Equip it from the Party menu.`,'gold');SFX.nice();stat('badges');}return 0;}
+  if(ITEMS[id]&&ITEMS[id].badge){const k=ITEMS[id].badge;if(player.badges.includes(k)){player.coins+=50;updateCoins();toast(`You already own ${BADGES[k][0]}. Got 50 coins instead.`);}else{player.badges.push(k);toast(`New badge: ${BADGES[k][0]}! Equip it from the Hero page.`,'gold');SFX.nice();stat('badges');}return 0;}
   if(id==='coin'){player.coins+=n;updateCoins();stat('coins',n);return 0;}const inv=player.inv;const mx=maxOf(id);
   for(let i=0;i<40&&n>0;i++){const s=inv[i];if(s&&s.id===id&&s.n<mx){const k=Math.min(n,mx-s.n);s.n+=k;n-=k;}}
   for(let i=0;i<40&&n>0;i++){if(!inv[i]){const k=Math.min(n,mx);inv[i]={id,n:k};n-=k;}}setInvDirty(true);return n;}

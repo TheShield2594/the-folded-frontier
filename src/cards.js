@@ -37,11 +37,13 @@ export function updateCards(dt){if((cardT-=dt)>0)return;cardT=.5;const inv=playe
   for(const pg of CARDPAGES){if(cards.pg[pg.id]||!CARDS.filter(c=>c[4]===pg.id).every(c=>cards.have[c[0]]))continue;cards.pg[pg.id]=1;
     for(const[id,k]of pg.reward){const l=addItem(id,k);if(l)dropItem(id,l,player.x,player.y+1);}stat('cardpages');SFX.nice();
     setTimeout(()=>toast(`Binder page complete: ${pg.n}! You get ${rewardTxt(pg.reward)}.`,'gold'),600);}}
-// the Binder page (a backpack tab): each page's cards, found ones with their count, missing ones as a card back of their rarity
-export function binderHTML(){const got=CARDS.filter(c=>cards.have[c[0]]).length,has=countItem('binder')>0;
+// the Binder page (a backpack tab, issue #144): one pocket page per CARDPAGES entry, flipped with the tabs over it
+// (pi is the page open); filed cards sit in their pockets with their count under them, missing ones are numbered empty pockets
+export function binderHTML(pi=0){const got=CARDS.filter(c=>cards.have[c[0]]).length,has=countItem('binder')>0;
   if(!has&&!got)return `<div class="sideTip"><b>No binder yet</b>Craft a Card Binder at a workbench from paper, wood and gel.</div><p class="hint">Trading cards turn up in ruin chests, sky shrines, dungeons and buried treasure, and the Merchant sells packs.</p>`;
-  return `<h3 style="margin-top:10px">Card Binder · ${got} of ${CARDS.length} cards</h3>`+CARDPAGES.map(pg=>{const list=CARDS.filter(c=>c[4]===pg.id),have=list.filter(c=>cards.have[c[0]]).length,done=cards.pg[pg.id];
-    return `<div class="musH"><b>${done?'✓ ':''}${pg.n} · ${have}/${list.length}</b><small>${done?'Page complete!':pg.tip+' Reward: '+rewardTxt(pg.reward)}</small></div><div class="cardG">`+list.map(([k,n,r])=>{const c=cards.have[k];
-      return c?`<div class="tcard r${r}" title="${n} · ${RARITY[r].n}${c>1?` · ×${c}`:''}"><img src="${icon('card_'+k)}" alt=""><span>${n}</span>${c>1?`<i>×${c}</i>`:''}</div>`
-        :`<div class="tcard miss" title="${RARITY[r].n} · not found yet"><img src="${cellIcon(CARDBACK[r])}" alt=""><span>${RARITY[r].n}</span></div>`;}).join('')+'</div>';}).join('')+
-    `<p class="hint">${has?'Cards you carry file themselves into the binder.':'Carry the binder to file new cards.'}</p>`;}
+  const pg=CARDPAGES[pi]||CARDPAGES[0],list=CARDS.filter(c=>c[4]===pg.id),done=cards.pg[pg.id];
+  return `<p class="hint" style="margin-top:0">${got} of ${CARDS.length} cards filed. ${has?'Cards you carry file themselves into the binder.':'Carry the binder to file new cards.'}</p><div class="bpgs">`+
+    CARDPAGES.map((p,i)=>{const L=CARDS.filter(c=>c[4]===p.id),n=L.filter(c=>cards.have[c[0]]).length;return `<button type="button" class="ghost bpg${p===pg?' on':''}" data-bpg="${i}" aria-pressed="${p===pg}">${cards.pg[p.id]?'✓ ':''}${p.n} · ${n}/${L.length}</button>`;}).join('')+
+    `</div><div class="musH"><small>${done?'Page complete!':pg.tip+' Reward: '+rewardTxt(pg.reward)}</small></div><div class="pockets">`+list.map(([k,n,r])=>{const c=cards.have[k],no=String(CARDS.findIndex(o=>o[0]===k)+1).padStart(2,'0');
+      return c?`<div class="tcard r${r}" data-card="${k}" role="img" aria-label="${n}, ${RARITY[r].n}${c>1?`, ${c} copies`:''}"><img src="${icon('card_'+k)}" alt=""><span>${n}</span>${c>1?`<em>×${c}</em>`:''}</div>`
+        :`<div class="tcard miss" data-tip="Card #${no}: not found yet"><b>#${no}</b></div>`;}).join('')+'</div>';}

@@ -68,9 +68,6 @@ body.rm #chapter.in .ch-page,body.rm #chapter.out .ch-page{animation:none}
 #partnerHud i{display:block;height:5px;border-radius:3px;background:rgba(42,33,48,.15);margin-top:3px;overflow:hidden;} #partnerHud i u{display:block;height:100%;background:var(--teal);}
 .pcard{display:flex;gap:10px;align-items:center;padding:5px 8px;border:2px solid rgba(42,33,48,.25);border-radius:8px;background:#fbf5e8;margin-bottom:5px;cursor:pointer;}
 .pcard.on{border-color:var(--ink);background:#fff0bf;} .pcard.lock{opacity:.5;cursor:default;} .pcard img{width:44px;height:44px;}
-.bst{display:flex;gap:10px;align-items:flex-start;padding:5px 8px;border:2px solid rgba(42,33,48,.25);border-radius:8px;background:#fbf5e8;margin-bottom:5px;}
-.bst>img{width:52px;height:52px;flex:none;} .bst.lock>img{filter:brightness(0);opacity:.28;} .bst.lock{background:transparent;border-style:dashed;}
-.bst b{display:block;font-size:calc(13.5px*var(--ts));} .bst span{display:block;font-size:calc(11.5px*var(--ts));color:var(--ink2);}
 .bdrops{display:flex!important;flex-wrap:wrap;gap:3px 8px;margin-top:2px;} .bdrops i{font-style:normal;display:inline-flex;align-items:center;gap:3px;} .bdrops img{width:18px;height:18px;} .bdrops .q{opacity:.75;}
 .pcard b{display:block;font-size:calc(13.5px*var(--ts));} .pcard span{font-size:calc(11.5px*var(--ts));color:var(--ink2);}
 .bdg{display:flex;gap:8px;align-items:center;padding:4px 8px;border:2px solid rgba(42,33,48,.25);border-radius:8px;background:#fbf5e8;margin-bottom:4px;cursor:pointer;}
@@ -127,11 +124,7 @@ body.rm #chapter.in .ch-page,body.rm #chapter.out .ch-page{animation:none}
 #craft,#sideSheet{display:flex;flex-direction:column;flex:1;min-height:0;}
 @keyframes unfold{from{transform:perspective(900px) rotateX(-75deg);opacity:0}to{transform:none;opacity:1}}
 /* gear on one row under the backpack: three armor slots, then three accessories */
-#gear{display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:10px;border-top:1.5px dashed rgba(42,33,48,.25);}
-#equip{display:flex;gap:4px;}
-#equip .slot[data-kind="acc"]{order:1;} #equip .slot[data-kind="acc"][data-i="0"]{margin-left:12px;}
-#gear .lab{font-size:calc(10.5px*var(--ts));font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--ink2);}
-#defTxt{margin-left:auto;font-weight:800;font-size:calc(13px*var(--ts));}
+#defTxt{margin-right:auto;font-weight:800;font-size:calc(13px*var(--ts));}
 .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center;}
 #stations{font-size:calc(11.5px*var(--ts));color:var(--ink2);margin-bottom:6px;font-weight:700;display:flex;flex-wrap:wrap;gap:0 8px;}
 #stations span{white-space:nowrap;} #stations .on{color:var(--good);}
@@ -431,10 +424,17 @@ body.touch{-webkit-touch-callout:none;touch-action:manipulation;}
 @keyframes gdInT{from{transform:translate(-50%,-20px) rotate(-6deg);opacity:0}}
 @media (max-height:420px){#tStick{width:112px;height:112px;}#touch .tBig{width:62px;height:62px;}#touch button{min-width:40px;height:40px;font-size:12px;}#tAct{gap:5px;}}
 @media (orientation:portrait){.touch #hotwrap{bottom:200px;}#tAct .tRow{flex-wrap:wrap;justify-content:flex-end;max-width:calc(100vw - 186px);}}
-/* Journal (lore.js): story pages, locked ones dashed with a hint */
-.lore{padding:6px 9px;border:2px solid rgba(42,33,48,.25);border-radius:8px;background:#fbf5e8;margin-bottom:5px;transition:background .3s,border-color .3s;}
-.lore b{display:block;font-size:calc(13.5px*var(--ts));} .lore span{display:block;font-size:calc(12px*var(--ts));color:var(--ink2);line-height:1.35;}
-.lore.lock{background:transparent;border-style:dashed;} .lore.hl{background:#fff1c9;border-color:#c9a24a;}
+/* Journal (lore.js): page titles two to a row, locked ones dashed with a hint, unread ones marked New; a page opens in the reader */
+.lgrid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.lore{padding:6px 9px;border:2px solid rgba(42,33,48,.25);border-radius:8px;background:#fbf5e8;cursor:pointer;position:relative;}
+.lore b{display:block;font-size:calc(12.5px*var(--ts));line-height:1.25;} .lore span{display:block;font-size:calc(11px*var(--ts));color:var(--ink2);line-height:1.3;}
+.lore:hover{border-color:var(--ink);} .lore.lock{background:transparent;border-style:dashed;cursor:default;} .lore.lock:hover{border-color:rgba(42,33,48,.25);}
+.lore.new{background:#fff1c9;border-color:#c9a24a;padding-right:44px;}
+.lore i{position:absolute;right:6px;top:6px;font-style:normal;font-weight:800;font-size:calc(10px*var(--ts));text-transform:uppercase;color:#fff;background:var(--red,#d4483b);border-radius:999px;padding:0 6px;}
+.loreNav{margin:0 0 8px;} .loreNav small{color:var(--ink2);font-size:calc(11.5px*var(--ts));} .loreNav .lore{max-width:48%;}
+.loreRead{background:#fffaf0;border:2px solid var(--ink);border-radius:4px 10px 6px 12px;padding:14px 18px 16px;box-shadow:3px 4px 0 rgba(20,14,26,.25);}
+.loreRead h2{font-family:'Bagel Fat One','Arial Black',sans-serif;font-weight:400;font-size:calc(19px*var(--ts));margin:0 0 8px;}
+.loreRead p{margin:0;font-size:calc(14.5px*var(--ts));line-height:1.6;}
 /* Journal: the main quests (the HUD only shows the next few) */
 .qlist div{display:flex;gap:6px;align-items:baseline;font-size:calc(12.5px*var(--ts));line-height:1.5;}
 .qlist i{font-style:normal;display:inline-block;width:12px;height:12px;border:2px solid var(--ink);border-radius:3px;flex:none;transform:translateY(2px);background:#fff;}
@@ -446,10 +446,7 @@ body.touch{-webkit-touch-callout:none;touch-action:manipulation;}
 #perf pre{margin:0;white-space:pre-wrap;font:inherit;}
 #perf button{pointer-events:auto;margin:4px 4px 0 0;font:inherit;padding:2px 6px;border-radius:5px;border:1px solid #f4ecd8;background:#3a2f44;color:#f4ecd8;cursor:pointer;}
 /* trading cards (cards.js): the Binder page, four cards to a row; halo cards shimmer, full arts sit on gold */
-.cardG{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:4px;}
 .tcard{position:relative;display:flex;flex-direction:column;align-items:center;padding:3px 2px 4px;border:2px solid rgba(42,33,48,.2);border-radius:8px;background:#fbf5e8;text-align:center;}
-.tcard img{width:56px;height:56px;} .tcard span{font-size:calc(10.5px*var(--ts));line-height:1.15;} .tcard i{position:absolute;top:2px;right:4px;font-style:normal;font-weight:700;font-size:calc(11px*var(--ts));}
-.tcard.miss{background:transparent;border-style:dashed;} .tcard.miss img{opacity:.45;} .tcard.miss span{color:var(--ink2);}
 .tcard.r1{border-color:#8fb4ee;} .tcard.r3{border-color:#c9a24a;background:linear-gradient(160deg,#fff3c0,#f4d8e4);}
 .tcard.r2{border-color:#f1c04f;background:linear-gradient(120deg,#fff3c0,#ffd6e0,#d6ecff,#e0f7d6,#fff3c0);background-size:300% 300%;animation:halo 4s linear infinite;} .tcard.r2 img{filter:drop-shadow(0 0 3px #ffd66b);}
 @keyframes halo{from{background-position:0% 50%;}to{background-position:300% 50%;}}
@@ -463,3 +460,40 @@ body.rm .tcard.r2{animation:none;}
 #sellBox{position:sticky;bottom:0;display:block;width:100%;margin-top:6px;padding:7px 10px;border:2.5px dashed var(--ink);border-radius:10px;background:#f3e6c6;font-size:calc(12.5px*var(--ts));box-shadow:0 -6px 8px -4px rgba(247,238,220,.9);}
 #sellBox.on{border-style:solid;background:var(--gold);}
 #tip .use{color:var(--ink2);} #tip .use b{color:var(--ink);}
+/* Bestiary (#144): a grid of sketches, silhouettes until defeated; the picked entry pinned over it */
+.bgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:5px;}
+.btile{aspect-ratio:1;display:grid;place-items:center;border:2px solid rgba(42,33,48,.25);border-radius:8px;background:#fbf5e8;cursor:pointer;}
+.btile img{width:88%;height:88%;object-fit:contain;} .btile:hover{border-color:var(--ink);}
+.btile.lock{background:transparent;border-style:dashed;} .btile.lock img{filter:brightness(0);opacity:.28;}
+.btile.on{border-color:var(--ink);background:#fff0bf;box-shadow:2px 2px 0 rgba(20,14,26,.35);}
+.bdet{position:sticky;top:0;z-index:1;display:flex;gap:10px;align-items:flex-start;padding:7px 9px;margin-bottom:8px;border:2px solid var(--ink);border-radius:9px;background:#fbf5e8;box-shadow:0 5px 8px -5px rgba(20,14,26,.5);min-height:64px;box-sizing:border-box;}
+.bdet>img{width:64px;height:64px;flex:none;} .bdet.lock>img{filter:brightness(0);opacity:.28;} .bdet.lock{border-style:dashed;}
+.bdet b{display:block;font-size:calc(14.5px*var(--ts));} .bdet span{display:block;font-size:calc(11.5px*var(--ts));color:var(--ink2);}
+.bdet.empty{align-items:center;justify-content:center;font-size:calc(12px*var(--ts));color:var(--ink2);border-style:dashed;}
+/* Party and Town (#144): what isn't found yet as small ??? tiles (hint on hover or focus), residents as one row of portraits */
+.ptiles{display:flex;flex-wrap:wrap;gap:5px;margin:2px 0 6px;}
+.ptile{width:50px;display:flex;flex-direction:column;align-items:center;padding:3px 0 2px;border:2px dashed rgba(42,33,48,.3);border-radius:8px;}
+.ptile img{width:32px;height:32px;filter:grayscale(1) brightness(.6);opacity:.55;} .ptile b{font-size:calc(10px*var(--ts));color:var(--ink2);}
+.folkRow{display:flex;flex-wrap:wrap;gap:4px;} .folkRow img{width:46px;height:46px;border:2px solid var(--ink);border-radius:50%;background:#fff8e4;object-fit:cover;}
+.npcRow.ready{border-color:var(--good);background:#eef7e4;}
+.tbuilt{max-width:none;line-height:1.45;}
+/* Binder (#144): a pocket page at a time, three to a row, flipped with the page buttons; empty pockets numbered */
+.bpgs{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 2px;} .bpg{font-size:calc(11.5px*var(--ts));padding:3px 9px;} .bpg.on{background:var(--gold);box-shadow:1px 2px 0 var(--ink);}
+.pockets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:8px;border:2px solid rgba(42,33,48,.2);border-radius:10px;background:rgba(42,33,48,.05);}
+.tcard img{width:72px;height:72px;} .tcard span{font-size:calc(11.5px*var(--ts));line-height:1.2;}
+.tcard em{font-style:normal;font-weight:800;font-size:calc(11px*var(--ts));color:var(--teal);}
+.tcard.miss{background:transparent;border-style:dashed;justify-content:center;min-height:96px;} .tcard.miss b{font-family:'Bagel Fat One','Arial Black',sans-serif;font-weight:400;font-size:calc(18px*var(--ts));color:rgba(42,33,48,.3);}
+#tip .bigCard{text-align:center;} #tip .bigCard img{width:180px;height:180px;display:block;margin:0 auto 4px;}
+/* Hero page (#143): the hero between the armor and accessory slots, then stats, set bonus, buffs and badges */
+#hero{display:flex;flex-direction:column;flex:1;min-height:0;}
+#heroTop{display:flex;align-items:center;justify-content:center;gap:18px;padding:4px 0 8px;border-bottom:1.5px dashed rgba(42,33,48,.25);}
+.heroCol{display:flex;flex-direction:column;gap:8px;}
+#heroPic{width:150px;height:176px;background:radial-gradient(ellipse at 50% 92%,rgba(42,33,48,.16) 0 28%,transparent 30%);}
+#heroBody{flex:1;overflow-y:auto;min-height:0;padding:8px 4px 0 0;}
+.hstats{display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;margin-bottom:8px;}
+.hs{display:flex;justify-content:space-between;gap:8px;font-size:calc(12.5px*var(--ts));border-bottom:1px dotted rgba(42,33,48,.25);padding:1px 0;}
+.hs span{color:var(--ink2);} .hs b{text-align:right;} .hs.wide{grid-column:1/-1;}
+.hset{font-size:calc(12px*var(--ts));padding:4px 8px;border:1.5px dashed rgba(42,33,48,.3);border-radius:6px;margin-bottom:5px;color:var(--ink2);}
+.hset b{display:block;color:var(--ink);} .hset.on{border-style:solid;border-color:var(--good);background:rgba(79,157,82,.1);}
+#heroBuffs .buffs{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0;} #heroBuffs .buff{box-shadow:none;} #heroBuffs .buff small{font-weight:700;color:var(--ink2);}
+#sideBody .hint,#heroBody .hint{max-width:none;}

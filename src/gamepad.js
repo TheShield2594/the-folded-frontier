@@ -39,9 +39,9 @@ export function handlePad(){const gps=navigator.getGamepads?navigator.getGamepad
   if(e('interact'))pad.noBlk=padInteract();if(!h.interact)pad.noBlk=false;pad.blk=h.interact&&!pad.noBlk&&!(SET.pad.block>=0);
   if(e('heal'))quickHeal();if(e('hook'))fireHook();if(e('ability'))partnerAbility();if(e('partner'))cyclePartner();if(e('mount'))toggleMount();}
 export let padFocus=null,padNavT=0,padNavDir='',padLast=performance.now();
-function focusables(){return[...document.querySelectorAll('#sideSheet .slot,#sideSheet .shopi,#sideSheet .pcard,#sideSheet .bdg,#sideSheet button,#panel .slot,#panel .rec,#panel button')].filter(el=>{const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&!el.closest('[hidden]');});}
+function focusables(){return[...document.querySelectorAll('#sideSheet .slot,#sideSheet .shopi,#sideSheet .pcard,#sideSheet .btile,#sideSheet .lore:not(.lock),#sideSheet .tcard,#sideSheet .ptile,#hero .bdg,#sideSheet button,#panel .slot,#panel .rec,#panel button')].filter(el=>{const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&!el.closest('[hidden]');});}
 function setFocus(el){if(padFocus)padFocus.classList.remove('padfocus');padFocus=el;if(!el)return;el.classList.add('padfocus');el.scrollIntoView({block:'nearest',inline:'nearest'});const r=el.getBoundingClientRect();
-  if(el.classList.contains('slot')||el.classList.contains('rec')){el.dispatchEvent(new MouseEvent('mouseover',{bubbles:true}));placeTip(r.right+8,r.top);}else $('tip').hidden=true;
+  if(el.matches('.slot,.rec,.tcard[data-card],[data-tip]')){el.dispatchEvent(new MouseEvent('mouseover',{bubbles:true}));placeTip(r.right+8,r.top);}else $('tip').hidden=true;
   const c=$('cursorItem');c.style.left=upx(r.left+r.width*.6);c.style.top=upx(r.top+r.height*.6);}
 function padMove(dir){const list=focusables();if(!list.length)return;if(!padFocus||!list.includes(padFocus)){setFocus(list.find(x=>x.classList.contains('slot'))||list[0]);return;}
   const best=nextEl(list,padFocus,dir);if(best){setFocus(best);SFX.pick();}}
@@ -68,14 +68,19 @@ function overPad(h,e){const now=performance.now(),dt=(now-ovLast)/1000;ovLast=no
   const back=OVBACK[ov.id];
   if(e('interact')||(e('start')&&back)){if(back)$(back).click();return;}
   if(el&&(e('jump')||e('start'))){if(el.tagName==='SELECT')ovAdjust(el,1);else if(el.type==='range');else if(el.tagName==='TEXTAREA'||el.type==='text')el.focus();else el.click();}}
+// a page re-rendered by a press (a Bestiary tile, a badge, a Journal page) keeps the pad's focus on the same entry, found again by its data key
+// (the re-render lands in this frame's refreshUI, which drops padFocus, so the next menuPad picks the entry up from padRe)
+let padRe=null;const PADKEYS=['best','lore','bpg','card','p','pet','mount','b','s','m','q','t','w','a'];
+function padKey(el){for(const a of PADKEYS)if(el.dataset[a]!=null)return `[data-${a}="${CSS.escape(el.dataset[a])}"]`;return null;}
 function fire(el,button,shift){el.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,button,shiftKey:shift}));}
 function menuPad(h,e){const now=performance.now(),dt=(now-padLast)/1000;padLast=now;
-  if(!padFocus||!document.body.contains(padFocus)||padFocus.closest('[hidden]'))setFocus(focusables().find(x=>x.classList.contains('slot'))||null);
+  if(!padFocus||!document.body.contains(padFocus)||padFocus.closest('[hidden]')){const list=focusables(),re=padRe&&padRe.k&&padRe.pg.querySelector(padRe.k);
+    setFocus(re&&list.includes(re)?re:(padRe&&list.find(x=>padRe.pg.contains(x)))||list.find(x=>x.classList.contains('slot'))||null);}padRe=null;
   const dir=h.up?'up':h.down?'down':h.left?'left':h.right?'right':'';if(dir){if(dir!==padNavDir){padNavDir=dir;padNavT=.35;padMove(dir);}else{padNavT-=dt;if(padNavT<=0){padNavT=.11;padMove(dir);}}}else padNavDir='';
   if(e('inv')||e('interact')||e('start')){setInv(false);return;}
   if(e('pl')){cycleTab(1);setFocus(null);return;}
   const el=padFocus;if(!el)return;
-  if(e('jump')){if(el.classList.contains('slot'))slotClick(el,0,false);else if(el.classList.contains('rec'))craftRec(el,1);else if(el.tagName==='BUTTON')el.click();else fire(el,0,false);setInvDirty(true);setTimeout(()=>{if(padFocus&&!document.body.contains(padFocus))setFocus(null);},0);}
+  if(e('jump')){const pg=el.closest('#sideBody,#hero');if(pg)padRe={k:padKey(el),pg};if(el.classList.contains('slot'))slotClick(el,0,false);else if(el.classList.contains('rec'))craftRec(el,1);else if(el.tagName==='BUTTON')el.click();else fire(el,0,false);setInvDirty(true);}
   if(e('use')){if(el.classList.contains('slot'))slotClick(el,2,false);else if(el.classList.contains('rec'))craftRec(el,5);else if(el.classList.contains('shopi'))fire(el,0,true);setInvDirty(true);}
   if(e('pr')&&el.classList.contains('slot')){slotClick(el,0,true);setInvDirty(true);}}
 // what Interact reaches on a gamepad: every tile interact() (gameplay.js) handles; crops only once they are ripe unless aimed at

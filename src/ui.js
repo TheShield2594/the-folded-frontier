@@ -18,22 +18,24 @@ import {
   SETS,setCount,fullSet,
   binderHTML,cards,
   TRICKS,
+  CARDS,RARITY,loreRead,readLore,facePic,setMul,hasAcc,hasBadge,hasBuff,isNight,BUFFS,
 } from './game.js';
 
 // ================= UI =================
 export let invOpen=false,side=null,cursor=null,invDirty=true,hoverSlot=null;
-const hotbarEl=$('hotbar'),gridEl=$('grid'),equipEl=$('equip');
+const hotbarEl=$('hotbar'),gridEl=$('grid');
 function mkSlot(kind,i,parent,ph){const el=document.createElement('div');el.className='slot';el.dataset.kind=kind;el.dataset.i=i;if(ph){el.classList.add('ph');el.dataset.ph=ph;}parent.appendChild(el);return el;}
 const hotEls=[],gridEls=[],armorEls=[],accEls=[];let sideEls=[];
 for(let i=0;i<10;i++){hotEls.push(mkSlot('inv',i,hotbarEl));}
 for(let i=0;i<40;i++)gridEls.push(mkSlot('inv',i,gridEl));
-['Head','Body','Legs'].forEach((l,i)=>{armorEls.push(mkSlot('armor',i,equipEl,l));const a=mkSlot('acc',i,equipEl,'Acc');accEls.push(a);});
+// the gear slots stand either side of the hero on the Hero page: armor down the left, accessories down the right
+['Head','Body','Legs'].forEach((l,i)=>{armorEls.push(mkSlot('armor',i,$('heroArmor'),l));accEls.push(mkSlot('acc',i,$('heroAcc'),'Acc'));});
 function slotData(kind,i){if(kind==='inv')return player.inv[i];if(kind==='armor')return player.armor[i];if(kind==='acc')return player.acc[i];if(kind==='chest')return chests.get(side.key)[i];return null;}
 function setSlot(kind,i,v){if(kind==='inv'&&v&&v.id==='coin'){player.coins+=v.n;updateCoins();v=null;}if(kind==='inv')player.inv[i]=v;else if(kind==='armor'){player.armor[i]=v;player.sheetDirty=true;}else if(kind==='acc')player.acc[i]=v;else if(kind==='chest')chests.get(side.key)[i]=v;invDirty=true;}
 function paint(el,s){const key=s?s.id+':'+s.n:'';if(el.dataset.k===key)return;el.dataset.k=key;const kl=el.querySelector('.k');el.innerHTML=s?`<img src="${icon(s.id)}" alt="${ITEMS[s.id].name}"><b>${s.n>1?s.n:''}</b>`:'';if(el.parentNode===hotbarEl||el.parentNode===gridEl){const i=+el.dataset.i;if(i<10){const k=document.createElement('span');k.className='k';k.textContent=(i+1)%10;el.appendChild(k);}}if(s)el.classList.remove('ph');else if(el.dataset.ph)el.classList.add('ph');}
 export function refreshUI(){if(padFocus&&!document.body.contains(padFocus))setPadFocus(null);hotEls.forEach((el,i)=>{paint(el,player.inv[i]);el.classList.toggle('sel',i===player.sel);});
   if(invOpen){gridEls.forEach((el,i)=>{paint(el,player.inv[i]);el.classList.toggle('sel',i===player.sel);});armorEls.forEach((el,i)=>paint(el,player.armor[i]));accEls.forEach((el,i)=>paint(el,player.acc[i]));
-    if(side&&side.kind==='chest')sideEls.forEach((el,i)=>paint(el,chests.get(side.key)[i]));$('defTxt').textContent=`Defense ${defense()}`;renderCraft();if(side&&side.kind!=='chest')renderSide();}
+    if(side&&side.kind==='chest')sideEls.forEach((el,i)=>paint(el,chests.get(side.key)[i]));$('defTxt').textContent=`Defense ${defense()}`;renderCraft();if(side&&side.kind==='hero')renderHero();else if(side&&side.kind!=='chest')renderSide();}
   const it=selItem();$('itemName').textContent=it?it.name+(it.ammo?` · ${countAmmo(it.ammo)} ${it.ammo==='arrow'?'arrows':'paper'}`:'')+(it.magic?` · ${it.mana} mana`:'')+(it.rod?` · ${countBait()} bait`:''):'';
   if(cursor){$('cursorItem').hidden=false;$('cursorItem').innerHTML=`<img src="${icon(cursor.id)}" alt=""><b>${cursor.n>1?cursor.n:''}</b>`;}else $('cursorItem').hidden=true;invDirty=false;}
 function stationsNear(){const s={bench:false,furnace:false,anvil:false,alchemy:false};const px=Math.floor(player.x),py=Math.floor(player.y+.5);for(let y=py-3;y<=py+4;y++)for(let x=px-5;x<=px+5;x++){const t=tileAt(x,y);if(t===T.BENCH)s.bench=true;else if(t===T.ALCHEMY)s.alchemy=true;else if(t===T.FURNACE)s.furnace=true;else if(t===T.ANVIL)s.anvil=true;}return s;}
@@ -118,26 +120,79 @@ function sideBody(k){
       :`<div class="sideTip"><b>All done for today</b>That was a fine catch. Come back tomorrow for a new request.</div>`)+`<p class="hint">Requests finished: ${angler.done}${nx?` · next prize at ${nx}: ${ITEMS[ANGLER_REWARD[nx][0]].name}`:''}</p>`+contestHTML()+recordHTML()+`<h3 style="margin-top:10px">For sale</h3>`+shopHTML(side.list);}
   if(k==='travel'){const list=[{n:'Home',x:player.spawn.x-.5,y:player.spawn.y}].concat((BIO.camps||[]).filter(c=>c.done).map((c,j)=>({n:`Camp ${j+1}`,x:c.sx,y:c.sy})));
     return list.map((w,j)=>{const d=Math.round((w.x-player.x)*2);return `<div class="shopi" data-w="${j}"><img src="${icon('tmap')}" alt=""><span>${w.n}<br><small style="color:var(--ink2)">${Math.abs(d)} ft ${d<0?'west':'east'}</small></span><span class="pr">Go</span></div>`;}).join('')+'<p class="hint">Rebuild more abandoned camps to add signposts.</p>';}
-  if(k==='party'){const p=player;return `<h3>Partners</h3>`+PORDER.map(id=>{const d=PARTNERS[id],has=p.partners.includes(id);return `<div class="pcard ${p.partner===id?'on':''} ${has?'':'lock'}" data-p="${id}"><img src="${pPortrait(id)}" alt="" style="${has?'':'filter:grayscale(1) brightness(.6)'}"><div><b>${has?d.name:'???'}</b><span>${has?`${d.desc} Move: ${moveName(id)}. ${d.moveDesc}`:d.how}</span>${has&&palQuestTxt(id)?`<small class="pq">${palQuestTxt(id)}</small>`:''}</div></div>`;}).join('')+
-    `<h3 style="margin-top:10px">Pets &amp; mount</h3>`+PETORDER.map(id=>{const d=PETS[id],has=countItem(d.item)>0;return `<div class="pcard ${p.pet===id?'on':''} ${has?'':'lock'}" data-pet="${id}"><img src="${icon(d.item)}" alt="" style="${has?'':'filter:grayscale(1) brightness(.6)'}"><div><b>${has?d.name:'???'}</b><span>${has?(p.pet===id?'Following you. Click to send it home.':'Click to call it.'):d.how}</span></div></div>`;}).join('')+
-    Object.keys(MOUNTS).map(id=>{const d=MOUNTS[id],has=countItem(d.item)>0;return `<div class="pcard ${p.mount===id?'on':''} ${has?'':'lock'}" data-mount="${id}"><img src="${icon(d.item)}" alt="" style="${has?'':'filter:grayscale(1) brightness(.6)'}"><div><b>${has?d.name:'???'}</b><span>${has?(p.mount===id?'Riding. Click to get down.':`Mount. Click or press ${actName('mount')} to ride: ${Math.round((d.spd-1)*100)}% faster, higher jumps.`):d.how}</span></div></div>`;}).join('')+
-    `<h3 style="margin-top:10px">Badges · BP ${bpUsed()} / ${bpMax()}</h3>`+(p.badges.length?p.badges.map(b=>{const[n,bp,d,cell]=BADGES[b];return `<div class="bdg ${p.badgesOn.includes(b)?'on':''}" data-b="${b}"><img src="${icon('b_'+b)}" alt=""><div><b>${n}</b><span>${d}</span></div><em>${bp} BP</em></div>`;}).join(''):'<p class="hint">No badges yet. Bosses, chests, the Merchant and the Tinkerer all have them.</p>')+`<p class="hint">Click a badge to equip or remove it. Each boss you defeat adds 3 BP.</p>`;}
-  if(k==='bestiary'){const found=BEST.filter(r=>bestiary[r[0]]).length;return `<p class="hint" style="margin-top:0">${found} of ${BEST.length} entries filled in. Defeat an enemy to sketch it here.${(n=>n?` Elite traits seen: ${n} of ${Object.keys(TRAITS).length}.`:'')(Object.keys(TRAITS).filter(k=>Object.values(bestiary).some(o=>o.tr&&o.tr[k])).length)}</p>`+BEST.map(([t,name,where])=>{const b=bestiary[t];
-      if(!b)return `<div class="bst lock"><img src="${bestSketch(t)}" alt=""><div><b>???</b><span>${where}</span></div></div>`;
-      const d=EN[t],known=d.drops.filter(([id])=>b.d[id]),unk=d.drops.length-known.length;
-      return `<div class="bst"><img src="${bestSketch(t)}" alt=""><div><b>${name}</b><span>${where}</span><span>Defeated ${b.k}${b.e?` · ${b.e} elite`:''} · ${d.hp} HP</span>${b.tr?`<span class="btr">Elite traits: ${Object.keys(b.tr).filter(k=>TRAITS[k]).map(k=>`<i title="${TRAITS[k].tip}">${TRAITS[k].n}</i>`).join(', ')}</span>`:''}${d.weak||d.res?`<span>${[d.weak&&'Weak to '+ELEM[d.weak].name,d.res&&'Resists '+ELEM[d.res].name].filter(Boolean).join(' · ')}</span>`:''}<span class="bdrops">${known.map(([id])=>`<i title="${ITEMS[id].name}"><img src="${icon(id)}" alt="">${ITEMS[id].name}</i>`).join('')}${unk?`<i class="q">${known.length?'+ ':''}${unk} unknown drop${unk>1?'s':''}</i>`:''}${!d.drops.length?'<i class="q">Drops coins only</i>':''}</span></div></div>`;}).join('');}
-  if(k==='story')return questsHTML()+loreHTML();
-  if(k==='binder')return binderHTML();
+  if(k==='party')return partyHTML();
+  if(k==='bestiary')return bestHTML();
+  if(k==='story')return loreRead(pgSel.story)||questsHTML()+loreHTML();
+  if(k==='binder')return binderHTML(pgSel.binder);
   if(k==='museum')return hasNPC('curator')?museumHTML():`<div class="sideTip"><b>No museum yet</b>The Curator ${NPCDEF.curator.need.replace(/^Arrives/,'arrives')}</div><p class="hint">Fossils, fish, ores and curiosities you find now can all be donated once the museum opens.</p>`;
-  if(k==='town'){return `<div class="sideTip"><b>Make a house</b>Walls behind it, a door, a light, a table and a chair, and not your bed. Stand inside and check it.<button id="houseBtn" type="button">Check this room</button></div>`+NPCORDER.map(t=>{const n=npcs.find(n=>n.type===t&&n.home);const d=NPCDEF[t];return `<div class="npcRow ${n?'home':''}"><img src="${portrait(t)}" alt=""><div><b>${d.name}</b><span>${n?'<span class="ok">Has a home</span>':d.ok()?'Ready to move in. Stand in an empty house and press Check this room.':d.need}</span></div></div>`;}).join('')+`<h3 style="margin-top:10px">${townLevel()} · upgrades</h3>`+TOWN.map(u=>`<div class="npcRow tup ${town.f[u.id]?'home':''}"><div><b>${town.f[u.id]?'✓ ':''}${u.n}</b><span>${town.f[u.id]?'<span class="ok">Built</span>':u.need}</span></div></div>`).join('')+`<p class="hint">The town green beside your cabin grows as townsfolk move in and quests are finished.</p>`;}
+  if(k==='town')return townHTML();
   return '';}
 export const bestCache={};
 function bestSketch(t){if(bestCache[t])return bestCache[t];const d=EN[t],src=SHEETS[d.sheet],c=mk(64,64),g=c.getContext('2d'),s=Math.min(60/d.fw,60/d.fh);g.drawImage(src,0,0,d.fw,d.fh,32-d.fw*s/2,32-d.fh*s/2,d.fw*s,d.fh*s);return bestCache[t]=c.toDataURL();}
-function renderSide(){if(!side||side.kind==='chest')return;const html=sideHTML();if($('sideBody').dataset.h!==html){$('sideBody').innerHTML=html;$('sideBody').dataset.h=html;}}
+// ================= page views =================
+// Grid and detail views for the tab pages (issue #144). What's picked on a page is page state here, so renderSide()
+// (which re-renders only when the HTML changes) keeps it: the Bestiary's open entry, the Journal page being read, the binder page.
+export const pgSel={bestiary:null,story:null,binder:0};
+export function pickPage(k,v){pgSel[k]=v;if(k==='story'&&v)readLore(v);if(side&&side.kind===k){renderSide();if(k==='story')$('sideBody').scrollTop=0;}invDirty=true;}
+const esc=t=>String(t).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+// a small ??? tile for something not found yet; its hint shows on hover or gamepad focus (data-tip)
+const lockTile=(img,how)=>`<div class="ptile" data-tip="${esc(how)}" role="img" aria-label="Not found yet. ${esc(how)}"><img src="${img}" alt=""><b>???</b></div>`;
+function partyHTML(){const p=player,have=PORDER.filter(id=>p.partners.includes(id)),miss=PORDER.filter(id=>!have.includes(id));
+  const pets=PETORDER.filter(id=>countItem(PETS[id].item)>0),mts=Object.keys(MOUNTS).filter(id=>countItem(MOUNTS[id].item)>0);
+  const lockPM=PETORDER.filter(id=>!pets.includes(id)).map(id=>lockTile(icon(PETS[id].item),PETS[id].how)).concat(Object.keys(MOUNTS).filter(id=>!mts.includes(id)).map(id=>lockTile(icon(MOUNTS[id].item),MOUNTS[id].how)));
+  return `<h3>Partners · ${have.length} / ${PORDER.length}</h3>`+have.map(id=>{const d=PARTNERS[id];return `<div class="pcard ${p.partner===id?'on':''}" data-p="${id}"><img src="${pPortrait(id)}" alt=""><div><b>${d.name}</b><span>${d.desc} Move: ${moveName(id)}. ${d.moveDesc}</span>${palQuestTxt(id)?`<small class="pq">${palQuestTxt(id)}</small>`:''}</div></div>`;}).join('')+
+    (miss.length?`<div class="ptiles">${miss.map(id=>lockTile(pPortrait(id),PARTNERS[id].how)).join('')}</div>`:'')+
+    `<h3 style="margin-top:10px">Pets &amp; mounts · ${pets.length+mts.length} / ${PETORDER.length+Object.keys(MOUNTS).length}</h3>`+
+    pets.map(id=>{const d=PETS[id];return `<div class="pcard ${p.pet===id?'on':''}" data-pet="${id}"><img src="${icon(d.item)}" alt=""><div><b>${d.name}</b><span>${p.pet===id?'Following you. Click to send it home.':'Click to call it.'}</span></div></div>`;}).join('')+
+    mts.map(id=>{const d=MOUNTS[id];return `<div class="pcard ${p.mount===id?'on':''}" data-mount="${id}"><img src="${icon(d.item)}" alt=""><div><b>${d.name}</b><span>${p.mount===id?'Riding. Click to get down.':`Mount. Click or press ${actName('mount')} to ride: ${Math.round((d.spd-1)*100)}% faster, higher jumps.`}</span></div></div>`;}).join('')+
+    (lockPM.length?`<div class="ptiles">${lockPM.join('')}</div>`:'')+`<p class="hint">Badges are on the Hero page.</p>`;}
+// the Bestiary: a grid of sketches (silhouettes until defeated); the picked one's entry sits in a card pinned over the grid
+function bestHTML(){const found=BEST.filter(r=>bestiary[r[0]]).length,sel=pgSel.bestiary,tr=Object.keys(TRAITS).filter(k=>Object.values(bestiary).some(o=>o.tr&&o.tr[k])).length;
+  return `<p class="hint" style="margin-top:0">${found} of ${BEST.length} entries filled in. Defeat an enemy to sketch it here.${tr?` Elite traits seen: ${tr} of ${Object.keys(TRAITS).length}.`:''}</p>`+bestEntry(sel)+
+    `<div class="bgrid">`+BEST.map(([t,name])=>{const b=bestiary[t];return `<div class="btile${b?'':' lock'}${sel===t?' on':''}" data-best="${t}" role="button" aria-pressed="${sel===t}" aria-label="${b?esc(name):'Not sketched yet'}" title="${b?esc(name):'???'}"><img src="${bestSketch(t)}" alt=""></div>`;}).join('')+'</div>';}
+function bestEntry(t){const r=t&&BEST.find(r=>r[0]===t);if(!r)return `<div class="bdet empty">Pick a sketch to read its entry.</div>`;const[,name,where]=r,b=bestiary[t];
+  if(!b)return `<div class="bdet lock"><img src="${bestSketch(t)}" alt=""><div><b>???</b><span>${where}</span><span>Not sketched yet. Defeat one to fill in this entry.</span></div></div>`;
+  const d=EN[t],known=d.drops.filter(([id])=>b.d[id]),unk=d.drops.length-known.length;
+  return `<div class="bdet"><img src="${bestSketch(t)}" alt=""><div><b>${name}</b><span>${where}</span><span>Defeated ${b.k}${b.e?` · ${b.e} elite`:''} · ${d.hp} HP</span>${b.tr?`<span class="btr">Elite traits: ${Object.keys(b.tr).filter(k=>TRAITS[k]).map(k=>`<i title="${TRAITS[k].tip}">${TRAITS[k].n}</i>`).join(', ')}</span>`:''}${d.weak||d.res?`<span>${[d.weak&&'Weak to '+ELEM[d.weak].name,d.res&&'Resists '+ELEM[d.res].name].filter(Boolean).join(' · ')}</span>`:''}<span class="bdrops">${known.map(([id])=>`<i title="${ITEMS[id].name}"><img src="${icon(id)}" alt="">${ITEMS[id].name}</i>`).join('')}${unk?`<i class="q">${known.length?'+ ':''}${unk} unknown drop${unk>1?'s':''}</i>`:''}${!d.drops.length?'<i class="q">Drops coins only</i>':''}</span></div></div>`;}
+// the Town: who's next and what they need on top, the residents with a home as one row of portraits, then the upgrades
+function townHTML(){const home=NPCORDER.filter(t=>npcs.some(n=>n.type===t&&n.home)),wait=NPCORDER.filter(t=>!home.includes(t)),ready=wait.filter(t=>NPCDEF[t].ok()),later=wait.filter(t=>!ready.includes(t));
+  const next=ready.concat(later.slice(0,ready.length?1:2)),rest=later.filter(t=>!next.includes(t)),todo=TOWN.filter(u=>!town.f[u.id]),built=TOWN.filter(u=>town.f[u.id]);
+  return `<div class="sideTip"><b>Make a house</b>Walls behind it, a door, a light, a table and a chair, and not your bed. Stand inside and check it.<button id="houseBtn" type="button">Check this room</button></div>`+
+    (next.length?`<h3>Next to move in</h3>`+next.map(t=>{const d=NPCDEF[t],ok=ready.includes(t);return `<div class="npcRow${ok?' ready':''}"><img src="${portrait(t)}" alt=""><div><b>${d.name}</b><span>${ok?'<span class="ok">Ready to move in.</span> Stand in an empty house and press Check this room.':d.need}</span></div></div>`;}).join(''):'')+
+    (rest.length?`<div class="ptiles">${rest.map(t=>lockTile(portrait(t),NPCDEF[t].name+': '+NPCDEF[t].need)).join('')}</div>`:'')+
+    `<h3 style="margin-top:10px">Residents · ${home.length} / ${NPCORDER.length}</h3>`+(home.length?`<div class="folkRow">${home.map(t=>`<img src="${portrait(t)}" alt="${esc(NPCDEF[t].name)}" title="${esc(NPCDEF[t].name)}">`).join('')}</div>`:'<p class="hint">Nobody has a home yet.</p>')+
+    `<h3 style="margin-top:10px">${townLevel()} · upgrades ${built.length} / ${TOWN.length}</h3>`+todo.map(u=>`<div class="npcRow tup"><div><b>${u.n}</b><span>${u.need}</span></div></div>`).join('')+
+    (built.length?`<p class="hint tbuilt"><b>✓ Built:</b> ${built.map(u=>u.n).join(' · ')}</p>`:'')+`<p class="hint">The town green beside your cabin grows as townsfolk move in and quests are finished.</p>`;}
+// ================= hero page =================
+// The Hero tab (issue #143): the hero cut-out wearing the current armor (the rig's own skin through facePic, re-drawn once
+// the skin is re-baked after an armor change), the armor and accessory slots either side, a stats block, set bonus
+// progress, active buffs and the badges. The slots are the same armor/acc slots as ever (canGo, drag and shift-click).
+let heroKey='';
+const setHTML=(id,h)=>{const el=$(id);if(el.dataset.h!==h){el.innerHTML=h;el.dataset.h=h;}};
+function renderHero(){const p=player,k=p.armor.map(s=>s?s.id:'').join()+'|'+(p.rig&&p.rig.k);
+  if(p.rig&&!p.sheetDirty&&k!==heroKey){heroKey=k;const c=$('heroPic'),g=c.getContext('2d'),s=facePic('player');g.clearRect(0,0,c.width,c.height);
+    if(s){const z=Math.min(c.width/s.width,c.height/s.height);g.drawImage(s,(c.width-s.width*z)/2,c.height-s.height*z,s.width*z,s.height*z);}}
+  setHTML('heroStats',heroStats());setHTML('heroBuffs',heroBuffs());setHTML('heroBadges',heroBadges());}
+export function heroStats(){const p=player,it=selItem(),kind=it&&it.dmg&&!it.pick?(it.ranged?'ranged':it.magic?'magic':'melee'):it&&it.dmg?'melee':null,et=it&&(it.elem||(it.proj&&PK[it.proj]&&PK[it.proj].elem));
+  const mul=(kind?setMul(kind):1)*(hasBadge('power')?1.15:1)*(hasBuff('fed')?1.05:1)*(hasBuff('charged')||(hasBuff('lunar')&&isNight())?1.1:1);
+  const spd=(hasAcc('speed')?1.2:1)*(hasBuff('swift')?1.25:1)*(hasBuff('charged')?1.2:1)*(hasBuff('fed')?1.05:1)*(p.mount?MOUNTS[p.mount].spd:1);
+  const crit=!it||!it.dmg?'Time a hit for a NICE!':it.ranged&&it.ammo==='arrow'?'Perfect shot: ×1.25, full draw ×1.6':it.ranged?'Full draw hits harder':it.magic?'Rune cast: stronger, half mana':`NICE! hit: ×1.8${hasBadge('nice')?', wider timing':''}`;
+  const row=(n,v,c='')=>`<div class="hs${c}"><span>${n}</span><b>${v}</b></div>`;
+  const sets=Object.keys(SETS).filter(k=>setCount(k)>0);
+  return `<div class="hstats">`+row('Life',`${Math.ceil(p.hp)} / ${p.max}`)+row('Mana',`${Math.floor(p.mana)} / ${p.maxMana}`)+row('Defense',defense())+row('Move speed',Math.round(spd*100)+'%')+
+    row('Weapon',it&&it.dmg?`${Math.round(it.dmg*mul)} ${kind}${et?' · '+ELEM[et].name:''}`:'Nothing to fight with',' wide')+(it&&it.dmg?row('Held',esc(it.name),' wide'):'')+row('Critical',crit,' wide')+`</div>`+
+    (sets.length?sets.map(k=>{const S=SETS[k],n=setCount(k),on=n===3;return `<div class="hset${on?' on':''}"><b>${S.name} ${n}/3</b>${on?'Set bonus':'Full set'}: ${S.bonus}</div>`;}).join(''):`<p class="hint">Wear a helmet, chest and leggings of one set for its bonus.</p>`);}
+function heroBuffs(){const b=Object.keys(player.buffs||{}).filter(k=>BUFFS[k]&&player.buffs[k]>0);if(!b.length)return '';
+  return `<div class="buffs">`+b.map(k=>{const t=player.buffs[k];return `<span class="buff" title="${esc(BUFFS[k][2])}"><img src="${icon(BUFFS[k][1])}" alt="">${BUFFS[k][0]} <small>${t>60?Math.ceil(t/60)+'m':Math.ceil(t)+'s'}</small></span>`;}).join('')+'</div>';}
+function heroBadges(){const p=player;return `<h3 style="margin-top:10px">Badges · BP ${bpUsed()} / ${bpMax()}</h3>`+(p.badges.length?p.badges.map(b=>{const[n,bp,d]=BADGES[b];return `<div class="bdg ${p.badgesOn.includes(b)?'on':''}" data-b="${b}"><img src="${icon('b_'+b)}" alt=""><div><b>${n}</b><span>${d}</span></div><em>${bp} BP</em></div>`;}).join(''):'<p class="hint">No badges yet. Bosses, chests, the Merchant and the Tinkerer all have them.</p>')+`<p class="hint">Click a badge to equip or remove it. Each boss you defeat adds 3 BP.</p>`;}
+export function badgeToggle(b){const on=player.badgesOn;if(on.includes(b))on.splice(on.indexOf(b),1);else if(bpUsed()+BADGES[b][1]>bpMax()){toast(`Not enough BP. ${BADGES[b][0]} needs ${BADGES[b][1]}.`,'bad');return false;}else on.push(b);SFX.pick();$('heroBadges').dataset.h='';invDirty=true;return true;}
+$('hero').addEventListener('mousedown',e=>{const bd=e.target.closest('.bdg');if(bd)badgeToggle(bd.dataset.b);});
+function renderSide(){if(!side||side.kind==='chest'||side.kind==='hero')return;const html=sideHTML();if($('sideBody').dataset.h!==html){$('sideBody').innerHTML=html;$('sideBody').dataset.h=html;}}
 function renderShop(){renderSide();}
 $('sideBody').addEventListener('mousedown',e=>{if(side&&side.kind==='travel'){const el=e.target.closest('.shopi');if(!el)return;const list=[{x:player.spawn.x-.5,y:player.spawn.y}].concat((BIO.camps||[]).filter(c=>c.done).map(c=>({x:c.sx,y:c.sy})));const w=list[+el.dataset.w];if(w)travelTo(w.x,w.y);return;}
-  if(side&&side.kind==='party'){const pc=e.target.closest('.pcard'),bd=e.target.closest('.bdg');
-    if(pc&&(pc.dataset.pet||pc.dataset.mount)){const k=pc.dataset.pet||pc.dataset.mount,d=(pc.dataset.pet?PETS:MOUNTS)[k];if(countItem(d.item)>0){if(pc.dataset.pet)togglePet(k);else toggleMount(k);}$('sideBody').dataset.h='';invDirty=true;return;}if(pc&&player.partners.includes(pc.dataset.p)){setPartner(pc.dataset.p);SFX.pick();}else if(bd){const b=bd.dataset.b,on=player.badgesOn;if(on.includes(b))on.splice(on.indexOf(b),1);else if(bpUsed()+BADGES[b][1]>bpMax()){toast(`Not enough BP. ${BADGES[b][0]} needs ${BADGES[b][1]}.`,'bad');return;}else on.push(b);SFX.pick();}$('sideBody').dataset.h='';invDirty=true;return;}
+  const pk=e.target.closest('[data-best],[data-lore]');if(pk&&side){if(pk.dataset.best)pickPage('bestiary',pgSel.bestiary===pk.dataset.best?null:pk.dataset.best);else if(!pk.classList.contains('lock'))pickPage('story',pk.dataset.lore);SFX.pick();return;}
+  if(side&&side.kind==='party'){const pc=e.target.closest('.pcard');
+    if(pc&&(pc.dataset.pet||pc.dataset.mount)){const k=pc.dataset.pet||pc.dataset.mount,d=(pc.dataset.pet?PETS:MOUNTS)[k];if(countItem(d.item)>0){if(pc.dataset.pet)togglePet(k);else toggleMount(k);}$('sideBody').dataset.h='';invDirty=true;return;}if(pc&&player.partners.includes(pc.dataset.p)){setPartner(pc.dataset.p);SFX.pick();}$('sideBody').dataset.h='';invDirty=true;return;}
   const el=e.target.closest('.shopi');if(!el||!side)return;$('sideBody').dataset.h='';invDirty=true;
   if(el.dataset.a==='fishq'){anglerTurnIn();return;}if(el.dataset.a==='contest'){contestClaim();renderSide();return;}
   if(el.dataset.q){folkClick(el.dataset.q);return;}if(el.dataset.m){donate(el.dataset.m);return;}
@@ -150,6 +205,7 @@ $('sideBody').addEventListener('mousedown',e=>{if(side&&side.kind==='travel'){co
   if(!bought){toast('Not enough coins.','bad');return;}updateCoins();if(side.key==='traveler')stat('travbuys');const left=addItem(id,bought);if(left)dropItem(id,left,player.x,player.y+1);SFX.coin();});
 export function openSide(kind,key,list,title,line){side={kind,key,list,line,title:title||'Merchant'};showLeft();$('sideBody').dataset.h='';$('sideBody').scrollTop=0;
   if(kind==='chest'){$('sideTitle').textContent='Chest';$('sideBody').innerHTML='<div class="grid"></div><div class="row chestBtns"><button type="button" class="ghost" data-c="loot" title="Take everything you have room for">Loot all</button><button type="button" class="ghost" data-c="dep" title="Put in everything but your hotbar">Deposit all</button><button type="button" class="ghost" data-c="stack" title="Put in only what the chest already holds (not your hotbar)">Stack to chest</button></div><p class="hint">Shift-click to move one stack between chest and backpack.</p>';const g=$('sideBody').querySelector('.grid');sideEls=[];for(let i=0;i<20;i++){const el=mkSlot('chest',i,g);el.dataset.k='x';sideEls.push(el);}}
+  else if(kind==='hero'){heroKey='';renderHero();}
   else{$('sideTitle').textContent=title||(kind==='town'?'Town':'Merchant');renderSide();}if(!invOpen)setInv(true);else turnPage($('leftPage'));syncTabs();}
 // a stack into a chest: onto its own kind first, then the first empty slot; returns how many didn't fit
 function toChest(box,s){let n=s.n;const mx=maxOf(s.id);for(let k=0;k<box.length&&n>0;k++){const b=box[k];if(b&&b.id===s.id&&b.n<mx){const m=Math.min(n,mx-b.n);b.n+=m;n-=m;}}
@@ -164,9 +220,9 @@ export function chestAct(a){if(!side||side.kind!=='chest')return 0;const box=che
 // Tabs over the book pick the left page: Crafting (the page when nothing else is open) and the others, each with a
 // page turn. Chests, shops and townsfolk open their own left page with no tab lit. The right page is always the backpack.
 // [tab, title, icon item or null for the partner's portrait]
-const TABS=[['craft','Crafting','bench'],['party','Party',null],['bestiary','Bestiary','lens'],['museum','Museum','fos_amm'],['binder','Binder','binder'],['town','Town','lanternp'],['story','Journal',C.murals[0]]];
+const TABS=[['craft','Crafting','bench'],['hero','Hero','helmfe'],['party','Party',null],['bestiary','Bestiary','lens'],['museum','Museum','fos_amm'],['binder','Binder','binder'],['town','Town','lanternp'],['story','Journal',C.murals[0]]];
 function turnPage(el){SFX.rustle(.25,.5);if(reduceMotion())return;el.classList.remove('turn');void el.offsetWidth;el.classList.add('turn');}
-function showLeft(){$('craft').hidden=!!side;$('sideSheet').hidden=!side;}
+function showLeft(){const h=!!side&&side.kind==='hero';$('craft').hidden=!!side;$('hero').hidden=!h;$('sideSheet').hidden=!side||h;}
 function closeSide(){side=null;showLeft();}
 function curTab(){return side?(TABS.some(t=>t[0]===side.kind)?side.kind:''):'craft';}
 // the book keeps its size; on a screen too small for it, the whole spread zooms down as a unit
@@ -177,7 +233,7 @@ addEventListener('resize',fitBook);
 function syncTabs(){const on=curTab();for(const b of $('tabs').children){const t=TABS.find(t=>t[0]===b.dataset.tab),a=t[0]===on;b.classList.toggle('on',a);b.setAttribute('aria-selected',a);b.setAttribute('aria-label',t[1]);b.title=t[1];
   b.querySelector('img').src=typeof t[2]==='number'?cellIcon(t[2]):t[2]?icon(t[2]):pPortrait(player.partner||'lumi');if(t[0]==='museum')b.classList.toggle('lock',!hasNPC('curator'));if(t[0]==='binder')b.classList.toggle('lock',!countItem('binder')&&!Object.keys(cards.have).length);if(t[0]==='party')b.classList.toggle('lock',!player.partners.length);}}
 export function setTab(k){if(k==='inv'||k==='craft'){if(!invOpen)setInv(true);if(side){closeSide();turnPage($('leftPage'));}else SFX.pick();syncTabs();invDirty=true;return;}
-  openSide(k,null,null,TABS.find(t=>t[0]===k)[1]);}
+  if(k==='story')pgSel.story=null;openSide(k,null,null,TABS.find(t=>t[0]===k)[1]);}
 // gamepad LB: the next tab along (a chest or shop page counts as sitting before the first one)
 export function cycleTab(d=1){const i=TABS.findIndex(t=>t[0]===curTab());setTab(TABS[(i+d+TABS.length)%TABS.length][0]);}
 $('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setTab(b.dataset.tab);});
@@ -216,13 +272,19 @@ let USES=null;function usesOf(id){if(!USES){USES={};for(const r of RECIPES)for(c
 function usedIn(id){const u=usesOf(id);return u.length?`<div class="ds use"><b>Used in</b> ${u.slice(0,4).map(o=>ITEMS[o].name).join(', ')}${u.length>4?` and ${u.length-4} more`:''}</div>`:'';}
 function itemCard(id,n,extra=''){const it=ITEMS[id];const lines=[],et=it.elem||(it.proj&&PK[it.proj]&&PK[it.proj].elem);if(it.dmg)lines.push(`${it.dmg} damage`);if(et)lines.push(`${ELEM[et].name} type`);if(it.heavy)lines.push('Heavy');if(it.block)lines.push(`Blocks ${Math.round(it.block*100)}% of a hit`);if(it.ranged)lines.push(it.ammo==='arrow'?'Uses arrows · hold to draw':'Uses Paper Sheets');if(it.magic)lines.push(`${it.mana} mana per cast`);if(it.adm)lines.push(`+${it.adm} damage as ammo`);if(it.pick)lines.push(`Pick power ${it.pick}`);if(it.rod)lines.push(`Fishing power ${it.fpow}${it.lava?' · Fishes in lava':''}`);if(it.bait)lines.push(`Bait power ${it.bait}`);if(it.def)lines.push(`+${it.def} defense`);if(it.place!=null||it.wall)lines.push('Can be placed');
   return `<div class="icard"><div class="icArt"><img src="${icon(id)}" alt=""></div><div class="icHead"><b>${it.name}</b><small>${KIND(it)}${n>1?` · ×${n}`:''}</small></div></div>${lines.length?`<div class="st">${lines.join(' · ')}</div>`:''}${it.desc?`<div class="ds">${it.desc}</div>`:''}${moveHint(it)}${it.set?setCard(it.set):''}${it.block?`<div class="ds">Wear it in an accessory slot, then ${pad.active?`hold ${actName(SET.pad.block>=0?'block':'interact')}`:`hold right-click (or ${KEYNAME(SET.bind.block)})`} to block. Raise it just as a hit lands to parry.</div>`:''}${usedIn(id)}${extra}`;}
-document.addEventListener('mouseover',e=>{const el=e.target.closest&&e.target.closest('.slot,.rec');hoverSlot=el&&el.classList.contains('slot')?el:null;if(!el){$('tip').hidden=true;return;}
+document.addEventListener('mouseover',e=>{const el=e.target.closest&&e.target.closest('.slot,.rec,.tcard[data-card],[data-tip]');hoverSlot=el&&el.classList.contains('slot')?el:null;if(!el){$('tip').hidden=true;return;}
+  // a filed trading card shows big with its line; ??? tiles and empty pockets show their hint
+  if(el.dataset.card){const c=CARDS.find(c=>c[0]===el.dataset.card),n=cards.have[c[0]]||0;$('tip').innerHTML=`<div class="bigCard"><img src="${icon('card_'+c[0])}" alt=""></div><b>${c[1]}</b><div class="st">${RARITY[c[2]].n}${n>1?` · ×${n}`:''}</div>${c[5]?`<div class="ds">${c[5]}</div>`:''}`;$('tip').hidden=false;placeTip(e.clientX+16,e.clientY+14);return;}
+  if(el.dataset.tip!=null){$('tip').innerHTML=`<div class="ds">${esc(el.dataset.tip)}</div>`;$('tip').hidden=false;placeTip(e.clientX+16,e.clientY+14);return;}
   if(el.classList.contains('rec')){const r=RECIPES[recIdx(el)[0]];if(!r){$('tip').hidden=true;return;}$('tip').innerHTML=itemCard(r[0],r[1],`<div class="ds mk">${el.classList.contains('can')?'Click to craft · Shift-click for 5 · Ctrl-click for as many as you can':'Missing something'}${r[3]?` · at ${ITEMS[r[3]].name}`:''}</div>`);$('tip').hidden=false;placeTip(e.clientX+16,e.clientY+14);return;}
   const s=slotData(el.dataset.kind,+el.dataset.i);if(!s){$('tip').hidden=true;return;}
   $('tip').innerHTML=itemCard(s.id,s.n,selling()&&el.dataset.kind==='inv'?`<div class="ds mk">Sells for ${sellPrice(s)} coins · Shift-click to sell</div>`:'');$('tip').hidden=false;placeTip(e.clientX+16,e.clientY+14);});
 // the room check lives on the Town page (click, or A on a gamepad, which clicks buttons)
 $('sideBody').addEventListener('click',e=>{if(e.target.closest('#houseBtn'))tryMoveIn(checkRoom(Math.floor(player.x),Math.floor(player.y+.5)),true);
-  const c=e.target.closest('.chestBtns button');if(c)chestAct(c.dataset.c);if(e.target.closest('#sellBox'))sellCursor();});
+  const c=e.target.closest('.chestBtns button');if(c)chestAct(c.dataset.c);if(e.target.closest('#sellBox'))sellCursor();
+  // the Journal's reader goes back to the list (onto the page just read), and the binder's page tabs flip its pages
+  if(e.target.closest('.loreBack')){const k=pgSel.story;pickPage('story',null);SFX.rustle(.2,.4);const el=k&&$('sideBody').querySelector(`[data-lore="${k}"]`);if(el)el.scrollIntoView({block:'center'});}
+  const bp=e.target.closest('[data-bpg]');if(bp){pickPage('binder',+bp.dataset.bpg);SFX.rustle(.2,.4);}});
 // Sort: the pack (not the hotbar) merged into full stacks, by kind in the crafting categories' order, then by name
 $('sortBtn').addEventListener('click',()=>{const rest=player.inv.slice(10).filter(Boolean);const merged=[];for(const s of rest){const m=merged.find(x=>x.id===s.id&&x.n<maxOf(s.id));if(m){const k=Math.min(s.n,maxOf(s.id)-m.n);m.n+=k;s.n-=k;if(s.n)merged.push(s);}else merged.push(s);}const cat=CCAT.slice(1).map(c=>c[0]);merged.sort((a,b)=>cat.indexOf(craftCat(a.id))-cat.indexOf(craftCat(b.id))||ITEMS[a.id].name.localeCompare(ITEMS[b.id].name)||b.n-a.n);for(let i=10;i<40;i++)player.inv[i]=merged[i-10]||null;invDirty=true;});
 export let heartsKey='';
