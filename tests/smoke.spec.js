@@ -784,6 +784,12 @@ test('the Hero page and the grid and detail views of the tab pages',async({page}
     sb().querySelector('[data-bpg="1"]').click();out.flip=g.pgSel.binder===1&&sb().querySelectorAll('.pockets .tcard').length===g.CARDS.filter(c=>c[4]===g.CARDPAGES[1].id).length;
     // Town: who's next on top, not the whole list
     g.setTab('town');g.refreshUI();out.town=[sb().textContent.includes('Next to move in'),sb().querySelectorAll('.npcRow:not(.tup)').length<=3];
+    // gamepad: A on a Bestiary tile opens its entry and the focus stays on that tile through the re-render (handlePad, then
+    // refreshUI, as in a frame); a stub pad presses A on one frame and lets go on the next
+    let A=false;const btn=()=>({pressed:false,value:0});navigator.getGamepads=()=>[{connected:true,id:'stub',axes:[0,0,0,0],buttons:Array.from({length:17},(_,i)=>i===0?{pressed:A,value:A?1:0}:btn())}];
+    const frame=()=>{g.handlePad();g.refreshUI();};g.setTab('bestiary');g.refreshUI();g.pad.active=true;frame();
+    g.setPadFocus(sb().querySelector('.btile[data-best="zombie"]'));A=true;frame();A=false;frame();frame();
+    out.pad=[g.pgSel.bestiary,g.padFocus&&g.padFocus.dataset.best];g.pad.active=false;
     g.setTab('hero');g.refreshUI();
     return out;
   });
@@ -805,6 +811,7 @@ test('the Hero page and the grid and detail views of the tab pages',async({page}
   expect(s.pockets).toEqual([true,true]);
   expect(s.flip).toBe(true);
   expect(s.town).toEqual([true,true]);
+  expect(s.pad).toEqual(['zombie','zombie']);
   if(process.env.FF_SHOTS)for(const t of['bestiary','story','read','binder','town','party']){await page.evaluate(async t=>{const g=await import('/src/game.js');g.SET.motion='reduce';g.applyUI&&g.applyUI();for(const k of['l2','m1','king','lumi'])g.findLore(k,true);if(t==='read'){g.pickPage('story','l1');return;}g.setTab(t);g.refreshUI();if(t==='story')document.querySelector('#sideBody .sideTip').scrollIntoView();},t);await shot(t);}
 });
 
