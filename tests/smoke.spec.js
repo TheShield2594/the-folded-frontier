@@ -728,7 +728,7 @@ test('the painted hero rig takes over the player once its pictures load',async({
     g.applyArt('rigs','H.torso.mask',solid(40,40,'#ff0000'));g.applyArt('rigs','H.torso',solid(40,40,'#808080'));
     for(const n of['head','arm','leg'])g.applyArt('rigs','H.'+n,solid(40,60,'#c08060'));
     // hair, a hat, the cape and the gripping fist are pieces too; the fist only shows while the hand holds something
-    const extra=['H.hair.short','H.hat.cap','H.cape.b','H.arm.grip','H.fist'].map(n=>g.applyArt('rigs',n,solid(20,20,'#a0a0a0')));
+    const extra=['H.hair.short','H.hat.cap','H.cape.b','H.arm.grip','H.fist','H.helm.fe','H.mail.fe','H.brace.fe','H.greave.fe'].map(n=>g.applyArt('rigs',n,solid(20,20,'#a0a0a0')));
     const R=g.player.rig,look=g.playerLook({tunic:1},[]),sk=g.rigSkin('hero',look,null),tc=sk.cells[R.d.pi.torso][''];
     const px=[...sk.img.getContext('2d').getImageData(tc.ax+tc.w/2|0,tc.ay+tc.h/2|0,1,1).data];
     // a knee bent in the walk moves the foot off the thigh's straight line
@@ -737,12 +737,14 @@ test('the painted hero rig takes over the player once its pictures load',async({
     const clips=['idle','walk','jump','fall','land','dash','hurt','death','sw0','sw3','hold','climb','cheer','reel','mine0','bow','cast','block','parry'].filter(c=>!R.d.clips[c]);
     const pic=g.rigPic('hero',look,'walk',.25,undefined,undefined,2),a=pic.getContext('2d').getImageData(0,0,pic.width,pic.height).data;let n=0;for(let i=3;i<a.length;i+=4)if(a[i]>0)n++;
     const fi=R.d.pi.fist,held=()=>{g.rigUpdate(R,0);return R.vis[fi];};g.rigHold(R,'held',null);const noFist=!held();g.rigHold(R,'held',solid(16,16,'#fff'));const fist=!!held();g.rigHold(R,'held',null);
-    return {extra,noFist,fist,before,bad,kind:R.k,mesh:g.player.mesh===R.mesh,parts:['armA','held','shield','head','hair','hat','cape','accF','fist'].every(k=>R.d.pi[k]!=null),px,straight,clips,filled:n,edge:R.mat.uniforms.uEdge.value.y>0};
+    const aL=g.playerLook({},[{id:'helmfe'},{id:'mailfe'},{id:'legs_warden'}]),armK=[aL.helmK,aL.mailK,aL.greavesK];
+    return {armK,extra,noFist,fist,before,bad,kind:R.k,mesh:g.player.mesh===R.mesh,parts:['armA','held','shield','head','hair','hat','cape','accF','fist','helm','mail','braceA','greaveA'].every(k=>R.d.pi[k]!=null),px,straight,clips,filled:n,edge:R.mat.uniforms.uEdge.value.y>0};
   });
   expect(r.before).toBe('human');
   expect(r.bad).toBe(false);
   expect(r.kind).toBe('hero');
-  expect(r.extra).toEqual([true,true,true,true,true]);
+  expect(r.extra).toEqual(Array(9).fill(true));
+  expect(r.armK).toEqual(['fe','fe','warden']);
   expect([r.noFist,r.fist]).toEqual([true,true]);
   expect(r.mesh).toBe(true);
   expect(r.parts).toBe(true);

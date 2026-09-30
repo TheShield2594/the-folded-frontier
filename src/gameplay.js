@@ -514,10 +514,13 @@ function swingFrame(s,k){if(s.heavy)return k<.38?10:k<.7?11:12;for(const q of SW
 // the whole pose for a swing at k: arm angle, blade angle (the blade drags behind a fast arm, then whips past it on the
 // follow-through), body frame, arm stretch and body squash. Tools and aimed items just point the arm.
 function swingPose(s,k=clamp(s.t/s.dur,0,1)){const p=player;if(s.aim!=null){const a=p.face>0?s.aim:Math.PI-s.aim;return{arm:a,blade:a,f:aimFrame(s,k),v:0,sc:1,sq:1};}
-  if(!s.sword){const it=ITEMS[s.tool]||{};if(it.hammer){const a=lerp(2.5,-.9,EZ.io(k));return{arm:a,blade:a,f:k<.4?10:12,v:0,sc:1,sq:k<.4?.97:1};}
-    const a=lerp(1.9,-.5,Math.sin(k*Math.PI*.5));return{arm:a,blade:a,f:it.pick?(k<.45?PF.mine0:PF.mine1):9,v:0,sc:1,sq:1};}
-  const a=swingArm(s,k),dk=.02,v=(k>dk?a-swingArm(s,k-dk):swingArm(s,k+dk)-a)/(dk*s.dur),f=swingFrame(s,k);
-  return{arm:a,blade:a+clamp(-v*.006,-.5,.5),f,v,sc:1+Math.min(.2,Math.abs(v)*.004),sq:f===10?.96:f===11?1.04:1};}
+  // grip: a rig whose hand is a fist (the hero) holds the handle across it, so the blade leaves on the thumb side, about a
+  // quarter turn ahead of the forearm; the lag cocks the wrist back on the way in and snaps it through on the cut
+  const G=p.rig.d.grip||0;
+  if(!s.sword){const it=ITEMS[s.tool]||{};if(it.hammer){const a=lerp(2.5,-.9,EZ.io(k));return{arm:a,blade:a+G,f:k<.4?10:12,v:0,sc:1,sq:k<.4?.97:1};}
+    const a=lerp(1.9,-.5,Math.sin(k*Math.PI*.5));return{arm:a,blade:a+G,f:it.pick?(k<.45?PF.mine0:PF.mine1):9,v:0,sc:1,sq:1};}
+  const a=swingArm(s,k),dk=.02,v=(k>dk?a-swingArm(s,k-dk):swingArm(s,k+dk)-a)/(dk*s.dur),f=swingFrame(s,k),lg=G?.55:.5;
+  return{arm:a,blade:a+G+clamp(-v*.006,-lg,lg),f,v,sc:1+Math.min(.2,Math.abs(v)*.004),sq:f===10?.96:f===11?1.04:1};}
 // the body under an aimed arm: drawing a bow, the loose after, casting, and the rod's cast and reel
 function aimFrame(s,k){const it=ITEMS[s.tool]||{};if(s.draw!=null)return PF.bow;
   if(it.rod)return bob.state===1&&bob.t<.3?PF.fcast:bob.state===3?PF.reel0+(Math.floor(bob.t*12)&1):PF.reel0;

@@ -323,7 +323,46 @@ const HPIC={head:['H.head',-16.2,-37.4,34.1,38.7],torso:['H.torso',-17,-23,34.3,
   'hair.bun':['H.hair.bun',-21.3,-38.2,39.2,28.9],'hair.pony':['H.hair.pony',-25.8,-40.1,44.7,40.3],'hair.curly':['H.hair.curly',-22.8,-45.1,44.9,41.2],
   'hat.cap':['H.hat.cap',-17.4,-40.1,41.3,22.2],'hat.beret':['H.hat.beret',-21.5,-41.7,38.2,24.7],'hat.straw':['H.hat.straw',-27.9,-42.1,54.2,32.3],'hat.beanie':['H.hat.beanie',-18.3,-45.5,36.3,39.9],
   // cape, scarf and satchel painted onto the hero's body (extract_body.py): .b behind the body, .f in front of it
-  'cape.b':['H.cape.b',-39.1,-8.3,66.3,70.5],'cape.f':['H.cape.f',-12.5,-27.1,25.3,20.4],'scarf.b':['H.scarf.b',-43.7,-10.1,60.8,33.7],'scarf.f':['H.scarf.f',-12.5,-30.8,28.9,22.0],'pack.b':['H.pack.b',-22.6,-3.2,9.8,27.5],'pack.f':['H.pack.f',-16.5,-23.3,27.2,46.7]};
+  'cape.b':['H.cape.b',-39.1,-8.3,66.3,70.5],'cape.f':['H.cape.f',-12.5,-27.1,25.3,20.4],'scarf.b':['H.scarf.b',-43.7,-10.1,60.8,33.7],'scarf.f':['H.scarf.f',-12.5,-30.8,28.9,22.0],'pack.b':['H.pack.b',-22.6,-3.2,9.8,27.5],'pack.f':['H.pack.f',-16.5,-23.3,27.2,46.7],
+  'helm.cu':['H.helm.cu',-20.3,-45.5,40.3,45.2],
+  'mail.cu':['H.mail.cu',-18.0,-25.1,36.4,44.1],
+  'greave.cu':['H.greave.cu',-11.5,21.0,21.3,24.0],
+  'helm.fe':['H.helm.fe',-23.6,-47.5,45.3,47.2],
+  'mail.fe':['H.mail.fe',-20.3,-25.8,39.2,46.3],
+  'greave.fe':['H.greave.fe',-11.5,21.0,22.1,24.0],
+  'helm.au':['H.helm.au',-23.7,-49.2,43.3,48.9],
+  'mail.au':['H.mail.au',-14.9,-25.2,30.9,44.2],
+  'greave.au':['H.greave.au',-11.5,21.0,19.4,24.0],
+  'helm.fr':['H.helm.fr',-22.9,-56.8,64.1,65.6],
+  'mail.fr':['H.mail.fr',-14.1,-25.5,57.3,40.3],
+  'greave.fr':['H.greave.fr',-11.5,21.0,22.5,24.0],
+  'helm.ik':['H.helm.ik',-18.6,-42.5,37.9,45.6],
+  'mail.ik':['H.mail.ik',-21.0,-26.2,40.5,36.1],
+  'greave.ik':['H.greave.ik',-11.5,21.0,21.5,24.0],
+  'helm.em':['H.helm.em',-23.0,-61.1,43.7,62.0],
+  'mail.em':['H.mail.em',-16.0,-25.6,33.4,44.6],
+  'greave.em':['H.greave.em',-11.5,21.0,21.2,24.0],
+  'helm.fo':['H.helm.fo',-24.8,-47.0,44.8,47.9],
+  'mail.fo':['H.mail.fo',-17.0,-23.8,34.4,42.8],
+  'greave.fo':['H.greave.fo',-11.5,21.0,19.7,24.0],
+  'helm.warden':['H.helm.warden',-36.0,-56.5,56.3,57.5],
+  'mail.warden':['H.mail.warden',-19.2,-26.2,38.7,45.2],
+  'greave.warden':['H.greave.warden',-11.5,21.4,21.5,23.6],
+  'helm.sky':['H.helm.sky',-27.4,-43.1,50.0,44.4],
+  'mail.sky':['H.mail.sky',-18.2,-26.3,35.5,40.4],
+  'greave.sky':['H.greave.sky',-11.5,21.0,21.1,24.0],
+  'helm.weave':['H.helm.weave',-32.9,-60.8,65.0,57.5],
+  'mail.weave':['H.mail.weave',-22.2,-23.3,43.6,52.7],
+  'brace.cu':['H.brace.cu',-6.2,-2.6,14.5,32.9],
+  'brace.fr':['H.brace.fr',-11.7,-2.6,23.4,37.4],
+  'brace.fo':['H.brace.fo',-7.0,-2.6,14.6,33.1],
+  'brace.warden':['H.brace.warden',-7.1,-2.5,15.0,32.9],
+  'brace.sky':['H.brace.sky',-7.0,-2.6,14.8,32.8],
+  'brace.fe':['H.brace.fe',-6.9,-2.6,14.7,32.9],
+  'brace.em':['H.brace.em',-7.1,-2.6,15.7,28.0],
+  'brace.weave':['H.brace.weave',-6.4,-2.6,13.1,32.5],
+  'brace.au':['H.brace.au',-7.4,-2.5,16.0,32.8],
+  'brace.ik':['H.brace.ik',-7.0,-2.6,15.7,27.3]};
 const HDIM={armB:.72,legB:.78};
 // a hero picture's name (H.<piece>[.<variant>]) that some part paints
 export const heroArt=k=>Object.values(HPIC).some(h=>k===h[0]||k.startsWith(h[0]+'.'));
@@ -349,6 +388,10 @@ const HLC=new WeakMap();function heroLum(img,col,red){let m=HLC.get(img);if(!m)H
 // the cape, scarf and satchel: which pieces a look wears (a cape comes with its own collar, so no scarf under it)
 const heroAcc=(...ks)=>(t,o)=>{for(const k of ks){const[w,side]=k.split('.'),on=w==='cape'?o.cape:w==='scarf'?o.scarf&&!o.cape:o.back?.art==='pack';if(!on)continue;
   const P=HPIC[k],img=P&&RIGART[P[0]];if(!img)continue;const col=w==='cape'?o.cape:w==='scarf'?o.scarf:null;t.drawImage(col?heroLum(img,col):img,P[1],P[2],P[3],P[4]);}};
+// armour: the worn piece's painting over its part (H.helm.<k> on the head, H.mail.<k> on the chest, H.brace.<k> on each
+// arm with the chainmail, H.greave.<k> on each leg), painted in its own colours; far limbs darkened like the limbs
+const heroArmor=(k,dim=1)=>(t,o)=>{const key=o[{helm:'helmK',mail:'mailK',brace:'mailK',greave:'greavesK'}[k]],P=key&&HPIC[k+'.'+key],img=P&&RIGART[P[0]];if(!img)return;
+  t.drawImage(dim<1?heroTint(img,null,{},dim):img,P[1],P[2],P[3],P[4]);};
 const heroPart=(k,dim=1)=>(t,o,v)=>{const[n,x,y,w,h]=HPIC[k],nv=RIGART[n+(v?'.'+v:'')]?n+(v?'.'+v:''):n,img=RIGART[nv];if(!img)return;
   t.drawImage(heroTint(img,RIGART[nv+'.mask'],o,dim),x,y,w,h);};
 // the look's colours on a painting: its mask (H.<piece>.mask) weighs each pixel as tunic (red) or skin (green); the tunic
@@ -371,24 +414,30 @@ function heroTint(img,mk2,o,dim){let m=HTC.get(img);if(!m)HTC.set(img,m={});cons
     const f=1-dim;a[i]=Math.min(255,r*dim+58*f*.5);a[i+1]=Math.min(255,g*dim+40*f*.5);a[i+2]=Math.min(255,b*dim+76*f*.5);}
   t.putImageData(id,0,0);return m[key]=c;}
 const ELB=18,KNEE=26,HAND=35,BL=.62; // BL: the held item's size against the drawn human's (the hero's arms are longer, its weapons smaller)
-defRig('hero',{w:96,h:144,res:3,edge:1,arml:HAND/60,sho:[-5,67],stride:2.5,blade:BL,parts:[
+defRig('hero',{w:96,h:144,res:3,edge:1,arml:HAND/60,sho:[-5,67],stride:2.5,blade:BL,grip:.87,parts:[
   {n:'root',at:[48,138]},
   {n:'cape',at:[44,70],up:'torso',loc:1,paint:heroAcc('cape.b'),wob:.02},
   {n:'scarfB',at:[44,70],up:'torso',loc:1,paint:heroAcc('scarf.b'),wob:.03},
   {n:'packB',at:[48,88],up:'torso',loc:1,paint:heroAcc('pack.b'),wob:0},
   {n:'armB',at:[40,71],up:'torso',loc:1,paint:heroPart('arm',HDIM.armB),bend:'foreB'},
   {n:'foreB',at:[40,71+ELB],up:'armB'},
+  {n:'braceB',at:[40,71],up:'armB',loc:1,paint:heroArmor('brace',HDIM.armB),bend:'foreB',wob:0},
   {n:'legB',at:[44,86],up:'root',loc:1,paint:heroPart('leg',HDIM.legB),bend:'shinB',bw:6},
   {n:'shinB',at:[44,86+KNEE],up:'legB'},
+  {n:'greaveB',at:[44,86],up:'legB',loc:1,paint:heroArmor('greave',HDIM.legB),bend:'shinB',bw:6,wob:0},
   {n:'legA',at:[52,86],up:'root',loc:1,paint:heroPart('leg'),bend:'shinA',bw:6},
   {n:'shinA',at:[52,86+KNEE],up:'legA'},
+  {n:'greaveA',at:[52,86],up:'legA',loc:1,paint:heroArmor('greave'),bend:'shinA',bw:6,wob:0},
   {n:'head',at:[50,67],up:'torso',loc:1,paint:heroPart('head'),v:['','blink','happy','hurt','ko','surprised','sad','angry'],wob:.01},
   {n:'hair',at:[50,67],up:'head',loc:1,paint:heroWear('hair'),wob:.012},
   {n:'hat',at:[50,67],up:'head',loc:1,paint:heroWear('hat'),wob:.006},
+  {n:'helm',at:[50,67],up:'head',loc:1,paint:heroArmor('helm'),wob:0},
   {n:'torso',at:[48,88],up:'root',loc:1,paint:heroPart('torso'),wob:.006},
+  {n:'mail',at:[48,88],up:'torso',loc:1,paint:heroArmor('mail'),wob:0},
   {n:'accF',at:[48,88],up:'torso',loc:1,paint:heroAcc('pack.f','scarf.f','cape.f'),wob:0},
   {n:'armA',at:[43,71],up:'torso',loc:1,paint:heroPart('arm'),bend:'foreA',v:['','grip'],hv:'grip'},
   {n:'foreA',at:[43,71+ELB],up:'armA'},
+  {n:'braceA',at:[43,71],up:'armA',loc:1,paint:heroArmor('brace'),bend:'foreA',wob:0},
   {n:'held',at:[43.5,71+HAND],up:'foreA',slot:[-8,-67,67,8].map(v=>v*BL),rigid:1,wob:0},
   // the front of the fist, over whatever the hand holds (show: only while the held slot is filled; hv: the arm's own hand closes then)
   {n:'fist',at:[43,71+ELB],up:'foreA',loc:1,paint:heroPart('fist'),show:'held',wob:0},
