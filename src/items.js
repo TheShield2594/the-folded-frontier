@@ -99,6 +99,12 @@ def(T.SCRAP,{solid:1,hard:99,pick:99,cell:C.scrap,col:'#9a7a52'});
 def(T.SHRED,{solid:1,hard:99,pick:99,cell:C.shred,col:'#8d8f9a'});
 def(T.CRATE,{solid:1,hard:99,pick:99,cell:C.crate,col:'#a86b3a'});
 def(T.WELLDOOR,{solid:1,hard:99,pick:99,cell:C.welldoor,col:'#3a2a5a',light:4});
+// footstep materials (issue #132): what each tile sounds like underfoot (SFX.step/SFX.land in audio.js) and which dust it kicks up
+// (feel.js); anything unlisted is stone. Liquids and drifts are read at the feet rather than from the ground tile.
+export const SMAT=new Array(128).fill('stone');
+for(const[m,ks]of Object.entries({dirt:'GRASS DIRT ASH CROP RARE RUBBLE BONE',wood:'PLANK PLATFORM DOOR TABLE CHAIR CHEST BENCH SHELF ARMCHAIR BED CRATE TRUNK',
+  sand:'SAND',snow:'SNOW DRIFT FROST',ice:'ICE THIN GLASS',cloud:'CLOUD SKYSTONE',paper:'PEEL SKETCH SEAM SEWN STACKS MURAL',
+  metal:'MACHINE SCRAP SHRED ANVIL FURNACE WELLDOOR CORE FOIL GATE',ink:'INK LAVA'}))for(const k of ks.split(' '))if(T[k]!=null)SMAT[T[k]]=m;
 export const WALLCELL=[0,C.wDirt,C.wWood,C.wStone,C.wRed,C.wBlue,C.wGreen,C.wYellow],WALLCOL=['#000','#4e3824','#5e4128','#55576a','#6a2e28','#2e4262','#3a583a','#806832'],WALLDROP=[null,null,'woodwall','stonewall','wallred','wallblue','wallgreen','wallyellow'];
 
 // ================= items =================

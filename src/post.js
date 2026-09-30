@@ -1,6 +1,6 @@
 // Post-processing: bloom on light sources, vignette and per-biome/per-season color grading.
 import * as THREE from 'three';
-import {arenaF,biomeAt,camera,clamp,dayF,inkMoon,renderer,scene,season,SET,surfAvg,U,worldTime} from './game.js';
+import {arenaF,biomeAt,camera,clamp,dayF,inkMoon,lowPulse,renderer,scene,season,SET,surfAvg,U,worldTime} from './game.js';
 
 // ================= post-processing =================
 // With Settings > Post-processing on, the scene renders into a half-float target (multisampled) and
@@ -25,11 +25,11 @@ const MB=new THREE.ShaderMaterial({uniforms:{tS:{value:null},uPx:{value:new THRE
 const MH=new THREE.ShaderMaterial({uniforms:{tS:{value:null},uPx:{value:new THREE.Vector2()},uDir:{value:new THREE.Vector2()}},vertexShader:VS,depthTest:false,depthWrite:false,
   fragmentShader:`uniform sampler2D tS;uniform vec2 uPx;uniform vec2 uDir;varying vec2 vUv;void main(){vec2 d=uDir*uPx;
   vec3 c=texture2D(tS,vUv).rgb*.2270;c+=(texture2D(tS,vUv+d*1.3846).rgb+texture2D(tS,vUv-d*1.3846).rgb)*.3162;c+=(texture2D(tS,vUv+d*3.2308).rgb+texture2D(tS,vUv-d*3.2308).rgb)*.0703;gl_FragColor=vec4(c,1.);}`});
-// composite: scene + bloom, then saturation, tint (gain), a paper-warm lift, vignette and a little dither against banding
-const MC=new THREE.ShaderMaterial({uniforms:{tS:{value:null},tB:{value:null},uBloom:{value:3.2},uSat:{value:1},uTint:{value:new THREE.Vector3(1,1,1)},uLift:{value:new THREE.Vector3()},uVig:{value:.28},uAsp:{value:1}},vertexShader:VS,depthTest:false,depthWrite:false,
-  fragmentShader:`uniform sampler2D tS;uniform sampler2D tB;uniform float uBloom;uniform float uSat;uniform vec3 uTint;uniform vec3 uLift;uniform float uVig;uniform float uAsp;varying vec2 vUv;
-  void main(){vec3 c=min(texture2D(tS,vUv).rgb,vec3(1.))+texture2D(tB,vUv).rgb*uBloom;c=min(c,vec3(1.));float l=dot(c,vec3(.299,.587,.114));c=mix(vec3(l),c,uSat)*uTint;c=c+uLift*(1.-c);
-  vec2 q=(vUv-.5)*vec2(uAsp,1.);float v=smoothstep(1.05,.25,length(q)*1.1);c*=mix(1.-uVig,1.,v);
+// composite: scene + bloom, then saturation (less at low health, uLow from feel.js, which also reddens the edge), tint (gain), a paper-warm lift, vignette and a little dither against banding
+const MC=new THREE.ShaderMaterial({uniforms:{tS:{value:null},tB:{value:null},uBloom:{value:3.2},uSat:{value:1},uTint:{value:new THREE.Vector3(1,1,1)},uLift:{value:new THREE.Vector3()},uVig:{value:.28},uAsp:{value:1},uLow:{value:0}},vertexShader:VS,depthTest:false,depthWrite:false,
+  fragmentShader:`uniform sampler2D tS;uniform sampler2D tB;uniform float uBloom;uniform float uSat;uniform vec3 uTint;uniform vec3 uLift;uniform float uVig;uniform float uAsp;uniform float uLow;varying vec2 vUv;
+  void main(){vec3 c=min(texture2D(tS,vUv).rgb,vec3(1.))+texture2D(tB,vUv).rgb*uBloom;c=min(c,vec3(1.));float l=dot(c,vec3(.299,.587,.114));c=mix(vec3(l),c,uSat*(1.-.4*uLow))*uTint;c=c+uLift*(1.-c);
+  vec2 q=(vUv-.5)*vec2(uAsp,1.);float v=smoothstep(1.05,.25,length(q)*1.1);c*=mix(1.-uVig,1.,v);c=mix(c,vec3(.72,.1,.09),(1.-v)*.45*uLow);
   c+=(fract(sin(dot(gl_FragCoord.xy,vec2(12.9898,78.233)))*43758.5453)-.5)/255.;gl_FragColor=vec4(clamp(c,0.,1.),1.);}`});
 const pScene=new THREE.Scene(),pCam=new THREE.OrthographicCamera(-1,1,1,-1,0,1),quad=new THREE.Mesh(new THREE.PlaneGeometry(2,2),MB);quad.frustumCulled=false;pScene.add(quad);
 function pass(m,target){quad.material=m;renderer.setRenderTarget(target);renderer.render(pScene,pCam);}
@@ -43,7 +43,7 @@ function updateGrade(dt){const cx=camera.position.x,cy=camera.position.y,b=biome
   tgt.t.multiply(new THREE.Vector3(1-night*.05,1-night*.03,1+night*.06));tgt.s*=1-night*.12;
   if(inkMoon)tgt.t.multiply(new THREE.Vector3(1+night*.06,1-night*.06,1+night*.08));if(arenaF>0){tgt.t.multiply(new THREE.Vector3(1+arenaF*.08,1-arenaF*.04,1-arenaF*.02));tgt.v+=arenaF*.12;}
   const k=Math.min(1,dt*1.5);cur.t.lerp(tgt.t,k);cur.s+=(tgt.s-cur.s)*k;cur.v+=(tgt.v-cur.v)*k;
-  MC.uniforms.uTint.value.copy(cur.t);MC.uniforms.uSat.value=cur.s;MC.uniforms.uVig.value=cur.v;MC.uniforms.uLift.value.set(.018,.012,.004);}
+  MC.uniforms.uTint.value.copy(cur.t);MC.uniforms.uSat.value=cur.s;MC.uniforms.uVig.value=cur.v;MC.uniforms.uLift.value.set(.018,.012,.004);MC.uniforms.uLow.value=lowPulse();}
 export const postOn=()=>postOK&&!postFail&&SET.post!==false;
 // called from the main loop in place of renderer.render(scene, camera)
 export function renderFrame(dt){const on=postOn();U.uHdr.value=on?1:0;

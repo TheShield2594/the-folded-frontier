@@ -336,6 +336,12 @@ export const PFX={
   leaves:{cols:['#6dbb4a','#c9a574','#fbf8f0'],n:1,spd:.5,grav:.5,life:5,up:0,s:1.1,drag:.7,sway:2.2,spin:1.6},
   petals:{n:1,spd:.4,grav:.5,life:6,up:-.2,bright:1,s:.9,drag:.8,sway:1.8,spin:1.2},
   fireflies:{n:1,spd:.3,grav:-.05,life:3,up:.1,bright:1,s:.5,glow:1,sway:1},
+  // surface dust per footstep material (issue #138, feel.js DUSTK): snow flecks, sand grains, fall leaf bits, ink splashes, sparks
+  dustSnow:{cols:['#fbf8f0','#e6f1f7','#d5e6ef'],n:4,spd:1.8,grav:5,life:.7,up:1.6,s:.7,drag:.6},
+  dustSand:{cols:['#e8cf8a','#d9b86a','#f3e2b0'],n:5,spd:2.2,grav:14,life:.45,up:1.8,s:.5},
+  dustLeaf:{cols:['#d9822b','#c9a574','#e0b04a','#b5532c'],n:2,spd:1.4,grav:2,life:1.2,up:1.5,s:.9,drag:.8,sway:1.5,spin:1.4},
+  splashInk:{cols:['#3a2a5a','#8a78b0','#6a5a90'],n:6,spd:3,grav:14,life:.5,up:3.5,s:.8},
+  sparkLand:{cols:['#fff3c0','#ffd66b','#f1c04f'],n:8,spd:5,grav:10,life:.3,up:1.5,glow:1,s:.6},
 };
 const PMAX=700;
 const pGeo=new THREE.PlaneGeometry(.17,.17);pGeo.setAttribute('aG',new THREE.InstancedBufferAttribute(new Float32Array(PMAX),1));
@@ -348,7 +354,7 @@ export const dummy=new THREE.Object3D();const tmpC=new THREE.Color();export cons
 for(let i=0;i<PMAX;i++){dummy.scale.set(0,0,0);dummy.updateMatrix();pMesh.setMatrixAt(i,dummy.matrix);pMesh.setColorAt(i,tmpC.set(1,1,1));}scene.add(pMesh);
 export function emit(k,x,y,o={}){const e=k?Object.assign({},PFX[k],o):o,cols=e.cols||['#fbf8f0'],n=e.n??1,spd=e.spd??5,glow=!!e.glow;
   for(let q=0;q<n;q++){if(parts.length>=PMAX)parts.shift();const a=Math.random()*Math.PI*2,v=rand(.3,1)*spd;const L=e.bright||glow?[1,1,1]:lightAt(x,y);
-    tmpC.set(pick(cols));parts.push({x:x+rand(-.3,.3),y:y+rand(-.3,.3),z:rand(.2,.7),vx:Math.cos(a)*v,vy:Math.sin(a)*v+(e.up??2),life:rand(.5,1.1)*(e.life||1),rx:rand(0,6),ry:rand(0,6),vr:rand(-12,12)*(e.spin??1),
+    tmpC.set(pick(cols));const j=e.jit??.3;parts.push({x:x+rand(-j,j),y:y+rand(-j,j),z:rand(.2,.7),vx:Math.cos(a)*v,vy:Math.sin(a)*v+(e.up??2),life:rand(.5,1.1)*(e.life||1),rx:rand(0,6),ry:rand(0,6),vr:rand(-12,12)*(e.spin??1),
       r:tmpC.r*L[0],g:tmpC.g*L[1],b:tmpC.b*L[2],grav:e.grav??18,s:(e.s||1)*(glow?1.35:1),drag:e.drag??.3,sway:e.sway||0,ph:rand(0,6.283),glow});}}
 export function burst(x,y,cols,n,spd=5,o={}){o=Object.assign({},o,{cols,n,spd});if(o.bright&&!o.glow&&o.life&&o.life<=.6)o.glow=1;emit(null,x,y,o);}
 export function updateParts(dt){const rm=reduceMotion(),gA=pGeo.attributes.aG;

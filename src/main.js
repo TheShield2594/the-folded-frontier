@@ -5,7 +5,7 @@ import {
   reduceMotion,playerTalk,talkAt,
   $,AC,ambient,angler,biomeAt,BIONAME,buildChunk,buildPartnerSheets,
   buildSheets,camera,camT,canvasTex,chapterCard,checkAch,checkRitual,checkRoom,circ,clamp,clouds,
-  computeLightStrip,crops,fullMoon,updateBossFx,rareGrowChance,drawWarnMark,curBio,CW,dirty,drawMap,eliteMat,explored,fi,H,handlePad,hasNPC,hitStop,
+  computeLightStrip,crops,fullMoon,updateBossFx,rareGrowChance,drawWarnMark,curBio,CW,dirty,drawMap,eliteMat,explored,fi,H,handlePad,hasNPC,hitStop,slowScale,feelIdle,
   inkMoon,invDirty,invOpen,isNight,lightDirty,loadSave,loadWorld,lx0,lx1,makeSheet,mapOpen,markChunk,
   meta,mk,mouse,music,newWorld,nightsSeen,NPCDEF,NPCORDER,pickMusic,player,playerLook,playerRigKind,makeRig,rigReskin,buildRigSheets,SHEETS,poly,
   popUp,pt,rand,refreshUI,renderer,renderQuests,reveal,revealT,rr,save,scene,setCurBio,setHitStop,
@@ -32,7 +32,7 @@ let ritualT=2,townT=3,cropT=1,liqT=0,bioT=0,starT=8,lastT=performance.now(),auto
 function frame(now){requestAnimationFrame(frame);perfStart();const pf0=performance.now();const el=Math.max(0,(now-lastT)/1000);lastT=now;let dt=Math.min(el,1/30);setWorldClock(worldClock+(dt));
   if(player.sheetDirty){rigReskin(player.rig,playerLook(),null);player.sheetDirty=false;}
   handlePad();updateTouch(dt);
-  if(state==='play'&&!mapOpen){let gdt=dt;if(hitStop>0){setHitStop(hitStop-(dt));gdt=dt*.07;}const pt=worldTime;setWorldTime((worldTime+gdt*24/600)%24);if(pt<4.5&&worldTime>=4.5){angler.day++;newDay();evDawn();palEv('dawn');if(!player.dead)stat('nights');guideEv('dawn');}
+  if(state==='play'&&!mapOpen){let gdt=dt;if(hitStop>0){setHitStop(hitStop-(dt));gdt=dt*.07;}else gdt=dt*slowScale(dt);const pt=worldTime;setWorldTime((worldTime+gdt*24/600)%24);if(pt<4.5&&worldTime>=4.5){angler.day++;newDay();evDawn();palEv('dawn');if(!player.dead)stat('nights');guideEv('dawn');}
     if(pt<4.5&&worldTime>=4.5&&inkMoon){setInkMoon(false);toast('The Ink Moon sets. You made it through!','gold');stat('inkmoons');fcount('moon');}
     if(pt<19.5&&worldTime>=19.5){setNightsSeen(nightsSeen+1);if(nightsSeen>=2&&Math.random()<.2){setInkMoon(true);toast('The Ink Moon is rising… stay close to home.','bad');SFX.boom();shake(.3);}else if(fullMoon())toast('A full moon rises. Moon Lilies bloom tonight.');evDusk();}
     updateEvents(dt,worldTime);updateWeather(dt);updateBossFx(dt);
@@ -46,7 +46,8 @@ function frame(now){requestAnimationFrame(frame);perfStart();const pf0=performan
     autosave+=dt;if(autosave>60){autosave=0;save();}
     housingT+=dt;if(housingT>2&&!player.dead){housingT=0;if(NPCORDER.some(t=>!hasNPC(t)&&NPCDEF[t].ok())){const r=checkRoom(Math.floor(player.x),Math.floor(player.y+.5));if(r.ok)tryMoveIn(r,false);}}
     }
-  else if(state==='talk')playerTalk(dt,talkAt());
+  else feelIdle();
+  if(state==='talk')playerTalk(dt,talkAt());
   else if(state==='title'){$('evbar').hidden=true;camT.x+=dt*2.2;if(camT.x>W-30)camT.x=30;player.x=camT.x;player.y=surf[clamp(Math.floor(camT.x),0,W-1)]+1;player.mesh.visible=false;if(pt.mesh)pt.mesh.visible=false;hidePets();$('partnerHud').hidden=true;setWorldTime((worldTime+dt*.25)%24);}
   if(AC){setMusic(pickMusic());music(dt,isNight());}updateAmbience(dt);mouse.lp=false;mouse.rp=false;
   if(lightDirty){computeLightStrip(lx0-17,lx1+17);setLightDirty(false);setLx0(1e9);setLx1(-1);}

@@ -5,16 +5,50 @@ import {
 } from './game.js';
 
 // ================= audio =================
-export let AC=null,master=null,musicG=null,sfxG=null,ambG=null,ambBus=null,noiseBuf=null,ambBuf=null,soundOn=SET.snd!==false;
+export let AC=null,master=null,musicG=null,sfxG=null,stepG=null,sfxLP=null,ambG=null,ambBus=null,noiseBuf=null,ambBuf=null,soundOn=SET.snd!==false;
 export function applyVolumes(){if(!AC)return;master.gain.value=soundOn?SET.vol/100*.7:0;musicG.gain.value=SET.music/100*.9;sfxG.gain.value=SET.sfx/100;ambG.gain.value=SET.amb/100;}
-export function initAudio(){if(AC)return;try{AC=new(window.AudioContext||window.webkitAudioContext)();master=AC.createGain();master.gain.value=soundOn?.55:0;master.connect(AC.destination);musicG=AC.createGain();musicG.connect(master);sfxG=AC.createGain();sfxG.connect(master);ambG=AC.createGain();ambG.connect(master);ambBus=AC.createGain();ambBus.gain.value=0;ambBus.connect(ambG);applyVolumes();
+export function initAudio(){if(AC)return;try{AC=new(window.AudioContext||window.webkitAudioContext)();master=AC.createGain();master.gain.value=soundOn?.55:0;master.connect(AC.destination);musicG=AC.createGain();musicG.connect(master);sfxLP=AC.createBiquadFilter();sfxLP.type='lowpass';sfxLP.frequency.value=18000;sfxLP.Q.value=.5;sfxLP.connect(master);sfxG=AC.createGain();sfxG.connect(sfxLP);stepG=AC.createGain();stepG.gain.value=.55;stepG.connect(sfxG);ambG=AC.createGain();ambG.connect(master);ambBus=AC.createGain();ambBus.gain.value=0;ambBus.connect(ambG);applyVolumes();
   noiseBuf=AC.createBuffer(1,AC.sampleRate,AC.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
   ambBuf=AC.createBuffer(1,AC.sampleRate*4,AC.sampleRate);const a=ambBuf.getChannelData(0);for(let i=0;i<a.length;i++)a[i]=Math.random()*2-1;}catch(e){AC=null;}}
-export function tone(f0,f1,dur,type='sine',vol=.2,delay=0,dest){if(!AC||!soundOn)return;const t=AC.currentTime+delay;const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(Math.max(f1,20),t+dur);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.008);g.gain.exponentialRampToValueAtTime(.0008,t+dur);o.connect(g).connect(dest||sfxG);o.start(t);o.stop(t+dur+.05);}
-export function noise(dur,vol,type='bandpass',freq=1200,delay=0,q=1,dest){if(!AC||!soundOn)return;const t=AC.currentTime+delay;const s=AC.createBufferSource();s.buffer=noiseBuf;const f=AC.createBiquadFilter();f.type=type;f.frequency.value=freq;f.Q.value=q;const g=AC.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);s.connect(f).connect(g).connect(dest||sfxG);s.start(t,Math.random()*.5);s.stop(t+dur+.02);}
+// sRate: sound effects (not music or ambience) drop in pitch during slow motion (slowAudio)
+let sRate=1;const fxDest=d=>!d||d===stepG;
+export function tone(f0,f1,dur,type='sine',vol=.2,delay=0,dest){if(!AC||!soundOn)return;const t=AC.currentTime+delay;if(fxDest(dest)){f0*=sRate;f1*=sRate;}const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(Math.max(f1,20),t+dur);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.008);g.gain.exponentialRampToValueAtTime(.0008,t+dur);o.connect(g).connect(dest||sfxG);o.start(t);o.stop(t+dur+.05);}
+export function noise(dur,vol,type='bandpass',freq=1200,delay=0,q=1,dest){if(!AC||!soundOn)return;const t=AC.currentTime+delay;const s=AC.createBufferSource();s.buffer=noiseBuf;const f=AC.createBiquadFilter();f.type=type;f.frequency.value=freq*(fxDest(dest)?sRate:1);f.Q.value=q;const g=AC.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);s.connect(f).connect(g).connect(dest||sfxG);s.start(t,Math.random()*.5);s.stop(t+dur+.02);}
 // vr(): small random pitch spread so repeated sounds don't repeat exactly; pick([...])() chooses one of a few variants
 const vr=(a=.08)=>1+rand(-a,a);
+// slow motion (feel.js): k 0..1 lowers the pitch of new sound effects and closes a lowpass over all of them
+export function slowAudio(k){sRate=1-.14*k;if(sfxLP)sfxLP.frequency.setTargetAtTime(18000*Math.pow(.11,k),AC.currentTime,.03);}
+// footsteps and landings (issue #132): three or more variants per material (SMAT in items.js), never the same one twice running,
+// through stepG (quieter than combat, under the sfx volume); at most STEP_VOICES play at once so a fast step rate can't stack
+const STEP_VOICES=3,stepEnd=[],lastV={};
+function pickNo(k,a){let i=Math.floor(Math.random()*a.length);if(a.length>1&&i===lastV[k])i=(i+1+Math.floor(Math.random()*(a.length-1)))%a.length;lastV[k]=i;return a[i];}
+function stepVoice(len){if(!AC)return false;const t=AC.currentTime;for(let i=stepEnd.length-1;i>=0;i--)if(stepEnd[i]<=t)stepEnd.splice(i,1);if(stepEnd.length>=STEP_VOICES)return false;stepEnd.push(t+len);return true;}
+const tk=(n,v,f0,f1,dl,g)=>{for(let i=0;i<n;i++)noise(rand(.015,.03),v*rand(.6,1),'bandpass',rand(f0,f1),dl+i*rand(.008,.02),2.5,g);};
+const STEP={
+  dirt:[(v,a,g)=>{noise(.08,.26*a,'lowpass',380*v,0,.7,g);tone(95*v,58*v,.07,'sine',.09*a,0,g);},(v,a,g)=>{noise(.09,.24*a,'lowpass',320*v,0,.9,g);noise(.03,.06*a,'bandpass',1400*v,.01,1.5,g);},(v,a,g)=>{noise(.07,.28*a,'lowpass',450*v,0,.6,g);tone(110*v,70*v,.05,'sine',.07*a,0,g);}],
+  stone:[(v,a,g)=>{noise(.035,.2*a,'bandpass',2600*v,0,2.2,g);tone(880*v,620*v,.03,'triangle',.035*a,0,g);},(v,a,g)=>{noise(.03,.22*a,'bandpass',3100*v,0,2.6,g);noise(.04,.1*a,'lowpass',500*v,0,.8,g);},(v,a,g)=>{noise(.04,.18*a,'bandpass',2200*v,0,2,g);tone(1040*v,760*v,.025,'triangle',.03*a,0,g);}],
+  wood:[(v,a,g)=>{tone(210*v,150*v,.08,'triangle',.13*a,0,g);noise(.04,.1*a,'bandpass',700*v,0,3,g);},(v,a,g)=>{tone(180*v,130*v,.09,'triangle',.12*a,0,g);tone(360*v,300*v,.04,'sine',.04*a,0,g);},(v,a,g)=>{tone(240*v,170*v,.07,'triangle',.12*a,0,g);noise(.05,.08*a,'bandpass',900*v,0,2.5,g);}],
+  sand:[(v,a,g)=>{noise(.14,.13*a,'bandpass',3200*v,0,.8,g);tk(3,.06*a,2500,4500,0,g);},(v,a,g)=>{noise(.12,.14*a,'bandpass',2800*v,0,.9,g);tk(2,.07*a,3000,5000,.02,g);},(v,a,g)=>{noise(.16,.12*a,'bandpass',3600*v,0,.7,g);tk(4,.05*a,2200,4200,0,g);}],
+  snow:[(v,a,g)=>{noise(.17,.16*a,'bandpass',1800*v,0,.7,g);tk(4,.07*a,1200,2600,0,g);},(v,a,g)=>{noise(.15,.17*a,'bandpass',1500*v,0,.8,g);tk(3,.08*a,1000,2200,.01,g);},(v,a,g)=>{noise(.19,.14*a,'bandpass',2100*v,0,.6,g);tk(5,.06*a,1400,3000,0,g);}],
+  ice:[(v,a,g)=>{tone(2400*v,2250*v,.035,'sine',.05*a,0,g);noise(.02,.1*a,'highpass',5000*v,0,1,g);},(v,a,g)=>{tone(2800*v,2600*v,.03,'sine',.045*a,0,g);noise(.02,.08*a,'highpass',6000*v,0,1,g);},(v,a,g)=>{tone(2100*v,2000*v,.04,'sine',.05*a,0,g);tone(4200*v,4000*v,.02,'sine',.02*a,.005,g);}],
+  cloud:[(v,a,g)=>noise(.13,.11*a,'lowpass',600*v,0,.5,g),(v,a,g)=>{noise(.15,.1*a,'lowpass',520*v,0,.5,g);noise(.08,.03*a,'bandpass',1600*v,.02,.6,g);},(v,a,g)=>noise(.11,.12*a,'lowpass',700*v,0,.4,g)],
+  paper:[(v,a,g)=>{tk(4,.09*a,2000,5000,0,g);noise(.06,.05*a,'bandpass',1200*v,0,.6,g);},(v,a,g)=>{tk(5,.08*a,2400,5500,0,g);},(v,a,g)=>{tk(3,.1*a,1800,4200,0,g);noise(.05,.06*a,'bandpass',1000*v,0,.7,g);}],
+  metal:[(v,a,g)=>{tone(1300*v,1240*v,.09,'square',.02*a,0,g);noise(.03,.12*a,'bandpass',3500*v,0,4,g);},(v,a,g)=>{tone(980*v,940*v,.1,'triangle',.05*a,0,g);noise(.03,.1*a,'bandpass',2800*v,0,4,g);},(v,a,g)=>{tone(1560*v,1500*v,.07,'square',.018*a,0,g);tone(620*v,600*v,.08,'triangle',.04*a,0,g);}],
+  ink:[(v,a,g)=>{noise(.12,.16*a,'lowpass',900*v,0,.8,g);tone(300*v,520*v,.06,'sine',.04*a,.02,g);},(v,a,g)=>{noise(.14,.15*a,'lowpass',750*v,0,.9,g);tone(260*v,460*v,.07,'sine',.04*a,.03,g);},(v,a,g)=>{noise(.1,.17*a,'lowpass',1000*v,0,.7,g);tone(340*v,600*v,.05,'sine',.035*a,.01,g);}],
+};
 export const SFX={
+  // one footstep on material m (vol a); a mount's hoofbeat is two quick knocks on the same material
+  step:(m,a=1)=>{if(!stepVoice(.15))return;pickNo(m,STEP[m]||STEP.stone)(vr(.05),a,stepG);},
+  hoof:(m,a=1)=>{if(!stepVoice(.2))return;const v=vr(.05);tone(150*v,90*v,.06,'triangle',.12*a,0,stepG);tone(160*v,95*v,.06,'triangle',.09*a,.07,stepG);pickNo(m,STEP[m]||STEP.stone)(v*.8,a*.6,stepG);},
+  // landing: f 0..1 from a hop to a long fall; heavy adds a thump and a low sweep, grunt a short breath
+  land:(m,f,heavy,grunt)=>{const v=vr(.05),a=.7+f*1.1;(STEP[m]||STEP.stone)[Math.floor(Math.random()*3)](v*(1-f*.15),a,stepG);noise(.06+f*.08,.1+f*.18,'lowpass',260+f*200,0,.7,stepG);
+    if(heavy){tone(120*v,40,.26,'sine',.2,0,stepG);noise(.3,.22,'lowpass',240*v,0,.6,stepG);}if(grunt)tone(190*v,120*v,.12,'triangle',.035,.03,stepG);},
+  skid:m=>{const v=vr(.08),r=m==='snow'||m==='sand'||m==='dirt'||m==='cloud';noise(.16,r?.18:.12,'bandpass',(r?1600:3200)*v,0,r?.6:2,stepG);if(!r)tone(1400*v,1100*v,.1,'triangle',.02,0,stepG);tk(3,.05,2000,4500,0,stepG);},
+  creak:()=>{const v=vr(.1);tone(170*v,150*v,.16,'sawtooth',.012,0,stepG);noise(.12,.05,'bandpass',900*v,0,5,stepG);},
+  cloth:metal=>{const v=vr(.06);noise(.08,.07,'bandpass',2600*v,0,.8,stepG);if(metal){for(let i=0;i<3;i++)tone(rand(1800,2600),rand(1700,2500),.05,'triangle',.018,i*.025,stepG);noise(.05,.06,'bandpass',4200*v,.01,3,stepG);}},
+  dip:out=>{const v=vr(.08);noise(out?.18:.26,out?.14:.22,'lowpass',(out?1100:800)*v,0,.8);tone((out?360:240)*v,(out?520:120)*v,.12,'sine',.06);tk(out?4:2,.05,1500,3500,out?.03:.05);},
+  // low health: two quiet low thumps, lub-dub
+  heart:()=>{tone(64,44,.14,'sine',.2);tone(58,40,.12,'sine',.13,.2);},
   dig:()=>{const v=vr(.15);pick([()=>{noise(.09,.35,'bandpass',1200*v,0,1.5);noise(.05,.2,'highpass',3000*v);},()=>{noise(.07,.32,'bandpass',900*v,0,2);tone(180*v,110*v,.06,'triangle',.1);},()=>{noise(.1,.3,'bandpass',1500*v,0,1.2);noise(.04,.18,'bandpass',2600*v,.03,3);}])();},
   brk:()=>{const v=vr(.12);noise(.18,.4,'lowpass',900*v);tone(220*v,90*v,.12,'triangle',.15);if(Math.random()<.5)for(let i=0;i<4;i++)noise(.03,.16,'bandpass',rand(1800,3800),.03+i*.03,2.5);},
   place:()=>{const v=vr(.1);pick([()=>{tone(200*v,110*v,.08,'triangle',.25);noise(.05,.2,'bandpass',600*v);},()=>{tone(240*v,130*v,.07,'triangle',.22);noise(.04,.22,'bandpass',900*v,0,1.4);},()=>{tone(170*v,100*v,.09,'sine',.25);noise(.06,.16,'lowpass',800*v);}])();},
