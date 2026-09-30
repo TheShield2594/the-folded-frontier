@@ -8,11 +8,14 @@ function loadJSON(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):
 function saveJSON(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 export const SET=Object.assign({},DEF_SET,loadJSON('folded-frontier-settings')||{});SET.bind=Object.assign({},DEF_BIND,SET.bind||{});
 // gamepad buttons (standard mapping indices); Start and the d-pad/stick stay fixed
-// mount and block start unbound (-1): every face button is taken, the mount item can also be used from the hotbar and
-// Interact blocks while held. A d-pad button bound to an action (heal on ↑, flatten on ↓) stops moving the player;
-// down on the stick still flattens on the ground.
-export const DEF_PAD={jump:0,interact:1,dash:2,inv:3,pl:4,pr:5,hook:6,use:7,map:8,ability:10,partner:11,heal:12,flat:13,mount:-1,block:-1};
+// block starts unbound (-1): Interact blocks while held. A d-pad button bound to an action (heal ↑, flatten ↓, switch partner ←,
+// partner move →) stops moving the player; down on the stick still flattens on the ground. R3 is free.
+export const DEF_PAD={jump:0,interact:1,dash:2,inv:3,pl:4,pr:5,hook:6,use:7,map:8,mount:10,heal:12,flat:13,partner:14,ability:15,block:-1};
 SET.pad=Object.assign({},DEF_PAD,SET.pad||{});
+// pad layout 2 moved the partner move and switch from the stick clicks to the d-pad and gave Mount L3; a saved layout still on
+// the old defaults (partner move L3, switch R3, Mount unbound, nothing else on d-pad ← →) moves with it, once
+if(!SET.padV){const q=SET.pad,o=Object.keys(q).filter(a=>!['ability','partner','mount'].includes(a)).map(a=>q[a]);
+  if(q.ability===10&&q.partner===11&&!(q.mount>=0)&&!o.includes(14)&&!o.includes(15)){q.ability=15;q.partner=14;q.mount=10;}SET.padV=2;}
 export const saveSettings=()=>saveJSON('folded-frontier-settings',SET);
 // interface size zooms all of #ui (--ui), text size multiplies every CSS font size (--ts); upx() turns screen px into #ui px.
 // Sizes above 100% are capped so the UI still has at least a 960×600 layout to work with on small screens.

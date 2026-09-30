@@ -1148,3 +1148,20 @@ test('gamepad: button names follow the controller, and hits rumble',async({page}
   expect(r.nin).toBe('B');
   expect(r.xbox).toEqual(['xbox','A']);
 });
+
+test('gamepad: partners on the d-pad and Mount on L3, and older saved layouts move over once',async({page})=>{
+  // runs after the settings the beforeEach writes, so a layout saved by an older build can stand in for them on a reload
+  await page.addInitScript(()=>{const pad=sessionStorage.getItem('__pad');if(pad)localStorage.setItem('folded-frontier-settings',JSON.stringify({snd:false,intro:false,hints:false,pad:JSON.parse(pad)}));});
+  await boot(page);
+  let r=await page.evaluate(async()=>{const g=await import('/src/game.js');g.SET.padNames='xbox';return [g.SET.pad.partner,g.SET.pad.ability,g.SET.pad.mount,g.PADNAME(g.SET.pad.partner),g.PADNAME(g.SET.pad.ability),document.querySelector('#howto [data-pa="mount"]').textContent];});
+  expect(r).toEqual([14,15,10,'D-pad ←','D-pad →','LS']);
+  // settings saved by an older build: the old default layout moves over; one with the partner move rebound is left alone
+  for(const [pad,want] of [[{jump:0,interact:1,dash:2,inv:3,pl:4,pr:5,hook:6,use:7,map:8,ability:10,partner:11,mount:-1},[15,14,10]],
+    [{jump:0,interact:1,dash:2,inv:3,pl:4,pr:5,hook:6,use:7,map:8,ability:3,partner:11,mount:-1},[3,11,-1]]]){
+    await page.evaluate(pad=>sessionStorage.setItem('__pad',JSON.stringify(pad)),pad);
+    await page.reload();
+    await page.waitForFunction(async()=>(await import('/src/game.js')).state==='title');
+    r=await page.evaluate(async()=>{const g=await import('/src/game.js');return [g.SET.pad.ability,g.SET.pad.partner,g.SET.pad.mount,g.SET.padV];});
+    expect(r).toEqual([...want,2]);
+  }
+});
