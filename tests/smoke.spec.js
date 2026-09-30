@@ -715,6 +715,47 @@ test('hand-made art replaces the atlas cells and sprite sheets it names',async({
   expect(r.crownPx[0]).toBeGreaterThan(200);expect(r.crownPx[1]).toBeLessThan(60);
 });
 
+// The painted hero (issue #128): once H.head/H.torso/H.arm/H.leg are in, the player swaps from the drawn human rig to the
+// hero rig, whose limbs bend over two bones, whose pieces take the look's colours through their masks, and which keeps
+// the human rig's part and clip names so gameplay runs on it unchanged.
+test('the painted hero rig takes over the player once its pictures load',async({page})=>{
+  await boot(page);
+  const r=await page.evaluate(async()=>{
+    const g=await import('/src/game.js');await g.artReady;
+    const solid=(w,h,c)=>{const v=document.createElement('canvas');v.width=w;v.height=h;const x=v.getContext('2d');x.fillStyle=c;x.fillRect(0,0,w,h);return v;};
+    const before=g.player.rig.k,bad=g.applyArt('rigs','H.nope',solid(8,8,'#fff'));
+    // a mid-grey tunic whose mask marks it all as tunic, so the look's shirt colour comes through
+    g.applyArt('rigs','H.torso.mask',solid(40,40,'#ff0000'));g.applyArt('rigs','H.torso',solid(40,40,'#808080'));
+    for(const n of['head','arm','leg'])g.applyArt('rigs','H.'+n,solid(40,60,'#c08060'));
+    // hair, a hat, the cape and the gripping fist are pieces too; the fist only shows while the hand holds something
+    const extra=['H.hair.short','H.hat.cap','H.cape.b','H.arm.grip','H.fist','H.helm.fe','H.mail.fe','H.brace.fe','H.greave.fe'].map(n=>g.applyArt('rigs',n,solid(20,20,'#a0a0a0')));
+    const R=g.player.rig,look=g.playerLook({tunic:1},[]),sk=g.rigSkin('hero',look,null),tc=sk.cells[R.d.pi.torso][''];
+    const px=[...sk.img.getContext('2d').getImageData(tc.ax+tc.w/2|0,tc.ay+tc.h/2|0,1,1).data];
+    // a knee bent in the walk moves the foot off the thigh's straight line
+    g.rigPlay(R,'walk',{t:0});g.rigUpdate(R,1);const hip=g.rigJoint(R,'legA'),knee=g.rigJoint(R,'shinA'),foot=g.rigPt(R,'shinA',0,28);
+    const straight=Math.abs((knee[0]-hip[0])*(foot[1]-hip[1])-(knee[1]-hip[1])*(foot[0]-hip[0]))<1e-4;
+    const clips=['idle','walk','jump','fall','land','dash','hurt','death','sw0','sw3','hold','climb','cheer','reel','mine0','bow','cast','block','parry'].filter(c=>!R.d.clips[c]);
+    const pic=g.rigPic('hero',look,'walk',.25,undefined,undefined,2),a=pic.getContext('2d').getImageData(0,0,pic.width,pic.height).data;let n=0;for(let i=3;i<a.length;i+=4)if(a[i]>0)n++;
+    const fi=R.d.pi.fist,held=()=>{g.rigUpdate(R,0);return R.vis[fi];};g.rigHold(R,'held',null);const noFist=!held();g.rigHold(R,'held',solid(16,16,'#fff'));const fist=!!held();g.rigHold(R,'held',null);
+    const aL=g.playerLook({},[{id:'helmfe'},{id:'mailfe'},{id:'legs_warden'}]),armK=[aL.helmK,aL.mailK,aL.greavesK];
+    return {armK,extra,noFist,fist,before,bad,kind:R.k,mesh:g.player.mesh===R.mesh,parts:['armA','held','shield','head','hair','hat','cape','accF','fist','helm','mail','braceA','greaveA'].every(k=>R.d.pi[k]!=null),px,straight,clips,filled:n,edge:R.mat.uniforms.uEdge.value.y>0};
+  });
+  expect(r.before).toBe('human');
+  expect(r.bad).toBe(false);
+  expect(r.kind).toBe('hero');
+  expect(r.extra).toEqual(Array(9).fill(true));
+  expect(r.armK).toEqual(['fe','fe','warden']);
+  expect([r.noFist,r.fist]).toEqual([true,true]);
+  expect(r.mesh).toBe(true);
+  expect(r.parts).toBe(true);
+  expect(r.clips).toEqual([]);
+  expect(r.straight).toBe(false);
+  expect(r.filled).toBeGreaterThan(1000);
+  expect(r.edge).toBe(true);
+  // #d4483b is the second shirt colour: the grey tunic comes out red
+  expect(r.px[0]).toBeGreaterThan(r.px[1]+60);expect(r.px[0]).toBeGreaterThan(r.px[2]+60);
+});
+
 // Weapon moves (#78) and armor sets (#37) run through the real update code with the frame loop paused,
 // stepping updatePlayer()/updateProjs() by hand, since software WebGL barely moves game time.
 test('weapon moves and armor sets',async({page})=>{

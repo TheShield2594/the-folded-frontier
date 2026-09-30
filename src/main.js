@@ -7,7 +7,7 @@ import {
   buildSheets,camera,camT,canvasTex,chapterCard,checkAch,checkRitual,checkRoom,circ,clamp,clouds,
   computeLightStrip,crops,fullMoon,updateBossFx,rareGrowChance,drawWarnMark,curBio,CW,dirty,drawMap,eliteMat,explored,fi,H,handlePad,hasNPC,hitStop,
   inkMoon,invDirty,invOpen,isNight,lightDirty,loadSave,loadWorld,lx0,lx1,makeSheet,mapOpen,markChunk,
-  meta,mk,mouse,music,newWorld,nightsSeen,NPCDEF,NPCORDER,pickMusic,player,playerLook,makeRig,rigReskin,buildRigSheets,SHEETS,poly,
+  meta,mk,mouse,music,newWorld,nightsSeen,NPCDEF,NPCORDER,pickMusic,player,playerLook,playerRigKind,makeRig,rigReskin,buildRigSheets,SHEETS,poly,
   popUp,pt,rand,refreshUI,renderer,renderQuests,reveal,revealT,rr,save,scene,setCurBio,setHitStop,
   setInkMoon,setLightDirty,setLx0,setLx1,setMusic,setNightsSeen,setRevealT,setWorldClock,setWorldTime,
   SFX,shake,simLiquids,spawnFallingStar,spawnLogic,spriteMat,stat,state,surf,T,tiles,toast,tryMoveIn,
@@ -25,7 +25,7 @@ loadArt(); // hand-made art from assets/art/ replaces the drawn cells and sheets
 drawWarnMark();
 eliteMat.map=canvasTex(makeSheet(1,64,64,t=>{const s=[];for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,r=k%2?11:26;s.push(32+Math.cos(a)*r,34+Math.sin(a)*r);}poly(t,s);fi(t,'#f1c04f',3.5);circ(t,27,28,3);t.fillStyle='#fff8e4';t.fill();},3));eliteMat.needsUpdate=true;
 // the player is a paper rig (rig.js); player.mat is its material, so tints and flashes work as on any sprite
-player.rig=makeRig('human',playerLook(),null);player.mat=player.rig.mat;player.mesh=player.rig.mesh;
+player.rig=makeRig(playerRigKind(),playerLook(),null);player.mat=player.rig.mat;player.mesh=player.rig.mesh;
 {const d=loadSave();if(d){try{loadWorld(d);}catch(e){loadFailed(e);newWorld(Math.floor(Math.random()*1e9));}$('contBtn').hidden=false;}else newWorld(Math.floor(Math.random()*1e9));}
 renderQuests();updateCoins();
 let ritualT=2,townT=3,cropT=1,liqT=0,bioT=0,starT=8,lastT=performance.now(),autosave=0,housingT=0,achT=2,mapRedraw=0;

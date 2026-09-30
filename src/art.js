@@ -1,6 +1,6 @@
 // Hand-made art: images in assets/art/ replace the procedural atlas cells and sprite sheets they name.
 // Anything without a file keeps its drawn art, so the folder can fill up one picture at a time (docs/ART.md).
-import {A,atlas,atlasTex,bestCache,buildNormals,C,cellXY,clearIcons,facePic,FOERIG,FOLK,HL,mk,ORES,paintCards,PORDER,portraitCache,RIGART,RIGS,rigPic,rigSkin,SET,setInvDirty,setRigArt,SHEETS} from './game.js';
+import {A,atlas,atlasTex,bestCache,buildNormals,C,cellXY,clearIcons,facePic,FOERIG,FOLK,HL,mk,ORES,paintCards,PORDER,portraitCache,RIGART,RIGS,rigPic,rigSkin,SET,setInvDirty,setRigArt,SHEETS,syncPlayerRig,heroArt} from './game.js';
 
 // ================= art =================
 // assets/art/atlas/<C name>.png  a 64×64 atlas cell (C.swFe → swFe.png; an array cell such as C.crack[1] → crack.1.png)
@@ -29,14 +29,14 @@ function paintSheet(k,img){const s=SHEETS[k];if(!s||!s.getContext){console.warn(
 export function paintArt(){let n=0;for(const k in artImg.atlas)n+=paintCell(k,artImg.atlas[k]);if(n)atlasTex.needsUpdate=true;return n;}
 // puts one picture in place (the loader, and the tests with a canvas); kind is 'atlas' or 'sheets'.
 // refresh=false leaves the normal map and caches to the caller (loadArt refreshes once after the batch)
-function rigPart(k){if(k.startsWith('L.')){const[,l,pt]=k.split('.');if(HL[l]&&pt)return true;console.warn(`art: no human layer "${k}"`);return false;}const m=k.match(/^([a-z_0-9]+)(?:@([\w-]+))?\.([A-Za-z0-9+]+)(?:\.([\w-]+))?$/),d=m&&RIGS[m[1]],ps=m?m[3].split('+'):[];
+function rigPart(k){if(k.startsWith('H.')){if(heroArt(k))return true;console.warn(`art: no hero piece "${k}"`);return false;}if(k.startsWith('L.')){const[,l,pt]=k.split('.');if(HL[l]&&pt)return true;console.warn(`art: no human layer "${k}"`);return false;}const m=k.match(/^([a-z_0-9]+)(?:@([\w-]+))?\.([A-Za-z0-9+]+)(?:\.([\w-]+))?$/),d=m&&RIGS[m[1]],ps=m?m[3].split('+'):[];
   if(!d||ps.some((n,i)=>{const p=d.parts[d.pi[n]];return i&&n==='all'?ps.length>2:!p||(!p.paint&&!(i===0&&ps.length>1))||(!i&&ps.length<2&&!p.v.includes(m[4]||''));})){console.warn(`art: no rig part "${k}"`);return false;}return true;}
 export function applyArt(kind,k,img,refresh=true){const ok=kind==='atlas'?paintCell(k,img):kind==='sheets'?paintSheet(k,img):kind==='rigs'&&rigPart(k);if(!ok)return false;
   if(kind==='rigs'){RIGART[k]=img;if(refresh)rigRefresh();return true;}
   artImg[kind][k]=img;if(kind==='atlas')atlasTex.needsUpdate=true;if(refresh)artRefresh(kind==='atlas');return true;}
 // new rig art: every skin re-bakes (live rigs on their next rigUpdate), then the still pictures drawn from rigs at boot
 // (foe and partner sheets, townsfolk pictures, card faces) are redrawn in place and the hand-made sheets and cells go back on top
-function rigRefresh(){setRigArt();const redo=(k,pic)=>{const T=SHEETS[k+'T'];if(!SHEETS[k]?.getContext||!pic)return;SHEETS[k]=pic;if(T){T.image=pic;T.needsUpdate=true;}};
+function rigRefresh(){setRigArt();syncPlayerRig();const redo=(k,pic)=>{const T=SHEETS[k+'T'];if(!SHEETS[k]?.getContext||!pic)return;SHEETS[k]=pic;if(T){T.image=pic;T.needsUpdate=true;}};
   for(const k in FOERIG){const[r,sk]=FOERIG[k],d=RIGS[r];redo(k,rigPic(r,sk,r==='human'?'idle':['fly','idle','swim'].find(c=>d.clips[c]),0,k));}
   for(const k of PORDER)redo('p_'+k,rigPic('p_'+k,{},'idle',0,'p_'+k));for(const k in FOLK)redo(k,facePic(k));
   for(const k in artImg.sheets)paintSheet(k,artImg.sheets[k]);for(const k in portraitCache)delete portraitCache[k];paintCards();paintArt();atlasTex.needsUpdate=true;}
