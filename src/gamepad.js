@@ -1,6 +1,6 @@
 // Gamepad polling and menu navigation.
 import {
-  $,closeSettings,craft,cyclePartner,dashPress,fireHook,initAudio,invOpen,jumpPress,mapOpen,mouse,npcs,
+  $,closeSettings,craftRec,cyclePartner,dashPress,fireHook,initAudio,invOpen,jumpPress,mapOpen,mouse,npcs,
   pad,padRebinding,partnerAbility,pause,placeTip,player,renderBinds,saveSettings,SET,setInv,setInvDirty,
   setPadRebinding,SFX,slotClick,state,T,tileAt,toggleMap,upx,
   skipIntro,dlgNext,cycleTab,toggleMount,
@@ -48,8 +48,8 @@ function menuPad(h,e){const now=performance.now(),dt=(now-padLast)/1000;padLast=
   if(e('inv')||e('interact')||e('start')){setInv(false);return;}
   if(e('pl')){cycleTab(1);setFocus(null);return;}
   const el=padFocus;if(!el)return;
-  if(e('jump')){if(el.classList.contains('slot'))slotClick(el,0,false);else if(el.classList.contains('rec'))craft(+el.dataset.r,1);else if(el.tagName==='BUTTON')el.click();else fire(el,0,false);setInvDirty(true);setTimeout(()=>{if(padFocus&&!document.body.contains(padFocus))setFocus(null);},0);}
-  if(e('use')){if(el.classList.contains('slot'))slotClick(el,2,false);else if(el.classList.contains('rec'))craft(+el.dataset.r,5);else if(el.classList.contains('shopi'))fire(el,0,true);setInvDirty(true);}
+  if(e('jump')){if(el.classList.contains('slot'))slotClick(el,0,false);else if(el.classList.contains('rec'))craftRec(el,1);else if(el.tagName==='BUTTON')el.click();else fire(el,0,false);setInvDirty(true);setTimeout(()=>{if(padFocus&&!document.body.contains(padFocus))setFocus(null);},0);}
+  if(e('use')){if(el.classList.contains('slot'))slotClick(el,2,false);else if(el.classList.contains('rec'))craftRec(el,5);else if(el.classList.contains('shopi'))fire(el,0,true);setInvDirty(true);}
   if(e('pr')&&el.classList.contains('slot')){slotClick(el,0,true);setInvDirty(true);}}
 export function padInteract(){const p=player;{const n=npcs.find(n=>Math.abs(n.x-p.x)<3&&Math.abs(n.y-p.y)<2.5);if(n){mouse.wx=n.x;mouse.wy=n.y+1;mouse.rp=true;return;}}
   let best=null,bd=9;for(let y=Math.floor(p.y)-1;y<=Math.floor(p.y)+3;y++)for(let x=Math.floor(p.x)-3;x<=Math.floor(p.x)+3;x++){const t=tileAt(x,y);if(t===T.DOOR||t===T.CHEST||t===T.BED||t===T.MURAL||t===T.CRANK||t===T.GATE||t===T.STACKS||t===T.STARDOOR||t===T.CRATE||t===T.WELLDOOR||t===T.SEAM||t===T.RIP||t===T.CREASE){const d=Math.hypot(x+.5-p.x,y+.5-(p.y+.9));if(d<bd){bd=d;best=[x,y];}}}
