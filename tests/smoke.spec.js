@@ -895,7 +895,7 @@ test('attack cancel windows: dash and block out of the wind-up, jump and dash ou
     const settle=()=>{m.l=false;p.swing=null;p.dashT=0;p.dashBuf=0;p.combo=0;p.swEnd=null;p.vx=p.vy=0;step(15);};
     const out={};m.wx=p.x+4;m.wy=p.y+1;hold('embersword');step(10);
     // wind-up: a dash drops the swing with no hit and resets the combo
-    press();at(.03);dash();out.windup=[p.swing,p.dashT>0,p.combo,p.lastEarly];settle();
+    press();at(.03);dash();out.windup=[p.swing,p.dashT>0,p.combo,p.lastEarly];m.l=true;step();out.heldDash=[p.swing,p.dashT>0];m.l=false;settle();
     // active frames: the dash waits, then fires on the first cancellable frame (dashPress only works in play)
     press();at(.3);dash();out.held=[!!p.swing,p.dashT>0,p.dashBuf>0];g.setState('play');step(3);g.setState('pause');out.buffered=[p.swing,p.dashT>0];settle();
     // recovery: a jump cuts it short on the ground and keeps the combo going
@@ -915,6 +915,7 @@ test('attack cancel windows: dash and block out of the wind-up, jump and dash ou
     g.setState('play');return out;
   });
   expect(r.windup).toEqual([null,true,0,true]);
+  expect(r.heldDash).toEqual([null,true]);
   expect(r.held).toEqual([true,false,true]);
   expect(r.buffered).toEqual([null,true]);
   expect(r.c0).toBe(0);
