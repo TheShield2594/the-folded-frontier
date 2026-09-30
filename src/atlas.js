@@ -305,6 +305,8 @@ C.murals=[
 C.tmap=sticker(t=>{poly(t,[8,12,26,8,40,14,56,10,56,52,40,56,26,50,8,54]);fi(t,'#e9dcc0');t.beginPath();t.moveTo(26,8);t.lineTo(26,50);t.moveTo(40,14);t.lineTo(40,56);ink(t,1.5,'rgba(42,33,48,.3)');t.setLineDash([3,3]);t.beginPath();t.moveTo(14,44);t.quadraticCurveTo(26,30,40,34);ink(t,2,'#8a5a33');t.setLineDash([]);t.beginPath();t.moveTo(40,28);t.lineTo(48,36);t.moveTo(48,28);t.lineTo(40,36);ink(t,3,'#d4483b');});
 C.foldblade=swordIcon('#f4f0e6',1);
 C.foldwave=sticker(t=>{t.beginPath();t.arc(30,32,22,-1.4,1.4);t.arc(22,32,18,1.2,-1.2,true);t.closePath();fi(t,'#fbf8f0',2.5);},2);
+// the frostpuff's ice shard in flight (its own cell, so the Ice Block's cell can stay a block)
+C.shard=sticker(t=>{poly(t,[32,6,42,32,32,58,22,32]);fi(t,'#bfe6f5',2.5);poly(t,[32,6,42,32,32,32]);t.fillStyle='rgba(255,255,255,.6)';t.fill();},2);
 // ---- fishing
 const rodIcon=(col,tip)=>sticker(t=>{for(const[w,c]of[[6.5,INK],[3.5,col]]){t.beginPath();t.moveTo(10,58);t.quadraticCurveTo(28,26,56,6);ink(t,w,c);}t.save();t.translate(15,51);t.rotate(-.9);rr(t,-3.5,-9,7,18,3);fi(t,'#6b4430',2);t.restore();
   circ(t,24,44,5.5);fi(t,'#a9adb8',2);circ(t,24,44,2);t.fillStyle=INK;t.fill();circ(t,56,6,3);fi(t,tip,1.5);t.beginPath();t.moveTo(56,6);t.quadraticCurveTo(62,30,50,44);ink(t,1.3,'rgba(42,33,48,.65)');
