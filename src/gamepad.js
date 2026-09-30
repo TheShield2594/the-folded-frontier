@@ -3,7 +3,7 @@ import {
   $,craftRec,cyclePartner,dashPress,fireHook,initAudio,invOpen,jumpPress,mapOpen,mouse,npcs,
   pad,padRebinding,partnerAbility,pause,placeTip,player,renderBinds,saveSettings,SET,setInv,setInvDirty,
   setPadRebinding,SFX,slotClick,state,T,tileAt,toggleMap,upx,
-  skipIntro,dlgNext,cycleTab,toggleMount,quickHeal,reachOK,meta,idx,padLabels,
+  skipIntro,introNext,dlgNext,cycleTab,toggleMount,quickHeal,reachOK,meta,idx,padLabels,
 } from './game.js';
 
 // ================= gamepad =================
@@ -23,7 +23,7 @@ export function handlePad(){const gps=navigator.getGamepads?navigator.getGamepad
   if(Object.values(h).some(Boolean)||Math.hypot(rx,ry)>.3){if(!pad.active)initAudio();pad.active=true;}
   // right stick aim (placed in view.js padAim): its direction, and its tilt past the dead zone (full at .9) as aimR
   {const m=Math.hypot(rx,ry);if(m>.3){pad.aimX=rx/m;pad.aimY=-ry/m;pad.aimR=Math.min(1,(m-.3)/.6);pad.aimT=1.2;}}
-  if(state==='intro'){if(ef('jump')||ef('start')||ef('interact'))skipIntro();return;}
+  if(state==='intro'){if(ef('start')||ef('interact'))skipIntro();else if(ef('jump')||ef('use'))introNext();return;}
   if(state==='talk'){if(ef('start'))dlgNext(true);else if(ef('jump')||ef('interact')||ef('use'))dlgNext();return;}
   if(state==='title'||state==='paused'){overPad(fx,ef);return;}
   if(state!=='play')return;
