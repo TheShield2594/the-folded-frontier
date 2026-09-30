@@ -213,7 +213,7 @@ const MOREPOSE={land:{legA:.55,legB:-.5,armA:-.55,armB:.55,bob:4},dash:{legA:-.9
   // issue #137: run is the stride extreme the run loop swings through (rig.js); skid plants the front foot and leans back when
   // reversing at speed; landh is a hard landing with the front hand down; hurtb a hit from behind (thrown forward)
   run:{legA:.95,legB:-.95,armA:-1.15,armB:1.15,lean:.16,bob:4,wave:7},skid:{legA:-.75,legB:.35,armA:-1.2,armB:-.8,lean:-.2,bob:3,wave:-3},
-  landh:{legA:-.8,legB:.7,armA:-.5,armB:.8,lean:.32,bob:9},hurtb:{legA:-.4,legB:.45,armA:1.1,armB:1.3,lean:.2,bob:1,wave:4,face:'hurt'}};
+  landh:{legA:-1.3,legB:1.1,armA:-.6,armB:1.1,lean:.6,bob:20,hr:-.2},hurtb:{legA:-.4,legB:.45,armA:1.1,armB:1.3,lean:.2,bob:1,wave:4,face:'hurt'}};
 export const PF={idle:0,walk:2,jump:6,fall:7,hold:8,swing:9};for(const k in MOREPOSE){PF[k]=POSES.length;POSES.push(MOREPOSE[k]);}
 // the front shoulder in pose f in world units from the bottom of the player mesh (the swing trail's curve; the live arm reads the rig)
 export function shoulderAt(f){const o=POSES[f]||{},l=o.lean||0,[sx,sy]=player.rig?.d.sho||[7,56],x=sx*Math.cos(l)+sy*Math.sin(l),y=sx*Math.sin(l)-sy*Math.cos(l)+138+(o.bob||0);return[x/60,(144-y)/60];}

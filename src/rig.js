@@ -304,7 +304,7 @@ HC.idle=loopClip(2.6,[[0,poseCh(POSES[0])],[1.3,poseCh(POSES[1])]],'io',.16);HC.
 {const R0=POSES[PF.run],K=[];for(let k=0;k<12;k++){const ph=k/12*Math.PI*2,s=Math.sin(ph);K.push([k/12,poseCh({legA:s*R0.legA,legB:s*R0.legB,armA:s*R0.armA,armB:s*R0.armB,lean:R0.lean,bob:-Math.abs(Math.cos(ph))*R0.bob+R0.bob*.5,wave:R0.wave+s*2})]);}HC.run=loopClip(1,K,'lin',.12);delete HC.run.tr.head;}
 // idle fidgets after standing still a while (one-shot clips: stretch, look around, dust off)
 const fid=(len,keys,pc)=>{const c=loopClip(len,keys.map(([t,o])=>[t,pc(o)]),'io',.3);c.loop=0;return c;};
-{const b=POSES[0],o=x=>Object.assign({},b,x);HC.stretch=fid(1.8,[[0,o({})],[.6,o({armA:-2.9,armB:2.9,bob:-2,lean:-.06,blink:1})],[1.2,o({armA:-2.8,armB:2.8,bob:-2,lean:-.04,blink:1})]],poseCh);
+{const b=POSES[0],o=x=>Object.assign({},b,x);HC.stretch=fid(1.8,[[0,o({})],[.6,o({armA:1.2,armB:1.4,bob:-2,lean:-.1,hr:-.18,blink:1})],[1.2,o({armA:1.1,armB:1.3,bob:-2,lean:-.08,hr:-.16,blink:1})]],poseCh);
   HC.look=fid(2.4,[[0,o({})],[.5,o({hr:-.22})],[1.1,o({hr:-.22})],[1.6,o({hr:.16})],[2,o({hr:.16})]],poseCh);
   HC.dust=fid(1.4,[[0,o({})],[.3,o({lean:.12,hr:.16,armA:-.7,armB:.3})],[.5,o({lean:.12,hr:.16,armA:-.2,armB:.3})],[.7,o({lean:.12,hr:.16,armA:-.7,armB:.3})],[.9,o({lean:.12,hr:.16,armA:-.2,armB:.3})]],poseCh);}
 HC.climb=loopClip(2,[[0,poseCh(POSES[PF.climb0])],[1,poseCh(POSES[PF.climb1])]],'io',.1);
@@ -470,8 +470,8 @@ const HPOSE={hold:{legA:-.22,kA:.3,legB:.22,kB:.18,armA:-1.6,eA:-.2,armB:.25},
   dash:{wave:9,legA:-1.05,kA:.55,legB:.95,kB:.95,armA:1,eA:-.25,armB:1.3,eB:-.2,lean:.24,sq:.97},
   hurt:{wave:-3,legA:.3,kA:.45,legB:-.45,kB:.2,armA:-.95,eA:-.55,armB:-.6,eB:-.4,lean:-.22,x:-2,bob:1,face:'hurt',hr:-.12},
   hurtb:{wave:3,legA:-.5,kA:.4,legB:.4,kB:.3,armA:1.1,eA:-.3,armB:1.3,eB:-.3,lean:.24,x:2,bob:1,face:'hurt',hr:.1},
-  // a hard landing: down on one knee with the front hand on the ground; a skid: the front foot planted, leaning back
-  landh:{legA:-.9,kA:1.7,legB:.2,kB:1.5,armA:-.45,eA:-.15,armB:.9,eB:-.3,lean:.4,bob:16,sq:.9,hr:.1},
+  // a hard landing: a three-point landing (front thigh level, back knee down, the front hand on the ground); a skid: the front foot planted, leaning back
+  landh:{legA:-2.17,kA:1.57,legB:-.6,kB:1.57,armA:-.6,eA:0,armB:1.2,eB:-.3,lean:.6,bob:16,hr:-.3},
   skid:{legA:-.9,kA:.1,legB:.5,kB:.9,armA:-1.3,eA:-.5,armB:-.9,eB:-.4,lean:-.24,bob:4,sq:.95,hr:-.08},
   death:{legA:.6,kA:.5,legB:-.2,kB:.3,armA:.4,eA:-.3,armB:.7,lean:-.17,bob:4,face:'ko'},
   flat:{legA:-.75,legB:.75,armA:-1.9,armB:1.9,blink:1},
@@ -503,7 +503,7 @@ const HPOSE={hold:{legA:-.22,kA:.3,legB:.22,kB:.18,armA:-1.6,eA:-.2,armB:.25},
         eA:-1.25-.35*Math.max(0,-s),eB:-1.25-.35*Math.max(0,s),lean:.2,wave:5+1.5*Math.sin(ph*Math.PI*4),bob:3.5*Math.abs(s)-2.5,hr:-.05})]);}
     HR.run=loopClip(1,K,'lin',.12);delete HR.run.tr.head.sw;}
   {const b={legA:-.05,legB:.06,kA:.08,kB:.1,armA:.06,armB:-.08,eA:-.15,eB:-.18},o=x=>Object.assign({},b,x);
-    HR.stretch=fid(1.8,[[0,o({})],[.6,o({armA:-2.9,eA:-.15,armB:2.9,eB:-.15,br:1.03,bob:-2,sq:1.03,blink:1,hr:-.1})],[1.2,o({armA:-2.8,eA:-.2,armB:2.8,eB:-.2,br:1.03,bob:-2,sq:1.03,blink:1,hr:-.1})]],hp);
+    HR.stretch=fid(1.8,[[0,o({})],[.6,o({armA:1.3,eA:-.1,armB:1.5,eB:-.1,lean:-.12,br:1.04,bob:-2,sq:1.03,blink:1,hr:-.18})],[1.2,o({armA:1.2,eA:-.15,armB:1.4,eB:-.15,lean:-.1,br:1.04,bob:-2,sq:1.03,blink:1,hr:-.16})]],hp);
     HR.look=fid(2.4,[[0,o({})],[.5,o({hr:-.22})],[1.1,o({hr:-.22})],[1.6,o({hr:.16})],[2,o({hr:.16})]],hp);
     HR.dust=fid(1.4,[[0,o({})],[.3,o({lean:.12,hr:.16,armA:-.5,eA:-1.4,armB:.2})],[.5,o({lean:.12,hr:.16,armA:-.15,eA:-1.1,armB:.2})],[.7,o({lean:.12,hr:.16,armA:-.5,eA:-1.4,armB:.2})],[.9,o({lean:.12,hr:.16,armA:-.15,eA:-1.1,armB:.2})]],hp);}
   const mk2=(a,b,len,bl)=>loopClip(len,[[0,hp(HPOSE[a])],[len/2,hp(HPOSE[b])]],'io',bl);
