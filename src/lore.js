@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import {
   $,BIO,biomeAt,N,canvasTex,chapterCard,circ,DU,enemies,fi,grain,H,idx,ink,isAwake,meta,mk,mulberry32,PARTNERS,partnerSpeaker,
-  OPAQUE,player,poly,quests,rr,say,scene,seed,setInvDirty,setTab,SFX,SPAWNX,surf,T,tiles,toast,W,walls,
+  OPAQUE,player,poly,quests,rr,say,scene,seed,setInvDirty,setTab,pickPage,SFX,SPAWNX,surf,T,tiles,toast,W,walls,
 } from './game.js';
 
 // ================= lore =================
@@ -73,11 +73,18 @@ export function findLore(k,quiet){if(!LK[k]||lore.f[k])return false;lore.f[k]=1;
 export function loreChest(i){const tr=(BIO.treasure||[]).some(([x,y])=>idx(x,y)===i);if(walls[i]!==3&&!tr)return;lore.ch=lore.ch||[];if(lore.ch.includes(i))return;const l=LORE.find(l=>l.kind==='letter'&&!lore.f[l.k]);if(l&&findLore(l.k)){lore.ch.push(i);toast(`A letter was tucked inside: "${l.t}"`);}}
 // right-click a mural: find its page and open the Journal on it
 export function readMural(x,y){const k='m'+((meta[idx(x,y)]&3)+1);findLore(k);openJournal(k);}
-export function openJournal(k){setTab('story');if(!k)return;setTimeout(()=>{const el=$('sideBody').querySelector(`[data-lore="${k}"]`);if(!el)return;el.scrollIntoView({block:'center'});el.classList.add('hl');setTimeout(()=>el.classList.remove('hl'),1600);},60);}
-export function loreHTML(){let h=`<div class="sideTip"><b>The Unfolding</b>The Frontier was folded from one great sheet, and its folds are coming loose. Landmarks, ruins, the keepers and your partners each hold a piece of why.</div><p class="hint">${loreCount()} of ${LORE.length} pages found. Right-click a mural to read it.</p>`;
-  for(const kd in KIND){const L=LORE.filter(l=>l.kind===kd);h+=`<h3 style="margin-top:8px">${KIND[kd]} · ${L.filter(l=>lore.f[l.k]).length} / ${L.length}</h3>`;
-    h+=L.map(l=>lore.f[l.k]?`<div class="lore" data-lore="${l.k}"><b>${l.t}</b><span>${l.x}</span></div>`:`<div class="lore lock" data-lore="${l.k}"><b>???</b><span>${l.h}</span></div>`).join('');}
+export function openJournal(k){setTab('story');if(k)pickPage('story',k);}
+// the Journal (issue #144): titles only, grouped by kind, with pages not read yet marked New (lore.f[k] is 1 when found,
+// 2 once read); a page opens in the reader (loreRead) instead of the list
+export function readLore(k){if(lore.f[k]===1){lore.f[k]=2;setInvDirty(true);}}
+export const loreUnread=()=>LORE.filter(l=>lore.f[l.k]===1).length;
+export function loreHTML(){const nu=loreUnread();let h=`<div class="sideTip"><b>The Unfolding</b>The Frontier was folded from one great sheet, and its folds are coming loose. Landmarks, ruins, the keepers and your partners each hold a piece of why.</div><p class="hint">${loreCount()} of ${LORE.length} pages found${nu?`, ${nu} not read yet`:''}. Click a page to read it. Right-click a mural to read it.</p>`;
+  for(const kd in KIND){const L=LORE.filter(l=>l.kind===kd);h+=`<h3 style="margin-top:8px">${KIND[kd]} · ${L.filter(l=>lore.f[l.k]).length} / ${L.length}</h3><div class="lgrid">`;
+    h+=L.map(l=>lore.f[l.k]?`<div class="lore${lore.f[l.k]===1?' new':''}" data-lore="${l.k}" role="button"><b>${l.t}</b>${lore.f[l.k]===1?'<i>New</i>':''}</div>`:`<div class="lore lock" data-lore="${l.k}"><b>???</b><span>${l.h}</span></div>`).join('')+'</div>';}
   return h;}
+export function loreRead(k){const l=k&&LK[k];if(!l||!lore.f[k])return '';const L=LORE.filter(o=>o.kind===l.kind&&lore.f[o.k]),i=L.indexOf(l);
+  return `<div class="row loreNav"><button type="button" class="ghost loreBack">‹ All pages</button><small>${KIND[l.kind]} · ${i+1} of ${L.length} found</small></div><article class="loreRead"><h2>${l.t}</h2><p>${l.x}</p></article>`+
+    (L.length>1?`<div class="row loreNav">${i>0?`<div class="lore" data-lore="${L[i-1].k}" role="button"><b>‹ ${L[i-1].t}</b></div>`:''}${i<L.length-1?`<div class="lore" data-lore="${L[i+1].k}" role="button" style="margin-left:auto"><b>${L[i+1].t} ›</b></div>`:''}</div>`:'');}
 
 // ================= murals =================
 // Painted once per world into ruin rooms and the shrine (new worlds right after generation, older saves on their next

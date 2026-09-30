@@ -755,6 +755,59 @@ test('the backpack is one book: pages side by side, chest buttons, sort, grouped
   expect(z.fits).toBe(true);
 });
 
+// The Hero page (#143) and the grid and detail views of the tab pages (#144): the gear slots stand beside the hero with a
+// stats block, set progress and the badges; the Bestiary is a grid with one entry open, the Journal lists titles and opens a
+// page in a reader (marking it read), the binder flips pocket pages, Party and Town fold what isn't found into small tiles.
+test('the Hero page and the grid and detail views of the tab pages',async({page})=>{
+  await boot(page);
+  await newSmallWorld(page);
+  const shot=async n=>{if(!process.env.FF_SHOTS)return;await page.waitForTimeout(800);await page.screenshot({path:`${process.env.FF_SHOTS}/${n}.png`});};
+  const s=await page.evaluate(async()=>{
+    const g=await import('/src/game.js'),P=g.player,out={},$=id=>document.getElementById(id),shown=id=>!$(id).hidden,sb=()=>$('sideBody'),down=el=>el.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,button:0}));
+    for(let i=10;i<40;i++)P.inv[i]=null;g.setInv(true);
+    // Hero: the slots, a set's progress, the stats and the badges
+    g.setTab('hero');g.refreshUI();out.hero=[shown('hero'),!shown('craft'),!shown('sideSheet'),$('hero').querySelectorAll('.slot[data-kind="armor"]').length,$('hero').querySelectorAll('.slot[data-kind="acc"]').length];
+    P.inv[12]={id:'helm_warden',n:1};g.slotClick($('grid').children[12],0,true);g.refreshUI();out.helm=P.armor[0]&&P.armor[0].id;
+    out.set=$('heroStats').textContent.includes('Crease Warden 1/3');out.stats=['Life','Mana','Defense','Move speed','Weapon'].every(w=>$('heroStats').textContent.includes(w));
+    P.badges=['power'];P.badgesOn=[];g.setInvDirty(true);g.refreshUI();down($('heroBadges').querySelector('.bdg'));out.badge=P.badgesOn.includes('power');
+    // Party keeps partners, pets and mounts; what isn't found is a small tile
+    g.setTab('party');g.refreshUI();out.party=[sb().querySelectorAll('.bdg').length,sb().querySelectorAll('.ptile').length>0];
+    // Bestiary: a tile per entry, and the picked entry stays open through a re-render
+    g.bestiary.slime={k:3,e:0,d:{}};g.setTab('bestiary');g.refreshUI();out.tiles=sb().querySelectorAll('.btile').length===g.BEST.length;
+    down(sb().querySelector('.btile[data-best="slime"]'));g.setInvDirty(true);g.refreshUI();out.entry=sb().querySelector('.bdet').textContent.includes('Green Slime')&&g.pgSel.bestiary==='slime';
+    // Journal: titles, a new page marked, the reader, back to the list
+    g.findLore('l1',true);g.setTab('story');g.refreshUI();const l=sb().querySelector('.lore[data-lore="l1"]');out.newMark=l&&l.classList.contains('new');
+    down(l);out.read=[!!sb().querySelector('.loreRead'),g.lore.f.l1];sb().querySelector('.loreBack').click();out.back=!sb().querySelector('.loreRead')&&!!sb().querySelector('.qlist');
+    // Binder: one pocket page at a time, flipped by its buttons; missing cards are numbered pockets
+    g.addItem('binder',1);g.cards.have[g.CARDS[0][0]]=2;g.setTab('binder');g.refreshUI();const pg0=g.CARDS.filter(c=>c[4]===g.CARDPAGES[0].id).length;
+    out.pockets=[sb().querySelectorAll('.pockets .tcard').length===pg0,!!sb().querySelector('.tcard.miss b')?.textContent.startsWith('#')];
+    sb().querySelector('[data-bpg="1"]').click();out.flip=g.pgSel.binder===1&&sb().querySelectorAll('.pockets .tcard').length===g.CARDS.filter(c=>c[4]===g.CARDPAGES[1].id).length;
+    // Town: who's next on top, not the whole list
+    g.setTab('town');g.refreshUI();out.town=[sb().textContent.includes('Next to move in'),sb().querySelectorAll('.npcRow:not(.tup)').length<=3];
+    g.setTab('hero');g.refreshUI();
+    return out;
+  });
+  // the hero's picture is drawn once the rig's skin is re-baked with the new helmet
+  await page.waitForFunction(async()=>{const g=await import('/src/game.js');if(g.player.sheetDirty)return false;g.setInvDirty(true);g.refreshUI();
+    const c=document.getElementById('heroPic'),d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;for(let i=3;i<d.length;i+=4)if(d[i])return true;return false;});
+  await shot('hero');
+  expect(s.hero).toEqual([true,true,true,3,3]);
+  expect(s.helm).toBe('helm_warden');
+  expect(s.set).toBe(true);
+  expect(s.stats).toBe(true);
+  expect(s.badge).toBe(true);
+  expect(s.party).toEqual([0,true]);
+  expect(s.tiles).toBe(true);
+  expect(s.entry).toBe(true);
+  expect(s.newMark).toBe(true);
+  expect(s.read).toEqual([true,2]);
+  expect(s.back).toBe(true);
+  expect(s.pockets).toEqual([true,true]);
+  expect(s.flip).toBe(true);
+  expect(s.town).toEqual([true,true]);
+  if(process.env.FF_SHOTS)for(const t of['bestiary','story','read','binder','town','party']){await page.evaluate(async t=>{const g=await import('/src/game.js');g.SET.motion='reduce';g.applyUI&&g.applyUI();for(const k of['l2','m1','king','lumi'])g.findLore(k,true);if(t==='read'){g.pickPage('story','l1');return;}g.setTab(t);g.refreshUI();if(t==='story')document.querySelector('#sideBody .sideTip').scrollIntoView();},t);await shot(t);}
+});
+
 // Atlas cells are allocated in order around the two bands of 256px tree canopies; none may land in a band or past the atlas.
 test('atlas cells stay clear of the canopy regions',async({page})=>{
   await boot(page);

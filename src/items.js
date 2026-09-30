@@ -228,7 +228,7 @@ export const BADGES={stomp:['Power Stomp',1,'Stomps deal double damage.',C.bStom
   flowerf:['Flower Finder',1,'Defeated enemies sometimes drop mana stars.',C.bFlowerF],money:['Money Money',2,'Enemies drop 50% more coins.',C.bMoney],quick:['Quick Change',1,'Partner moves recharge 30% faster.',C.bQuick],
   happy:['Happy Heart',2,'Slowly regain life at all times.',C.bHappy],close:['Close Call',1,'At low life, sometimes dodge a hit completely.',C.bClose],feather:['Feather Fall',1,'Hold jump while falling to glide down.',C.bFeather],
   last:['Last Stand',2,'Take half damage while below 20% life.',C.bLast],spike:['Spike Shield',1,'Safely stomp spiky and armored foes.',C.bSpike],lure:["Angler's Luck",1,'+15 fishing power.',C.bLure]};
-for(const k in BADGES){const[n,bp,d,cell]=BADGES[k];item('b_'+k,{name:n+' Badge',cell,badge:k,max:1,value:bp*30,desc:`${d} Costs ${bp} BP. Equip in the Party menu.`});}
+for(const k in BADGES){const[n,bp,d,cell]=BADGES[k];item('b_'+k,{name:n+' Badge',cell,badge:k,max:1,value:bp*30,desc:`${d} Costs ${bp} BP. Equip it on the Hero page.`});}
 item('bpup',{name:'BP Up',cell:C.bpUp,use:'bpup',max:10,value:80,desc:'Use to gain 1 Badge Point (up to 5 extra).'});
 item('hpheart',{name:'Heart',cell:C.hpHeart});item('mpstar',{name:'Mana Star',cell:C.mpStar});
 export const HERBS=[['sunpetal','Sunpetal'],['frostleaf','Frostleaf'],['inkreed','Inkreed'],['emberbloom','Emberbloom'],['wheat','Paper Wheat']];
