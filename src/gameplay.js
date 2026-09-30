@@ -198,7 +198,7 @@ export const PK={
  wave:{icon:'foldwave',size:1.3,grav:0,rot:'vel',rotOff:0,pierce:4,life:.6,noclipAll:1,trail:['#fbf8f0'],trailRate:.6,kb:6,glow:1},
  shuri:{icon:'shuriken',size:.6,grav:10,spin:20,drop:.5,dropId:'shuriken'},
  spore:{icon:'mushroom',size:.6,grav:14,spin:8,life:3,trail:['#f4ecd8'],trailRate:.3,splat:['#d4483b','#f4f0e6']},
- shard:{elem:'water',icon:'ice',size:.45,grav:0,spin:10,life:1.4,trail:['#dff2fa'],trailRate:.4,splat:['#dff2fa','#aee0f2']},
+ shard:{elem:'water',icon:'iceshard',size:.45,grav:0,spin:10,life:1.4,trail:['#dff2fa'],trailRate:.4,splat:['#dff2fa','#aee0f2']},
  iarrow:{elem:'ink',icon:'inkarrow',size:.85,grav:14,rot:'vel',rotOff:Math.PI/4,trail:['#3a2a5a','#6b4c8f'],trailRate:.5,splat:['#3a2a5a','#6b4c8f'],drop:.25,dropId:'inkarrow'},
  parrow:{icon:'piercearrow',size:.85,grav:10,rot:'vel',rotOff:Math.PI/4,pierce:2,trail:['#dfe3ec'],trailRate:.35,drop:.35,dropId:'piercearrow'},
  rarrow:{icon:'bouncearrow',size:.85,grav:14,rot:'vel',rotOff:Math.PI/4,ric:2,bounce:1,trail:['#7fd3f0','#fbf8f0'],trailRate:.5,splat:['#5aa7e0','#bfe3f7'],drop:.25,dropId:'bouncearrow'},

@@ -192,7 +192,7 @@ item('hook',{name:'Grappling Hook',cell:C.hook,hook:1,max:1,value:60,desc:'Press
 item('featherbow',{name:'Feather Bow',cell:C.bowFr,ranged:1,ammo:'arrow',dmg:16,ut:.38,spd:26,count:3,max:1,value:120,desc:'Fires three arrows for the price of one.'});
 item('tidetome',{name:'Tidal Tome',cell:C.tomeTide,magic:1,mana:12,dmg:20,ut:.5,spd:18,proj:'bubble',count:5,max:1,value:160,desc:'A fan of bouncing water bolts that soak foes.'});
 item('emberstaff',{name:'Ember Staff',cell:C.staffEm,magic:1,mana:16,dmg:46,ut:.55,spd:20,proj:'emberball',max:1,value:220,desc:'Lobs fireballs that explode.'});
-item('fireball',{name:'Fireball',cell:C.fireball});item('bubble',{name:'Water Bolt',cell:C.bubble});item('foldwave',{name:'Paper Wave',cell:C.foldwave});
+item('fireball',{name:'Fireball',cell:C.fireball});item('bubble',{name:'Water Bolt',cell:C.bubble});item('foldwave',{name:'Paper Wave',cell:C.foldwave});item('iceshard',{name:'Ice Shard',cell:C.shard});
 item('tmap',{name:'Torn Treasure Map',cell:C.tmap,use:'tmap',max:20,value:40,desc:'Use it to mark a buried treasure on your world map (M).'});
 item('foldblade',{name:'The Unfolded Edge',cell:C.foldblade,dmg:72,kb:9,dur:.3,wave:1,max:1,value:500,desc:'Legendary. Every swing sends out a slicing paper wave.'});item('crescent',{name:'Crescent',cell:C.crescent});
 item('moonbow',{name:'Moonstring Bow',cell:C.bowMoon,ranged:1,ammo:'arrow',dmg:20,ut:.3,spd:30,pierce:1,max:1,value:90,desc:'Arrows pierce through one enemy.'});
