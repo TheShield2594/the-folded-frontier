@@ -103,7 +103,9 @@ function padAim(p,dt){pad.aimT-=dt;const it=selItem(),snap=aimsTile(it)&&!cursor
   const r=1.2+(pad.aimR??1)*((hasAcc('reach')?7.5:5.5)-1.2),gx=p.x+pad.aimX*r,gy=p.y+.9+pad.aimY*r;
   if(pad.ax==null){pad.ax=gx;pad.ay=gy;}else{const k=Math.min(1,dt*22);pad.ax+=(gx-pad.ax)*k;pad.ay+=(gy-pad.ay)*k;}
   if(!snap){pad.cell=null;mouse.wx=pad.ax;mouse.wy=pad.ay;return;}
-  const c=pad.cell,m=.22;if(!c||pad.ax<c[0]-m||pad.ax>c[0]+1+m||pad.ay<c[1]-m||pad.ay>c[1]+1+m)pad.cell=[Math.floor(pad.ax),Math.floor(pad.ay)];
+  // a tile the aim snaps to must be in reach (reachOK) even where the snap rounds outward: step back toward the player until it is
+  const pick=(ax,ay)=>{const dx=ax-p.x,dy=ay-(p.y+.9),d=Math.hypot(dx,dy)||1;for(let r=d;r>.4;r-=.2){const x=Math.floor(p.x+dx/d*r),y=Math.floor(p.y+.9+dy/d*r);if(reachOK(x,y))return[x,y];}return[Math.floor(ax),Math.floor(ay)];};
+  const c=pad.cell,m=.22;if(!c||pad.ax<c[0]-m||pad.ax>c[0]+1+m||pad.ay<c[1]-m||pad.ay>c[1]+1+m||!reachOK(c[0],c[1]))pad.cell=pick(pad.ax,pad.ay);
   mouse.wx=pad.cell[0]+.5;mouse.wy=pad.cell[1]+.5;}
 // screen px to world coordinates on the z=.5 plane the tiles sit on
 export function screenToWorld(x,y){const v=new THREE.Vector3((x/innerWidth)*2-1,-(y/innerHeight)*2+1,.5).unproject(camera).sub(camera.position).normalize();const t=(.5-camera.position.z)/v.z;return[camera.position.x+v.x*t,camera.position.y+v.y*t];}

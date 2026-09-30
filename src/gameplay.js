@@ -448,7 +448,7 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();se
   if(onRope&&(upH||dnH)&&!hooked)p.climb=true;if(!onRope||hooked)p.climb=false;
   // block: hold right-click, the Block key or button, or the gamepad Interact button (pad.blk, gamepad.js) with a shield equipped
   // (Settings > Block: Toggle raises the shield on one press and lowers it on the next)
-  const shield=shieldItem(),blkIn=held('block')||mouse.r||(pad.active&&!!pad.blk);if(SET.blockTog&&blkIn&&!p.blkWas)p.blockOn=!p.blockOn;if(!shield)p.blockOn=false;p.blkWas=blkIn;
+  const shield=shieldItem(),blkIn=held('block')||mouse.r||(pad.active&&!!pad.blk&&!!pad.held.interact);if(SET.blockTog&&blkIn&&!p.blkWas)p.blockOn=!p.blockOn;if(!shield)p.blockOn=false;p.blkWas=blkIn;
   const wantBlock=!!shield&&(SET.blockTog?!!p.blockOn:blkIn)&&!hooked&&!p.climb&&!p.flat&&p.dashT<=0&&!cursor&&!invOpen;
   if(wantBlock&&!p.blocking){p.blocking=true;p.blockT=0;p.parryOK=!(p.blockCD>0);SFX.raise();}else if(!wantBlock&&p.blocking){p.blocking=false;p.blockCD=.3;}
   p.blockCD=(p.blockCD||0)-dt;if(p.blocking){p.blockT+=dt;p.face=mouse.wx>=p.x?1:-1;}
@@ -463,9 +463,10 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();se
   if(!hooked){if(left&&!right){p.vx=Math.max(p.vx-acc*dt,-spd);if(!p.swing&&!p.blocking&&!skid)p.face=-1;}else if(right&&!left){p.vx=Math.min(p.vx+acc*dt,spd);if(!p.swing&&!p.blocking&&!skid)p.face=1;}else p.vx*=Math.pow(p.onGround?.0004:.25,dt);
     if(Math.abs(p.vx)>spd)p.vx*=Math.pow(.05,dt);}
   // flatten: the Flatten key or button, or down on the gamepad on the ground, at once so it can dodge a hit. Starting takes a
-  // push more down than sideways (pad.dn); a platform underfoot drops you through instead, as the keyboard's down does.
+  // push more down than sideways (pad.dn); a platform underfoot drops you through instead, as the keyboard's down does. Both read
+  // pad.held too, which the backpack's menu navigation and a disconnect clear, so neither leaves a stale press behind.
   const fy=Math.floor(p.y-.05),fc=[Math.floor(p.x-p.w/2),Math.floor(p.x+p.w/2-1e-6)],onPlat=!fc.some(x=>isSolid(x,fy))&&fc.some(x=>tileAt(x,fy)===T.PLATFORM);
-  const wantFlat=held('flat')||(pad.active&&p.onGround&&!onPlat&&(p.flat?!!pad.held.down:!!pad.dn));
+  const wantFlat=held('flat')||(pad.active&&p.onGround&&!onPlat&&(p.flat?!!pad.held.down:!!(pad.dn&&pad.held.down)));
   // riders get off to flatten, climb a rope or swing on the hook
   if(p.mount&&(wantFlat||p.climb||hooked))dismount();
   if(wantFlat&&!p.flat&&!hooked&&!p.climb){p.flat=true;p.h=.85;if((p.flatCD||0)<=0){p.inv_t=Math.max(p.inv_t,.35);p.flatCD=1.2;burst(p.x,p.y+.4,['#fbf8f0','#e9dcc0'],10,3,{grav:2});SFX.crunch();stat('flats');guideEv('flat');}else SFX.rustle(.12,.4);}

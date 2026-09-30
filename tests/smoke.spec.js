@@ -1075,6 +1075,9 @@ test('gamepad: menus, interact, quick heal and block',async({page})=>{
     for(let dy=-1;dy<=3;dy++)for(let dx=-3;dx<=3;dx++)if(g.tileAt(x+dx,y+dy)===g.T.DOOR||g.tileAt(x+dx,y+dy)===g.T.CHEST)g.setTile(x+dx,y+dy,0);p.x=x+.5;p.y=y;p.vx=p.vy=0;g.pad.aimT=0;});
   r=await pad([{up:[1]},{down:[1],hold:1,ev:'import("/src/game.js").then(g=>g.pad.blk)'}]);
   expect(r.out[0]).toBe(true);
+  // the pad dropping out while B is held lowers the shield
+  const lowered=await page.evaluate(async()=>{const g=await import('/src/game.js');g.updatePlayer(1/60);const up=g.player.blocking;const gp=navigator.getGamepads;navigator.getGamepads=()=>[];g.handlePad();g.updatePlayer(1/60);const r=[up,g.player.blocking];navigator.getGamepads=gp;return r;});
+  expect(lowered).toEqual([true,false]);
   await pad([{up:[1]}]);
   // D-pad up drinks a potion and no longer counts as up
   const hp=await page.evaluate(async()=>{const g=await import('/src/game.js');g.addItem('potion',1);g.player.hp=10;g.player.potT=0;window.__gp.buttons[12].pressed=true;g.handlePad();const r=[g.player.hp,g.pad.held.up,g.pad.held.heal];window.__gp.buttons[12].pressed=false;g.handlePad();return r;});
@@ -1101,7 +1104,11 @@ test('gamepad: right stick aim reaches further with tilt, and down flattens at o
     gp.axes=[0,0,.4,0];step(40);out.near=g.mouse.wx-p.x;
     gp.axes=[0,0,1,0];step(40);out.far=g.mouse.wx-p.x;out.snapped=g.mouse.wx%1;out.reach=g.reachOK(Math.floor(g.mouse.wx),Math.floor(g.mouse.wy));
     const cell=[g.mouse.wx,g.mouse.wy];gp.axes=[0,0,.97,.04];step(10);out.held=g.mouse.wx===cell[0]&&g.mouse.wy===cell[1];
+    // a sudden full tilt (no easing in from a partial one) snaps to a tile in reach, in every direction
+    out.fresh=[];for(const [ax,ay] of [[1,0],[-1,0],[0,-1],[.71,.71]]){gp.axes=[0,0,0,0];g.pad.aimT=0;step();gp.axes=[0,0,ax,ay];step();out.fresh.push(g.reachOK(Math.floor(g.mouse.wx),Math.floor(g.mouse.wy)));}
     gp.axes=[0,0,0,0];
+    // navigating the backpack with the stick doesn't flatten the player behind it
+    gp.buttons[3].pressed=true;g.handlePad();gp.buttons[3].pressed=false;g.handlePad();gp.axes=[0,.9,0,0];step(2);out.inv=[g.invOpen,!!p.flat];gp.axes=[0,0,0,0];step();g.setInv(false);step(3);
     // down on the stick flattens on the first frame; pushed more sideways than down it doesn't
     gp.axes=[0,.9,0,0];step();out.flat=p.flat;gp.axes=[0,0,0,0];step(3);out.up=!p.flat;
     gp.axes=[.9,.7,0,0];step();out.diag=p.flat;gp.axes=[0,0,0,0];step(3);p.x=x+.5;p.vx=0;step(5);
@@ -1118,6 +1125,8 @@ test('gamepad: right stick aim reaches further with tilt, and down flattens at o
   expect(r.snapped).toBeCloseTo(.5,5);
   expect(r.reach).toBe(true);
   expect(r.held).toBe(true);
+  expect(r.fresh).toEqual([true,true,true,true]);
+  expect(r.inv).toEqual([true,false]);
   expect(r.flat).toBe(true);expect(r.up).toBe(true);
   expect(r.diag).toBe(false);
   expect(r.platGround).toBe(true);expect(r.platFlat).toBe(false);
@@ -1162,12 +1171,15 @@ test('gamepad: partners on the d-pad and Mount on L3, and older saved layouts mo
   let r=await page.evaluate(async()=>{const g=await import('/src/game.js');g.SET.padNames='xbox';return [g.SET.pad.partner,g.SET.pad.ability,g.SET.pad.mount,g.PADNAME(g.SET.pad.partner),g.PADNAME(g.SET.pad.ability),document.querySelector('#howto [data-pa="mount"]').textContent];});
   expect(r).toEqual([14,15,10,'D-pad ←','D-pad →','LS']);
   // settings saved by an older build: the old default layout moves over; one with the partner move rebound is left alone
-  for(const [pad,want] of [[{jump:0,interact:1,dash:2,inv:3,pl:4,pr:5,hook:6,use:7,map:8,ability:10,partner:11,mount:-1},[15,14,10]],
-    [{jump:0,interact:1,dash:2,inv:3,pl:4,pr:5,hook:6,use:7,map:8,ability:3,partner:11,mount:-1},[3,11,-1]]]){
+  for(const [pad,want,more] of [[{jump:0,interact:1,dash:2,inv:3,pl:4,pr:5,hook:6,use:7,map:8,ability:10,partner:11,mount:-1},[15,14,10]],
+    [{jump:0,interact:1,dash:2,inv:3,pl:4,pr:5,hook:6,use:7,map:8,ability:3,partner:11,mount:-1},[3,11,-1]],
+    // jump rebound to d-pad up: Quick heal isn't added onto it
+    [{jump:12,interact:1,dash:2,inv:3,pl:4,pr:5,hook:6,use:7,map:8,ability:10,partner:11,mount:-1},[15,14,10],{jump:12,heal:-1,flat:13}]]){
     await page.evaluate(pad=>sessionStorage.setItem('__pad',JSON.stringify(pad)),pad);
     await page.reload();
     await page.waitForFunction(async()=>(await import('/src/game.js')).state==='title');
-    r=await page.evaluate(async()=>{const g=await import('/src/game.js');return [g.SET.pad.ability,g.SET.pad.partner,g.SET.pad.mount,g.SET.padV];});
-    expect(r).toEqual([...want,2]);
+    r=await page.evaluate(async()=>{const g=await import('/src/game.js');return [g.SET.pad.ability,g.SET.pad.partner,g.SET.pad.mount,g.SET.padV,g.SET.pad];});
+    expect(r.slice(0,4)).toEqual([...want,2]);
+    if(more)for(const k in more)expect(r[4][k]).toBe(more[k]);
   }
 });
