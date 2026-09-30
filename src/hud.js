@@ -4,14 +4,16 @@ import {
   atlasTex,buildNormals,postOK,clearIcons,drawOres,drawWarnMark,H,hexRgb,hintT,icon,initAudio,inkMoon,isNight,lerp,META,npcs,wev,
   ORECOL,player,PSTAT,renderHearts,saveMeta,saveSettings,SET,setCamDist,setHintT,setInvDirty,setSoundOn,SFX,sky,soundOn,
   fullMoon,seasonIdx,seasonInfo,SEASONS,state,surf,T,tiles,TP,W,WALLCOL,walls,weather,worldTime,
-  playerCheer,paintArt,
+  playerCheer,paintArt,pad,
 } from './game.js';
 
 // ================= settings & achievements UI =================
 export const KEYNAME=k=>({' ':'Space',arrowleft:'←',arrowright:'→',arrowup:'↑',arrowdown:'↓',escape:'Esc',tab:'Tab',shift:'Shift',control:'Ctrl',alt:'Alt',enter:'Enter',backspace:'Backspace'}[k]||k.toUpperCase());
 const BINDLAB={left:'Move left',right:'Move right',jump:'Jump',down:'Drop down',inv:'Backpack',heal:'Quick heal',map:'World map',hook:'Grappling hook',partner:'Switch partner',ability:'Partner move',flat:'Flatten',dash:'Dash',block:'Block (shield)',mount:'Mount / dismount'};
-const PADLAB={jump:'Jump',use:'Use item',interact:'Interact / block (shield)',dash:'Dash',inv:'Backpack',hook:'Grappling hook',ability:'Partner move',partner:'Switch partner',pl:'Previous slot',pr:'Next slot',map:'World map',mount:'Mount / dismount'};
-export const PADNAME=i=>i<0?'Unbound':['A','B','X','Y','LB','RB','LT','RT','Back','Start','L3','R3','D-pad ↑','D-pad ↓','D-pad ←','D-pad →','Home'][i]||'Button '+i;
+const PADLAB={jump:'Jump',use:'Use item',interact:'Interact / block (shield)',dash:'Dash',inv:'Backpack',hook:'Grappling hook',ability:'Partner move',partner:'Switch partner',pl:'Previous slot',pr:'Next slot',map:'World map',heal:'Quick heal',mount:'Mount / dismount',block:'Block (shield)',flat:'Flatten'};
+export const PADNAME=i=>i==null||i<0?'Unbound':['A','B','X','Y','LB','RB','LT','RT','Back','Start','L3','R3','D-pad ↑','D-pad ↓','D-pad ←','D-pad →','Home'][i]||'Button '+i;
+// the button or key for an action on whatever is being played with (partner toasts and HUD)
+export const actName=a=>pad.active&&SET.pad[a]>=0?PADNAME(SET.pad[a]):KEYNAME(SET.bind[a]);
 export let rebinding=null,padRebinding=null;
 export function renderBinds(){$('binds').innerHTML=Object.keys(BINDLAB).map(a=>`<div class="bind"><span>${BINDLAB[a]}</span><button type="button" data-a="${a}" class="${rebinding===a?'wait':''}">${rebinding===a?'Press a key…':KEYNAME(SET.bind[a])}</button></div>`).join('');
   $('padBinds').innerHTML=Object.keys(PADLAB).map(a=>`<div class="bind"><span>${PADLAB[a]}</span><button type="button" data-a="${a}" class="${padRebinding===a?'wait':''}">${padRebinding===a?'Press a button…':PADNAME(SET.pad[a])}</button></div>`).join('');}

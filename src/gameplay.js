@@ -446,9 +446,9 @@ export function updatePlayer(dt){const p=player;updateGhosts(dt);updateRune();se
   const onRope=tileAt(cx,Math.floor(p.y+.9))===T.ROPE||tileAt(cx,Math.floor(p.y+.2))===T.ROPE;
   const upH=!!(keys.w||keys.arrowup||pad.held.up||touch.held.up),dnH=held('down');
   if(onRope&&(upH||dnH)&&!hooked)p.climb=true;if(!onRope||hooked)p.climb=false;
-  // block: hold right-click, the Block key, or the gamepad Interact button with a shield equipped
+  // block: hold right-click, the Block key or button, or the gamepad Interact button (pad.blk, gamepad.js) with a shield equipped
   // (Settings > Block: Toggle raises the shield on one press and lowers it on the next)
-  const shield=shieldItem(),blkIn=held('block')||mouse.r||(pad.active&&!!pad.held.interact);if(SET.blockTog&&blkIn&&!p.blkWas)p.blockOn=!p.blockOn;if(!shield)p.blockOn=false;p.blkWas=blkIn;
+  const shield=shieldItem(),blkIn=held('block')||mouse.r||(pad.active&&!!pad.blk);if(SET.blockTog&&blkIn&&!p.blkWas)p.blockOn=!p.blockOn;if(!shield)p.blockOn=false;p.blkWas=blkIn;
   const wantBlock=!!shield&&(SET.blockTog?!!p.blockOn:blkIn)&&!hooked&&!p.climb&&!p.flat&&p.dashT<=0&&!cursor&&!invOpen;
   if(wantBlock&&!p.blocking){p.blocking=true;p.blockT=0;p.parryOK=!(p.blockCD>0);SFX.raise();}else if(!wantBlock&&p.blocking){p.blocking=false;p.blockCD=.3;}
   p.blockCD=(p.blockCD||0)-dt;if(p.blocking){p.blockT+=dt;p.face=mouse.wx>=p.x?1:-1;}

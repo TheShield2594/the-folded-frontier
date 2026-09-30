@@ -57,7 +57,7 @@ button.ghost{background:var(--paper2);}
 /* reduced motion (body.rm, from Settings or the system): */
 body.rm #bossCard.in .bc-page,body.rm #bossCard.out .bc-page{animation:none}
 body.rm #chapter.in .ch-page,body.rm #chapter.out .ch-page{animation:none}
-#panel .padfocus,#sideSheet .padfocus{outline:3px solid var(--teal);outline-offset:2px;box-shadow:0 0 0 6px rgba(47,127,134,.25);}
+#panel .padfocus,#sideSheet .padfocus,.over .padfocus{outline:3px solid var(--teal);outline-offset:2px;box-shadow:0 0 0 6px rgba(47,127,134,.25);}
 #padHint{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:rgba(42,33,48,.85);color:var(--paper);border-radius:999px;padding:4px 14px;font-size:calc(12px*var(--ts));font-weight:700;pointer-events:none;white-space:nowrap;}
 #buffs{display:flex;gap:5px;flex-wrap:wrap;max-width:300px;}
 .buff{display:flex;align-items:center;gap:3px;background:rgba(247,238,220,.92);border:2px solid var(--ink);border-radius:999px;padding:1px 8px 1px 2px;font-size:calc(11.5px*var(--ts));font-weight:800;box-shadow:2px 2px 0 rgba(20,14,26,.4);font-variant-numeric:tabular-nums;}

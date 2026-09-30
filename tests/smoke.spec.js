@@ -1029,3 +1029,56 @@ test('footsteps, landings and polish touches',async({page})=>{
   expect(r.flash).toBeGreaterThan(0);
   expect(r.beats).toBeGreaterThan(0);expect(r.low).toBeGreaterThan(.5);expect(r.lowAfter).toBeLessThan(.05);
 });
+
+// A gamepad is faked through navigator.getGamepads(): window.__gp holds its buttons, and each step calls
+// handlePad() directly in the same task, so the frame loop can't take a press in between.
+test('gamepad: menus, interact, quick heal and block',async({page})=>{
+  await page.addInitScript(()=>{
+    const gp={id:'Test pad',connected:true,mapping:'standard',axes:[0,0,0,0],buttons:Array.from({length:17},()=>({pressed:false,value:0}))};
+    window.__gp=gp;navigator.getGamepads=()=>[gp];
+  });
+  await boot(page);
+  // each step presses its buttons (down), polls, reads ev, then releases them (up, or down unless hold) and polls again
+  const pad=(steps)=>page.evaluate(async steps=>{const g=await import('/src/game.js'),b=window.__gp.buttons,out=[];
+    for(const s of steps){if(s.axes)window.__gp.axes=s.axes;for(const i of s.down||[])b[i].pressed=true;g.handlePad();if(s.ev)out.push(await (0,eval)(s.ev));
+      for(const i of s.up||s.down||[])if(!s.hold)b[i].pressed=false;g.handlePad();}
+    const f=document.querySelector('.over .padfocus');return {out,focus:f&&f.id,state:g.state};},steps);
+  // the title menu: the first plain button is focused, A presses it, B backs out
+  let r=await pad([{down:[1]}]);
+  expect(r.focus).toBe('newBtn');
+  r=await pad([{down:[0]}]);
+  await expect(page.locator('#newWorld')).toBeVisible();
+  expect(r.focus).toBe('createBtn');
+  await pad([{down:[1]}]);
+  await expect(page.locator('#newWorld')).toBeHidden();
+  // the menu wraps into rows: down to Achievements, left to Settings, A opens it; a slider moves with right, B closes it
+  r=await pad([{down:[13]},{down:[14]}]);
+  expect(r.focus).toBe('setBtn');
+  r=await pad([{down:[0]}]);
+  await expect(page.locator('#settings')).toBeVisible();
+  expect(r.focus).toBe('sndC');
+  r=await pad([{down:[13]},{down:[15],ev:'document.getElementById("volMaster").value'}]);
+  expect(r.focus).toBe('volMaster');
+  expect(+r.out[0]).toBe(85);
+  await pad([{down:[1]}]);
+  await expect(page.locator('#settings')).toBeHidden();
+
+  await newSmallWorld(page);
+  // B reaches a peel wall beside the player; it peels, and pressing it doesn't raise a shield
+  const px=await page.evaluate(async()=>{const g=await import('/src/game.js'),p=g.player;g.player.acc[0]={id:'quilt',n:1};
+    const x=Math.floor(p.x)+2,y=Math.floor(p.y);for(const k of[0,1])g.setTile(x,y+k,g.T.PEEL);return x;});
+  r=await pad([{down:[1],hold:1,ev:'import("/src/game.js").then(g=>[g.pad.blk,g.pad.noBlk])'}]);
+  expect(r.out[0]).toEqual([false,true]);
+  await page.waitForFunction(async x=>{const g=await import('/src/game.js'),p=g.player;return g.tileAt(x,Math.floor(p.y))!==g.T.PEEL;},px);
+  // B held with nothing in reach blocks: out on open ground away from the cabin (the button is still held from above: release it first)
+  await page.evaluate(async()=>{const g=await import('/src/game.js'),p=g.player,x=Math.floor(g.W*.85);let y=g.H-2;while(y>1&&!(g.tileAt(x,y-1)&&!g.tileAt(x,y)&&!g.tileAt(x,y+1)))y--;
+    for(let dy=-1;dy<=3;dy++)for(let dx=-3;dx<=3;dx++)if(g.tileAt(x+dx,y+dy)===g.T.DOOR||g.tileAt(x+dx,y+dy)===g.T.CHEST)g.setTile(x+dx,y+dy,0);p.x=x+.5;p.y=y;p.vx=p.vy=0;g.pad.aimT=0;});
+  r=await pad([{up:[1]},{down:[1],hold:1,ev:'import("/src/game.js").then(g=>g.pad.blk)'}]);
+  expect(r.out[0]).toBe(true);
+  await pad([{up:[1]}]);
+  // D-pad up drinks a potion and no longer counts as up
+  const hp=await page.evaluate(async()=>{const g=await import('/src/game.js');g.addItem('potion',1);g.player.hp=10;g.player.potT=0;window.__gp.buttons[12].pressed=true;g.handlePad();const r=[g.player.hp,g.pad.held.up,g.pad.held.heal];window.__gp.buttons[12].pressed=false;g.handlePad();return r;});
+  expect(hp[0]).toBeGreaterThan(10);
+  expect(hp[1]).toBe(false);
+  expect(hp[2]).toBe(true);
+});

@@ -8,8 +8,9 @@ function loadJSON(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):
 function saveJSON(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 export const SET=Object.assign({},DEF_SET,loadJSON('folded-frontier-settings')||{});SET.bind=Object.assign({},DEF_BIND,SET.bind||{});
 // gamepad buttons (standard mapping indices); Start and the d-pad/stick stay fixed
-// mount starts unbound (-1): every button is taken, and the mount item can also be used from the hotbar
-export const DEF_PAD={jump:0,interact:1,dash:2,inv:3,pl:4,pr:5,hook:6,use:7,map:8,ability:10,partner:11,mount:-1};
+// mount, block and flatten start unbound (-1): every face button is taken, the mount item can also be used from the hotbar,
+// Interact blocks while held and holding down flattens. A d-pad button bound to an action (heal on ↑) stops moving the player.
+export const DEF_PAD={jump:0,interact:1,dash:2,inv:3,pl:4,pr:5,hook:6,use:7,map:8,ability:10,partner:11,heal:12,mount:-1,block:-1,flat:-1};
 SET.pad=Object.assign({},DEF_PAD,SET.pad||{});
 export const saveSettings=()=>saveJSON('folded-frontier-settings',SET);
 // interface size zooms all of #ui (--ui), text size multiplies every CSS font size (--ts); upx() turns screen px into #ui px.

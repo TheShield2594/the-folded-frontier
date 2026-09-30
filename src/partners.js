@@ -1,10 +1,10 @@
 // Partners and their behaviour.
 import {
   $,BADGES,breakTile,burst,canvasTex,circ,enemies,fi,fireProj,hasBadge,hasNPC,heal,hurtEnemy,INK,ink,
-  ITEMS,KEYNAME,makeSheet,mk,mouse,nearestEnemy,pickups,player,poly,portraitCache,quests,rr,
-  scene,SET,setInvDirty,setTint,SFX,SHEETS,spriteMesh,stat,state,T,tileAt,toast,TP,partnerSpeaker,say,
+  ITEMS,actName,makeSheet,mk,mouse,nearestEnemy,pickups,player,poly,portraitCache,quests,rr,
+  scene,setInvDirty,setTint,SFX,SHEETS,spriteMesh,stat,state,T,tileAt,toast,TP,partnerSpeaker,say,
   chapterCard,moveName,palUp,playerSpeaker,renderQuests,
-  playerCheer,defRig,loopClip,still,RIGS,rigPic,makeRig,rigFree,rigPlay,rigUpdate,
+  playerCheer,defRig,loopClip,still,RIGS,rigPic,makeRig,rigFree,rigPlay,rigUpdate,pad,
 } from './game.js';
 
 // ================= partners =================
@@ -88,7 +88,7 @@ export function pBox(s){const W=s.width,H=s.height,a=s.getContext('2d').getImage
 function unlockPartner(k,quiet){const p=player;if(p.partners.includes(k))return;p.partners.push(k);if(!p.partner)setPartner(k);if(!quiet){recruit(k);}}
 // the recruitment moment: the new partner comes along at once, a card announces them, they hop and say hello and you answer
 function recruit(k){const d=PARTNERS[k];setPartner(k);partnerCheer(2.4);playerCheer(1.4);SFX.nice();stat('partners');chapterCard(null,d.name,d.desc,'A new friend joins');
-  burst(player.x,player.y+2,['#fbf8f0','#f1c04f','#d4483b','#8fc9ec'],36,7,{grav:5,life:1.2});toast(`${d.name} joined your party! Press ${KEYNAME(SET.bind.partner)} to switch partners and ${KEYNAME(SET.bind.ability)} for ${d.move}.`,'gold');
+  burst(player.x,player.y+2,['#fbf8f0','#f1c04f','#d4483b','#8fc9ec'],36,7,{grav:5,life:1.2});toast(`${d.name} joined your party! Press ${actName('partner')} to switch partners and ${actName('ability')} for ${d.move}.`,'gold');
   say(partnerSpeaker(k),d.hi,{wait:1.5,done:()=>say(playerSpeaker(),d.re,{done:()=>partnerCheer(1)})});}
 export function syncPartners(quiet){if(hasNPC('guide'))unlockPartner('lumi',quiet);if(quests.king)unlockPartner('snip',quiet);if(quests.crane)unlockPartner('smudge',quiet);if(quests.lev)unlockPartner('ember',quiet);}
 export function setPartner(k){player.partner=k;pt.type=null;pt.cd=0;pt.act=null;pt.fxT=0;setInvDirty(true);}
@@ -127,6 +127,6 @@ export function updatePartner(dt){const p=player,k=p.partner;
     else{const pr=it%5<1.2;sy=pr?1+Math.sin(it*18)*.07:1;rz=pr?Math.sin(it*9)*.1:0;if(pr&&Math.random()<dt*6)burst(pt.x-.3,pt.y,['#ff7a2d','#ffd66b'],1,1,{grav:-2,life:.5,bright:1});}}
   m.scale.set(sx,sy,1);m.rotation.z=rz;
   if(k==='lumi'||k==='ember')m.material.uniforms.uTint.value.set(1.1,1.08,1.02);else setTint(m.material,pt.x,pt.y);rigUpdate(pt.rig,dt);
-  const hk=k+':'+Math.ceil(pt.cd)+moveName(k);if(hk!==pt.hudKey){pt.hudKey=hk;const H=$('partnerHud');H.hidden=false;H.innerHTML=`<img src="${pPortrait(k)}" alt=""><div><b>${def.name}</b><span>${KEYNAME(SET.bind.ability)}: ${moveName(k)} · ${pt.cd>0?Math.ceil(pt.cd)+'s':'ready'}</span><i><u style="width:${100*(1-pt.cd/(def.cd*(hasBadge('quick')?.7:1)))}%"></u></i></div>`;}}
+  const hk=k+':'+Math.ceil(pt.cd)+moveName(k)+pad.active;if(hk!==pt.hudKey){pt.hudKey=hk;const H=$('partnerHud');H.hidden=false;H.innerHTML=`<img src="${pPortrait(k)}" alt=""><div><b>${def.name}</b><span>${actName('ability')}: ${moveName(k)} · ${pt.cd>0?Math.ceil(pt.cd)+'s':'ready'}</span><i><u style="width:${100*(1-pt.cd/(def.cd*(hasBadge('quick')?.7:1)))}%"></u></i></div>`;}}
 export const bpMax=()=>3+['king','crane','lev','folio'].filter(q=>quests[q]).length*3+(player.bpUps||0);
 export const bpUsed=()=>player.badgesOn.reduce((a,k)=>a+BADGES[k][1],0);

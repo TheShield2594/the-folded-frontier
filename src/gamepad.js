@@ -1,9 +1,9 @@
 // Gamepad polling and menu navigation.
 import {
-  $,closeSettings,craftRec,cyclePartner,dashPress,fireHook,initAudio,invOpen,jumpPress,mapOpen,mouse,npcs,
+  $,craftRec,cyclePartner,dashPress,fireHook,initAudio,invOpen,jumpPress,mapOpen,mouse,npcs,
   pad,padRebinding,partnerAbility,pause,placeTip,player,renderBinds,saveSettings,SET,setInv,setInvDirty,
   setPadRebinding,SFX,slotClick,state,T,tileAt,toggleMap,upx,
-  skipIntro,dlgNext,cycleTab,toggleMount,
+  skipIntro,dlgNext,cycleTab,toggleMount,quickHeal,reachOK,meta,idx,
 } from './game.js';
 
 // ================= gamepad =================
@@ -12,17 +12,18 @@ export function handlePad(){const gps=navigator.getGamepads?navigator.getGamepad
   const b=i=>{const x=g.buttons[i];return !!x&&(x.pressed||x.value>.35);},ax=g.axes,lx=ax[0]||0,ly=ax[1]||0,rx=ax[2]||0,ry=ax[3]||0;
   const raw=g.buttons.map((_,i)=>b(i)),rp=pad.raw||[];pad.raw=raw;
   if(padRebinding){const i=raw.findIndex((v,i)=>v&&!rp[i]);if(i>=0){if(i!==9){const other=Object.keys(SET.pad).find(a=>SET.pad[a]===i);if(other&&other!==padRebinding)SET.pad[other]=SET.pad[padRebinding];SET.pad[padRebinding]=i;saveSettings();}setPadRebinding(null);renderBinds();}pad.held={};return;}
-  // gameplay actions follow SET.pad; menus keep the fixed layout (A select, X split, B/Y close)
-  const dirs={up:ly<-.6||b(12),left:lx<-.35||b(14),right:lx>.35||b(15),down:ly>.6||b(13),start:b(9)};
+  // gameplay actions follow SET.pad; menus keep the fixed layout (A select, X split, B/Y close) and the whole d-pad,
+  // while in play a d-pad button bound to an action (Quick heal on ↑) no longer moves the player
+  const bnd=Object.values(SET.pad),dp=i=>b(i)&&!bnd.includes(i);
+  const dirs={up:ly<-.6||dp(12),left:lx<-.35||dp(14),right:lx>.35||dp(15),down:ly>.6||dp(13),start:b(9)};
   const h=Object.assign({},dirs);for(const a in SET.pad)h[a]=h[a]||b(SET.pad[a]);
-  const fx=Object.assign({},dirs,{jump:b(0),use:b(2)||b(7),interact:b(1),inv:b(3),pl:b(4),pr:b(5)});
+  const fx={up:ly<-.6||b(12),left:lx<-.35||b(14),right:lx>.35||b(15),down:ly>.6||b(13),start:b(9),jump:b(0),use:b(2)||b(7),interact:b(1),inv:b(3),pl:b(4),pr:b(5)};
   const prev=pad.prev,fprev=pad.fprev||{};const e=k=>h[k]&&!prev[k],ef=k=>fx[k]&&!fprev[k];pad.prev=h;pad.fprev=fx;pad.held=h;pad.name=g.id;pad.h=h;
   if(Object.values(h).some(Boolean)||Math.hypot(rx,ry)>.3){if(!pad.active)initAudio();pad.active=true;}
   if(Math.hypot(rx,ry)>.3){pad.aimX=rx;pad.aimY=-ry;pad.aimT=1.2;}
   if(state==='intro'){if(ef('jump')||ef('start')||ef('interact'))skipIntro();return;}
   if(state==='talk'){if(ef('start'))dlgNext(true);else if(ef('jump')||ef('interact')||ef('use'))dlgNext();return;}
-  if(state==='title'){if(!$('newWorld').hidden){if(ef('jump')||ef('start'))$('createBtn').click();else if(ef('interact'))$('newWorld').hidden=true;return;}if(!$('settings').hidden||!$('ach').hidden||!$('howto').hidden){if(ef('interact')||ef('start')){closeSettings();$('ach').hidden=true;$('howto').hidden=true;}return;}if(ef('jump')||ef('start'))($('contBtn').hidden?$('newBtn'):$('contBtn')).click();return;}
-  if(state==='paused'){if(ef('start')||ef('interact')){if(!$('settings').hidden)closeSettings();else if(!$('ach').hidden)$('ach').hidden=true;else pause(false);}return;}
+  if(state==='title'||state==='paused'){overPad(fx,ef);return;}
   if(state!=='play')return;
   if(invOpen&&pad.active){menuPad(fx,ef);pad.held={};$('padHint').hidden=false;return;}$('padHint').hidden=true;
   if(e('start')){if(mapOpen)toggleMap(false);else if(invOpen)setInv(false);else pause(true);return;}
@@ -32,15 +33,39 @@ export function handlePad(){const gps=navigator.getGamepads?navigator.getGamepad
   if(e('dash'))dashPress();
   if(e('pl')){player.sel=(player.sel+9)%10;setInvDirty(true);}if(e('pr')){player.sel=(player.sel+1)%10;setInvDirty(true);}
   if(e('use'))mouse.lp=true;
-  if(e('interact'))padInteract();if(e('hook'))fireHook();if(e('ability'))partnerAbility();if(e('partner'))cyclePartner();if(e('mount'))toggleMount();}
+  // Interact also blocks while held, unless it just reached something (so opening a chest doesn't raise the shield) or Block has its own button
+  if(e('interact'))pad.noBlk=padInteract();if(!h.interact)pad.noBlk=false;pad.blk=h.interact&&!pad.noBlk&&!(SET.pad.block>=0);
+  if(e('heal'))quickHeal();if(e('hook'))fireHook();if(e('ability'))partnerAbility();if(e('partner'))cyclePartner();if(e('mount'))toggleMount();}
 export let padFocus=null,padNavT=0,padNavDir='',padLast=performance.now();
 function focusables(){return[...document.querySelectorAll('#sideSheet .slot,#sideSheet .shopi,#sideSheet .pcard,#sideSheet .bdg,#sideSheet button,#panel .slot,#panel .rec,#panel button')].filter(el=>{const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&!el.closest('[hidden]');});}
 function setFocus(el){if(padFocus)padFocus.classList.remove('padfocus');padFocus=el;if(!el)return;el.classList.add('padfocus');el.scrollIntoView({block:'nearest',inline:'nearest'});const r=el.getBoundingClientRect();
   if(el.classList.contains('slot')||el.classList.contains('rec')){el.dispatchEvent(new MouseEvent('mouseover',{bubbles:true}));placeTip(r.right+8,r.top);}else $('tip').hidden=true;
   const c=$('cursorItem');c.style.left=upx(r.left+r.width*.6);c.style.top=upx(r.top+r.height*.6);}
 function padMove(dir){const list=focusables();if(!list.length)return;if(!padFocus||!list.includes(padFocus)){setFocus(list.find(x=>x.classList.contains('slot'))||list[0]);return;}
-  const a=padFocus.getBoundingClientRect(),ax=a.left+a.width/2,ay=a.top+a.height/2;const v={left:[-1,0],right:[1,0],up:[0,-1],down:[0,1]}[dir];let best=null,bs=1e9;
-  for(const el of list){if(el===padFocus)continue;const b=el.getBoundingClientRect(),dx=b.left+b.width/2-ax,dy=b.top+b.height/2-ay;const along=dx*v[0]+dy*v[1];if(along<=4)continue;const perp=Math.abs(dx*v[1]-dy*v[0]);const sc=along+perp*2.2;if(sc<bs){bs=sc;best=el;}}if(best){setFocus(best);SFX.pick();}}
+  const best=nextEl(list,padFocus,dir);if(best){setFocus(best);SFX.pick();}}
+// the element in a direction from cur on screen: nearest along it, straying least across it. In a form (rows of
+// label and control) up/down goes to the next row whatever its column, and left/right stays on the row.
+function nextEl(list,cur,dir,form){const a=cur.getBoundingClientRect(),ax=a.left+a.width/2,ay=a.top+a.height/2;const v={left:[-1,0],right:[1,0],up:[0,-1],down:[0,1]}[dir];let best=null,bs=1e9;
+  for(const el of list){if(el===cur)continue;const b=el.getBoundingClientRect(),dx=b.left+b.width/2-ax,dy=b.top+b.height/2-ay;const along=dx*v[0]+dy*v[1];if(along<=4)continue;const perp=Math.abs(dx*v[1]-dy*v[0]);
+    if(form&&v[0]&&perp>(a.height+b.height)/2)continue;const sc=along+perp*(form&&v[1]?.5:2.2);if(sc<bs){bs=sc;best=el;}}return best;}
+// title, pause and their dialogs (settings, new world, save code...): the stick or d-pad moves between controls, A presses,
+// left/right change a slider or list, B or Start goes back (Start on the title screen presses like A)
+let ovFocus=null,ovDir='',ovT=0,ovLast=performance.now();
+const OVBACK={howto:'helpClose',newWorld:'nwCancel',settings:'setClose',ach:'achClose',codeBox:'codeClose',pause:'resBtn'},OVFIRST={newWorld:'createBtn',codeBox:'codeMake'};
+function ovSet(el){if(ovFocus)ovFocus.classList.remove('padfocus');ovFocus=el;if(el){el.classList.add('padfocus');el.scrollIntoView({block:'nearest',inline:'nearest'});}}
+function ovAdjust(el,d){if(el.type==='range'){const mn=+el.min||0,mx=+el.max||100,st=Math.max(+el.step||1,(mx-mn)/20);el.value=Math.max(mn,Math.min(mx,+el.value+d*st));el.dispatchEvent(new Event('input',{bubbles:true}));}
+  else{const n=el.options.length;el.selectedIndex=(el.selectedIndex+d+n)%n;}el.dispatchEvent(new Event('change',{bubbles:true}));SFX.pick();}
+function overPad(h,e){const now=performance.now(),dt=(now-ovLast)/1000;ovLast=now;
+  if(!pad.active){ovSet(null);return;}
+  const ov=[...document.querySelectorAll('.over')].filter(el=>!el.hidden&&el.id!=='loading').pop();if(!ov)return;
+  const list=[...ov.querySelectorAll('button,input,select,textarea')].filter(el=>!el.disabled&&el.getClientRects().length&&!el.closest('[hidden]'));
+  if(!ovFocus||!list.includes(ovFocus))ovSet((OVFIRST[ov.id]&&$(OVFIRST[ov.id]))||list.find(el=>el.tagName!=='BUTTON'||!el.classList.contains('ghost'))||list[0]||null);
+  const el=ovFocus,slide=el&&(el.type==='range'||el.tagName==='SELECT');
+  const dir=h.up?'up':h.down?'down':h.left?'left':h.right?'right':'';if(dir&&el){let go=false;if(dir!==ovDir){ovT=.35;go=true;}else{ovT-=dt;if(ovT<=0){ovT=slide?.07:.11;go=true;}}
+    if(go){if(slide&&(dir==='left'||dir==='right'))ovAdjust(el,dir==='left'?-1:1);else{const n=nextEl(list,el,dir,1);if(n){ovSet(n);SFX.pick();}}}}ovDir=dir;
+  const back=OVBACK[ov.id];
+  if(e('interact')||(e('start')&&back)){if(back)$(back).click();return;}
+  if(el&&(e('jump')||e('start'))){if(el.tagName==='SELECT')ovAdjust(el,1);else if(el.type==='range');else if(el.tagName==='TEXTAREA'||el.type==='text')el.focus();else el.click();}}
 function fire(el,button,shift){el.dispatchEvent(new MouseEvent('mousedown',{bubbles:true,button,shiftKey:shift}));}
 function menuPad(h,e){const now=performance.now(),dt=(now-padLast)/1000;padLast=now;
   if(!padFocus||!document.body.contains(padFocus)||padFocus.closest('[hidden]'))setFocus(focusables().find(x=>x.classList.contains('slot'))||null);
@@ -51,8 +76,14 @@ function menuPad(h,e){const now=performance.now(),dt=(now-padLast)/1000;padLast=
   if(e('jump')){if(el.classList.contains('slot'))slotClick(el,0,false);else if(el.classList.contains('rec'))craftRec(el,1);else if(el.tagName==='BUTTON')el.click();else fire(el,0,false);setInvDirty(true);setTimeout(()=>{if(padFocus&&!document.body.contains(padFocus))setFocus(null);},0);}
   if(e('use')){if(el.classList.contains('slot'))slotClick(el,2,false);else if(el.classList.contains('rec'))craftRec(el,5);else if(el.classList.contains('shopi'))fire(el,0,true);setInvDirty(true);}
   if(e('pr')&&el.classList.contains('slot')){slotClick(el,0,true);setInvDirty(true);}}
-export function padInteract(){const p=player;{const n=npcs.find(n=>Math.abs(n.x-p.x)<3&&Math.abs(n.y-p.y)<2.5);if(n){mouse.wx=n.x;mouse.wy=n.y+1;mouse.rp=true;return;}}
-  let best=null,bd=9;for(let y=Math.floor(p.y)-1;y<=Math.floor(p.y)+3;y++)for(let x=Math.floor(p.x)-3;x<=Math.floor(p.x)+3;x++){const t=tileAt(x,y);if(t===T.DOOR||t===T.CHEST||t===T.BED||t===T.MURAL||t===T.CRANK||t===T.GATE||t===T.STACKS||t===T.STARDOOR||t===T.CRATE||t===T.WELLDOOR||t===T.SEAM||t===T.RIP||t===T.CREASE){const d=Math.hypot(x+.5-p.x,y+.5-(p.y+.9));if(d<bd){bd=d;best=[x,y];}}}
-  if(best){mouse.wx=best[0]+.5;mouse.wy=best[1]+.5;mouse.rp=true;}}
+// what Interact reaches on a gamepad: every tile interact() (gameplay.js) handles; crops only once they are ripe unless aimed at
+const PADT=new Set([T.PEEL,T.SKETCH,T.CRANK,T.GATE,T.STACKS,T.STARDOOR,T.CRATE,T.WELLDOOR,T.SEAM,T.RIP,T.CREASE,T.SIGN,T.MURAL,T.ALTAR,T.DOOR,T.CHEST,T.CLOCK,T.BED]);
+const padTile=(x,y,aim)=>{const t=tileAt(x,y);return PADT.has(t)||((t===T.CROP||t===T.RARE)&&(aim||(meta[idx(x,y)]&3)>=2));};
+// the townsperson or tile under the right-stick aim first, else the nearest one around the player; true when it reached something
+export function padInteract(){const p=player;
+  if(pad.aimT>0){const tx=Math.floor(mouse.wx),ty=Math.floor(mouse.wy);if(npcs.some(n=>Math.abs(mouse.wx-n.x)<.8&&mouse.wy>n.y-.2&&mouse.wy<n.y+2)||(padTile(tx,ty,true)&&reachOK(tx,ty,6.5))){mouse.rp=true;return true;}}
+  let best=null,bd=9;for(const n of npcs){if(Math.abs(n.x-p.x)>=3||Math.abs(n.y-p.y)>=2.5)continue;const d=Math.hypot(n.x-p.x,n.y+1-(p.y+.9));if(d<bd){bd=d;best=[n.x,n.y+1];}}
+  for(let y=Math.floor(p.y)-1;y<=Math.floor(p.y)+3;y++)for(let x=Math.floor(p.x)-3;x<=Math.floor(p.x)+3;x++){if(!padTile(x,y))continue;const d=Math.hypot(x+.5-p.x,y+.5-(p.y+.9));if(d<bd){bd=d;best=[x+.5,y+.5];}}
+  if(best){mouse.wx=best[0];mouse.wy=best[1];mouse.rp=true;return true;}return false;}
 // Imported bindings are read-only, so other modules assign these through setters.
 export function setPadFocus(v){return padFocus=v;}
