@@ -259,13 +259,14 @@ def row_stickers(img, rows, per_row, thr=16, join=12):
             items.append(Image.fromarray(np.dstack([q.astype(np.uint8), (mask * 255).astype(np.uint8)])[sl], 'RGBA'))
     return items
 
-def blobs(img, thr=16, join=12, min_frac=.25):
+def blobs(img, thr=16, join=12, min_frac=.25, ground=True):
     """Every figure in a render, in reading order (rows found by the figures' vertical centres), as RGBA crops; for frame
     sheets whose frames wrap onto a second row. Pieces within join px count as one figure; specks under min_frac of the
-    biggest are dropped."""
+    biggest are dropped. ground=False skips the ground-line removal, which cuts through figures standing close enough
+    that a hat brim and the next figure's held item make one long row (a render with no ground line doesn't need it)."""
     a = np.asarray(img.convert('RGB')).astype(int); bg = np.median(np.concatenate([a[3], a[-4], a[:, 3], a[:, -4]]), axis=0)
     f = np.abs(a - bg).max(axis=2) >= thr
-    f &= ~ndimage.binary_dilation(ndimage.binary_opening(f, np.ones((1, a.shape[1] // 4), bool)), iterations=2)  # ground lines drawn under a row
+    if ground: f &= ~ndimage.binary_dilation(ndimage.binary_opening(f, np.ones((1, a.shape[1] // 4), bool)), iterations=2)  # ground lines drawn under a row
     lab, n = ndimage.label(ndimage.binary_dilation(f, iterations=join))
     sz = ndimage.sum(f, lab, range(1, n + 1)); objs = ndimage.find_objects(lab); ks = [k + 1 for k in range(n) if sz[k] >= min_frac * sz.max()]
     ks.sort(key=lambda k: objs[k - 1][0].start); rows = []
@@ -301,6 +302,27 @@ def frame_set(figs, name, frames, tiles=2.4, h=320, out='assets/art/rigs', fit=(
     for v, (im, cx) in st.items():
         c = Image.new('RGBA', (W, Hh)); c.alpha_composite(im, (int(round(W / 2 - cx)), Hh - im.height))
         c.resize((round(W * h / Hh), h), Image.LANCZOS).save(os.path.join(out, name + ('.' + v if v else '') + '.webp'), 'WEBP', quality=90, method=6)
+
+def frame_fit(figs, name, frames, out='assets/art/rigs', shift=6):
+    """New frames for a character already cut by frame_set(), fitted onto its existing canvas: figs[0] is the render's copy
+    of the standing frame, which sets the scale against the painted <name>.webp; each new frame keeps the feet on the
+    bottom edge and the hips on the centre line (up to shift px off it when one side runs past the canvas), and shrinks
+    only if it still doesn't fit (the game sizes every frame of a character by the standing picture's canvas)."""
+    def prep(f, ppt):
+        im, _ = restyle(f, ppt, border=False); a = np.asarray(im)[..., 3] > 8; cl, cn = ndimage.label(a); cs = ndimage.sum(a, cl, range(1, cn + 1))
+        keep = np.isin(cl, [j + 1 for j in range(cn) if cs[j] >= .03 * cs.max()]); im = Image.fromarray(np.dstack([np.asarray(im)[..., :3], np.asarray(im)[..., 3] * keep]).astype(np.uint8), 'RGBA')
+        ys, xs = np.where(keep); im = im.crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1)); a = np.asarray(im)[..., 3] > 8
+        return im, np.where(a[a.shape[0] // 2:])[1].mean()
+    ppt = figs[0].height / 2.4; base = Image.open(os.path.join(out, name + '.webp')).convert('RGBA'); W, H = base.size
+    ys, _ = np.where(np.asarray(base)[..., 3] > 8); st, _ = prep(figs[0], ppt); k = (ys.max() - ys.min() + 1) / st.height
+    for v, i in frames.items():
+        im, cx = prep(figs[i], ppt); w = im.width * k; c0 = cx * k; sh = 0
+        if c0 > W / 2 - 1 and w - c0 < W / 2 - 1: sh = min(shift, c0 - (W / 2 - 1), (W / 2 - 1) - (w - c0))
+        elif w - c0 > W / 2 - 1 and c0 < W / 2 - 1: sh = -min(shift, (w - c0) - (W / 2 - 1), (W / 2 - 1) - c0)
+        kk = k * min(1, (H - 1) / (im.height * k), (W / 2 - 1 + sh) / c0, (W / 2 - 1 - sh) / (w - c0))
+        im = im.resize((round(im.width * kk), round(im.height * kk)), Image.LANCZOS); cx *= kk
+        c = Image.new('RGBA', (W, H)); c.alpha_composite(im, (int(round(W / 2 - cx + sh)), H - im.height))
+        c.save(os.path.join(out, name + '.' + v + '.webp'), 'WEBP', quality=90, method=6)
 
 def silhouette(art, drawn, grow=2):
     """Clip a painted rig part to the drawn part's silhouette (drawn: artExport('rigs', ...) at 1x), for parts whose shape
