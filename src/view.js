@@ -52,7 +52,7 @@ export function updateSky(){const h=worldTime,f=dayF(h),warm=f>0&&f<1?Math.sin(f
 export const camT={x:SPAWNX,y:100};
 // camFocus: a short camera move set by boss.js (at() -> [x, y] to look at, zoom multiplies the distance); eases in and out over dur seconds
 export const camFocus={t:0,dur:1,at:null,zoom:1};
-export function updateCamera(dt){const p=player;let tx=p.x+p.vx*.25,ty=p.y+1.2,zk=1;
+export function updateCamera(dt){const p=player;let tx=p.x+p.vx*.25,ty=p.y+1.2+(p.stepOff||0),zk=1;
   if(camFocus.t>0&&state!=='title'){camFocus.t-=dt;const e=camFocus.t,w=Math.max(0,Math.min(1,(camFocus.dur-e)/.45,e/.6)),s2=w*w*(3-2*w),f=camFocus.at&&camFocus.at();if(f){tx=lerp(tx,f[0],s2);ty=lerp(ty,f[1],s2);}zk=lerp(1,camFocus.zoom,s2);}
   const k=state==='title'?1:Math.min(1,dt*6);camT.x+=(tx-camT.x)*k;camT.y+=(ty-camT.y)*Math.min(1,dt*5);
   const cd=camDist*zk,vh=2*cd*Math.tan(16*Math.PI/180),vw=vh*camera.aspect;const cx=clamp(camT.x,vw/2+1,W-vw/2-1),cy=clamp(camT.y,vh/2+2,H-vh/2);

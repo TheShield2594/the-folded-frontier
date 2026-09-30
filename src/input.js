@@ -35,6 +35,12 @@ addEventListener('keydown',e=>{const k=e.key.toLowerCase();
 export function jumpPress(){if(player.flat)return;if(player.climb&&(keys.w||keys.arrowup)&&!keys[' '])return;if(hook.state===2){hook.state=3;player.vy=Math.max(player.vy,14);player.jbuf=0;return;}player.jbuf=.13;player.jumpAge=0;if(player.stompWin>0&&player.stompTarget)stompNice();}
 // dash: short burst with i-frames, one air dash per jump
 export const DASH_T=.17,DASH_I=.24,DASH_CD=.85,DASH_V=21;
+// jump shape (issue #134): letting go of jump early cuts the rise to JUMP_CUT (after JUMP_MINT s airborne, so a tap still clears a
+// 1-tile ledge); gravity eases to APEX_G while jump is held near the top (|vy|<APEX_V) and rises to FALL_G on the way down (cap FALL_CAP);
+// holding down in mid-air with no platform below fast-falls (FFALL_G, cap FFALL_CAP). A rising player who clips a ceiling corner, or a
+// ledge's top corner, by up to CORNER_NUDGE tiles slides past it. A step-up or ledge nudge eases the sprite and camera over STEP_T s,
+// and the takeoff squashes for TAKE_T s.
+export const JUMP_CUT=.45,JUMP_MINT=.06,APEX_V=3,APEX_G=.55,FALL_G=1.35,FALL_CAP=32,FFALL_G=1.7,FFALL_CAP=40,CORNER_NUDGE=.3,STEP_T=.12,TAKE_T=.06;
 export function dashPress(){const p=player;if(state!=='play'||invOpen||mapOpen||p.dead||p.dashCD>0||p.flat||p.climb||hook.state===2)return;if(!p.onGround&&p.airDashed)return;
   const l=held('left'),r=held('right');const dir=r&&!l?1:l&&!r?-1:p.face;p.face=p.dashDir=dir;p.dashT=DASH_T;p.dashI=DASH_I;p.dashCD=DASH_CD;p.ghostT=0;p.dodged=false;if(!p.onGround)p.airDashed=true;
   SFX.dash();stat('dashes');burst(p.x-dir*.3,p.y+.6,['#fbf8f0','#e9dcc0','#dcd3c2'],9,3,{grav:1,life:.45});}
