@@ -36,14 +36,14 @@
     </div>
   </div>
   <div id="panel" hidden>
-    <div id="tabs" role="tablist" aria-label="Backpack pages"><button type="button" role="tab" data-tab="inv"><img alt="">Backpack</button><button type="button" role="tab" data-tab="craft"><img alt="">Crafting</button><button id="partyBtn" type="button" role="tab" data-tab="party"><img alt="">Party</button><button id="bestBtn" type="button" role="tab" data-tab="bestiary"><img alt="">Bestiary</button><button id="musBtn" type="button" role="tab" data-tab="museum"><img alt="">Museum</button><button type="button" role="tab" data-tab="binder"><img alt="">Binder</button><button id="townBtn" type="button" role="tab" data-tab="town"><img alt="">Town</button><button id="loreBtn" type="button" role="tab" data-tab="story"><img alt="">Journal</button></div>
+    <div id="tabs" role="tablist" aria-label="Backpack pages"><button type="button" role="tab" data-tab="inv"><img alt=""><span>Backpack</span></button><button type="button" role="tab" data-tab="craft"><img alt=""><span>Crafting</span></button><button id="partyBtn" type="button" role="tab" data-tab="party"><img alt=""><span>Party</span></button><button id="bestBtn" type="button" role="tab" data-tab="bestiary"><img alt=""><span>Bestiary</span></button><button id="musBtn" type="button" role="tab" data-tab="museum"><img alt=""><span>Museum</span></button><button type="button" role="tab" data-tab="binder"><img alt=""><span>Binder</span></button><button id="townBtn" type="button" role="tab" data-tab="town"><img alt=""><span>Town</span></button><button id="loreBtn" type="button" role="tab" data-tab="story"><img alt=""><span>Journal</span></button></div>
     <div class="sheet pinned" id="sideSheet" hidden><h3 id="sideTitle">Chest</h3><div id="sideBody"></div></div>
     <div id="leftCol">
       <div class="sheet taped tl"><h3 class="stk">Backpack</h3><div id="grid" class="grid"></div>
-        <div class="row"><button id="houseBtn" type="button">Check this room</button><button id="sortBtn" class="ghost" type="button">Sort</button><button id="quickBtn" class="ghost touchOnly" type="button">Quick move</button></div></div>
+        <div class="row"><button id="sortBtn" class="ghost" type="button">Sort</button><button id="quickBtn" class="ghost touchOnly" type="button">Quick move</button></div></div>
     </div>
     <div class="sheet pinned"><h3>Gear</h3><div id="equip"></div><div id="defTxt"></div></div>
-    <div class="sheet taped tr" id="craft"><h3>Crafting</h3><div id="stations"></div><div id="recipes"></div></div>
+    <div class="sheet taped tr" id="craft"><h3>Crafting</h3><div id="craftBar"><input id="craftQ" type="search" placeholder="Search recipes" aria-label="Search recipes" autocomplete="off" spellcheck="false"><button id="craftCan" class="ghost" type="button" aria-pressed="false">Can make</button></div><div id="craftCat" role="group" aria-label="Recipe categories"></div><div id="stations"></div><div id="recipes"></div></div>
   </div>
   <div id="toasts"></div>
   <div id="nums"></div>
