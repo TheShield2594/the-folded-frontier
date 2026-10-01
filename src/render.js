@@ -349,7 +349,7 @@ const pMat=new THREE.ShaderMaterial({side:THREE.DoubleSide,transparent:true,dept
   vertexShader:`attribute float aG;varying vec3 vC;varying vec2 vUv;varying float vG;void main(){vC=instanceColor;vUv=uv;vG=aG;gl_Position=projectionMatrix*modelViewMatrix*instanceMatrix*vec4(position,1.);}`,
   fragmentShader:`uniform float uHdr;varying vec3 vC;varying vec2 vUv;varying float vG;void main(){if(vG<.5){gl_FragColor=vec4(vC,1.);return;}
     float d=length(vUv-.5)*2.;if(d>1.)discard;float a=smoothstep(1.,.2,d);gl_FragColor=vec4(vC*(1.+(1.-d)*(.35+uHdr*1.4)),a);}`});
-const pMesh=new THREE.InstancedMesh(pGeo,pMat,PMAX);pMesh.frustumCulled=false;pMesh.renderOrder=1;
+export const pMesh=new THREE.InstancedMesh(pGeo,pMat,PMAX);pMesh.frustumCulled=false;pMesh.renderOrder=1;
 export const dummy=new THREE.Object3D();const tmpC=new THREE.Color();export const parts=[];
 for(let i=0;i<PMAX;i++){dummy.scale.set(0,0,0);dummy.updateMatrix();pMesh.setMatrixAt(i,dummy.matrix);pMesh.setColorAt(i,tmpC.set(1,1,1));}scene.add(pMesh);
 export function emit(k,x,y,o={}){const e=k?Object.assign({},PFX[k],o):o,cols=e.cols||['#fbf8f0'],n=e.n??1,spd=e.spd??5,glow=!!e.glow;

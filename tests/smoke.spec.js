@@ -641,7 +641,7 @@ test('?perf shows the performance overlay with world and save numbers',async({pa
 
 // Trading cards (#67): cards come from chests and packs, a binder files them, a full page pays its reward, and the
 // collection is saved per world. updateCards() runs by hand, as the frame loop barely moves in software WebGL.
-test('trading cards: chests and packs give them, a binder files them, a full page pays out, and the collection is saved',async({page})=>{
+test('trading cards: chests and packs give them, the pack screen shows them, a binder files them, a full page pays out, and the collection is saved',async({page})=>{
   await boot(page);
   await newSmallWorld(page);
   const s=await page.evaluate(async()=>{
@@ -654,7 +654,10 @@ test('trading cards: chests and packs give them, a binder files them, a full pag
     const cell=c=>{const[x,y]=g.cellXY(c);return g.atlas.getContext('2d').getImageData(x,y,64,64).data;},fa=cell(g.C.card_king),ba=cell(g.CARDBACK[2]);
     let dv=0;for(let i=0;i<fa.length;i++)dv+=Math.abs(fa[i]-ba[i]);out.painted=dv/fa.length>8;
     // a pack gives three cards, one Rare or better; without a binder they stay in the backpack
-    g.openPack(0);const got=P.inv.filter(x=>x&&g.ITEMS[x.id].card);out.pack=cardsIn();out.best=Math.max(...got.map(x=>rar(x.id)));g.updateCards(1);out.kept=cardsIn();out.hint=g.cards.hint;
+    g.openPack(0);const got=P.inv.filter(x=>x&&g.ITEMS[x.id].card);
+    // the pack screen (#149) freezes the world: a press turns every card face up, the next closes it
+    out.screen=[g.state,document.getElementById('pack').hidden,document.querySelectorAll('#pkCards .pkc').length];g.packNext();out.flipped=document.querySelectorAll('#pkCards .pkc.up').length;
+    out.labels=[...document.querySelectorAll('#pkCards .pk-lab b')].every(b=>b.textContent);g.packNext();out.closed=[g.state,document.getElementById('pack').hidden];out.pack=cardsIn();out.best=Math.max(...got.map(x=>rar(x.id)));g.updateCards(1);out.kept=cardsIn();out.hint=g.cards.hint;
     // with a binder they file themselves in; a full page pays its reward once
     g.addItem('binder',1);g.updateCards(1);out.filed=Object.values(g.cards.have).reduce((a,b)=>a+b,0);out.left=cardsIn();
     const packs=g.countItem('cardpack'),coins=P.coins;for(const c of g.CARDS.filter(c=>c[4]==='field'))g.addItem('card_'+c[0],1);g.updateCards(1);g.updateCards(1);
@@ -670,6 +673,10 @@ test('trading cards: chests and packs give them, a binder files them, a full pag
   expect(s.treasure).toBe(true);
   expect(s.painted).toBe(true);
   expect(s.pack).toBe(3);
+  expect(s.screen).toEqual(['pack',false,3]);
+  expect(s.flipped).toBe(3);
+  expect(s.labels).toBe(true);
+  expect(s.closed).toEqual(['play',true]);
   expect(s.best).toBeGreaterThanOrEqual(1);
   expect(s.kept).toBe(3);
   expect(s.hint).toBe(1);
@@ -1333,4 +1340,32 @@ test('gamepad: partners on the d-pad and Mount on L3, and older saved layouts mo
     expect(r.slice(0,4)).toEqual([...want,2]);
     if(more)for(const k in more)expect(r[4][k]).toBe(more[k]);
   }
+});
+
+// The dev animation viewer (#99, dev/anim.html): it boots the game's modules without a world, poses a rig on its stage,
+// sets keys where a part is dragged, and its clip text reads back into the clip
+test('animation viewer: loads rigs and clips, edits keys, and reads clip text back',async({page})=>{
+  await page.goto('/dev/anim.html');
+  await page.waitForFunction(()=>window.__anim&&window.__anim.R,null,{timeout:90_000});
+  const r=await page.evaluate(async()=>{const a=window.__anim,out={};
+    out.subj=document.querySelectorAll('#subj option').length;out.kind=a.R.k;
+    // a foe's rig and its clip
+    const i=[...document.querySelectorAll('#subj option')].findIndex(o=>o.textContent==='slime');a.pick(i);out.slime=a.R.k;out.clip=a.clip;
+    // a key at the playhead, as a drag on a part sets one
+    a.seek(0);const sel=document.getElementById('part');sel.value=String(a.R.d.pi.body??0);sel.dispatchEvent(new Event('change'));
+    a.setKey(a.R.d.parts[+sel.value].n,'r',0,.5);const K=a.R.d.clips[a.clip].tr[a.R.d.parts[+sel.value].n].r;out.key=K.find(k=>k[0]===0)[1];
+    // a looping clip's closing key follows the first
+    out.close=a.R.d.clips[a.clip].loop?K[K.length-1][1]:.5;
+    // the clip text applies back
+    const ta=document.getElementById('out');ta.value=a.clip+':{len:1,loop:1,tr:{'+a.R.d.parts[+sel.value].n+':{r:[[0,.25,"io"],[1,.25]]}}}';document.getElementById('apply').click();
+    out.applied=a.R.d.clips[a.clip].tr[a.R.d.parts[+sel.value].n].r[0][1];
+    document.getElementById('revert').click();out.reverted=a.R.d.clips[a.clip].tr[a.R.d.parts[+sel.value].n]?.r?.[0]?.[1]!==.25;
+    return out;});
+  expect(r.subj).toBeGreaterThan(30);
+  expect(['human','hero']).toContain(r.kind);
+  expect(r.slime).toBe('slime');
+  expect(r.key).toBe(.5);
+  expect(r.close).toBe(.5);
+  expect(r.applied).toBe(.25);
+  expect(r.reverted).toBe(true);
 });

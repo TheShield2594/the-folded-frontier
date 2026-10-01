@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Animation Viewer</title>
+<!-- Dev only (issue #99): `npm run dev`, then open /dev/anim.html. Vite builds index.html alone, so this page never reaches dist/. -->
+<style>
+:root{--paper:#f7eedc;--paper2:#efe1c4;--ink:#2a2130;--ink2:#5b4d63;--teal:#2f7f86;--red:#d4483b;--gold:#f1c04f;--stage:#cfe3ea;}
+*{box-sizing:border-box;}
+html,body{margin:0;height:100%;}
+body{background:var(--paper);color:var(--ink);font:13px/1.35 system-ui,'Segoe UI',sans-serif;display:grid;grid-template-columns:minmax(0,1fr) 340px;grid-template-rows:minmax(0,1fr) auto;height:100vh;}
+#stage{position:relative;grid-row:1;grid-column:1;background:var(--stage);overflow:hidden;cursor:crosshair;touch-action:none;}
+#stage canvas{position:absolute;inset:0;width:100%!important;height:100%!important;display:block;}
+#ov{pointer-events:none;}
+#side{grid-row:1/3;grid-column:2;overflow:auto;border-left:2px solid var(--ink);padding:10px 12px 20px;background:var(--paper2);}
+#bar{grid-row:2;grid-column:1;border-top:2px solid var(--ink);padding:8px 10px;display:flex;flex-direction:column;gap:6px;}
+h1{font-size:15px;margin:0 0 8px;} h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink2);margin:14px 0 6px;}
+label{display:flex;gap:6px;align-items:center;margin:4px 0;}
+select,input,button,textarea{font:inherit;color:inherit;}
+select,input[type=number],input[type=text],textarea{background:#fffaf0;border:1.5px solid var(--ink2);border-radius:5px;padding:2px 4px;}
+select{max-width:100%;}
+button{background:#fffaf0;border:1.5px solid var(--ink);border-radius:6px;padding:3px 9px;cursor:pointer;}
+button:hover{background:#fff;} button.on{background:var(--teal);color:#fff;}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+#time{flex:1;min-width:120px;}
+#keys{position:relative;height:18px;background:#fffaf0;border:1.5px solid var(--ink2);border-radius:4px;cursor:pointer;}
+#keys i{position:absolute;top:2px;width:7px;height:11px;margin-left:-3.5px;background:var(--ink);transform:rotate(45deg) scale(.75);}
+#keys i.sel{background:var(--red);}
+#keys b{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--red);margin-left:-1px;}
+table{border-collapse:collapse;width:100%;}
+td{padding:1px 2px;vertical-align:middle;} td input{width:62px;} td select{width:52px;}
+.ch{font-weight:700;color:var(--teal);padding-top:6px;}
+.hint{color:var(--ink2);font-size:12px;margin:4px 0;}
+#out{width:100%;height:120px;font:11px/1.3 ui-monospace,monospace;}
+#msg{color:var(--teal);min-height:1.3em;}
+#load{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--stage);}
+.edited{color:var(--red);}
+@media (max-width:760px){body{grid-template-columns:1fr;grid-template-rows:55vh auto auto;height:auto;}#side{grid-row:3;grid-column:1;border-left:0;border-top:2px solid var(--ink);}}
+</style>
+<body>
+<div id="stage"><canvas id="ov"></canvas><div id="load">Loading the game's modules…</div></div>
+<div id="bar">
+  <div class="row">
+    <button id="play" type="button" title="Play / pause (Space)">Pause</button>
+    <button id="prevK" type="button" title="Previous key (,)">◀ key</button>
+    <button id="nextK" type="button" title="Next key (.)">key ▶</button>
+    <input id="time" type="range" min="0" max="1" step="0.001" value="0" aria-label="Clip time">
+    <span id="tTxt">0.000 / 0.000 s</span>
+  </div>
+  <div id="keys" title="Keys of the picked part: click to jump"></div>
+  <div class="row">
+    <label>Speed <select id="speed"><option value="1">1×</option><option value="0.5">½×</option><option value="0.25">¼×</option><option value="0.1">⅒×</option><option value="2">2×</option></select></label>
+    <label><input id="loopV" type="checkbox" checked> Loop in the viewer</label>
+    <label><input id="flip" type="checkbox"> Face left (F)</label>
+    <label><input id="bones" type="checkbox" checked> Pivots & bones</label>
+    <label><input id="wob" type="checkbox" checked> Paper wobble</label>
+    <label><input id="blend" type="checkbox"> Blend between clips</label>
+    <label>Zoom <input id="zoom" type="range" min="3" max="16" step=".5" value="7"></label>
+  </div>
+</div>
+<div id="side">
+  <h1>Animation viewer</h1>
+  <p class="hint">Click a pivot to pick a part. Drag to turn it, Shift-drag to move it, Alt-drag to scale it: a key is set at the playhead (playback pauses).</p>
+  <label>Rig <select id="subj"></select></label>
+  <label>Clip <select id="clip"></select></label>
+  <div class="row"><label>len <input id="cLen" type="number" step="0.01" min="0" style="width:64px"></label><label>bl <input id="cBl" type="number" step="0.01" min="0" style="width:56px"></label><label><input id="cLoop" type="checkbox"> loop</label></div>
+  <h2>Part</h2>
+  <label><select id="part"></select></label>
+  <div id="keyTab"></div>
+  <div class="row"><select id="addCh"><option>r</option><option>x</option><option>y</option><option>sx</option><option>sy</option><option>sw</option></select><button id="addKey" type="button">Add key at playhead</button></div>
+  <h2>Clip data</h2>
+  <div class="row"><button id="copy" type="button">Copy clip</button><button id="save" type="button">Download rig JSON</button><button id="revert" type="button">Revert clip</button></div>
+  <p class="hint">The download is <code>&lt;rig&gt;.json</code> with every clip you edited. Put it in <code>assets/anim/</code> and the game uses those clips (art.js). Edits are also kept in this browser until reverted.</p>
+  <textarea id="out" spellcheck="false" aria-label="Clip data"></textarea>
+  <div class="row"><button id="apply" type="button">Apply text to clip</button></div>
+  <p id="msg" role="status"></p>
+  <h2>Particles</h2>
+  <div class="row"><select id="pfx"></select><label>at <select id="pfxAt"></select></label></div>
+  <div class="row"><button id="emit" type="button">Emit</button><label><input id="pfxLoop" type="checkbox"> every <input id="pfxEvery" type="number" value="0.3" min="0.05" step="0.05" style="width:56px"> s</label></div>
+  <h2>Light</h2>
+  <label>Daylight <input id="sky" type="range" min="0" max="15" step="1" value="15"></label>
+  <div class="row"><select id="lamp"></select><label>at <select id="lampAt"></select></label></div>
+  <label><input id="flick" type="checkbox" checked> Flicker</label>
+</div>
+<script type="module" src="./anim.js"></script>
+</body>

@@ -4,6 +4,7 @@
 import {
   addItem,atlasTex,buildNormals,burst,C,CARDPAGES,CARDS,CARDBACK,cardFace,cellIcon,clearIcons,countItem,dropItem,EN,icon,ITEMS,
   player,RARITY,repaintCell,rewardTxt,setInvDirty,setTab,SFX,SHEETS,stat,toast,tone,cardId,
+  $,initAudio,invOpen,mk,reduceMotion,setInv,setState,state,
 } from './game.js';
 
 // ================= cards =================
@@ -19,14 +20,60 @@ function picOf([kind,k]){if(kind==='foe'){const d=EN[k];return d&&SHEETS[d.sheet
 export function paintCards(){let n=0;for(const[k,,r,pic,pg]of CARDS){const src=picOf(pic);if(!src)continue;const[img,sw,sh]=src;
     repaintCell(C['card_'+k],t=>cardFace(t,r,(t,x,y,w,h,full)=>{const s=(full?Math.max(w/sw,h/sh)*.95:Math.min(w/sw,h/sh))*1.08;t.drawImage(img,0,0,sw,sh,x+w/2-sw*s/2,y+h/2-sh*s/2+(full?4:0),sw*s,sh*s);},PAGEBG[pg]));n++;}
   if(n){atlasTex.needsUpdate=true;buildNormals();clearIcons();}return n;}
-// packs: three cards (one Rare or better) or, gilded, five (one Halo or better)
+// packs: three cards (one Rare or better) or, gilded, five (one Halo or better), shown opening on the pack screen
 export function openPack(kind){const p=player,got=[kind?cardId(1,2):cardId(0,1)];for(let k=1;k<(kind?5:3);k++)got.push(cardId(kind?1:0));
+  // new: not in the binder, not carried already, and the first of its kind in this pack
+  const seen=new Set(),fresh=got.map(id=>{const k=ITEMS[id].card,n=!cards.have[k]&&!countItem(id)&&!seen.has(k);seen.add(k);return n;});
   for(const id of got){const l=addItem(id,1);if(l)dropItem(id,l,p.x,p.y+1);}
-  const best=Math.max(...got.map(id=>ITEMS[id].card&&CARDS.find(c=>c[0]===ITEMS[id].card)[2]));
-  burst(p.x,p.y+1.2,best>=2?['#fff3c0','#f1c04f','#ff9aa8','#8fcaf0']:['#fbf8f0','#d4483b','#f1c04f'],best>=2?26:14,5);SFX.rustle(.3,.5);if(best>=2)tone(660,990,.35,'sine',.08);
-  toast(`${ITEMS[kind?'cardpackg':'cardpack'].name}: ${got.map(id=>{const r=CARDS.find(c=>c[0]===ITEMS[id].card)[2];return ITEMS[id].name.replace(/ Card$/,'')+(r?` (${RARITY[r].n})`:'');}).join(', ')}!`,best>=2?'gold':'good');
-  stat('packs');setInvDirty(true);}
+  const rar=id=>CARDS.find(c=>c[0]===ITEMS[id].card)[2],best=Math.max(...got.map(rar));
+  burst(p.x,p.y+1.2,best>=2?['#fff3c0','#f1c04f','#ff9aa8','#8fcaf0']:['#fbf8f0','#d4483b','#f1c04f'],best>=2?26:14,5);
+  stat('packs');setInvDirty(true);
+  showPack(kind,got.map((id,i)=>({k:ITEMS[id].card,r:rar(id),n:ITEMS[id].name.replace(/ Card$/,''),fresh:fresh[i]})));}
 export function openBinder(){setTab('binder');}
+
+// ================= pack screen =================
+// Opening a pack (issue #149) freezes the world (state 'pack') and plays it out on a screen over it: the pack drops in and
+// wiggles, its top tears off, the cards slide out face down and flip one at a time, rarest last, then sit with their names,
+// rarity and a New mark. A press (click, tap, Space/Enter/E, the pad's A, B, X or Y) skips to every card face up, the next one
+// closes; Escape or Start closes at once. Reduced motion skips the pack and lays the cards out face up.
+// The cards went into the backpack when the pack was opened, so closing early loses nothing.
+let pk=null;
+export const packOpen=()=>!!pk;
+// a card face three times the atlas cell, painted the way paintCards() paints the cell; a card whose picture is missing
+// (or that hand-made art replaced) shows its cell, scaled
+const BIGS=3,bigs={};
+function bigCard(k){if(bigs[k])return bigs[k];const c=CARDS.find(o=>o[0]===k),src=c&&picOf(c[3]);
+  if(!src)return bigs[k]=icon('card_'+k);const[img,sw,sh]=src,cv=mk(52*BIGS,66*BIGS),t=cv.getContext('2d');t.scale(BIGS,BIGS);t.translate(-6,1);t.lineJoin='round';t.lineCap='round';
+  cardFace(t,c[2],(t,x,y,w,h,full)=>{const s=(full?Math.max(w/sw,h/sh)*.95:Math.min(w/sw,h/sh))*1.08;t.drawImage(img,0,0,sw,sh,x+w/2-sw*s/2,y+h/2-sh*s/2+(full?4:0),sw*s,sh*s);},PAGEBG[c[4]]);
+  return bigs[k]=cv.toDataURL();}
+const RMARK=['●','◆','◎','★'];
+function showPack(kind,list){if(invOpen)setInv(false);if(pk)closePack();
+  // rarest flip last, so the best card is the reveal
+  const order=list.map((c,i)=>[c,i]).sort((a,b)=>a[0].r-b[0].r||a[1]-b[1]).map(a=>a[0]),el=$('pack'),mid=(order.length-1)/2,rm=reduceMotion();
+  pk={kind,list:order,ph:'pack',up:0,tm:[],prev:state};setState('pack');
+  el.className=(kind?'gild ':'')+(rm?'rm':'');el.hidden=false;
+  $('pkTitle').textContent=ITEMS[kind?'cardpackg':'cardpack'].name;
+  $('pkWrap').innerHTML=`<img src="${icon(kind?'cardpackg':'cardpack')}" alt="" class="pk-top"><img src="${icon(kind?'cardpackg':'cardpack')}" alt="" class="pk-body">`;
+  $('pkCards').innerHTML=order.map((c,i)=>`<div class="pkc r${c.r}" style="--i:${i};--dx:${(mid-i).toFixed(2)}" role="img" aria-label="Card ${i+1}, face down">
+    <div class="pk-in"><div class="pk-back"><b>★</b></div><div class="pk-front"><img src="${bigCard(c.k)}" alt=""></div></div>
+    <div class="pk-lab"><b>${c.n}</b><small>${RMARK[c.r]} ${RARITY[c.r].n}</small>${c.fresh?'<em>New!</em>':''}</div></div>`).join('');
+  packHint();
+  if(rm){packAll(true);return;}
+  SFX.rustle(.25,.4);
+  pk.tm.push(setTimeout(packTear,900));}
+function packHint(){if(!pk)return;$('pkHint').textContent=pk.ph==='done'?'Click to close':'Click to reveal them all';$('pkDone').textContent=pk.ph==='done'?'Done':'Reveal all';}
+function packTear(){if(!pk)return;pk.ph='tear';$('pack').classList.add('torn');SFX.rustle(.35,.9);tone(520,260,.12,'triangle',.06);
+  pk.tm.push(setTimeout(()=>{if(!pk)return;pk.ph='flip';$('pack').classList.add('out');const n=pk.list.length;for(let i=0;i<n;i++)pk.tm.push(setTimeout(()=>packFlip(i),650+i*480+(i===n-1&&pk.list[i].r>=2?350:0)));},380));}
+function packFlip(i){if(!pk)return;const c=pk.list[i],el=$('pkCards').children[i];if(!el||el.classList.contains('up'))return;el.classList.add('up');el.setAttribute('aria-label',`${c.n}, ${RARITY[c.r].n}${c.fresh?', new':''}`);pk.up++;
+  tone(420+c.r*140,560+c.r*180,.09,'triangle',.07);SFX.rustle(.12,.35);if(c.r>=2){tone(660,990,.35,'sine',.08);tone(990,1320,.3,'sine',.05,.12);}
+  if(pk.up>=pk.list.length){pk.ph='done';$('pack').classList.add('done');packHint();if(pk.list.some(c=>c.r>=2))SFX.nice();}}
+function packAll(quiet){if(!pk)return;for(const t of pk.tm)clearTimeout(t);pk.tm=[];const el=$('pack');el.classList.add('torn','out','done','fast');
+  [...$('pkCards').children].forEach((e,i)=>{const c=pk.list[i];e.classList.add('up');e.setAttribute('aria-label',`${c.n}, ${RARITY[c.r].n}${c.fresh?', new':''}`);});pk.up=pk.list.length;pk.ph='done';packHint();
+  if(!quiet&&pk.list.some(c=>c.r>=2))SFX.nice();}
+// a press: skip to every card face up, or close once they are; esc closes at once
+export function packNext(esc){if(!pk)return;if(esc||pk.ph==='done'){closePack();return;}packAll();}
+$('pack').addEventListener('click',()=>{initAudio();packNext();});
+export function closePack(){if(!pk)return;for(const t of pk.tm)clearTimeout(t);const prev=pk.prev;pk=null;$('pack').hidden=true;$('pkCards').innerHTML='';if(state==='pack')setState(prev==='pack'?'play':prev);setInvDirty(true);}
 // cards carried with a binder go into it; a full page pays its reward once
 let cardT=0;
 export function updateCards(dt){if((cardT-=dt)>0)return;cardT=.5;const inv=player.inv;let n=0;const fresh=[];
