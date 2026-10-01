@@ -11,6 +11,14 @@ import {A,atlas,atlasTex,bestCache,buildNormals,C,cellXY,clearIcons,facePic,FOER
 // '@art' is assets/art/ (vite.config.js); the smoke tests point it at tests/fixtures/art/.
 const ART_FILES=import.meta.glob('@art/*/*.{png,webp}',{eager:true,query:'?url',import:'default'});
 export const artImg={atlas:{},sheets:{},rigs:RIGART};
+// assets/anim/<rig>.json  clips saved from the animation viewer (dev/anim.html, `npm run dev` then /dev/anim.html): {clip:
+//   {len, loop, bl, tr}} in the format defRig() takes (rig.js). Each one replaces that clip of the rig at boot, in place, so
+//   anything already holding the clip sees the new keys; a clip the rig doesn't have is added.
+const ANIM_FILES=import.meta.glob('/assets/anim/*.json',{eager:true,import:'default'});
+export const animOver={};
+for(const[p,clips]of Object.entries(ANIM_FILES)){const k=p.match(/([^/]+)\.json$/)[1],d=RIGS[k];if(!d){console.warn(`anim: no rig "${k}" for ${p}`);continue;}
+  for(const c in clips){const o=d.clips[c];if(o){for(const f in o)delete o[f];Object.assign(o,clips[c]);}else d.clips[c]=clips[c];(animOver[k]??={})[c]=1;}}
+
 const artOrig={atlas:{},sheets:{}}; // the drawn art under each override, kept for artExport()
 export let artReady=Promise.resolve(0);
 const ORECELL=new Set(ORES.map(o=>o[0]));

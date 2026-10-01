@@ -5,7 +5,7 @@ import {
   fireHook,held,hook,initAudio,invOpen,ITEMS,keys,mapOpen,pad,padRebinding,partnerAbility,pause,player,
   pv,quickHeal,rebinding,renderBinds,renderer,saveSettings,scene,SET,setCamDist,setCursor,setInv,
   setInvDirty,setPadRebinding,setRebinding,SFX,stat,stompNice,toggleMap,upx,
-  skipIntro,introNext,dlgNext,toggleMount,rigSnap,rumble,cancelOK,cancelSwing,CANCEL_BUF,
+  skipIntro,introNext,dlgNext,packNext,toggleMount,rigSnap,rumble,cancelOK,cancelSwing,CANCEL_BUF,
 } from './game.js';
 
 // ================= input =================
@@ -16,6 +16,7 @@ addEventListener('keydown',e=>{const k=e.key.toLowerCase();
   if(rebinding){e.preventDefault();if(k!=='escape'){const other=Object.keys(SET.bind).find(a=>SET.bind[a]===k);if(other&&other!==rebinding)SET.bind[other]=SET.bind[rebinding];SET.bind[rebinding]=k;saveSettings();}setRebinding(null);renderBinds();return;}
   if([' ','tab','arrowup','arrowdown'].includes(k))e.preventDefault();if(e.repeat)return;keys[k]=true;initAudio();
   if(state==='intro'){if(k==='escape'||((k===' '||k==='enter')&&document.activeElement===$('introSkip'))){e.preventDefault();skipIntro();}else if(k===' '||k==='enter'||k==='arrowright'||actKey('jump',k))introNext();return;}
+  if(state==='pack'){if(k==='escape')packNext(true);else if(actKey('jump',k)||k==='enter'||actKey('inv',k)){e.preventDefault();packNext();}return;} // no default: Enter on the focused Done button would click it too
   if(state==='talk'){if(k==='escape')dlgNext(true);else if(actKey('jump',k)||k==='enter'||actKey('inv',k))dlgNext();return;}
   if(k==='escape'&&!$('settings').hidden){closeSettings();return;}
   if(k==='escape'&&!$('ach').hidden){$('ach').hidden=true;return;}
