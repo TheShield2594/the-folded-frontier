@@ -196,7 +196,7 @@ test('saves are stored gzipped in IndexedDB, and an older localStorage save move
 
 // The Huge size (1800 × 450): its save is too big for localStorage, so it only fits since saves moved to IndexedDB, and the
 // lighting queue grows with the world (sizeLight), so the whole sky still lights.
-test('a Huge world generates, lights and saves',async({page})=>{
+test('a Huge world generates, lights and saves, and builds chunk meshes only near the camera',async({page})=>{
   await boot(page);
   await page.click('#newBtn');
   await page.click('#sizeSeg button[data-s="h"]');
@@ -205,11 +205,21 @@ test('a Huge world generates, lights and saves',async({page})=>{
   const r=await page.evaluate(async()=>{const g=await import('/src/game.js');g.newWorld(4242,'h','4242');
     let dark=0;for(let x=0;x<g.W;x++)if(g.sky[(g.H-1)*g.W+x]!==15)dark++;
     const ok=await g.save(),sv=await g.storedSave(),B=g.BIO;
-    return {W:g.W,H:g.H,dark,ok,w:sv.w,size:sv.size,chars:JSON.stringify(sv).length,dun:['clock','arch','scrap','temple','obs'].filter(k=>B.dun[k]).length,deep:!!B.deep,isl:B.sky.is.length};});
+    // chunk meshes only near the camera: a jump across the world builds the new view at once and lets the old one go
+    const all=g.CW*g.CHH,near=g.builtChunks(),key=(x,y)=>Math.floor(y/32)*g.CW+Math.floor(x/32),py=g.surf[1500];
+    for(let i=0;i<20;i++)g.updateChunks(g.player.x,g.player.y);const settled=g.builtChunks(),home=key(g.player.x,g.player.y);
+    g.updateChunks(1500,py);const moved={here:!!g.chunks[key(1500,py)],home:!!g.chunks[home]};
+    g.markChunk(200,200);g.markChunk(1500,py);g.updateChunks(1500,py);
+    return {W:g.W,H:g.H,dark,ok,w:sv.w,size:sv.size,chars:JSON.stringify(sv).length,dun:['clock','arch','scrap','temple','obs'].filter(k=>B.dun[k]).length,deep:!!B.deep,isl:B.sky.is.length,
+      all,near,settled,moved,dirty:g.dirty.size};});
   expect(r).toMatchObject({W:1800,H:450,dark:0,ok:true,w:1800,size:'h',deep:true});
   expect(r.chars).toBeGreaterThan(4e6);
   expect(r.dun).toBe(5);
   expect(r.isl).toBeGreaterThan(10);
+  expect(r.near).toBeGreaterThan(0);
+  expect(r.settled).toBeLessThan(r.all/10);
+  expect(r.moved).toEqual({here:true,home:false});
+  expect(r.dirty).toBe(0);
 });
 
 test('seasonal routes undo themselves over a year, and secrets and records are saved',async({page})=>{

@@ -6,7 +6,7 @@ import {
   $,AC,ambient,angler,biomeAt,BIONAME,buildChunk,buildPartnerSheets,
   buildSheets,camera,camT,canvasTex,chapterCard,checkAch,checkRitual,checkRoom,circ,clamp,clouds,
   computeLightStrip,crops,fullMoon,updateBossFx,rareGrowChance,drawWarnMark,curBio,CW,dirty,drawMap,eliteMat,explored,fi,H,handlePad,hasNPC,hitStop,slowScale,feelIdle,
-  inkMoon,invDirty,invOpen,isNight,lightDirty,bootSave,setBooted,loadWorld,lx0,lx1,makeSheet,mapOpen,markChunk,
+  inkMoon,invDirty,invOpen,isNight,lightDirty,bootSave,setBooted,updateChunks,loadWorld,lx0,lx1,makeSheet,mapOpen,markChunk,
   meta,mk,mouse,music,newWorld,nightsSeen,NPCDEF,NPCORDER,pickMusic,player,playerLook,playerRigKind,makeRig,rigReskin,buildRigSheets,SHEETS,poly,
   popUp,pt,rand,refreshUI,renderer,renderQuests,reveal,revealT,rr,save,scene,setCurBio,setHitStop,
   setInkMoon,setLightDirty,setLx0,setLx1,setMusic,setNightsSeen,setRevealT,setWorldClock,setWorldTime,
@@ -52,7 +52,7 @@ function frame(now){requestAnimationFrame(frame);perfStart();const pf0=performan
   if(AC){setMusic(pickMusic());music(dt,isNight());}updateAmbience(dt);mouse.lp=false;mouse.rp=false;
   if(lightDirty){computeLightStrip(lx0-17,lx1+17);setLightDirty(false);setLx0(1e9);setLx1(-1);}
   updatePop(dt);if(state==='play')updateHouses(dt);updateDlg(dt);
-  const pf1=performance.now();let n=0;for(const k of dirty){buildChunk(k%CW,Math.floor(k/CW));dirty.delete(k);if(++n>=8)break;}const pf2=performance.now();
+  const pf1=performance.now();updateChunks();const pf2=performance.now();
   updateParts(dt);updateCamera(dt);updateDynLights(el);updateSky();updateDiorama();updateOverlays();updateNums(dt);
   clouds.forEach(c=>{c.position.x+=dt*c.userData.s*(1+Math.abs(wind)*5)*(wind<0?-1:1);if(c.position.x<-20)c.position.x=W+20;if(c.position.x>W+20)c.position.x=-20;});
   if(mapOpen){mapRedraw-=dt;if(mapRedraw<=0){mapRedraw=.5;drawMap();}}
