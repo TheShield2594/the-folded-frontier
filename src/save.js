@@ -20,7 +20,7 @@ import {
   perfLap,perfFold,perfLoad,perfSave,perfCode,
   endDie,cleanLook,LOOK,lookPic,
   cards,newCards,setCards,CARDS,CARDPAGES,
-  closePack,
+  closePack,sizeLight,
 } from './game.js';
 
 // ================= save/load =================
@@ -127,7 +127,7 @@ const hasSave=()=>!!lastSaveJSON;
 export let booted=false;export function setBooted(v){return booted=v;}
 
 // ================= lifecycle =================
-function allocWorld(w,h){setW(w);setH(h);setN(W*H);setSPAWNX(Math.floor(W/2));setTiles(new Uint8Array(N));setWalls(new Uint8Array(N));setMeta(new Uint8Array(N));setStamp(new Uint32Array(N));setSky(new Uint8Array(N));setBlk(new Uint8Array(N));setExplored(new Uint8Array(N));setSurf(new Int16Array(W));
+function allocWorld(w,h){setW(w);setH(h);setN(W*H);setSPAWNX(Math.floor(W/2));sizeLight(N);setTiles(new Uint8Array(N));setWalls(new Uint8Array(N));setMeta(new Uint8Array(N));setStamp(new Uint32Array(N));setSky(new Uint8Array(N));setBlk(new Uint8Array(N));setExplored(new Uint8Array(N));setSurf(new Int16Array(W));
   chunks.concat(liqChunks).forEach(m=>{if(m){scene.remove(m);m.geometry.dispose();}});setChunks([]);setLiqChunks([]);setCW(Math.ceil(W/CS));setCHH(Math.ceil(H/CS));dirty.clear();
   setMapBase(mk(W,H));setMbx(mapBase.getContext('2d'));setMbImg(mbx.createImageData(W,H));setMapS(W<=420?3:2);$('mapC').width=W*mapS;$('mapC').height=H*mapS;hook.state=0;}
 function seedFrom(txt){txt=(txt||'').trim();if(/^\d{1,9}$/.test(txt))return +txt;let h=2166136261;for(const c of txt){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}

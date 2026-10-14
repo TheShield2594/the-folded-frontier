@@ -120,7 +120,9 @@ export function generate(sd){
 }
 
 // ================= lighting =================
-export let sky=new Uint8Array(N),blk=new Uint8Array(N);const QS=1<<19,QM=QS-1,Q=new Int32Array(QS);
+export let sky=new Uint8Array(N),blk=new Uint8Array(N);let QS=1<<19,QM=QS-1,Q=new Int32Array(QS);
+// the flood fill's ring buffer: every lit cell can be waiting in it at once (computeLight seeds the whole sky), so it grows with the world
+export function sizeLight(n){let s=1<<19;while(s<2*n)s*=2;if(s!==QS){QS=s;QM=s-1;Q=new Int32Array(s);}}
 function spread(arr,qt){let qh=0;const go=(n,v)=>{const nv=v-(LB[tiles[n]]?2:1);if(nv>arr[n]){arr[n]=nv;Q[qt]=n;qt=(qt+1)&QM;}};
   while(qh!==qt){const i=Q[qh];qh=(qh+1)&QM;const v=arr[i];if(v<=1)continue;const x=i%W;if(x>0)go(i-1,v);if(x<W-1)go(i+1,v);if(i>=W)go(i-W,v);if(i<N-W)go(i+W,v);}}
 export function computeLightStrip(x0,x1){x0=Math.max(0,x0);x1=Math.min(W-1,x1);for(let y=0;y<H;y++){const r=y*W;for(let x=x0;x<=x1;x++){sky[r+x]=0;blk[r+x]=0;}}

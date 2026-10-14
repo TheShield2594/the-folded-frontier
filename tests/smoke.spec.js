@@ -194,6 +194,24 @@ test('saves are stored gzipped in IndexedDB, and an older localStorage save move
   expect(moved).toEqual({ok:true,legacy:null,seed:saved.seed});
 });
 
+// The Huge size (1800 × 450): its save is too big for localStorage, so it only fits since saves moved to IndexedDB, and the
+// lighting queue grows with the world (sizeLight), so the whole sky still lights.
+test('a Huge world generates, lights and saves',async({page})=>{
+  await boot(page);
+  await page.click('#newBtn');
+  await page.click('#sizeSeg button[data-s="h"]');
+  await expect(page.locator('#sizeNote')).toContainText('1800 × 450');
+  await page.click('#nwCancel');
+  const r=await page.evaluate(async()=>{const g=await import('/src/game.js');g.newWorld(4242,'h','4242');
+    let dark=0;for(let x=0;x<g.W;x++)if(g.sky[(g.H-1)*g.W+x]!==15)dark++;
+    const ok=await g.save(),sv=await g.storedSave(),B=g.BIO;
+    return {W:g.W,H:g.H,dark,ok,w:sv.w,size:sv.size,chars:JSON.stringify(sv).length,dun:['clock','arch','scrap','temple','obs'].filter(k=>B.dun[k]).length,deep:!!B.deep,isl:B.sky.is.length};});
+  expect(r).toMatchObject({W:1800,H:450,dark:0,ok:true,w:1800,size:'h',deep:true});
+  expect(r.chars).toBeGreaterThan(4e6);
+  expect(r.dun).toBe(5);
+  expect(r.isl).toBeGreaterThan(10);
+});
+
 test('seasonal routes undo themselves over a year, and secrets and records are saved',async({page})=>{
   await boot(page);
   await newSmallWorld(page);

@@ -67,7 +67,7 @@ The curve rises steadily with no wall. The steepest step is the Leviathan (58 �
 
 ## Vertical layers and the Folded Clocktower
 
-Added after the audit above, which was made on 640 × 220 medium worlds. Worlds are now taller (small 420 × 200, medium 640 × 260, large 900 × 300) to make room for two layers, and the surface sits at 63% of the height.
+Added after the audit above, which was made on 640 × 220 medium worlds. Worlds are now taller (small 420 × 200, medium 640 × 260, large 900 × 300, and since then huge 1800 × 450) to make room for two layers, and the surface sits at 63% of the height.
 
 | Step | Gate | What it opens |
 |---|---|---|
