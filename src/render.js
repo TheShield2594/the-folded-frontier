@@ -119,8 +119,24 @@ export function buildChunk(cx,cy){markFg(cx);const P=[],UV=[],L=[],I=[];let vc=0
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(UV,2));g.setAttribute('aL',new THREE.Float32BufferAttribute(L,3));g.setIndex(I);
   const k=cy*CW+cx;if(chunks[k]){chunks[k].geometry.dispose();chunks[k].geometry=g;}else{chunks[k]=new THREE.Mesh(g,worldMat);scene.add(chunks[k]);}
   const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.Float32BufferAttribute(LP.P,3));lg.setAttribute('uv',new THREE.Float32BufferAttribute(LP.UV,2));lg.setAttribute('aL',new THREE.Float32BufferAttribute(LP.L,3));lg.setIndex(LP.I);
-  if(liqChunks[k]){liqChunks[k].geometry.dispose();liqChunks[k].geometry=lg;}else{liqChunks[k]=new THREE.Mesh(lg,liquidMat);liqChunks[k].renderOrder=3;scene.add(liqChunks[k]);}}
-export function rebuildAll(){crops=new Set();for(let i=0;i<N;i++)if(tiles[i]===T.CROP||tiles[i]===T.RARE)crops.add(i);computeLight();for(let cy=0;cy<CHH;cy++)for(let cx=0;cx<CW;cx++)buildChunk(cx,cy);dirty.clear();}
+  if(liqChunks[k]){liqChunks[k].geometry.dispose();liqChunks[k].geometry=lg;}else{liqChunks[k]=new THREE.Mesh(lg,liquidMat);liqChunks[k].renderOrder=3;scene.add(liqChunks[k]);}built.add(k);}
+// Chunk meshes exist only near the camera, so a big world doesn't build (or keep on the GPU) a mesh for every chunk:
+// updateChunks() builds the missing chunks in view at once, the ones in a margin of CHUNK_PAD chunks around it a few per
+// frame (nearest first), rebuilds up to 8 dirty ones and releases meshes more than CHUNK_KEEP chunks outside the view.
+// A dirty mark on a chunk that has no mesh is dropped: it is built fresh when it comes into range.
+export const CHUNK_PAD=1,CHUNK_KEEP=3;const built=new Set();
+export const builtChunks=()=>built.size;
+function dropChunk(k){for(const a of[chunks,liqChunks]){const m=a[k];if(m){scene.remove(m);m.geometry.dispose();a[k]=null;}}built.delete(k);}
+export function dropChunks(){for(const k of[...built])dropChunk(k);chunks.length=liqChunks.length=0;built.clear();dirty.clear();}
+// x, y: the point the camera looks at (default: where it looks now)
+export function updateChunks(x,y){const c=camera.position;if(x==null){x=c.x;y=c.y-3.2;}const hh=Math.abs(c.z)*Math.tan(camera.fov*Math.PI/360)+1,hw=hh*camera.aspect+1;
+  const X0=Math.floor((x-hw)/CS),X1=Math.floor((x+hw)/CS),Y0=Math.floor((y-hh)/CS),Y1=Math.floor((y+hh)/CS),ccx=x/CS,ccy=y/CS;
+  for(const k of built){const cx=k%CW,cy=(k/CW)|0;if(cx<X0-CHUNK_KEEP||cx>X1+CHUNK_KEEP||cy<Y0-CHUNK_KEEP||cy>Y1+CHUNK_KEEP)dropChunk(k);}
+  const want=[];for(let cy=Math.max(0,Y0-CHUNK_PAD);cy<=Math.min(CHH-1,Y1+CHUNK_PAD);cy++)for(let cx=Math.max(0,X0-CHUNK_PAD);cx<=Math.min(CW-1,X1+CHUNK_PAD);cx++){const k=cy*CW+cx;if(built.has(k))continue;
+    if(cx>=X0&&cx<=X1&&cy>=Y0&&cy<=Y1){buildChunk(cx,cy);dirty.delete(k);}else want.push(k);}
+  want.sort((a,b)=>Math.hypot(a%CW+.5-ccx,((a/CW)|0)+.5-ccy)-Math.hypot(b%CW+.5-ccx,((b/CW)|0)+.5-ccy));for(let i=0;i<want.length&&i<2;i++){buildChunk(want[i]%CW,(want[i]/CW)|0);dirty.delete(want[i]);}
+  let n=0;for(const k of dirty){dirty.delete(k);if(!built.has(k))continue;buildChunk(k%CW,(k/CW)|0);if(++n>=8)break;}}
+export function rebuildAll(){crops=new Set();for(let i=0;i<N;i++)if(tiles[i]===T.CROP||tiles[i]===T.RARE)crops.add(i);computeLight();dropChunks();updateChunks(player.x,player.y);}
 export let lightDirty=false,lx0=1e9,lx1=-1;
 export function markChunk(x,y){for(const[dx,dy]of[[0,0],[-1,0],[1,0],[0,-1],[0,1]]){const cx=Math.floor((x+dx)/CS),cy=Math.floor((y+dy)/CS);if(cx>=0&&cy>=0&&cx<CW&&cy<CHH)dirty.add(cy*CW+cx);}}
 export function markDirty(x,y){lightDirty=true;lx0=Math.min(lx0,x);lx1=Math.max(lx1,x);const c0=Math.max(0,Math.floor((x-16)/CS)),c1=Math.min(CW-1,Math.floor((x+16)/CS)),r1=Math.min(CHH-1,Math.floor((y+16)/CS));for(let cx=c0;cx<=c1;cx++)for(let cy=0;cy<=r1;cy++)dirty.add(cy*CW+cx);}

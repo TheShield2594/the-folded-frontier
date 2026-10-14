@@ -6,7 +6,7 @@ import {
   $,AC,ambient,angler,biomeAt,BIONAME,buildChunk,buildPartnerSheets,
   buildSheets,camera,camT,canvasTex,chapterCard,checkAch,checkRitual,checkRoom,circ,clamp,clouds,
   computeLightStrip,crops,fullMoon,updateBossFx,rareGrowChance,drawWarnMark,curBio,CW,dirty,drawMap,eliteMat,explored,fi,H,handlePad,hasNPC,hitStop,slowScale,feelIdle,
-  inkMoon,invDirty,invOpen,isNight,lightDirty,loadSave,loadWorld,lx0,lx1,makeSheet,mapOpen,markChunk,
+  inkMoon,invDirty,invOpen,isNight,lightDirty,bootSave,setBooted,updateChunks,loadWorld,lx0,lx1,makeSheet,mapOpen,markChunk,
   meta,mk,mouse,music,newWorld,nightsSeen,NPCDEF,NPCORDER,pickMusic,player,playerLook,playerRigKind,makeRig,rigReskin,buildRigSheets,SHEETS,poly,
   popUp,pt,rand,refreshUI,renderer,renderQuests,reveal,revealT,rr,save,scene,setCurBio,setHitStop,
   setInkMoon,setLightDirty,setLx0,setLx1,setMusic,setNightsSeen,setRevealT,setWorldClock,setWorldTime,
@@ -26,7 +26,7 @@ drawWarnMark();
 eliteMat.map=canvasTex(makeSheet(1,64,64,t=>{const s=[];for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,r=k%2?11:26;s.push(32+Math.cos(a)*r,34+Math.sin(a)*r);}poly(t,s);fi(t,'#f1c04f',3.5);circ(t,27,28,3);t.fillStyle='#fff8e4';t.fill();},3));eliteMat.needsUpdate=true;
 // the player is a paper rig (rig.js); player.mat is its material, so tints and flashes work as on any sprite
 player.rig=makeRig(playerRigKind(),playerLook(),null);player.mat=player.rig.mat;player.mesh=player.rig.mesh;
-{const d=loadSave();if(d){try{loadWorld(d);}catch(e){toast(loadFailed(e),'bad');newWorld(Math.floor(Math.random()*1e9));}$('contBtn').hidden=false;}else newWorld(Math.floor(Math.random()*1e9));}
+{const d=await bootSave();if(d){try{loadWorld(d);}catch(e){toast(loadFailed(e),'bad');newWorld(Math.floor(Math.random()*1e9));}$('contBtn').hidden=false;}else newWorld(Math.floor(Math.random()*1e9));setBooted(true);}
 renderQuests();updateCoins();
 let ritualT=2,townT=3,cropT=1,liqT=0,bioT=0,starT=8,lastT=performance.now(),autosave=0,housingT=0,achT=2,mapRedraw=0;
 function frame(now){requestAnimationFrame(frame);perfStart();const pf0=performance.now();const el=Math.max(0,(now-lastT)/1000);lastT=now;let dt=Math.min(el,1/30);setWorldClock(worldClock+(dt));
@@ -52,7 +52,7 @@ function frame(now){requestAnimationFrame(frame);perfStart();const pf0=performan
   if(AC){setMusic(pickMusic());music(dt,isNight());}updateAmbience(dt);mouse.lp=false;mouse.rp=false;
   if(lightDirty){computeLightStrip(lx0-17,lx1+17);setLightDirty(false);setLx0(1e9);setLx1(-1);}
   updatePop(dt);if(state==='play')updateHouses(dt);updateDlg(dt);
-  const pf1=performance.now();let n=0;for(const k of dirty){buildChunk(k%CW,Math.floor(k/CW));dirty.delete(k);if(++n>=8)break;}const pf2=performance.now();
+  const pf1=performance.now();updateChunks();const pf2=performance.now();
   updateParts(dt);updateCamera(dt);updateDynLights(el);updateSky();updateDiorama();updateOverlays();updateNums(dt);
   clouds.forEach(c=>{c.position.x+=dt*c.userData.s*(1+Math.abs(wind)*5)*(wind<0?-1:1);if(c.position.x<-20)c.position.x=W+20;if(c.position.x>W+20)c.position.x=-20;});
   if(mapOpen){mapRedraw-=dt;if(mapRedraw<=0){mapRedraw=.5;drawMap();}}

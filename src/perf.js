@@ -12,7 +12,7 @@ const FN=300;// frames in the rolling window (about 5 s at 60 FPS)
 export function perfLap(k){const n=performance.now();if(k)perf.laps[k]=n-perf.lap;else perf.laps={};perf.lap=n;}
 export function perfFold(){const l=perf.laps;perf.fold={...l,total:Object.values(l).reduce((a,b)=>a+b,0)};}
 export function perfLoad(ms){perf.load=ms;}
-export function perfSave(ms,chars,ok){perf.save={ms,chars,ok};}
+export function perfSave(ms,chars,ok,bytes){perf.save={ms,chars,ok,bytes};}
 export function perfCode(n){perf.code=n;}
 const push=(a,v)=>{a.push(v);if(a.length>FN)a.shift();};
 export function perfFrame(el,up,ch,re){if(!perf.on)return;push(perf.ft,el*1000);push(perf.up,up);push(perf.ch,ch);push(perf.re,re);
@@ -30,7 +30,7 @@ function lines(){const s=stats(),S=SIZES[worldSize]||SIZES.s,f=perf.fold,v=perf.
     `Draw calls ${s.calls} · triangles ${Math.round(s.tris/1000)}k · ${innerWidth}×${innerHeight} @${devicePixelRatio}x`,
     `${S.name} ${W}×${H} · ${s.bio} at ${s.x},${s.y} · enemies ${s.en} · NPCs ${s.npc} · shots ${s.pj} · particles ${s.pt}`,
     `Fold ${f?`${f0(f.total)} ms (gen ${f0(f.gen||0)}, murals ${f0(f.lore||0)}, chunks ${f0(f.chunks||0)}, backdrop ${f0(f.back||0)})`:'-'} · load ${perf.load?f0(perf.load)+' ms':'-'}`,
-    `Save ${v?`${v.ok?'':'FAILED '}${(v.chars/1e6).toFixed(2)}M chars in ${f0(v.ms)} ms`:'-'} · storage ${(storeChars()/1e6).toFixed(2)}M chars · code ${perf.code?(perf.code/1024).toFixed(0)+' KB':'-'}`];}
+    `Save ${v?`${v.ok?'':'FAILED '}${(v.chars/1e6).toFixed(2)}M chars${v.bytes?` (${(v.bytes/1024).toFixed(0)} KB stored)`:''} in ${f0(v.ms)} ms`:'-'} · localStorage ${(storeChars()/1e6).toFixed(2)}M chars · code ${perf.code?(perf.code/1024).toFixed(0)+' KB':'-'}`];}
 function drawPerf(){const el=$('perf');if(!el)return;$('perfTxt').textContent=lines().join('\n');}
 export function perfReport(){const n=navigator,s=stats();
   return [`Folded Frontier perf report · ${new Date().toISOString()}`,`Browser ${n.userAgent}`,`GPU ${gpu()} · ${n.hardwareConcurrency||'?'} threads · ${n.deviceMemory?n.deviceMemory+' GB':'? GB'} · screen ${screen.width}×${screen.height}`,
