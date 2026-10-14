@@ -1,4 +1,5 @@
-# Builds the game and runs the Playwright smoke tests (tests/) on every pull request. Pushes to main run it
+# Builds the game and runs the Playwright smoke tests (tests/) and the save server's tests (server/) on every pull
+# request, and builds the self-hosting image and checks it serves the game and saves. Pushes to main run it
 # through pages.yml (workflow_call), which deploys only when it passes.
 name: Tests
 
@@ -29,6 +30,7 @@ jobs:
       - run: npm run build
       # the smoke tests' art pictures (tests/fixtures/art/) must never reach a real build
       - run: node tests/check-dist.mjs
+      - run: npm run test:server
       - run: npx playwright install --with-deps chromium
       - run: npm test
       - uses: actions/upload-artifact@v4
@@ -39,3 +41,16 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 7
+
+  # the self-hosting image (Dockerfile): builds, starts with a password and a volume, and checks the game, its cache
+  # headers and a save written and read back through nginx
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t ff-test .
+      - run: docker run -d --name ff -p 8080:80 -e FF_PASSWORD=pw -v ff-saves:/data ff-test
+      - run: node tools/check-image.mjs http://localhost:8080 pw
+      - if: always()
+        run: docker logs ff

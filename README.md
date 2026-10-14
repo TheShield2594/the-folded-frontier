@@ -20,10 +20,11 @@ npm run dev       # starts a local server and prints its URL
 Every push to `main` runs the smoke tests, then deploys to GitHub Pages. The same build is attached to each run as the `folded-frontier-dist` artifact, and published as a container image for self-hosting:
 
 ```sh
-docker run -p 8080:80 ghcr.io/theshield2594/the-folded-frontier:latest   # or: docker build -t folded-frontier .
+docker compose up -d   # docker-compose.yml: pulls the image, serves it on port 8080, keeps saves in a volume
+# or: docker run -p 8080:80 -v ff-saves:/data -e FF_PASSWORD=secret ghcr.io/theshield2594/the-folded-frontier:latest
 ```
 
-Serve it over HTTPS (or on localhost): save codes need a secure context.
+The image serves the game with nginx and runs a small save server behind it on `/api/`, storing saves as files in the `/data` volume (`saves/<player>/<world>.json`; back that volume up). Set `FF_PASSWORD` to keep strangers out, and `FF_PORT_HOST` to change the port. The game itself still saves in the browser until it is wired to the save server ([#57](https://github.com/TheShield2594/the-folded-frontier/issues/57)). Serve it over HTTPS (or on localhost): save codes need a secure context.
 
 `npm test` runs the Playwright smoke tests (boot, new world, saving and loading, save codes). Install the browser once with `npx playwright install chromium`.
 

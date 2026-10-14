@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "playwright test"
+    "test": "playwright test",
+    "test:server": "node --test server/save-server.test.mjs"
   },
   "dependencies": {
     "three": "0.186.1"

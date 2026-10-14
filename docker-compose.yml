@@ -1,0 +1,22 @@
+# Example for running the game and its save server in the homelab: docker compose up -d
+# Then open http://<server>:8080 (put it behind an HTTPS reverse proxy for friends: save codes need a secure context).
+# Settings come from the environment or a .env file beside this one: FF_PORT_HOST, FF_PASSWORD, FF_IMAGE.
+services:
+  folded-frontier:
+    image: ${FF_IMAGE:-ghcr.io/theshield2594/the-folded-frontier:latest}
+    # or build it from this checkout instead of pulling: uncomment and run docker compose up -d --build
+    # build: .
+    restart: unless-stopped
+    ports:
+      - "${FF_PORT_HOST:-8080}:80"
+    environment:
+      # instance password for the save API; leave empty only on a network you trust
+      FF_PASSWORD: ${FF_PASSWORD:-}
+      # largest save accepted, in MB (a large world is about 1.5)
+      FF_MAX_MB: 16
+    volumes:
+      # saves live here as saves/<player>/<world>.json; back this volume up (deleted saves go to trash/)
+      - saves:/data
+
+volumes:
+  saves:
