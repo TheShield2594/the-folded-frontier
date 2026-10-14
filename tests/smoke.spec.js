@@ -1,4 +1,4 @@
-// Smoke tests: boot, portraits from the rig, new world, the Hollow Archive, save/load through localStorage, seasonal routes and secrets in the save, the vertical layers and the clocktower, save code round trip, hand-made art (atlas cells, sheets and rig parts) loaded from files at boot and applied directly.
+// Smoke tests: boot, portraits from the rig, new world, the Hollow Archive, save/load through browser storage (IndexedDB, gzipped), seasonal routes and secrets in the save, the vertical layers and the clocktower, save code round trip, hand-made art (atlas cells, sheets and rig parts) loaded from files at boot and applied directly.
 // They check that the game starts and its saves survive, not how it plays. Game state is read
 // through `import('/src/game.js')`, which on the dev server returns the live modules.
 import {test,expect} from '@playwright/test';
@@ -26,7 +26,7 @@ test.afterEach(async({page})=>{
 async function boot(page){
   await page.goto('/');
   await expect(page.locator('#title')).toBeVisible();
-  await page.waitForFunction(async()=>(await import('/src/game.js')).state==='title');
+  await page.waitForFunction(async()=>{const g=await import('/src/game.js');return g.state==='title'&&g.booted;});
 }
 
 async function newSmallWorld(page){
@@ -56,7 +56,10 @@ function installSnapshot(){
 const snapshot=page=>page.evaluate(async()=>window.__snap(await import('/src/game.js')));
 // Clicks a title/menu button whose handler loads the world synchronously and takes the snapshot right after.
 const clickAndSnap=(page,id)=>page.evaluate(async id=>{const g=await import('/src/game.js');document.getElementById(id).click();return window.__snap(g);},id);
-const savedWorld=page=>page.evaluate(()=>JSON.parse(localStorage.getItem('folded-frontier-save-v1')));
+// the save as stored in the browser (IndexedDB), read after any save still being written
+const savedWorld=page=>page.evaluate(async()=>(await import('/src/game.js')).storedSave());
+// removes the stored save, as a fresh browser would have none
+const dropSave=page=>page.evaluate(async()=>{await (await import('/src/game.js')).saveIdle();await new Promise((ok,no)=>{const q=indexedDB.open('folded-frontier');q.onerror=no;q.onsuccess=()=>{const t=q.result.transaction('saves','readwrite');t.objectStore('saves').delete('folded-frontier-save-v1');t.oncomplete=()=>{q.result.close();ok();};t.onerror=no;};});});
 
 // Changes a generated world couldn't have on its own, so a load that regenerates the world instead
 // of reading the save is caught.
@@ -72,6 +75,8 @@ async function pauseGame(page){
   await page.keyboard.press('Escape');
   await expect(page.locator('#pause')).toBeVisible();
   await page.waitForFunction(async()=>(await import('/src/game.js')).state==='paused');
+  // pausing saves; wait for the write to finish, so a reload right after finds it
+  await page.evaluate(async()=>{await (await import('/src/game.js')).saveIdle();});
 }
 
 test('boots to the title screen with no console errors',async({page})=>{
@@ -107,7 +112,7 @@ test('creates a small world and spawns the player',async({page})=>{
   const s=await page.evaluate(async()=>{
     const g=await import('/src/game.js'),p=g.player;
     return {W:g.W,H:g.H,size:g.worldSize,seedText:g.seedText,x:p.x,y:p.y,hp:p.hp,dead:p.dead,visible:p.mesh.visible,
-      inv:p.inv.filter(Boolean).map(i=>i.id),look:p.look,saved:!!localStorage.getItem('folded-frontier-save-v1')};
+      inv:p.inv.filter(Boolean).map(i=>i.id),look:p.look,saved:!!(await g.storedSave())};
   });
   expect(s.size).toBe('s');
   expect(s.seedText).toBe(SEED);
@@ -149,7 +154,7 @@ test('the storybook intro reads its pages, turns them and can be skipped',async(
   await expect(page.locator('#intro')).toBeHidden();
 });
 
-test('saves to localStorage and continues the same world after a reload',async({page})=>{
+test('saves to browser storage and continues the same world after a reload',async({page})=>{
   await boot(page);
   await newSmallWorld(page);
   await markWorld(page);
@@ -164,6 +169,31 @@ test('saves to localStorage and continues the same world after a reload',async({
   expect(after).toEqual({...before,state:'play'});
 });
 
+// Saves live in IndexedDB, gzipped (no longer held to localStorage's ~5M characters). A save left in localStorage by an
+// older build still loads, and the next save moves it over and frees the localStorage copy.
+test('saves are stored gzipped in IndexedDB, and an older localStorage save moves over',async({page})=>{
+  await boot(page);
+  await newSmallWorld(page);
+  await markWorld(page);
+  await pauseGame(page);
+  const before=await snapshot(page),saved=await savedWorld(page);
+  const rec=await page.evaluate(()=>new Promise((ok,no)=>{const q=indexedDB.open('folded-frontier');q.onerror=no;q.onsuccess=()=>{const t=q.result.transaction('saves','readonly'),r=t.objectStore('saves').get('folded-frontier-save-v1');
+    t.oncomplete=()=>{const v=r.result;q.result.close();ok({gz:v.z instanceof Uint8Array&&v.z[0]===0x1f&&v.z[1]===0x8b,bytes:v.z.length,legacy:localStorage.getItem('folded-frontier-save-v1')});};};}));
+  expect(rec.gz).toBe(true);
+  expect(rec.legacy).toBeNull();
+  expect(rec.bytes).toBeLessThan(JSON.stringify(saved).length/4);
+
+  await dropSave(page);
+  await page.evaluate(sv=>localStorage.setItem('folded-frontier-save-v1',JSON.stringify(sv)),saved);
+  await page.reload();
+  await boot(page);
+  await expect(page.locator('#contBtn')).toBeVisible();
+  const after=await clickAndSnap(page,'contBtn');
+  expect(after).toEqual({...before,state:'play'});
+  const moved=await page.evaluate(async()=>{const g=await import('/src/game.js');const ok=await g.save();return {ok,legacy:localStorage.getItem('folded-frontier-save-v1'),seed:(await g.storedSave()).seed};});
+  expect(moved).toEqual({ok:true,legacy:null,seed:saved.seed});
+});
+
 test('seasonal routes undo themselves over a year, and secrets and records are saved',async({page})=>{
   await boot(page);
   await newSmallWorld(page);
@@ -173,8 +203,8 @@ test('seasonal routes undo themselves over a year, and secrets and records are s
     // walk the seasons one at a time from summer back round to the season the world started in
     for(const d of[5,10,15,20]){g.setWorldDay(day+d);g.seasonWorld();seen[g.season().k]={thin:count(g.T.THIN),drift:count(g.T.DRIFT)};}
     let diff=0;for(let i=0;i<g.N;i++)if(g.tiles[i]!==start[i])diff++;
-    g.setWorldDay(day);g.angler.rec.minnow=12;g.save();
-    const d=JSON.parse(localStorage.getItem('folded-frontier-save-v1'));
+    g.setWorldDay(day);g.angler.rec.minnow=12;await g.save();
+    const d=await g.storedSave();
     return {seen,diff,sea:d.bio.sea,sec:d.bio.sec,rec:d.angler.rec};
   });
   expect(s.seen.winter.thin).toBeGreaterThan(0);
@@ -260,7 +290,7 @@ test('new worlds get sky islands, the Pressed Deep and the Folded Clocktower, wh
     put(8,17);tick();const mini=g.enemies.find(e=>e.type==='sentinel');g.hurtEnemy(mini,1e6,1);for(let k=0;k<30;k++)g.updateEnemies(.05);tick();const arena=at(12,10);
     put(4,9);tick();const b=g.boss&&g.boss.type;g.boss.act=null;g.hurtEnemy(g.boss,1e6,1);for(let k=0;k<120;k++)g.updateEnemies(.05);tick();
     const reward=g.chests.get((d.y+d.h-1-9)*g.W+d.x+16);
-    g.save();const sv=JSON.parse(localStorage.getItem('folded-frontier-save-v1'));
+    await g.save();const sv=await g.storedSave();
     // a save from before the layers (v3, no sky, deep or dungeon data) still loads; it gets no deep layer
     const old=JSON.parse(JSON.stringify(sv));old.v=3;delete old.bio.sky;delete old.bio.dun;delete old.bio.deep;g.loadWorld(old);
     return {H:g.H,holes,islands:sv.bio.sky.is.length,shut,door,puzzle,arena,b,clock:g.quests.clock,roof:at(10,1),wings:!!reward&&reward.some(i=>i&&i.id==='clockwings'),st:sv.bio.dun.clock.st,
@@ -303,7 +333,7 @@ test('new worlds get the Hollow Archive: a seam, a crank and a torn curtain, the
     // the Lost Stacks open only with the key
     const st=g.BIO.dun.stacks,s0=st[0];out.stacks=st.length;g.stacksAt(s0[0],s0[1]);out.locked=g.tiles[s0[1]*g.W+s0[0]]===T.STACKS;
     g.addItem('archkey',1);const n0=g.META.stats.stacks||0;g.stacksAt(s0[0],s0[1]+1);g.stacksAt(s0[0],s0[1]);out.once=(g.META.stats.stacks||0)-n0;await wait(600);out.open=[0,1,2].map(k=>g.tiles[(s0[1]+k)*g.W+s0[0]]);
-    g.save();const sv=JSON.parse(localStorage.getItem('folded-frontier-save-v1'));out.st=sv.bio.dun.arch.st;out.saved=sv.bio.dun.stacks[0][2];
+    await g.save();const sv=await g.storedSave();out.st=sv.bio.dun.arch.st;out.saved=sv.bio.dun.stacks[0][2];
     // a save from before the Archive keeps its terrain: it gets neither the Archive nor the Lost Stacks
     const old=JSON.parse(JSON.stringify(sv));delete old.bio.dun.arch;delete old.bio.dun.stacks;g.loadWorld(old);out.oldArch=g.BIO.dun.arch;out.oldStacks=g.BIO.dun.stacks;out.oldClock=!!g.BIO.dun.clock;
     out.T={AIR:T.AIR,ROPE:T.ROPE,PLATFORM:T.PLATFORM,SEWN:T.SEWN};return out;
@@ -360,7 +390,7 @@ test('new worlds get the Origami Observatory among the sky islands: a fold to th
     // the Star Vaults open only with the lens
     const v=g.BIO.dun.vaults,v0=v[0];out.vaults=v.length;g.vaultAt(v0[0],v0[1]);out.locked=g.tiles[v0[1]*g.W+v0[0]]===T.STARDOOR;
     g.addItem('starlens',1);const n0=g.META.stats.vaults||0;g.vaultAt(v0[0],v0[1]+1);g.vaultAt(v0[0],v0[1]);out.once=(g.META.stats.vaults||0)-n0;await wait(600);out.open=[0,1,2].map(k=>g.tiles[(v0[1]+k)*g.W+v0[0]]);
-    g.save();const sv=JSON.parse(localStorage.getItem('folded-frontier-save-v1'));out.st=sv.bio.dun.obs.st;out.saved=sv.bio.dun.vaults[0][2];
+    await g.save();const sv=await g.storedSave();out.st=sv.bio.dun.obs.st;out.saved=sv.bio.dun.vaults[0][2];
     // a save from before the Observatory gets one on its next load, in empty sky, leaving everything already there alone
     const old=JSON.parse(JSON.stringify(sv)),was=[d.x,d.y];delete old.bio.dun.obs;delete old.bio.dun.vaults;g.loadWorld(old);const o=g.BIO.dun.obs;
     out.oldObs=!!o&&diff(o)===0&&(o.x!==was[0]||o.y!==was[1]);out.oldKept=g.tiles[(was[1]+4)*g.W+was[0]+4];out.oldVaults=g.BIO.dun.vaults.length;
@@ -412,7 +442,7 @@ test('new worlds get the Great Scrapworks: a peel wall, a crank, a shredder pit,
     // the Supply Crates open only with the crowbar
     const c=g.BIO.dun.crates,c0=c[0];out.crates=c.length;g.crateAt(c0[0],c0[1]);out.locked=g.tiles[c0[1]*g.W+c0[0]]===T.CRATE;
     g.addItem('crowbar',1);const n0=g.META.stats.crates||0;g.crateAt(c0[0],c0[1]+1);g.crateAt(c0[0],c0[1]);out.once=(g.META.stats.crates||0)-n0;await wait(600);out.open=[0,1,2].map(k=>g.tiles[(c0[1]+k)*g.W+c0[0]]);
-    g.save();const sv=JSON.parse(localStorage.getItem('folded-frontier-save-v1'));out.st=sv.bio.dun.scrap.st;out.saved=sv.bio.dun.crates[0][2];
+    await g.save();const sv=await g.storedSave();out.st=sv.bio.dun.scrap.st;out.saved=sv.bio.dun.crates[0][2];
     // a save from before the Scrapworks loads: it gets one only on untouched ground, and crates only with it
     const old=JSON.parse(JSON.stringify(sv));delete old.bio.dun.scrap;delete old.bio.dun.crates;g.loadWorld(old);const o=g.BIO.dun.scrap;
     out.oldOk=o===null?g.BIO.dun.crates===null:!!o.w&&Array.isArray(g.BIO.dun.crates);out.oldClock=!!g.BIO.dun.clock;
@@ -462,7 +492,7 @@ test('new worlds get the Sunken Inkwell Temple: an ink shaft, every paper trick,
     // the Ink Wells open only with the Well Nib
     const w=g.BIO.dun.wells,w0=w[0];out.wells=w.length;g.wellAt(w0[0],w0[1]);out.locked=g.tiles[w0[1]*g.W+w0[0]]===T.WELLDOOR;
     g.addItem('wellnib',1);g.wellAt(w0[0],w0[1]);await wait(600);out.open=[0,1,2].map(k=>g.tiles[(w0[1]+k)*g.W+w0[0]]);
-    g.save();const sv=JSON.parse(localStorage.getItem('folded-frontier-save-v1'));out.st=sv.bio.dun.temple.st;out.saved=sv.bio.dun.wells[0][2];
+    await g.save();const sv=await g.storedSave();out.st=sv.bio.dun.temple.st;out.saved=sv.bio.dun.wells[0][2];
     // a save from before the Temple keeps its terrain: it gets neither the Temple nor the Ink Wells
     const old=JSON.parse(JSON.stringify(sv));delete old.bio.dun.temple;delete old.bio.dun.wells;g.loadWorld(old);out.oldTemple=g.BIO.dun.temple;out.oldWells=g.BIO.dun.wells;
     out.T={AIR:T.AIR,ROPE:T.ROPE,PLATFORM:T.PLATFORM,SEWN:T.SEWN};return out;
@@ -514,7 +544,7 @@ test('paper tricks: seams tear, torn holes stitch and creases fold, only with th
     // the seam and the tear open over a moment
     await new Promise(r=>setTimeout(r,2500));
     out.open=[0,1,2].every(k=>at(s[0],s[1]+k)===g.T.AIR);out.sewn=at(rp[0],rp[1])===g.T.SEWN&&at(rp[0],rp[1]-1)===g.T.AIR;out.flags=[s[2],rp[2]];
-    out.seen=g.tut.seen;g.save();out.saved=JSON.parse(localStorage.getItem('folded-frontier-save-v1')).bio.trick;
+    out.seen=g.tut.seen;await g.save();out.saved=(await g.storedSave()).bio.trick;
     return out;});
   expect(r.n.every(n=>n>=1)).toBe(true);
   expect(r.locked).toEqual([true,true,true]);
@@ -565,7 +595,7 @@ test('save code round trip loads the same world',async({page})=>{
   const code=await page.inputValue('#codeTxt');
 
   // drop the browser save, so the world can only come back from the code
-  await page.evaluate(()=>localStorage.removeItem('folded-frontier-save-v1'));
+  await dropSave(page);
   await page.reload();
   await boot(page);
   await expect(page.locator('#contBtn')).toBeHidden();
@@ -598,13 +628,13 @@ test('save versions: unversioned saves are upgraded, newer saves and codes are r
   for(const k of['seed','size','W','H','tiles','coins','inv'])expect(r[k],k).toEqual(before[k]);
 
   // a save from a newer build is kept and refused with a clear message on Continue, not loaded wrong
-  await page.evaluate(sv=>localStorage.setItem('folded-frontier-save-v1',JSON.stringify({...sv,v:sv.v+1})),saved);
+  await page.evaluate(async sv=>{await (await import('/src/game.js')).storeSave(JSON.stringify({...sv,v:sv.v+1}));},saved);
   await page.reload();
   await expect(page.locator('.toast',{hasText:'newer version'})).toBeVisible();
   await expect(page.locator('#contBtn')).toBeVisible();
   await page.click('#contBtn');
   await expect(page.locator('#title')).toBeVisible();
-  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('folded-frontier-save-v1')).v)).toBe(cur+1);
+  expect((await savedWorld(page)).v).toBe(cur+1);
 
   // save codes carry the version too: a code from a newer build says so in the code box
   const code=await page.evaluate(async sv=>{const b=new Blob([JSON.stringify({v:sv.v+1,save:sv,meta:{}})]).stream().pipeThrough(new CompressionStream('gzip'));
@@ -619,17 +649,17 @@ test('save versions: unversioned saves are upgraded, newer saves and codes are r
 test('a save that storage refuses is reported instead of "Game saved."',async({page})=>{
   await boot(page);
   await newSmallWorld(page);
-  // a full localStorage throws on setItem; the pause menu must say so
-  await page.evaluate(()=>{const o=Storage.prototype.setItem;window.__setItem=o;Storage.prototype.setItem=function(k,v){if(k==='folded-frontier-save-v1')throw new DOMException('full','QuotaExceededError');return o.call(this,k,v);};});
+  // full storage refuses the write; the pause menu must say so
+  await page.evaluate(()=>{const o=IDBObjectStore.prototype.put;window.__put=o;IDBObjectStore.prototype.put=function(v,k){if(k==='folded-frontier-save-v1')throw new DOMException('full','QuotaExceededError');return o.call(this,v,k);};});
   await pauseGame(page);
   await expect(page.locator('.toast',{hasText:'Could not save'})).toBeVisible();
   await expect(page.locator('.toast',{hasText:'Game saved.'})).toHaveCount(0);
-  await page.evaluate(()=>{Storage.prototype.setItem=window.__setItem;});
+  await page.evaluate(()=>{IDBObjectStore.prototype.put=window.__put;});
 });
 
 test('?perf shows the performance overlay with world and save numbers',async({page})=>{
   await page.goto('/?perf');
-  await page.waitForFunction(async()=>(await import('/src/game.js')).state==='title');
+  await page.waitForFunction(async()=>{const g=await import('/src/game.js');return g.state==='title'&&g.booted;});
   await expect(page.locator('#perf')).toBeVisible();
   await newSmallWorld(page);
   await pauseGame(page);
@@ -664,7 +694,7 @@ test('trading cards: chests and packs give them, the pack screen shows them, a b
     out.page=g.cards.pg.field;out.reward=[g.countItem('cardpack')-packs,P.coins-coins];out.html=g.binderHTML().includes('Field Guide · 8/8');
     out.tab=!!document.querySelector('#tabs [data-tab="binder"]');
     // saved per world; unknown cards are dropped on load, and older saves start with an empty binder
-    g.save();const sv=JSON.parse(localStorage.getItem('folded-frontier-save-v1'));out.saved=Object.keys(sv.cards.have).length;
+    await g.save();const sv=await g.storedSave();out.saved=Object.keys(sv.cards.have).length;
     sv.cards.have.bogus=2;const k0=Object.keys(sv.cards.have)[0];g.loadWorld(JSON.parse(JSON.stringify(sv)));out.loaded=Object.keys(g.cards.have).length;out.bogus='bogus' in g.cards.have;out.pgKept=g.cards.pg.field;
     // a count that isn't a whole number and a page this build doesn't know are dropped too
     const bad=JSON.parse(JSON.stringify(sv));bad.cards.have[k0]='1';bad.cards.pg.nope=1;g.loadWorld(bad);out.strCount=k0 in g.cards.have;out.badPage='nope' in g.cards.pg;
