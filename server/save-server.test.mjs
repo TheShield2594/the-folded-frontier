@@ -53,6 +53,8 @@ test('save, list, load, conflict and delete', async () => {
   assert.equal((await call('/api/saves/ann/w1', { method: 'DELETE' })).status, 200);
   assert.equal((await call('/api/saves/ann/w1')).status, 404);
   assert.equal((await fs.readdir(path.join(data, 'trash'))).length, 1);
+  // no temp files left behind
+  assert.deepEqual((await fs.readdir(path.join(data, 'saves', 'ann'))).filter(f => f.endsWith('.tmp')), []);
 });
 
 test('bad input is refused', async () => {

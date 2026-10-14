@@ -9,8 +9,8 @@
 //   GET    /api/saves/<player>/<world>  the save as stored; ETag is its rev
 //   PUT    /api/saves/<player>/<world>  stores the body (any JSON); If-Match: <rev> refuses with 409 if it changed
 //   DELETE /api/saves/<player>/<world>  removes it (moved to <FF_DATA>/trash/, never deleted outright)
-// Names are 1-64 of A-Z a-z 0-9 _ -. Writes go to a temp file and are renamed over the old one, so a crash mid-write
-// never leaves half a save.
+// Names are 1-64 of A-Z a-z 0-9 _ -. Writes go to a temp file that is synced and renamed over the old one, so a crash
+// or power cut mid-write never leaves half a save.
 import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -84,7 +84,14 @@ export function makeServer(o = {}) {
         if (want && want !== '*' && (!st || rev(st) !== want)) return send(res, 409, { error: 'save changed elsewhere', rev: st ? rev(st) : null });
         await fs.mkdir(dir, { recursive: true });
         const tmp = file + '.' + process.pid + '.' + crypto.randomBytes(4).toString('hex') + '.tmp';
-        await fs.writeFile(tmp, buf); await fs.rename(tmp, file);
+        // synced before and after the rename, so a power cut leaves the old save or the whole new one
+        try {
+          const fh = await fs.open(tmp, 'w');
+          try { await fh.writeFile(buf); await fh.sync(); } finally { await fh.close(); }
+          await fs.rename(tmp, file);
+          const dh = await fs.open(dir, 'r');
+          try { await dh.sync(); } finally { await dh.close(); }
+        } catch (e) { await fs.rm(tmp, { force: true }).catch(() => {}); throw e; }
         const n = await stat(file);
         return send(res, st ? 200 : 201, { ok: true, rev: rev(n) }, { ETag: '"' + rev(n) + '"' });
       });
