@@ -19,6 +19,7 @@
     <div id="hpTxt"></div>
     <div id="quests"></div>
   </div>
+  <canvas id="mapOv" hidden aria-hidden="true"></canvas>
   <div id="topR">
     <div id="miniWrap"><canvas id="mini" width="140" height="80"></canvas></div>
     <div id="info"><span class="chip" id="clock"></span><span class="chip season" id="season"></span><span class="chip" id="depth"></span><span class="chip" id="coins"></span></div>
@@ -28,7 +29,7 @@
   <div id="hotwrap"><div id="itemName"></div><div id="hotbar" class="grid"></div></div>
   <div id="touch" hidden>
     <div id="tStick" aria-label="Move"><i id="tStickK"></i></div>
-    <div id="tMenu"><button type="button" id="tPause" data-act="pause" aria-label="Pause">II</button><button type="button" id="tMap" data-act="map">Map</button><button type="button" id="tInv" data-act="inv">Bag</button></div>
+    <div id="tMenu"><button type="button" id="tPause" data-act="pause" aria-label="Pause">II</button><button type="button" id="tMap" data-act="map">Map</button><button type="button" id="tMini" data-act="minimap" aria-label="Minimap mode">Mini</button><button type="button" id="tInv" data-act="inv">Bag</button></div>
     <div id="tAct">
       <div class="tRow"><button type="button" id="tHeal" data-act="heal">Heal</button><button type="button" id="tMount" data-act="mount">Ride</button><button type="button" id="tPartner" data-act="partner">Swap</button><button type="button" id="tAbility" data-act="ability">Pal</button></div>
       <div class="tRow"><button type="button" id="tBlock" data-hold="block">Block</button><button type="button" id="tHook" data-act="hook">Hook</button><button type="button" id="tFlat" data-hold="flat">Flat</button><button type="button" id="tDash" data-act="dash">Dash</button><button type="button" id="tTalk" data-act="interact">Talk</button></div>
@@ -84,7 +85,7 @@
           <dt>Fishing</dt><dd>Hold a fishing rod with bait in your backpack and click to cast into a pool of ink. When the bobber dips and a <b>!</b> pops up, click to reel it in. Better rods and bait catch rarer fish; the Emberite Rod can fish in lava</dd>
           <dt>Pets &amp; mounts</dt><dd>Use a pet item to have it follow you (use it again to send it home). Use a mount item, or press <kbd>G</kbd>, to ride it: faster running and higher jumps. Flattening, climbing or firing the hook gets you down</dd>
           <dt><kbd>F</kbd></dt><dd>Fire the Grappling Hook. On a rope, hold <kbd>W</kbd> or <kbd>S</kbd> to climb</dd>
-          <dt><kbd>H</kbd> · <kbd>M</kbd> · <kbd>Esc</kbd></dt><dd>Drink a healing potion · World map · Pause and save</dd>
+          <dt><kbd>H</kbd> · <kbd>M</kbd> · <kbd>N</kbd> · <kbd>Esc</kbd></dt><dd>Drink a healing potion · World map · Minimap: corner, overlay or hidden · Pause and save</dd>
           <dt>Touch</dt><dd>On a phone or tablet, the stick on the left walks (push up or down to climb). Hold <b>Use</b> to use the held item and drag off it to aim, or touch the world to use it right there. Tap a townsperson, door or chest to talk or open it, or press <b>Talk</b> near one. In the backpack, tap to pick up and put down, hold to split a stack, and turn on <b>Quick move</b> to send items straight across</dd>
           <dt>Gamepad</dt><dd>Plug one in and press a button. The right stick aims, <span data-pa="use">RT</span> uses the held item (hold it to draw a bow), <span data-pa="dash">X</span> dashes, <span data-pa="interact">B</span> talks, opens and peels whatever you aim at or stand next to, and holding <span data-pa="interact">B</span> blocks. Push down or hold <span data-pa="flat">D-pad ↓</span> to fold flat (it dodges hits too), and <span data-pa="heal">D-pad ↑</span> drinks a healing potion. <span data-pa="partner">D-pad ←</span> switches partner, <span data-pa="ability">D-pad →</span> uses its move and <span data-pa="mount">LS</span> mounts or dismounts. It rumbles on hits (Settings > Controller vibration sets how much), and button names follow the controller. Keys and buttons can be changed in Settings.</dd>
           <dt>NICE!</dt><dd>Stomp enemies by landing on them and tap <kbd>Space</kbd> on impact. With a sword, click again when the blade flashes gold near the end of a swing for a bonus hit worth 1.8× damage. Clicking too early spoils that swing's chance.</dd>
@@ -107,8 +108,8 @@
     <p class="note">Every world has a meadow, a snowfield, an ink lake, a desert and a burnt underworld far below. The same seed always makes the same world.</p>
     <div class="menu" style="margin:12px 0 0"><button id="createBtn" type="button">Create world</button><button id="nwCancel" class="ghost" type="button">Back</button></div></div></div></div>
   <div id="loading" class="over" hidden><div class="card"><h1 class="logo" style="font-size:clamp(32px,calc(6vw / var(--ui)),54px)">Folding your world…</h1></div></div>
-  <div id="map" class="over" hidden><div class="sheet"><h3>World map</h3><canvas id="mapC" width="1260" height="510"></canvas>
-    <div class="mapLeg"><span><i style="background:#fff"></i>You</span><span><i style="background:#6cf07a"></i>Merchant</span><span><i style="background:#e8636a"></i>Spawn point</span><span><i style="background:#f1c04f"></i>Chests you've found</span><span><i style="background:#b06ad0;border-radius:2px;transform:rotate(45deg)"></i>Landmarks</span><span>Unexplored areas stay dark. M or Esc closes.</span></div></div></div>
+  <div id="map" class="over" hidden><div class="sheet"><div class="mapHead"><h3>World map</h3><div class="mapBtns"><button type="button" id="mapMe" class="ghost">Center on me</button><button type="button" id="mapOut" class="ghost" aria-label="Zoom out">−</button><button type="button" id="mapIn" class="ghost" aria-label="Zoom in">+</button></div></div><canvas id="mapC" width="1260" height="510" role="img" aria-label="World map"></canvas>
+    <div class="mapLeg"><span><i style="background:#fff"></i>You</span><span><i style="background:#6cf07a"></i>Merchant</span><span><i style="background:#e8636a"></i>Spawn point</span><span><i style="background:#f1c04f"></i>Chests you've found</span><span><i style="background:#b06ad0;border-radius:2px;transform:rotate(45deg)"></i>Landmarks</span><span>Unexplored areas stay dark. Drag or arrow keys to move, wheel or +/− to zoom. M or Esc closes.</span></div></div></div>
   <div id="settings" class="over" hidden><div class="card"><div class="sheet">
     <h3>Settings</h3>
     <div class="set">
@@ -125,6 +126,7 @@
       <label for="rumbleS">Controller vibration</label><select id="rumbleS"><option value="off">Off</option><option value="low">Low</option><option value="full">Full</option></select>
       <label for="hitC">Hit pause &amp; slow motion</label><input type="checkbox" id="hitC">
       <label for="numsC">Damage and pickup numbers</label><input type="checkbox" id="numsC">
+      <label for="miniS">Minimap</label><select id="miniS"><option value="corner">Corner</option><option value="overlay">Overlay</option><option value="off">Hidden</option></select>
       <label for="fgC">Foreground scenery</label><input type="checkbox" id="fgC">
       <label for="postC">Glow &amp; color grading</label><input type="checkbox" id="postC">
       <label for="cbS">Color vision</label><select id="cbS"><option value="off">Standard colors</option><option value="deut">Deuteranopia (green-weak)</option><option value="prot">Protanopia (red-weak)</option><option value="trit">Tritanopia (blue-weak)</option></select>

@@ -1,11 +1,11 @@
 // Saving and loading, save migration, new/load world, pause and title flow, save codes.
 import {
   $,addItem,angler,applyVolumes,bestiary,BIO,bob,buildBackdrop,camT,chests,chunks,clearHouses,CS,dirty,
-  enemies,explored,generate,H,hook,houses,initAudio,inkMoon,liqChunks,makeNPC,mapBase,mapOpen,mapS,mbx,
+  enemies,explored,generate,H,hook,houses,initAudio,inkMoon,liqChunks,makeNPC,mapOpen,
   META,meta,mk,N,nightsSeen,npcs,parts,pickups,player,projs,quests,rebuildAll,registerHouseAt,
   removeEnemy,renderQuests,resetBossFx,saveMeta,scene,seed,seedText,setAngler,setBestiary,setBIO,setBlk,setBoss,
   setChests,setCHH,setChunks,setCurBio,setCW,setEnemies,setExplored,setH,setHeartsKey,setHintT,
-  setInkMoon,setInv,setInvDirty,setLiqChunks,setMapBase,setMapOpen,setMapS,setMbImg,setMbx,setMeta,setN,
+  setInkMoon,setInv,setInvDirty,setLiqChunks,resetMap,setMapOpen,setMeta,setN,
   setNightsSeen,setNpcs,setPickups,setProjs,setQuests,setSeed,setSeedText,setSky,setSPAWNX,
   setStamp,setState,setSurf,setSurfAvg,setTiles,setVisited,setW,setWalls,setWeather,setWeatherT,setWind,
   setWorldSize,setWorldTime,SIZES,state,surf,syncPartners,tiles,toast,updateCoins,visited,W,
@@ -180,7 +180,7 @@ export let booted=false;export function setBooted(v){return booted=v;}
 // ================= lifecycle =================
 function allocWorld(w,h){setW(w);setH(h);setN(W*H);setSPAWNX(Math.floor(W/2));sizeLight(N);setTiles(new Uint8Array(N));setWalls(new Uint8Array(N));setMeta(new Uint8Array(N));setStamp(new Uint32Array(N));setSky(new Uint8Array(N));setBlk(new Uint8Array(N));setExplored(new Uint8Array(N));setSurf(new Int16Array(W));
   dropChunks();setChunks([]);setLiqChunks([]);setCW(Math.ceil(W/CS));setCHH(Math.ceil(H/CS));dirty.clear();
-  setMapBase(mk(W,H));setMbx(mapBase.getContext('2d'));setMbImg(mbx.createImageData(W,H));setMapS(W<=420?3:2);$('mapC').width=W*mapS;$('mapC').height=H*mapS;hook.state=0;}
+  resetMap();hook.state=0;}
 function seedFrom(txt){txt=(txt||'').trim();if(/^\d{1,9}$/.test(txt))return +txt;let h=2166136261;for(const c of txt){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}
 function clearEntities(){enemies.forEach(removeEnemy);setEnemies([]);pickups.forEach(k=>scene.remove(k.mesh));setPickups([]);projs.forEach(q=>scene.remove(q.m));setProjs([]);npcs.forEach(n=>{scene.remove(n.mesh);if(n.bub)n.bub.remove();});setNpcs([]);setBoss(null);$('boss').hidden=true;resetBossFx();parts.length=0;player.st={};player.draw=null;player.blocking=false;bob.state=0;}
 // World generation in a worker (src/genworker.js, its own module hub in tools/vite-genhub.mjs), so a big world can be made

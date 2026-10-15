@@ -2,7 +2,7 @@
 import {
   $,craftRec,cyclePartner,dashPress,fireHook,initAudio,invOpen,jumpPress,mapOpen,mouse,npcs,
   pad,padRebinding,partnerAbility,pause,placeTip,player,renderBinds,saveSettings,SET,setInv,setInvDirty,
-  setPadRebinding,SFX,slotClick,state,T,tileAt,toggleMap,upx,
+  setPadRebinding,SFX,slotClick,state,T,tileAt,toggleMap,upx,cycleMini,mapZoom,mapCenter,
   skipIntro,introNext,dlgNext,packNext,cycleTab,toggleMount,quickHeal,reachOK,meta,idx,padLabels,
 } from './game.js';
 
@@ -30,7 +30,8 @@ export function handlePad(){const gps=navigator.getGamepads?navigator.getGamepad
   if(state!=='play')return;
   if(invOpen&&pad.active){menuPad(fx,ef);pad.held={};$('padHint').hidden=false;return;}$('padHint').hidden=true;
   if(e('start')){if(mapOpen)toggleMap(false);else if(invOpen)setInv(false);else pause(true);return;}
-  if(e('map'))toggleMap();if(mapOpen){if(e('interact'))toggleMap(false);return;}
+  if(e('map'))toggleMap();if(mapOpen){if(e('interact'))toggleMap(false);else if(e('pl'))mapZoom(1/1.5);else if(e('pr'))mapZoom(1.5);else if(e('jump'))mapCenter();return;}
+  if(e('minimap'))cycleMini();
   if(e('inv'))setInv(!invOpen);
   if(e('jump'))jumpPress();
   if(e('dash'))dashPress();

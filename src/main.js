@@ -6,7 +6,7 @@ import {
   $,AC,ambient,angler,biomeAt,BIONAME,buildChunk,buildPartnerSheets,
   buildSheets,camera,camT,canvasTex,chapterCard,checkAch,checkRitual,checkRoom,circ,clamp,clouds,
   computeLightStrip,crops,fullMoon,updateBossFx,rareGrowChance,drawWarnMark,curBio,CW,dirty,drawMap,eliteMat,explored,fi,H,handlePad,hasNPC,hitStop,slowScale,feelIdle,
-  inkMoon,invDirty,invOpen,isNight,lightDirty,bootSave,setBooted,updateChunks,loadWorld,lx0,lx1,makeSheet,mapOpen,markChunk,
+  inkMoon,invDirty,invOpen,isNight,lightDirty,bootSave,setBooted,updateChunks,loadWorld,lx0,lx1,makeSheet,mapOpen,markChunk,updateMap,updateOverlay,mapTouch,
   meta,mk,mouse,music,newWorld,nightsSeen,NPCDEF,NPCORDER,pickMusic,player,playerLook,playerRigKind,makeRig,rigReskin,buildRigSheets,SHEETS,poly,
   popUp,pt,rand,refreshUI,renderer,renderQuests,reveal,revealT,rr,save,scene,setCurBio,setHitStop,
   setInkMoon,setLightDirty,setLx0,setLx1,setMusic,setNightsSeen,setRevealT,setWorldClock,setWorldTime,
@@ -42,7 +42,7 @@ function frame(now){requestAnimationFrame(frame);perfStart();const pf0=performan
     ritualT-=gdt;if(ritualT<=0){ritualT=2;checkRitual();}updateAwaken(gdt);updateLore(gdt);updateSecrets(gdt);updateTricks(gdt);updateCards(gdt);updateSeasonWorld(gdt);updateLayers(gdt);updateDungeons(gdt);
     townT-=dt;if(townT<=0&&!player.dead){townT=3;updateTown();}
     if(isNight()){starT-=gdt;if(starT<=0){starT=rand(10,22)/(isFest('summer')?4:1);spawnFallingStar();}}
-    setRevealT(revealT-(dt));if(revealT<=0){setRevealT(.25);reveal(player.x,player.y+1,15);const px=Math.floor(player.x);if(player.y>surf[clamp(px,0,W-1)]-20)for(let x=Math.max(0,px-26);x<=Math.min(W-1,px+26);x++)for(let y=Math.max(0,surf[x]-3);y<H;y++)explored[y*W+x]=1;}achT-=dt;if(achT<=0){achT=2;checkAch();}
+    setRevealT(revealT-(dt));if(revealT<=0){setRevealT(.25);reveal(player.x,player.y+1,15);const px=Math.floor(player.x);if(player.y>surf[clamp(px,0,W-1)]-20)for(let x=Math.max(0,px-26);x<=Math.min(W-1,px+26);x++)for(let y=Math.max(0,surf[x]-3);y<H;y++)if(!explored[y*W+x]){explored[y*W+x]=1;mapTouch(x,x);}}achT-=dt;if(achT<=0){achT=2;checkAch();}
     autosave+=dt;if(autosave>60){autosave=0;save();}
     housingT+=dt;if(housingT>2&&!player.dead){housingT=0;if(NPCORDER.some(t=>!hasNPC(t)&&NPCDEF[t].ok())){const r=checkRoom(Math.floor(player.x),Math.floor(player.y+.5));if(r.ok)tryMoveIn(r,false);}}
     }
@@ -55,7 +55,7 @@ function frame(now){requestAnimationFrame(frame);perfStart();const pf0=performan
   const pf1=performance.now();updateChunks();const pf2=performance.now();
   updateParts(dt);updateCamera(dt);updateDynLights(el);updateSky();updateDiorama();updateOverlays();updateNums(dt);
   clouds.forEach(c=>{c.position.x+=dt*c.userData.s*(1+Math.abs(wind)*5)*(wind<0?-1:1);if(c.position.x<-20)c.position.x=W+20;if(c.position.x>W+20)c.position.x=-20;});
-  if(mapOpen){mapRedraw-=dt;if(mapRedraw<=0){mapRedraw=.5;drawMap();}}
+  if(mapOpen){updateMap(dt);mapRedraw-=dt;if(mapRedraw<=0){mapRedraw=.5;drawMap();}}updateOverlay(dt);
   if(state!=='title'&&state!=='intro'){updateHUD(dt);if(invDirty||invOpen&&Math.random()<.1)refreshUI();}
   const pf3=performance.now();renderFrame(dt);perfFrame(el,pf1-pf0+pf3-pf2,pf2-pf1,performance.now()-pf3);}
 requestAnimationFrame(frame);
