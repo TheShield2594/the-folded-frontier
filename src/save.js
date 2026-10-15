@@ -72,10 +72,11 @@ async function writeSave(json,A,w,h){const d=await db();if(!d){const s=fullJSON(
   let bytes=(main.z||main.s).length;for(const r of recs)bytes+=(r.z||r.b).length;return bytes;}
 // writes the changed regions, drops regions past the world's width and writes the main record, in one transaction; with an
 // expected id, first checks the stored main record still carries it and writes nothing (returns false) if not
-function commitSave(d,ch,recs,main,expect){return new Promise((ok,no)=>{let stale=false;const t=d.transaction(DB_STORE,'readwrite'),s=t.objectStore(DB_STORE),q=s.get(SAVE_KEY);
+// (a put that throws, such as a refused write, aborts the transaction and rejects with its error instead of escaping the callback)
+function commitSave(d,ch,recs,main,expect){return new Promise((ok,no)=>{let stale=false,err=null;const t=d.transaction(DB_STORE,'readwrite'),s=t.objectStore(DB_STORE),q=s.get(SAVE_KEY);
   q.onsuccess=()=>{const r=q.result;if(expect&&!(r&&r.f===2&&r.id===expect)){stale=true;t.abort();return;}
-    ch.forEach((k,i)=>s.put(recs[i],rkey(k)));s.delete(IDBKeyRange.bound(rkey(main.n),RKEY+'\uffff'));s.put(main,SAVE_KEY);};
-  t.oncomplete=()=>ok(true);t.onerror=t.onabort=()=>stale?ok(false):no(t.error||new DOMException('Saving was cancelled.','AbortError'));});}
+    try{ch.forEach((k,i)=>s.put(recs[i],rkey(k)));s.delete(IDBKeyRange.bound(rkey(main.n),RKEY+'\uffff'));s.put(main,SAVE_KEY);}catch(e){err=e;try{t.abort();}catch(_){}}};
+  t.oncomplete=()=>ok(true);t.onerror=t.onabort=()=>stale?ok(false):no(err||t.error||new DOMException('Saving was cancelled.','AbortError'));});}
 // the main record and its regions, read in one transaction so another tab's save can't land between them
 function readRecs(d){return new Promise((ok,no)=>{const t=d.transaction(DB_STORE,'readonly'),s=t.objectStore(DB_STORE),q=s.get(SAVE_KEY);let rs=null;
   q.onsuccess=()=>{const r=q.result;if(r&&r.f===2){const g=s.getAll(IDBKeyRange.bound(rkey(0),rkey(r.n-1)));g.onsuccess=()=>{rs=g.result;};}};
