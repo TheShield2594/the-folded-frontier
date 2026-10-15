@@ -169,9 +169,10 @@ test('saves to browser storage and continues the same world after a reload',asyn
   expect(after).toEqual({...before,state:'play'});
 });
 
-// Saves live in IndexedDB, gzipped (no longer held to localStorage's ~5M characters). A save left in localStorage by an
-// older build still loads, and the next save moves it over and frees the localStorage copy.
-test('saves are stored gzipped in IndexedDB, and an older localStorage save moves over',async({page})=>{
+// Saves live in IndexedDB, gzipped (no longer held to localStorage's ~5M characters): the main record holds the JSON without
+// the tile arrays, which go in 64-column region records, and a save writes only the regions that changed. A save left in
+// localStorage by an older build, or in IndexedDB as one record, still loads; the next save moves it over.
+test('saves are stored gzipped in IndexedDB by region, and older saves move over',async({page})=>{
   await boot(page);
   await newSmallWorld(page);
   await markWorld(page);
@@ -182,6 +183,13 @@ test('saves are stored gzipped in IndexedDB, and an older localStorage save move
   expect(rec.gz).toBe(true);
   expect(rec.legacy).toBeNull();
   expect(rec.bytes).toBeLessThan(JSON.stringify(saved).length/4);
+  // one region record per 64 columns; dig one tile and only its region is written again, and the world reads back the same
+  const reg=await page.evaluate(async()=>{const g=await import('/src/game.js');const keys=await new Promise((ok,no)=>{const q=indexedDB.open('folded-frontier');q.onerror=no;
+      q.onsuccess=()=>{const r=q.result.transaction('saves','readonly').objectStore('saves').getAllKeys();r.onsuccess=()=>{q.result.close();ok(r.result);};};});
+    const x=Math.floor(g.W/2)+5,y=g.surf[x]-4;g.tiles[y*g.W+x]=g.tiles[y*g.W+x]?0:g.T.DIRT;await g.save();const one=g.savedRegions();await g.save();const none=g.savedRegions();
+    const sv=await g.storedSave(),t=Uint8Array.from(atob(sv.tiles),c=>c.charCodeAt(0));let diff=0;for(let i=0;i<g.N;i++)if(t[i]!==g.tiles[i])diff++;
+    return {regions:keys.filter(k=>k.startsWith('folded-frontier-save-v1:r:')).length,want:Math.ceil(g.W/64),one,none,diff};});
+  expect(reg).toEqual({regions:reg.want,want:reg.want,one:1,none:0,diff:0});
 
   await dropSave(page);
   await page.evaluate(sv=>localStorage.setItem('folded-frontier-save-v1',JSON.stringify(sv)),saved);
