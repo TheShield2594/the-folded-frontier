@@ -169,9 +169,10 @@ test('saves to browser storage and continues the same world after a reload',asyn
   expect(after).toEqual({...before,state:'play'});
 });
 
-// Saves live in IndexedDB, gzipped (no longer held to localStorage's ~5M characters). A save left in localStorage by an
-// older build still loads, and the next save moves it over and frees the localStorage copy.
-test('saves are stored gzipped in IndexedDB, and an older localStorage save moves over',async({page})=>{
+// Saves live in IndexedDB, gzipped (no longer held to localStorage's ~5M characters): the main record holds the JSON without
+// the tile arrays, which go in 64-column region records, and a save writes only the regions that changed. A save left in
+// localStorage by an older build, or in IndexedDB as one record, still loads; the next save moves it over.
+test('saves are stored gzipped in IndexedDB by region, and older saves move over',async({page})=>{
   await boot(page);
   await newSmallWorld(page);
   await markWorld(page);
@@ -182,6 +183,21 @@ test('saves are stored gzipped in IndexedDB, and an older localStorage save move
   expect(rec.gz).toBe(true);
   expect(rec.legacy).toBeNull();
   expect(rec.bytes).toBeLessThan(JSON.stringify(saved).length/4);
+  // one region record per 64 columns; dig one tile and only its region is written again, and the world reads back the same
+  const reg=await page.evaluate(async()=>{const g=await import('/src/game.js');const keys=await new Promise((ok,no)=>{const q=indexedDB.open('folded-frontier');q.onerror=no;
+      q.onsuccess=()=>{const r=q.result.transaction('saves','readonly').objectStore('saves').getAllKeys();r.onsuccess=()=>{q.result.close();ok(r.result);};};});
+    const x=Math.floor(g.W/2)+5,y=g.surf[x]-4;g.tiles[y*g.W+x]=g.tiles[y*g.W+x]?0:g.T.DIRT;await g.save();const one=g.savedRegions();await g.save();const none=g.savedRegions();
+    const sv=await g.storedSave(),t=Uint8Array.from(atob(sv.tiles),c=>c.charCodeAt(0));let diff=0;for(let i=0;i<g.N;i++)if(t[i]!==g.tiles[i])diff++;
+    return {regions:keys.filter(k=>k.startsWith('folded-frontier-save-v1:r:')).length,want:Math.ceil(g.W/64),one,none,diff};});
+  expect(reg).toEqual({regions:reg.want,want:reg.want,one:1,none:0,diff:0});
+  // another tab's save lands in between (its own write id on the main record): this tab's next save writes every region
+  // again instead of mixing its regions with the other tab's, and the save still reads back whole
+  const tab=await page.evaluate(async()=>{const g=await import('/src/game.js');await g.saveIdle();
+    await new Promise((ok,no)=>{const q=indexedDB.open('folded-frontier');q.onerror=no;q.onsuccess=()=>{const t=q.result.transaction('saves','readwrite'),s=t.objectStore('saves'),r=s.get('folded-frontier-save-v1');
+      r.onsuccess=()=>{const m=r.result;m.id+=1;s.put(m,'folded-frontier-save-v1');};t.oncomplete=()=>{q.result.close();ok();};t.onerror=no;};});
+    const x=Math.floor(g.W/2)+9,y=g.surf[x]-4;g.tiles[y*g.W+x]=g.tiles[y*g.W+x]?0:g.T.DIRT;const ok=await g.save();
+    return {ok,regions:g.savedRegions(),want:Math.ceil(g.W/64),read:!!(await g.storedSave())};});
+  expect(tab).toEqual({ok:true,regions:tab.want,want:tab.want,read:true});
 
   await dropSave(page);
   await page.evaluate(sv=>localStorage.setItem('folded-frontier-save-v1',JSON.stringify(sv)),saved);
@@ -238,6 +254,28 @@ test('lighting band by band matches the whole world, before and after edits',asy
   expect(r.near).toBeLessThan(r.nb);
   expect(r.fresh).toBe(0);
   expect(r.edits).toBe(0);
+});
+
+// A stored save with a region missing can't be read: boot copies its records to a backup key and says so on the title,
+// instead of treating it as no save and letting a new world's first save replace it.
+test('a region save that can\'t be read is kept as a backup, not overwritten',async({page})=>{
+  await boot(page);
+  await newSmallWorld(page);
+  await pauseGame(page);
+  await page.evaluate(()=>new Promise((ok,no)=>{const q=indexedDB.open('folded-frontier');q.onerror=no;q.onsuccess=()=>{const t=q.result.transaction('saves','readwrite');
+    t.objectStore('saves').delete('folded-frontier-save-v1:r:0002');t.oncomplete=()=>{q.result.close();ok();};t.onerror=no;};}));
+  // boot() loads the page again; then load it once more, which must not copy the same save twice
+  await boot(page);
+  await expect(page.locator('.toast',{hasText:'could not be loaded'})).toBeVisible();
+  await page.reload();
+  await page.waitForFunction(async()=>(await import('/src/game.js')).booted);
+  // the failed load is reported to the console on purpose
+  page.errors=page.errors.filter(e=>!e.includes('Could not load the save'));
+  const keys=await page.evaluate(()=>new Promise((ok,no)=>{const q=indexedDB.open('folded-frontier');q.onerror=no;q.onsuccess=()=>{const r=q.result.transaction('saves','readonly').objectStore('saves').getAllKeys();
+    r.onsuccess=()=>{q.result.close();ok(r.result);};};}));
+  const bk=keys.filter(k=>k.startsWith('folded-frontier-save-v1-backup-'));
+  expect(bk.filter(k=>!k.includes(':r:')).length).toBe(1);
+  expect(bk.filter(k=>k.includes(':r:')).length).toBeGreaterThan(3);
 });
 
 test('seasonal routes undo themselves over a year, and secrets and records are saved',async({page})=>{
