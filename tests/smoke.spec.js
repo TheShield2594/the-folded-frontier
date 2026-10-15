@@ -278,6 +278,22 @@ test('a region save that can\'t be read is kept as a backup, not overwritten',as
   expect(bk.filter(k=>k.includes(':r:')).length).toBeGreaterThan(3);
 });
 
+// New worlds are generated in a worker (src/genworker.js) with its own module hub (tools/vite-genhub.mjs), where every
+// runtime name is a no-op stub: the same seed built there and on the main thread must give the same world, so generation
+// that started to call runtime code would show up here. Chest contents are rolled with Math.random, so only their spots
+// are compared.
+test('a world generated in the worker is the same as one generated on the main thread',async({page})=>{
+  await boot(page);
+  const r=await page.evaluate(async()=>{const g=await import('/src/game.js');
+    const sum=()=>{let h=2166136261;for(const a of[g.tiles,g.walls,g.meta,g.surf])for(let i=0;i<a.length;i++)h=Math.imul(h^a[i],16777619)>>>0;
+      return {W:g.W,H:g.H,h,bio:JSON.stringify(g.BIO),chests:[...g.chests.keys()].sort((a,b)=>a-b).join(),seed:g.seed,avg:g.surfAvg,spawn:JSON.stringify(g.player.spawn)};};
+    const out={};for(const size of['s','m']){const pre=await g.genInWorker(4242,size);if(!pre)return {worker:false};
+      g.newWorld(4242,size,'4242',undefined,pre);const a=sum();g.newWorld(4242,size,'4242');const b=sum();out[size]={a,b,chests:b.chests.split(',').length};}
+    return out;});
+  expect(r.worker).not.toBe(false);
+  for(const size of['s','m']){expect(r[size].a).toEqual(r[size].b);expect(r[size].chests).toBeGreaterThan(10);}
+});
+
 test('seasonal routes undo themselves over a year, and secrets and records are saved',async({page})=>{
   await boot(page);
   await newSmallWorld(page);
