@@ -203,7 +203,7 @@ test('a Huge world generates, lights and saves, and builds chunk meshes only nea
   await expect(page.locator('#sizeNote')).toContainText('1800 × 450');
   await page.click('#nwCancel');
   const r=await page.evaluate(async()=>{const g=await import('/src/game.js');g.newWorld(4242,'h','4242');
-    let dark=0;for(let x=0;x<g.W;x++)if(g.sky[(g.H-1)*g.W+x]!==15)dark++;
+    g.ensureLit(0,g.W-1);let dark=0;for(let x=0;x<g.W;x++)if(g.sky[(g.H-1)*g.W+x]!==15)dark++;
     const ok=await g.save(),sv=await g.storedSave(),B=g.BIO;
     // chunk meshes only near the camera: a jump across the world builds the new view at once and lets the old one go
     const all=g.CW*g.CHH,near=g.builtChunks(),key=(x,y)=>Math.floor(y/32)*g.CW+Math.floor(x/32),py=g.surf[1500];
@@ -220,6 +220,24 @@ test('a Huge world generates, lights and saves, and builds chunk meshes only nea
   expect(r.settled).toBeLessThan(r.all/10);
   expect(r.moved).toEqual({here:true,home:false});
   expect(r.dirty).toBe(0);
+});
+
+// Light is worked out per 32-column band when something first reads it (world.js, ensureLit), each band from a window wide
+// enough that it matches lighting the whole world at once; edits relight the lit bands (computeLightStrip).
+test('lighting band by band matches the whole world, before and after edits',async({page})=>{
+  await boot(page);
+  await newSmallWorld(page);
+  const r=await page.evaluate(async()=>{const g=await import('/src/game.js');
+    const diff=()=>{const s=g.sky.slice(),b=g.blk.slice();g.computeLight();let d=0;for(let i=0;i<g.N;i++)if(s[i]!==g.sky[i]||b[i]!==g.blk[i])d++;return d;};
+    g.rebuildAll();const near=g.litBands(),nb=Math.ceil(g.W/32);
+    g.resetLight();for(const k of[...Array(nb).keys()].reverse())g.ensureLit(k*32);const fresh=diff();
+    // light only round the player, then dig and place torches across band edges, relighting as the frame loop does
+    g.resetLight();const px=Math.floor(g.player.x);g.ensureLit(px-40,px+40);
+    for(const dx of[-33,-32,-1,0,31,32,64,90]){const x=px+dx,y=g.surf[x]-3,i=y*g.W+x;g.tiles[i]=g.T.TORCH;g.tiles[i-g.W]=0;g.computeLightStrip(x-17,x+17);}
+    g.ensureLit(0,g.W-1);return {near,nb,fresh,edits:diff()};});
+  expect(r.near).toBeLessThan(r.nb);
+  expect(r.fresh).toBe(0);
+  expect(r.edits).toBe(0);
 });
 
 test('seasonal routes undo themselves over a year, and secrets and records are saved',async({page})=>{

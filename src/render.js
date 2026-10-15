@@ -5,6 +5,7 @@ import {
   LIGHT,mulberry32,N,OPAQUE,pick,player,poly,rand,rr,seed,SET,sh,sky,stamp,surfAvg,T,tileAt,tiles,TP,W,
   WALLCELL,walls,markFg,
   buildMarks,rigPic,playerRigKind,
+  ensureLit,resetLight,
 } from './game.js';
 
 // ================= three setup =================
@@ -93,7 +94,7 @@ export function cellUV(c){const[x,y]=cellXY(c);return regionUV(x,y,64,64);}
 function regionUV(px,py,w,h){const e=.6/ATW,f=.6/ATH;return[px/ATW+e,1-(py+h)/ATH+f,(px+w)/ATW-e,1-py/ATH-f];}
 // emissive tiles (anything that gives light, apart from liquids) glow in the world shader: face shade 3 + glow
 const EMIS=(t,shd)=>LIGHT[t]&&!TP[t].liq?3+LIGHT[t]/16:shd;
-export function buildChunk(cx,cy){markFg(cx);const P=[],UV=[],L=[],I=[];let vc=0;const LP={P:[],UV:[],L:[],I:[],vc:0};
+export function buildChunk(cx,cy){markFg(cx);ensureLit(cx*CS-1,cx*CS+CS);const P=[],UV=[],L=[],I=[];let vc=0;const LP={P:[],UV:[],L:[],I:[],vc:0};
   const lquad=(v,uv,l,shd)=>{LP.P.push(...v);LP.UV.push(uv[0],uv[1],uv[2],uv[1],uv[2],uv[3],uv[0],uv[3]);for(let k=0;k<4;k++)LP.L.push(l[k][0],l[k][1],shd);const c=LP.vc;LP.I.push(c,c+1,c+2,c,c+2,c+3);LP.vc+=4;};
   const quad=(v,uv,l,shd)=>{P.push(...v);UV.push(uv[0],uv[1],uv[2],uv[1],uv[2],uv[3],uv[0],uv[3]);for(let k=0;k<4;k++)L.push(l[k][0],l[k][1],shd);I.push(vc,vc+1,vc+2,vc,vc+2,vc+3);vc+=4;};
   const cl=(x,y)=>{let s=0,b=0,w=0;for(let dx=-1;dx<=0;dx++)for(let dy=-1;dy<=0;dy++){const tx=x+dx,ty=y+dy;if(tx<0||ty<0||tx>=W||ty>=H)continue;const i=ty*W+tx;const wt=LB[tiles[i]]?.3:1;s+=sky[i]*wt;b+=blk[i]*wt;w+=wt;}return w?[s/w,b/w]:[0,0];};
@@ -136,7 +137,7 @@ export function updateChunks(x,y){const c=camera.position;if(x==null){x=c.x;y=c.
     if(cx>=X0&&cx<=X1&&cy>=Y0&&cy<=Y1){buildChunk(cx,cy);dirty.delete(k);}else want.push(k);}
   want.sort((a,b)=>Math.hypot(a%CW+.5-ccx,((a/CW)|0)+.5-ccy)-Math.hypot(b%CW+.5-ccx,((b/CW)|0)+.5-ccy));for(let i=0;i<want.length&&i<2;i++){buildChunk(want[i]%CW,(want[i]/CW)|0);dirty.delete(want[i]);}
   let n=0;for(const k of dirty){dirty.delete(k);if(!built.has(k))continue;buildChunk(k%CW,(k/CW)|0);if(++n>=8)break;}}
-export function rebuildAll(){crops=new Set();for(let i=0;i<N;i++)if(tiles[i]===T.CROP||tiles[i]===T.RARE)crops.add(i);computeLight();dropChunks();updateChunks(player.x,player.y);}
+export function rebuildAll(){crops=new Set();for(let i=0;i<N;i++)if(tiles[i]===T.CROP||tiles[i]===T.RARE)crops.add(i);resetLight();dropChunks();updateChunks(player.x,player.y);}
 export let lightDirty=false,lx0=1e9,lx1=-1;
 export function markChunk(x,y){for(const[dx,dy]of[[0,0],[-1,0],[1,0],[0,-1],[0,1]]){const cx=Math.floor((x+dx)/CS),cy=Math.floor((y+dy)/CS);if(cx>=0&&cy>=0&&cx<CW&&cy<CHH)dirty.add(cy*CW+cx);}}
 export function markDirty(x,y){lightDirty=true;lx0=Math.min(lx0,x);lx1=Math.max(lx1,x);const c0=Math.max(0,Math.floor((x-16)/CS)),c1=Math.min(CW-1,Math.floor((x+16)/CS)),r1=Math.min(CHH-1,Math.floor((y+16)/CS));for(let cx=c0;cx<=c1;cx++)for(let cy=0;cy<=r1;cy++)dirty.add(cy*CW+cx);}
