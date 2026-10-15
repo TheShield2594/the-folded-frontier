@@ -4,7 +4,7 @@ import {
   $,actKey,boundKeys,bowDrawT,burst,camDist,camera,clamp,closeSettings,cursor,cyclePartner,dropItem,
   fireHook,held,hook,initAudio,invOpen,ITEMS,keys,mapOpen,pad,padRebinding,partnerAbility,pause,player,
   pv,quickHeal,rebinding,renderBinds,renderer,saveSettings,scene,SET,setCamDist,setCursor,setInv,
-  setInvDirty,setPadRebinding,setRebinding,SFX,stat,stompNice,toggleMap,upx,
+  setInvDirty,setPadRebinding,setRebinding,SFX,stat,stompNice,toggleMap,upx,cycleMini,mapZoom,mapCenter,
   skipIntro,introNext,dlgNext,packNext,toggleMount,rigSnap,rumble,cancelOK,cancelSwing,CANCEL_BUF,
 } from './game.js';
 
@@ -24,14 +24,15 @@ addEventListener('keydown',e=>{const k=e.key.toLowerCase();
   if(state==='play'){
     if(actKey('jump',k))jumpPress();
     if(actKey('inv',k))setInv(!invOpen);
-    if(actKey('map',k))toggleMap();
+    if(actKey('map',k))toggleMap();if(actKey('minimap',k)&&!mapOpen)cycleMini();
     if(k==='escape'){if(mapOpen)toggleMap(false);else if(invOpen)setInv(false);else pause(true);}
     if(actKey('heal',k))quickHeal();
     if(actKey('dash',k))dashPress();
     if(actKey('hook',k))fireHook();
     if(actKey('partner',k))cyclePartner();if(actKey('ability',k))partnerAbility();if(actKey('mount',k))toggleMount();
     if(/^[0-9]$/.test(k)&&!boundKeys().includes(k)){player.sel=(+k+9)%10;setInvDirty(true);}
-    if(k==='='||k==='+'){setCamDist(SET.zoom=clamp(camDist-4,28,64));saveSettings();}if(k==='-'){setCamDist(SET.zoom=clamp(camDist+4,28,64));saveSettings();}
+    if(mapOpen){if(k==='='||k==='+')mapZoom(1.5);else if(k==='-')mapZoom(1/1.5);else if(k==='enter')mapCenter();}
+    else if(k==='='||k==='+'){setCamDist(SET.zoom=clamp(camDist-4,28,64));saveSettings();}if(k==='-'){setCamDist(SET.zoom=clamp(camDist+4,28,64));saveSettings();}
   }else if(state==='paused'&&k==='escape')pause(false);});
 export function jumpPress(){if(player.flat)return;if(player.climb&&(keys.w||keys.arrowup)&&!keys[' '])return;if(hook.state===2){hook.state=3;player.vy=Math.max(player.vy,14);player.jbuf=0;return;}player.jbuf=.13;player.jumpAge=0;if(player.stompWin>0&&player.stompTarget)stompNice();}
 // dash: short burst with i-frames, one air dash per jump
@@ -71,7 +72,7 @@ export function placeTip(x,y){const tp=$('tip'),r=tp.getBoundingClientRect();tp.
 renderer.domElement.addEventListener('mousedown',e=>{initAudio();if(state==='talk'){if(e.button!==1)dlgNext();return;}if(state!=='play')return;if(e.button===0){if(cursor){dropItem(cursor.id,cursor.n,player.x+player.face*.8,player.y+1.2,player.face*6,4,1);setCursor(null);setInvDirty(true);return;}mouse.l=true;mouse.lp=true;}if(e.button===2){mouse.r=true;mouse.rp=true;}});
 addEventListener('mouseup',e=>{if(e.button===0)mouse.l=false;if(e.button===2)mouse.r=false;});
 addEventListener('contextmenu',e=>e.preventDefault());
-addEventListener('wheel',e=>{if(state!=='play')return;if(invOpen&&e.target.closest&&e.target.closest('#panel'))return;player.sel=(player.sel+(e.deltaY>0?1:-1)+10)%10;setInvDirty(true);},{passive:true});
+addEventListener('wheel',e=>{if(state!=='play'||mapOpen)return;if(invOpen&&e.target.closest&&e.target.closest('#panel'))return;player.sel=(player.sel+(e.deltaY>0?1:-1)+10)%10;setInvDirty(true);},{passive:true});
 addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
 // Imported bindings are read-only, so other modules assign these through setters.
 export function setState(v){return state=v;}

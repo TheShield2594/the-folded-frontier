@@ -1,7 +1,7 @@
 // The pop-up book page turn for new biomes and the world map.
 import * as THREE from 'three';
 import {
-  $,BIO,drawTrickMarks,BIONAME,boss,camera,canvasTex,chests,CHH,chunks,circ,clamp,CS,CW,fi,grain,H,idx,INK,ink,invOpen,
+  $,BIO,held,keys,pad,saveSettings,SET,toast,drawTrickMarks,BIONAME,boss,camera,canvasTex,chests,CHH,chunks,circ,clamp,CS,CW,fi,grain,H,idx,INK,ink,invOpen,
   LIGHT,liqChunks,meta,mk,N,NPCDEF,npcs,OPAQUE,player,rr,scene,setInv,SFX,state,surf,surfAvg,T,TCOL,
   tileAt,tiles,W,walls,WCOL,
   lore,MARKS,
@@ -55,28 +55,82 @@ export function chapterCard(b,title,sub,kick){const el=$('chapter');const small=
 
 // ================= world map =================
 export let explored=new Uint8Array(N);export let mapOpen=false,revealT=0;
-export function reveal(cx,cy,r){const x0=Math.max(0,Math.floor(cx-r)),x1=Math.min(W-1,Math.ceil(cx+r)),y0=Math.max(0,Math.floor(cy-r)),y1=Math.min(H-1,Math.ceil(cy+r));for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if((x+.5-cx)**2+(y+.5-cy)**2<=r*r)explored[y*W+x]=1;}
-export let mapBase=mk(W,H),mbx=mapBase.getContext('2d'),mbImg=mbx.createImageData(W,H),mapS=3;
-export function drawMap(){const d=mbImg.data;for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=y*W+x,o=((H-1-y)*W+x)*4;let c;
-    if(!explored[i])c=[34,27,40];else{const t=tiles[i];if(t)c=TCOL[t];else if(walls[i])c=WCOL[walls[i]];else c=y<surf[x]-3?[52,40,56]:[150,205,222];const k=clamp(.55+.45*(y/(surfAvg+8)),.55,1);c=[c[0]*k,c[1]*k,c[2]*k];}
-    d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=255;}
-  mbx.putImageData(mbImg,0,0);const S=mapS,g=$('mapC').getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(mapBase,0,0,W*S,H*S);
+export function reveal(cx,cy,r){const x0=Math.max(0,Math.floor(cx-r)),x1=Math.min(W-1,Math.ceil(cx+r)),y0=Math.max(0,Math.floor(cy-r)),y1=Math.min(H-1,Math.ceil(cy+r));let ch=0;
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(!explored[y*W+x]&&(x+.5-cx)**2+(y+.5-cy)**2<=r*r){explored[y*W+x]=1;ch=1;}if(ch)mapTouch(x0,x1);}
+// The map's picture (mapBase, one pixel per tile) is kept up to date in strips of MSTRIP columns instead of being redrawn whole:
+// reveal() and markDirty() mark the strips they touch, and paintMap() repaints the marked ones plus one more in turn, so a tile
+// changed some other way still catches up. Opening the full map repaints every strip once.
+export const MSTRIP=64;let mDirt=new Uint8Array(1),mNext=0;
+export let mapBase=mk(W,H),mbx=mapBase.getContext('2d'),mbImg=mbx.createImageData(W,H);
+export function mapTouch(x0,x1){const n=mDirt.length;for(let s=Math.max(0,Math.floor(x0/MSTRIP)),e=Math.min(n-1,Math.floor(x1/MSTRIP));s<=e;s++)mDirt[s]=1;}
+export function mapAll(){mDirt.fill(1);}
+export function resetMap(){mapBase=mk(W,H);mbx=mapBase.getContext('2d');mbImg=mbx.createImageData(W,H);mDirt=new Uint8Array(Math.ceil(W/MSTRIP)).fill(1);mNext=0;}
+// strips repainted by the last paintMap() (the tests read it)
+export let mapPainted=0;
+export function paintMap(){const n=mDirt.length,d=mbImg.data;mDirt[mNext]=1;mNext=(mNext+1)%n;mapPainted=0;
+  for(let s=0;s<n;s++){if(!mDirt[s])continue;mDirt[s]=0;mapPainted++;const x0=s*MSTRIP,x1=Math.min(W,x0+MSTRIP);
+    for(let y=0;y<H;y++){const k=clamp(.55+.45*(y/(surfAvg+8)),.55,1);for(let x=x0;x<x1;x++){const i=y*W+x,o=((H-1-y)*W+x)*4;let c;
+      if(!explored[i])c=[34,27,40];else{const t=tiles[i];if(t)c=TCOL[t];else if(walls[i])c=WCOL[walls[i]];else c=y<surf[x]-3?[52,40,56]:[150,205,222];c=[c[0]*k,c[1]*k,c[2]*k];}
+      d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=255;}}
+    mbx.putImageData(mbImg,0,0,x0,0,x1-x0,H);}}
+// one view of the map: cw×ch canvas pixels centred on tile (cx, cy) at S pixels a tile, with every marker
+export function mapView(g,cw,ch,cx,cy,S){g.setTransform(1,0,0,1,0,0);g.fillStyle='#1c1520';g.fillRect(0,0,cw,ch);
+  const ox=Math.round(cw/2-cx*S),oy=Math.round(ch/2-(H-cy)*S);g.translate(ox,oy);g.imageSmoothingEnabled=false;
+  const sx0=clamp(Math.floor(-ox/S),0,W),sx1=clamp(Math.ceil((cw-ox)/S),0,W),sy0=clamp(Math.floor(-oy/S),0,H),sy1=clamp(Math.ceil((ch-oy)/S),0,H);
+  if(sx1>sx0&&sy1>sy0)g.drawImage(mapBase,sx0,sy0,sx1-sx0,sy1-sy0,sx0*S,sy0*S,(sx1-sx0)*S,(sy1-sy0)*S);
   const dot=(x,y,col,r)=>{g.beginPath();g.arc(x*S,(H-y)*S,r,0,Math.PI*2);g.fillStyle=col;g.fill();g.lineWidth=2;g.strokeStyle='#2a2130';g.stroke();};
   for(const[x,y]of(BIO.shown||[])){if(tiles[idx(x,y)]!==T.CHEST)continue;g.lineWidth=4;g.strokeStyle='#d4483b';const X=(x+.5)*S,Y=(H-y-.5)*S;g.beginPath();g.moveTo(X-7,Y-7);g.lineTo(X+7,Y+7);g.moveTo(X+7,Y-7);g.lineTo(X-7,Y+7);g.stroke();}
   for(const k of chests.keys())if(explored[k])dot(k%W+.5,Math.floor(k/W)+.5,'#f1c04f',4);
   // story landmarks, once found or once their spot is explored
-  g.font=`bold ${Math.max(10,S*4)}px sans-serif`;g.textAlign='center';for(const[k,x,y]of(BIO.marks||[])){if(!lore.f[k]&&!explored[idx(x,Math.min(H-1,y+2))])continue;const X=x*S,Y=(H-y-6)*S;
+  g.font=`bold ${clamp(S*4,10,16)}px sans-serif`;g.textAlign='center';for(const[k,x,y]of(BIO.marks||[])){if(!lore.f[k]&&!explored[idx(x,Math.min(H-1,y+2))])continue;const X=x*S,Y=(H-y-6)*S;
     g.beginPath();g.moveTo(X,Y-9);g.lineTo(X+7,Y);g.lineTo(X,Y+9);g.lineTo(X-7,Y);g.closePath();g.fillStyle=lore.f[k]?'#b06ad0':'#e9dcc0';g.fill();g.lineWidth=2;g.strokeStyle='#2a2130';g.stroke();
     g.lineWidth=3;g.strokeStyle='rgba(251,248,240,.85)';g.strokeText(MARKS[k].n,X,Y-13);g.fillStyle='#2a2130';g.fillText(MARKS[k].n,X,Y-13);}
   drawTrickMarks(g,S);
-  dot(player.spawn.x,player.spawn.y+.5,'#e8636a',5);npcs.forEach(n=>dot(n.x,n.y+1,'#6cf07a',6));if(boss)dot(boss.x,boss.y+2,'#7fd3f0',9);dot(player.x,player.y+1,'#fff',7);}
-export function toggleMap(o=!mapOpen){if(state!=='play'&&o)return;mapOpen=o;$('map').hidden=!o;if(o){if(invOpen)setInv(false);drawMap();}}
+  dot(player.spawn.x,player.spawn.y+.5,'#e8636a',5);npcs.forEach(n=>dot(n.x,n.y+1,'#6cf07a',6));if(boss)dot(boss.x,boss.y+2,'#7fd3f0',9);dot(player.x,player.y+1,'#fff',7);g.setTransform(1,0,0,1,0,0);}
+
+// The full map (Map key) pauses play and can be zoomed (wheel, pinch, +/-, LB/RB) and panned (drag, arrows, stick). It opens on
+// the player at the zoom it was left at (MAPZ to start), between the whole world fitting the view and MAPZMAX pixels a tile.
+export const MAPZ=4,MAPZMAX=16;export const mv={x:0,y:0,s:0};
+const mapCv=()=>$('mapC');
+// the canvas is as many pixels as it shows on screen, so a tile is S screen pixels
+function mapFit(){const c=mapCv(),r=c.getBoundingClientRect(),w=Math.max(1,Math.round(r.width)),h=Math.max(1,Math.round(r.height));if(c.width!==w||c.height!==h){c.width=w;c.height=h;}return c;}
+const mapMin=()=>{const c=mapCv();return Math.min(MAPZMAX,Math.min(c.width/W,c.height/H));};
+// a map smaller than the view sits in its middle; a bigger one stops at its edges
+function mapClamp(){const c=mapCv();mv.s=clamp(mv.s,mapMin(),MAPZMAX);const hw=c.width/2/mv.s,hh=c.height/2/mv.s;
+  mv.x=W<=hw*2+1e-6?W/2:clamp(mv.x,hw,W-hw);mv.y=H<=hh*2+1e-6?H/2:clamp(mv.y,hh,H-hh);}
+export function mapRender(){if(!mapOpen)return;const c=mapFit();mapClamp();mapView(c.getContext('2d'),c.width,c.height,mv.x,mv.y,mv.s);}
+export function drawMap(){paintMap();mapRender();}
+export function mapCenter(){mv.x=player.x;mv.y=player.y+1;mapRender();}
+// zoom by f around canvas point (px, py), which stays over the same spot
+export function mapZoom(f,px,py){const c=mapCv();if(px==null){px=c.width/2;py=c.height/2;}const s0=mv.s;
+  const wx=mv.x+(px-c.width/2)/s0,wy=mv.y-(py-c.height/2)/s0;mv.s=clamp(s0*f,mapMin(),MAPZMAX);mv.x=wx-(px-c.width/2)/mv.s;mv.y=wy+(py-c.height/2)/mv.s;mapRender();}
+export function mapPan(dx,dy){mv.x-=dx/mv.s;mv.y+=dy/mv.s;mapRender();}
+// keys and the stick pan while the map is open
+export function updateMap(dt){const sp=dt*600,u=pad.held.up||keys.w||keys.arrowup,dn=held('down');let dx=0,dy=0;
+  if(held('left'))dx+=sp;if(held('right'))dx-=sp;if(u)dy+=sp;if(dn)dy-=sp;if(dx||dy)mapPan(dx,dy);}
+export function toggleMap(o=!mapOpen){if(state!=='play'&&o)return;mapOpen=o;$('map').hidden=!o;if(o){if(invOpen)setInv(false);if(!mv.s){mapFit();mv.s=Math.max(MAPZ,mapMin());}mapAll();mv.x=player.x;mv.y=player.y+1;drawMap();}miniShow();}
+{const c=mapCv(),pts=new Map();let pinch=0;const at=e=>{const r=c.getBoundingClientRect();return[(e.clientX-r.left)*c.width/r.width,(e.clientY-r.top)*c.height/r.height];};
+  c.addEventListener('wheel',e=>{e.preventDefault();const[x,y]=at(e);mapZoom(Math.pow(1.0015,-e.deltaY),x,y);},{passive:false});
+  c.addEventListener('pointerdown',e=>{c.setPointerCapture(e.pointerId);pts.set(e.pointerId,at(e));pinch=0;});
+  c.addEventListener('pointermove',e=>{const p=pts.get(e.pointerId);if(!p)return;const q=at(e);
+    if(pts.size===2){const o=[...pts].find(([k])=>k!==e.pointerId)[1],d0=Math.hypot(p[0]-o[0],p[1]-o[1]),d1=Math.hypot(q[0]-o[0],q[1]-o[1]);if(d0>0)mapZoom(d1/d0,(q[0]+o[0])/2,(q[1]+o[1])/2);pinch=1;}
+    else if(!pinch)mapPan(q[0]-p[0],q[1]-p[1]);pts.set(e.pointerId,q);});
+  const up=e=>{pts.delete(e.pointerId);};c.addEventListener('pointerup',up);c.addEventListener('pointercancel',up);
+  $('mapMe').addEventListener('click',mapCenter);$('mapIn').addEventListener('click',()=>mapZoom(1.5));$('mapOut').addEventListener('click',()=>mapZoom(1/1.5));
+  addEventListener('resize',()=>{if(mapOpen)mapRender();});}
+
+// The minimap has three modes (SET.mini), cycled by the Minimap key: 'corner', the small window in the top corner (hud.js);
+// 'overlay', a big see-through map over the play view, centred on the player, that doesn't pause; and 'off'.
+export const MINIMODES=['corner','overlay','off'],MININAME={corner:'Corner',overlay:'Overlay',off:'Hidden'},OVZ=3;let ovT=0;
+export function cycleMini(){setMini(MINIMODES[(MINIMODES.indexOf(SET.mini)+1)%MINIMODES.length]);toast(`Minimap: ${MININAME[SET.mini]}`);}
+export function setMini(m){SET.mini=MINIMODES.includes(m)?m:'corner';saveSettings();if($('miniS'))$('miniS').value=SET.mini;ovT=0;miniShow();}
+// what shows: the corner window and the overlay only in play, the overlay not over the backpack or the full map
+export function miniShow(){const play=state==='play'&&!invOpen&&!mapOpen;$('miniWrap').hidden=SET.mini!=='corner';const ov=$('mapOv'),on=SET.mini==='overlay'&&play;
+  if(ov.hidden===on){ov.hidden=!on;if(on)ovT=0;}}
+export function updateOverlay(dt){miniShow();if($('mapOv').hidden)return;ovT-=dt;if(ovT>0)return;ovT=.2;const c=$('mapOv'),r=c.getBoundingClientRect(),w=Math.max(1,Math.round(r.width)),h=Math.max(1,Math.round(r.height));
+  if(c.width!==w||c.height!==h){c.width=w;c.height=h;}paintMap();const S=OVZ*w/Math.max(1,c.clientWidth||w);mapView(c.getContext('2d'),w,h,player.x,player.y+1,S);}
 // Imported bindings are read-only, so other modules assign these through setters.
 export function setVisited(v){return visited=v;}
 export function setExplored(v){return explored=v;}
 export function setMapOpen(v){return mapOpen=v;}
 export function setRevealT(v){return revealT=v;}
-export function setMapBase(v){return mapBase=v;}
-export function setMbx(v){return mbx=v;}
-export function setMbImg(v){return mbImg=v;}
-export function setMapS(v){return mapS=v;}

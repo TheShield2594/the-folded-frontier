@@ -294,6 +294,63 @@ test('a world generated in the worker is the same as one generated on the main t
   for(const size of['s','m']){expect(r[size].a).toEqual(r[size].b);expect(r[size].chests).toBeGreaterThan(10);}
 });
 
+// The map view toggle (issue #159): the Minimap key cycles the corner window, the big overlay and hidden, and the choice is kept
+// in the settings; the full map opens on the player and zooms (wheel, keys) and pans (drag); its picture is kept up to date a
+// strip at a time instead of being redrawn whole.
+test('the minimap modes cycle, and the full map zooms, pans and redraws only what changed on a Huge world',async({page})=>{
+  await boot(page);
+  await page.click('#newBtn');await page.fill('#seedIn','4242');await page.click('#sizeSeg button[data-s="h"]');await page.click('#createBtn');
+  await expect(page.locator('#title')).toBeHidden({timeout:60000});
+  await page.waitForFunction(async()=>(await import('/src/game.js')).state==='play');
+  const mode=()=>page.evaluate(async()=>{const g=await import('/src/game.js');return {m:g.SET.mini,saved:JSON.parse(localStorage.getItem('folded-frontier-settings')).mini};});
+  await expect(page.locator('#miniWrap')).toBeVisible();await expect(page.locator('#mapOv')).toBeHidden();
+  await page.keyboard.press('n');
+  await expect(page.locator('#mapOv')).toBeVisible();await expect(page.locator('#miniWrap')).toBeHidden();
+  expect(await mode()).toEqual({m:'overlay',saved:'overlay'});
+  await page.waitForFunction(()=>document.getElementById('mapOv').width>100);
+  // the overlay doesn't pause play and stays out of the way of the backpack
+  expect(await page.evaluate(async()=>(await import('/src/game.js')).state)).toBe('play');
+  await page.keyboard.press('e');await expect(page.locator('#mapOv')).toBeHidden();await page.keyboard.press('e');await expect(page.locator('#mapOv')).toBeVisible();
+  await page.keyboard.press('n');
+  await expect(page.locator('#mapOv')).toBeHidden();await expect(page.locator('#miniWrap')).toBeHidden();
+  expect(await mode()).toEqual({m:'off',saved:'off'});
+  await page.keyboard.press('n');
+  await expect(page.locator('#miniWrap')).toBeVisible();
+  expect(await mode()).toEqual({m:'corner',saved:'corner'});
+
+  // the full map opens on the player at a readable zoom
+  await page.keyboard.press('m');
+  await expect(page.locator('#map')).toBeVisible();
+  const mv=()=>page.evaluate(async()=>{const g=await import('/src/game.js');return {x:g.mv.x,y:g.mv.y,s:g.mv.s,px:g.player.x,W:g.W};});
+  const a=await mv();
+  expect(a.s).toBe(4);expect(Math.abs(a.x-a.px)).toBeLessThan(1);
+  const box=await page.locator('#mapC').boundingBox();
+  expect(box.width).toBeGreaterThan(600);
+  const cx=box.x+box.width/2,cy=box.y+box.height/2;
+  // the wheel zooms in around the cursor, which stays over the same spot
+  await page.mouse.move(cx,cy);await page.mouse.wheel(0,-400);
+  await page.waitForFunction(s=>import('/src/game.js').then(g=>g.mv.s>s),a.s);
+  const b=await mv();expect(Math.abs(b.x-a.x)).toBeLessThan(.5);
+  // dragging pans: the map follows the pointer
+  await page.mouse.down();await page.mouse.move(cx-200,cy,{steps:4});await page.mouse.up();
+  const c=await mv();expect(c.x-b.x).toBeGreaterThan(100/c.s);
+  await page.click('#mapMe');
+  const d=await mv();expect(Math.abs(d.x-d.px)).toBeLessThan(1);
+  // zoomed all the way out, the whole world fits and sits in the middle
+  for(let i=0;i<12;i++)await page.keyboard.press('-');
+  const e=await mv();expect(e.s*e.W).toBeLessThanOrEqual(box.width+1);expect(e.x).toBeCloseTo(e.W/2,3);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#map')).toBeHidden();
+
+  // the picture is repainted a strip at a time: all of it once, then only marked strips (and one more in turn)
+  const r=await page.evaluate(async()=>{const g=await import('/src/game.js');const n=Math.ceil(g.W/g.MSTRIP);
+    g.mapAll();g.paintMap();const all=g.mapPainted;g.paintMap();const idle=g.mapPainted;
+    let x=1000,y=g.surf[x]-10;while(!g.tiles[y*g.W+x])y--;g.explored[y*g.W+x]=0;g.reveal(x+.5,y+.5,.6);g.paintMap();const one=g.mapPainted;
+    const px=g.mbx.getImageData(x,g.H-1-y,1,1).data,dark=px[0]===34&&px[1]===27&&px[2]===40;
+    return {n,all,idle,one,dark};});
+  expect(r.all).toBe(r.n);expect(r.idle).toBe(1);expect(r.one).toBeLessThanOrEqual(2);expect(r.dark).toBe(false);
+});
+
 test('seasonal routes undo themselves over a year, and secrets and records are saved',async({page})=>{
   await boot(page);
   await newSmallWorld(page);

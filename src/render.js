@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import {
   reduceMotion,$,atlas,ATH,ATW,blk,buildDiorama,C,canopyCell,cellXY,circ,computeLight,CS,fi,grain,H,idx,INK,ink,isOpaque,ITEMS,LB,lightAt,meta,mk,
   LIGHT,mulberry32,N,OPAQUE,pick,player,poly,rand,rr,seed,SET,sh,sky,stamp,surfAvg,T,tileAt,tiles,TP,W,
-  WALLCELL,walls,markFg,
+  WALLCELL,walls,markFg,mapTouch,
   buildMarks,rigPic,playerRigKind,
   ensureLit,resetLight,
 } from './game.js';
@@ -140,7 +140,7 @@ export function updateChunks(x,y){const c=camera.position;if(x==null){x=c.x;y=c.
 export function rebuildAll(){crops=new Set();for(let i=0;i<N;i++)if(tiles[i]===T.CROP||tiles[i]===T.RARE)crops.add(i);resetLight();dropChunks();updateChunks(player.x,player.y);}
 export let lightDirty=false,lx0=1e9,lx1=-1;
 export function markChunk(x,y){for(const[dx,dy]of[[0,0],[-1,0],[1,0],[0,-1],[0,1]]){const cx=Math.floor((x+dx)/CS),cy=Math.floor((y+dy)/CS);if(cx>=0&&cy>=0&&cx<CW&&cy<CHH)dirty.add(cy*CW+cx);}}
-export function markDirty(x,y){lightDirty=true;lx0=Math.min(lx0,x);lx1=Math.max(lx1,x);const c0=Math.max(0,Math.floor((x-16)/CS)),c1=Math.min(CW-1,Math.floor((x+16)/CS)),r1=Math.min(CHH-1,Math.floor((y+16)/CS));for(let cx=c0;cx<=c1;cx++)for(let cy=0;cy<=r1;cy++)dirty.add(cy*CW+cx);}
+export function markDirty(x,y){lightDirty=true;mapTouch(x,x);lx0=Math.min(lx0,x);lx1=Math.max(lx1,x);const c0=Math.max(0,Math.floor((x-16)/CS)),c1=Math.min(CW-1,Math.floor((x+16)/CS)),r1=Math.min(CHH-1,Math.floor((y+16)/CS));for(let cx=c0;cx<=c1;cx++)for(let cy=0;cy<=r1;cy++)dirty.add(cy*CW+cx);}
 let liqTick=0;
 export function simLiquids(){const p=player;liqTick++;const x0=Math.max(1,Math.floor(p.x)-50),x1=Math.min(W-2,Math.floor(p.x)+50),y0=Math.max(1,Math.floor(p.y)-34),y1=Math.min(H-2,Math.floor(p.y)+34);const flip=liqTick&1;
   const move=(i,j,x,y)=>{const t=tiles[i];tiles[j]=t;tiles[i]=T.AIR;stamp[j]=liqTick;markChunk(x,y);if(t===T.LAVA)markDirty(x,y);};

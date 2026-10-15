@@ -1,16 +1,16 @@
 // Key bindings, settings, interface size, achievements/stats (META) and input state.
 
 // ================= settings, meta, keys =================
-export const DEF_BIND={left:'a',right:'d',jump:' ',down:'s',inv:'e',heal:'h',map:'m',hook:'f',partner:'q',ability:'r',flat:'c',dash:'shift',block:'x',mount:'g'};
-const ALT={left:['arrowleft'],right:['arrowright'],jump:['w','arrowup'],down:['arrowdown'],inv:['tab','i'],heal:[],map:[],hook:[],partner:[],ability:[],flat:[],dash:[],block:[],mount:[]};
-export const DEF_SET={snd:true,vol:80,music:50,sfx:90,amb:70,zoom:44,ui:100,text:100,shake:true,hitstop:true,heart:true,nums:true,fg:true,post:true,houseCovers:false,cb:'off',intro:true,narr:true,hints:true,motion:'auto',tele:false,tspd:'normal',blockTog:false,drawTog:false,rumble:'full',padNames:'auto'};
+export const DEF_BIND={left:'a',right:'d',jump:' ',down:'s',inv:'e',heal:'h',map:'m',minimap:'n',hook:'f',partner:'q',ability:'r',flat:'c',dash:'shift',block:'x',mount:'g'};
+const ALT={left:['arrowleft'],right:['arrowright'],jump:['w','arrowup'],down:['arrowdown'],inv:['tab','i'],heal:[],map:[],minimap:[],hook:[],partner:[],ability:[],flat:[],dash:[],block:[],mount:[]};
+export const DEF_SET={snd:true,vol:80,music:50,sfx:90,amb:70,zoom:44,ui:100,text:100,shake:true,hitstop:true,heart:true,nums:true,fg:true,post:true,houseCovers:false,cb:'off',intro:true,narr:true,hints:true,motion:'auto',tele:false,tspd:'normal',blockTog:false,drawTog:false,rumble:'full',padNames:'auto',mini:'corner'};
 function loadJSON(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}}
 function saveJSON(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 export const SET=Object.assign({},DEF_SET,loadJSON('folded-frontier-settings')||{});SET.bind=Object.assign({},DEF_BIND,SET.bind||{});
 // gamepad buttons (standard mapping indices); Start and the d-pad/stick stay fixed
 // block starts unbound (-1): Interact blocks while held. A d-pad button bound to an action (heal ↑, flatten ↓, switch partner ←,
-// partner move →) stops moving the player; down on the stick still flattens on the ground. R3 is free.
-export const DEF_PAD={jump:0,interact:1,dash:2,inv:3,pl:4,pr:5,hook:6,use:7,map:8,mount:10,heal:12,flat:13,partner:14,ability:15,block:-1};
+// partner move →) stops moving the player; down on the stick still flattens on the ground. R3 cycles the minimap.
+export const DEF_PAD={jump:0,interact:1,dash:2,inv:3,pl:4,pr:5,hook:6,use:7,map:8,mount:10,minimap:11,heal:12,flat:13,partner:14,ability:15,block:-1};
 // a saved layout keeps every binding; an action it doesn't have yet gets its default button only if nothing uses that button
 {const sv=SET.pad||{},used=Object.values(sv);SET.pad=Object.assign({},sv);for(const a in DEF_PAD)if(!(a in sv))SET.pad[a]=used.includes(DEF_PAD[a])?-1:DEF_PAD[a];}
 // controller vibration is off, low or full (a build before that saved it as on/off)

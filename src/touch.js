@@ -2,7 +2,7 @@
 import {
   $,craftRec,cursor,cyclePartner,dashPress,dlgNext,dropItem,fireHook,initAudio,invOpen,ITEMS,jumpPress,mapOpen,mouse,npcs,
   pad,padInteract,partnerAbility,pause,player,quickHeal,reachOK,renderer,screenToWorld,setCursor,setInv,
-  setInvDirty,shieldItem,slotClick,state,T,tileAt,toggleMap,toggleMount,touch,upx,
+  setInvDirty,shieldItem,slotClick,state,T,tileAt,toggleMap,toggleMount,touch,upx,cycleMini,
 } from './game.js';
 
 // ================= touch =================
@@ -35,7 +35,7 @@ $('tUse').addEventListener('touchstart',e=>{e.preventDefault();track(e,{
 
 // the other buttons: data-hold names a held action, data-act a one-shot press
 const ACT={jump:jumpPress,interact:padInteract,dash:dashPress,hook:fireHook,heal:quickHeal,ability:partnerAbility,partner:cyclePartner,mount:()=>toggleMount(),
-  inv:()=>setInv(!invOpen),map:()=>toggleMap(),pause:()=>pause(true)};
+  inv:()=>setInv(!invOpen),map:()=>toggleMap(),minimap:()=>cycleMini(),pause:()=>pause(true)};
 $('touch').addEventListener('touchstart',e=>{const b=e.target.closest('[data-act],[data-hold]');if(!b)return;e.preventDefault();
   const h=b.dataset.hold;b.classList.add('on');track(e,{up:()=>{b.classList.remove('on');if(h)touch.held[h]=false;}});
   if(h)touch.held[h]=true;const a=ACT[b.dataset.act];if(a&&state==='play')a();},{passive:false});
@@ -51,7 +51,8 @@ renderer.domElement.addEventListener('touchstart',e=>{e.preventDefault();const t
   if(tapTarget(mouse.wx,mouse.wy)){initAudio();pad.active=false;mouse.rp=true;return;}
   touch.world=true;mouse.l=true;mouse.lp=true;
   track(e,{move:(dx,dy,t)=>{mouse.x=t.clientX;mouse.y=t.clientY;},up:()=>{touch.world=[...fingers.values()].some(f=>f.world&&f.id!==t.identifier);mouse.l=touch.world||$('tUse').classList.contains('on');},world:true,id:t.identifier});},{passive:false});
-$('map').addEventListener('click',()=>{if(touch.on)toggleMap(false);});
+// a tap beside the map sheet closes it (the map itself is dragged and pinched)
+$('map').addEventListener('click',e=>{if(touch.on&&e.target===$('map'))toggleMap(false);});
 
 // backpack by touch: tap = click, long-press = right-click (split / drop one), Quick move makes taps shift-clicks
 let sl=null;

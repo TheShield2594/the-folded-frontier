@@ -1,6 +1,6 @@
 // Settings and achievements panels, minimap and HUD.
 import {
-  $,applyUI,applyVolumes,blk,BUFFS,clamp,countItem,dayF,DEF_BIND,DEF_PAD,DEF_SET,ELEM,enemies,explored,
+  $,applyUI,applyVolumes,setMini,mapAll,blk,BUFFS,clamp,countItem,dayF,DEF_BIND,DEF_PAD,DEF_SET,ELEM,enemies,explored,
   atlasTex,buildNormals,postOK,clearIcons,drawOres,drawWarnMark,H,hexRgb,hintT,icon,initAudio,inkMoon,isNight,lerp,META,npcs,wev,
   ORECOL,player,PSTAT,renderHearts,saveMeta,saveSettings,SET,setCamDist,setHintT,setInvDirty,setSoundOn,SFX,sky,soundOn,
   fullMoon,seasonIdx,seasonInfo,SEASONS,state,surf,T,tiles,TP,W,WALLCOL,walls,weather,worldTime,
@@ -10,8 +10,8 @@ import {
 
 // ================= settings & achievements UI =================
 export const KEYNAME=k=>({' ':'Space',arrowleft:'←',arrowright:'→',arrowup:'↑',arrowdown:'↓',escape:'Esc',tab:'Tab',shift:'Shift',control:'Ctrl',alt:'Alt',enter:'Enter',backspace:'Backspace'}[k]||k.toUpperCase());
-const BINDLAB={left:'Move left',right:'Move right',jump:'Jump',down:'Drop down',inv:'Backpack',heal:'Quick heal',map:'World map',hook:'Grappling hook',partner:'Switch partner',ability:'Partner move',flat:'Flatten',dash:'Dash',block:'Block (shield)',mount:'Mount / dismount'};
-const PADLAB={jump:'Jump',use:'Use item',interact:'Interact / block (shield)',dash:'Dash',inv:'Backpack',hook:'Grappling hook',ability:'Partner move',partner:'Switch partner',pl:'Previous slot',pr:'Next slot',map:'World map',heal:'Quick heal',mount:'Mount / dismount',block:'Block (shield)',flat:'Flatten'};
+const BINDLAB={left:'Move left',right:'Move right',jump:'Jump',down:'Drop down',inv:'Backpack',heal:'Quick heal',map:'World map',minimap:'Minimap mode',hook:'Grappling hook',partner:'Switch partner',ability:'Partner move',flat:'Flatten',dash:'Dash',block:'Block (shield)',mount:'Mount / dismount'};
+const PADLAB={jump:'Jump',use:'Use item',interact:'Interact / block (shield)',dash:'Dash',inv:'Backpack',hook:'Grappling hook',ability:'Partner move',partner:'Switch partner',pl:'Previous slot',pr:'Next slot',map:'World map',minimap:'Minimap mode',heal:'Quick heal',mount:'Mount / dismount',block:'Block (shield)',flat:'Flatten'};
 // button names per controller family (standard mapping indices): Settings > Button names, or matched from the pad's id
 const PADSET={xbox:['A','B','X','Y','LB','RB','LT','RT','View','Menu','LS','RS','D-pad ↑','D-pad ↓','D-pad ←','D-pad →','Xbox'],
   ps:['✕','○','□','△','L1','R1','L2','R2','Create','Options','L3','R3','D-pad ↑','D-pad ↓','D-pad ←','D-pad →','PS'],
@@ -39,7 +39,7 @@ export function renderBinds(){$('binds').innerHTML=Object.keys(BINDLAB).map(a=>`
   $('padBinds').innerHTML=Object.keys(PADLAB).map(a=>`<div class="bind"><span>${PADLAB[a]}</span><button type="button" data-a="${a}" class="${padRebinding===a?'wait':''}">${padRebinding===a?'Press a button…':padPic(SET.pad[a])}</button></div>`).join('');padLabels();}
 $('binds').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;padRebinding=null;rebinding=b.dataset.a;renderBinds();});
 $('padBinds').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;rebinding=null;padRebinding=b.dataset.a;renderBinds();});
-function openSettings(){$('sndC').checked=soundOn;$('volMaster').value=SET.vol;$('volMusic').value=SET.music;$('volSfx').value=SET.sfx;$('volAmb').value=SET.amb;$('zoomR').value=SET.zoom;$('uiR').value=SET.ui;$('txtR').value=SET.text;uiLabels();$('shakeC').checked=SET.shake;$('rumbleS').value=SET.rumble;$('padNamesS').value=SET.padNames||'auto';$('hitC').checked=SET.hitstop;$('heartC').checked=SET.heart!==false;$('numsC').checked=SET.nums;$('fgC').checked=SET.fg;$('postC').checked=SET.post!==false;$('postC').disabled=!postOK;$('cbS').value=SET.cb;$('introC').checked=SET.intro;$('narrC').checked=SET.narr!==false;$('hintsC').checked=SET.hints;$('motionS').value=SET.motion;$('teleC').checked=SET.tele;$('tspdS').value=SET.tspd;$('blockS').value=SET.blockTog?'tog':'hold';$('drawS').value=SET.drawTog?'tog':'hold';rebinding=null;renderBinds();$('settings').hidden=false;}
+function openSettings(){$('sndC').checked=soundOn;$('volMaster').value=SET.vol;$('volMusic').value=SET.music;$('volSfx').value=SET.sfx;$('volAmb').value=SET.amb;$('zoomR').value=SET.zoom;$('uiR').value=SET.ui;$('txtR').value=SET.text;uiLabels();$('shakeC').checked=SET.shake;$('rumbleS').value=SET.rumble;$('padNamesS').value=SET.padNames||'auto';$('hitC').checked=SET.hitstop;$('heartC').checked=SET.heart!==false;$('numsC').checked=SET.nums;$('fgC').checked=SET.fg;$('miniS').value=SET.mini;$('postC').checked=SET.post!==false;$('postC').disabled=!postOK;$('cbS').value=SET.cb;$('introC').checked=SET.intro;$('narrC').checked=SET.narr!==false;$('hintsC').checked=SET.hints;$('motionS').value=SET.motion;$('teleC').checked=SET.tele;$('tspdS').value=SET.tspd;$('blockS').value=SET.blockTog?'tog':'hold';$('drawS').value=SET.drawTog?'tog':'hold';rebinding=null;renderBinds();$('settings').hidden=false;}
 export function closeSettings(){$('settings').hidden=true;rebinding=padRebinding=null;saveSettings();}
 $('sndC').addEventListener('change',e=>{SET.snd=e.target.checked;setSoundOn(SET.snd);initAudio();applyVolumes();});
 $('volMaster').addEventListener('input',e=>{SET.vol=+e.target.value;initAudio();applyVolumes();});
@@ -55,7 +55,7 @@ $('shakeC').addEventListener('change',e=>{SET.shake=e.target.checked;});$('rumbl
 $('padNamesS').addEventListener('change',e=>{SET.padNames=e.target.value;padLabels();renderBinds();});
 $('hitC').addEventListener('change',e=>{SET.hitstop=e.target.checked;});$('heartC').addEventListener('change',e=>{SET.heart=e.target.checked;});
 $('numsC').addEventListener('change',e=>{SET.nums=e.target.checked;});
-$('fgC').addEventListener('change',e=>{SET.fg=e.target.checked;});
+$('fgC').addEventListener('change',e=>{SET.fg=e.target.checked;});$('miniS').addEventListener('change',e=>setMini(e.target.value));
 $('postC').addEventListener('change',e=>{SET.post=e.target.checked;});
 $('cbS').addEventListener('change',e=>{SET.cb=e.target.value;applyCB();saveSettings();});
 $('introC').addEventListener('change',e=>{SET.intro=e.target.checked;});
@@ -144,7 +144,7 @@ $('achClose').addEventListener('click',()=>{$('ach').hidden=true;});
 // color vision: ores keep their shapes but take the palette for SET.cb, on the atlas, item icons and the maps
 const ORET={copper:[T.COPPER,'copperore'],iron:[T.IRON,'ironore'],gold:[T.GOLD,'goldore'],frostOre:[T.FROST,'frostore'],inkOre:[T.INKORE,'inkore'],emberOre:[T.EMBERORE,'emberore'],skyOre:[T.SKYORE,'skyore']};
 function oreCols(maps){const pal=ORECOL[SET.cb]||ORECOL.off;for(const k in ORET){const t=ORET[k][0];TP[t].col=pal[k];if(maps)TCOL[t]=hexRgb(pal[k]);}}
-export function applyCB(){drawOres();paintArt();atlasTex.needsUpdate=true;buildNormals();clearIcons(Object.values(ORET).map(o=>o[1]));oreCols(true);drawWarnMark();setInvDirty(true);}
+export function applyCB(){drawOres();paintArt();atlasTex.needsUpdate=true;buildNormals();clearIcons(Object.values(ORET).map(o=>o[1]));oreCols(true);mapAll();drawWarnMark();setInvDirty(true);}
 oreCols(false);
 const mini=$('mini'),mctx=mini.getContext('2d'),mimg=mctx.createImageData(140,80);export const TCOL=TP.map(d=>d?hexRgb(d.col):[0,0,0]);export const WCOL=WALLCOL.map(hexRgb);
 let miniT=0;
@@ -159,7 +159,7 @@ export function updateHUD(dt){renderHearts();const h=Math.floor(worldTime),m=Mat
   const bk=Object.keys(player.buffs).map(k=>k+Math.ceil(player.buffs[k])).join()+'|'+sts.map(k=>k+Math.ceil(player.st[k])).join();if(bk!==buffKey){buffKey=bk;$('buffs').innerHTML=Object.keys(player.buffs).map(k=>{const s2=Math.ceil(player.buffs[k]);return `<span class="buff" title="${BUFFS[k][2]}"><img src="${icon(BUFFS[k][1])}" alt="">${BUFFS[k][0]} ${Math.floor(s2/60)}:${String(s2%60).padStart(2,'0')}</span>`;}).join('')
     +sts.map(k=>{const E=ELEM[PSTAT[k][0]];return `<span class="buff bad" title="${PSTAT[k][1]}"><img src="${icon(E.icon)}" alt="">${E.st} ${Math.ceil(player.st[k])}s</span>`;}).join('');}
   const s=surf[clamp(Math.floor(player.x),0,W-1)];const d=Math.round((s-player.y)*2);if(d>(META.stats.depth||0)){META.stats.depth=d;checkAch();}$('depth').textContent=d>6?`${d} ft deep`:d<-6?`${-d} ft up`:'Surface';
-  miniT-=dt;if(miniT<=0){miniT=.2;drawMini();}
+  miniT-=dt;if(miniT<=0&&SET.mini==='corner'){miniT=.2;drawMini();}
   setHintT(hintT+(dt));if(hintT>60)$('help').style.opacity=0;}
 // Imported bindings are read-only, so other modules assign these through setters.
 export function setRebinding(v){return rebinding=v;}
