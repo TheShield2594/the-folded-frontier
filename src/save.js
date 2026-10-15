@@ -65,12 +65,30 @@ async function writeSave(json,A,w,h){const d=await db();if(!d){const s=fullJSON(
   const n=Math.ceil(w/RW),same=snap&&snap.w===w&&snap.h===h,ch=[];for(let k=0;k<n;k++)if(!same||!regionSame(A,snap.A,k,w,h))ch.push(k);
   const id=same?wid:1+Math.floor(Math.random()*2e9),recs=await Promise.all(ch.map(async k=>Object.assign(await zipB(regionBytes(A,k,w,h)),{id})));
   const main=Object.assign(await zipS(json),{f:2,w,h,rw:RW,n,id});
-  await tx(d,'readwrite',s=>{ch.forEach((k,i)=>s.put(recs[i],rkey(k)));s.delete(IDBKeyRange.bound(rkey(n),RKEY+'￿'));return s.put(main,SAVE_KEY);});
+  // another tab may have saved its own world since: a partial write only goes in over the full write it builds on, else it
+  // is dropped and every region is written with a new id
+  if(!await commitSave(d,ch,recs,main,same?wid:0)){snap=null;return writeSave(json,A,w,h);}
   wid=id;snap={A,w,h};lastRegions=ch.length;try{localStorage.removeItem(SAVE_KEY);}catch(_){}
   let bytes=(main.z||main.s).length;for(const r of recs)bytes+=(r.z||r.b).length;return bytes;}
+// writes the changed regions, drops regions past the world's width and writes the main record, in one transaction; with an
+// expected id, first checks the stored main record still carries it and writes nothing (returns false) if not
+function commitSave(d,ch,recs,main,expect){return new Promise((ok,no)=>{let stale=false;const t=d.transaction(DB_STORE,'readwrite'),s=t.objectStore(DB_STORE),q=s.get(SAVE_KEY);
+  q.onsuccess=()=>{const r=q.result;if(expect&&!(r&&r.f===2&&r.id===expect)){stale=true;t.abort();return;}
+    ch.forEach((k,i)=>s.put(recs[i],rkey(k)));s.delete(IDBKeyRange.bound(rkey(main.n),RKEY+'\uffff'));s.put(main,SAVE_KEY);};
+  t.oncomplete=()=>ok(true);t.onerror=t.onabort=()=>stale?ok(false):no(t.error||new DOMException('Saving was cancelled.','AbortError'));});}
+// the main record and its regions, read in one transaction so another tab's save can't land between them
+function readRecs(d){return new Promise((ok,no)=>{const t=d.transaction(DB_STORE,'readonly'),s=t.objectStore(DB_STORE),q=s.get(SAVE_KEY);let rs=null;
+  q.onsuccess=()=>{const r=q.result;if(r&&r.f===2){const g=s.getAll(IDBKeyRange.bound(rkey(0),rkey(r.n-1)));g.onsuccess=()=>{rs=g.result;};}};
+  t.oncomplete=()=>ok([q.result,rs]);t.onerror=t.onabort=()=>no(t.error||new DOMException('Reading the save was cancelled.','AbortError'));});}
+// a save whose records can't be read: copy them as they are under a backup key (SAVE_KEY-backup-<time>, its regions under
+// that key + ':r:0000'...), so the next save can't lose them; a save already kept (the same write id) isn't copied again
+async function keepBroken(){const d=await db();if(!d)return;const bp=SAVE_KEY+'-backup-',pre=bp+Date.now(),rg=IDBKeyRange.bound(RKEY,RKEY+'\uffff');
+  const [m,ks,vs,old]=await new Promise((ok,no)=>{const t=d.transaction(DB_STORE,'readonly'),s=t.objectStore(DB_STORE),a=s.get(SAVE_KEY),b=s.getAllKeys(rg),c=s.getAll(rg),o=s.getAll(IDBKeyRange.bound(bp,bp+'\uffff'));
+    t.oncomplete=()=>ok([a.result,b.result,c.result,o.result]);t.onerror=t.onabort=()=>no(t.error);});
+  if(m&&!old.some(r=>r&&r.f===2&&r.id===m.id))await tx(d,'readwrite',s=>{ks.forEach((k,i)=>s.put(vs[i],pre+k.slice(SAVE_KEY.length)));return s.put(m,pre);});}
 // the stored save as {json, A, w, h, id} (A null for a save in the one-record format), or null when there is none
-async function readSave(){const d=await db();if(d){const r=await tx(d,'readonly',s=>s.get(SAVE_KEY));if(r){const json=r.z?await gz(r.z,1).text():r.s;if(r.f!==2)return {json,A:null};
-  const rs=await tx(d,'readonly',s=>s.getAll(IDBKeyRange.bound(rkey(0),rkey(r.n-1))));if(rs.length!==r.n)throw new Error('This save is missing part of its world.');
+async function readSave(){const d=await db();if(d){const [r,rs]=await readRecs(d);if(r){const json=r.z?await gz(r.z,1).text():r.s;if(r.f!==2)return {json,A:null};
+  if(!rs||rs.length!==r.n)throw new Error('This save is missing part of its world.');
   const A=AKEYS.map(()=>new Uint8Array(r.w*r.h));for(let k=0;k<r.n;k++){if(rs[k].id!==r.id)throw new Error('This save is missing part of its world.');regionPut(A,k,r.w,r.h,rs[k].z?new Uint8Array(await gz(rs[k].z,1).arrayBuffer()):rs[k].b);}
   return {json,A,w:r.w,h:r.h,id:r.id};}}
   let s=null;try{s=localStorage.getItem(SAVE_KEY);}catch(e){}return s?{json:s,A:null}:null;}
@@ -88,9 +106,10 @@ export const saveIdle=()=>saveQ;
 export async function storedSave(){await saveQ;const r=await readSave();return r?JSON.parse(fullJSON(r.json,r.A)):null;}
 // for the tests: puts a save in storage as an older or newer build would have left it
 export function storeSave(json){return saveQ=saveQ.then(()=>putRec(SAVE_KEY,json)).then(()=>{snap=null;return true;});}
-// boot: reads the stored save into memory; a save that can't be read or parsed comes back as an empty object, so loadWorld()
-// fails on it and loadFailed() keeps a copy instead of the next save overwriting it
-export async function bootSave(){let r=null;try{r=await readSave();}catch(e){console.warn('Could not read the save:',e);}last=r;if(!r)return null;if(r.A){snap={A:r.A,w:r.w,h:r.h};wid=r.id;}
+// boot: reads the stored save into memory. A save whose records can't be read is copied to a backup (keepBroken) and comes back
+// as an empty object, so loadWorld() fails on it and the title says so, instead of a new world's first save replacing it; one
+// that can't be parsed comes back empty too, and loadFailed() keeps a copy
+export async function bootSave(){let r=null;try{r=await readSave();}catch(e){console.warn('Could not read the save:',e);last=null;try{await keepBroken();}catch(_){}return {};}last=r;if(!r)return null;if(r.A){snap={A:r.A,w:r.w,h:r.h};wid=r.id;}
   try{return withArrays(JSON.parse(r.json),r.A);}catch(e){return {};}}
 // save format history: v1 original; v2 adds the per-world bestiary; v3 fills in anything builds older than
 // the repo left out (biome ranges, camps, treasure, shrine, mana, world state) and adds seasons and the town; v4 adds the
