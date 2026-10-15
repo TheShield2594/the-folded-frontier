@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import {
   addItem,BIO,canvasTex,markDirty,meta,mk,mulberry32,N,SPAWNX,seed,SOLID,scene,fi,poly,pick,randi,reduceMotion,stat,biomeAt,blk,emit,C,camera,CHH,CW,dayF,dirty,dropItem,H,idx,inkMoon,isNight,npcs,NPCDEF,player,rand,
   setWeather,setWind,SFX,sky,surf,surfAvg,T,tiles,toast,townSpots,W,walls,weather,worldTime,
+  ensureLit,
 } from './game.js';
 
 // ================= seasons =================
@@ -30,7 +31,7 @@ export const fullMoon=()=>worldDay%4===3;
 // rare crops (T.RARE, type in meta>>2): moon lily needs a full or Ink Moon night and open sky; thunderroot grows only
 // from lightning (lightningStrike in gameplay.js); sunfruit needs daylight on open sky with no background wall;
 // ghost mushrooms need the dark, deep underground. Seasons and shelter don't apply.
-export function rareGrowChance(i,ty){const y=i/W|0,deep=y<surf[i%W]-8;
+export function rareGrowChance(i,ty){const y=i/W|0,deep=y<surf[i%W]-8;ensureLit(i%W);
   if(ty===0)return !deep&&sky[i]>=12&&isNight()&&(fullMoon()||inkMoon)?.05:0;
   if(ty===2){if(deep||sky[i]<15||walls[i]||dayF(worldTime)<.5)return 0;const k=season().k;return .06*(k==='summer'?1.5:k==='winter'?.3:1)*(weather==='rain'?.5:1);}
   if(ty===3)return y<surf[i%W]-20&&!sky[i]&&blk[i]<6?.05:0;return 0;}

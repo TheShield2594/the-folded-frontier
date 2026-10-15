@@ -120,21 +120,42 @@ export function generate(sd){
 }
 
 // ================= lighting =================
+// Light is worked out per band of LBW columns, the first time something reads it (ensureLit), so a big world isn't lit all at
+// once. Light fades by at least 1 a tile from at most 15, so it never travels more than 14 tiles: a band lit on its own from a
+// window LPAD columns wider on each side (lightBand, in scratch arrays) gets exactly what lighting the whole world would give it.
+// litB marks the bands worked out; a lit band is kept right by computeLightStrip() after edits, and resetLight() forgets them all.
+// Anything that reads sky[]/blk[] must ensureLit() its columns first.
 export let sky=new Uint8Array(N),blk=new Uint8Array(N);let QS=1<<19,QM=QS-1,Q=new Int32Array(QS);
+export const LBW=32,LPAD=16;let litB=new Uint8Array(1),lS=new Uint8Array(1),lB=new Uint8Array(1);
 // the flood fill's ring buffer: every lit cell can be waiting in it at once (computeLight seeds the whole sky), so it grows with the world
-export function sizeLight(n){let s=1<<19;while(s<2*n)s*=2;if(s!==QS){QS=s;QM=s-1;Q=new Int32Array(s);}}
+export function sizeLight(n){let s=1<<19;while(s<2*n)s*=2;if(s!==QS){QS=s;QM=s-1;Q=new Int32Array(s);}
+  litB=new Uint8Array(Math.ceil(W/LBW));const wn=(LBW+2*LPAD)*H;if(lS.length<wn){lS=new Uint8Array(wn);lB=new Uint8Array(wn);}}
+export const resetLight=()=>litB.fill(0);
+export const litBands=()=>{let n=0;for(const v of litB)n+=v;return n;};
+export function ensureLit(x0,x1=x0){const b0=Math.max(0,Math.floor(x0/LBW)),b1=Math.min(litB.length-1,Math.floor(x1/LBW));for(let b=b0;b<=b1;b++)if(!litB[b]){lightBand(b);litB[b]=1;}}
+// spread() over a window of ww columns from x0 (local index j = y*ww + x - x0)
+function spreadW(arr,qt,x0,ww){let qh=0;const n=ww*H;const go=(j,i,v)=>{const nv=v-(LB[tiles[i]]?2:1);if(nv>arr[j]){arr[j]=nv;Q[qt]=j;qt=(qt+1)&QM;}};
+  while(qh!==qt){const j=Q[qh];qh=(qh+1)&QM;const v=arr[j];if(v<=1)continue;const lx=j%ww,i=((j/ww)|0)*W+x0+lx;if(lx>0)go(j-1,i-1,v);if(lx<ww-1)go(j+1,i+1,v);if(j>=ww)go(j-ww,i-W,v);if(j<n-ww)go(j+ww,i+W,v);}}
+function lightBand(b){const bx0=b*LBW,bx1=Math.min(W-1,bx0+LBW-1),x0=Math.max(0,bx0-LPAD),x1=Math.min(W-1,bx1+LPAD),ww=x1-x0+1,n=ww*H;lS.fill(0,0,n);lB.fill(0,0,n);
+  let qt=0;const sf=skyFloor();for(let x=x0;x<=x1;x++)for(let y=H-1;y>=0;y--){const i=y*W+x;if((LB[tiles[i]]||walls[i]===1)&&y<sf)break;const j=y*ww+x-x0;lS[j]=15;Q[qt]=j;qt=(qt+1)&QM;}spreadW(lS,qt,x0,ww);
+  qt=0;const uwg=BIO&&BIO.uw?BIO.uw-1:0;for(let y=0;y<H;y++)for(let x=x0;x<=x1;x++){const i=y*W+x;let l=LIGHT[tiles[i]];if(!l&&y<uwg&&tiles[i]===T.AIR)l=8;if(l){const j=y*ww+x-x0;lB[j]=l;Q[qt]=j;qt=(qt+1)&QM;}}spreadW(lB,qt,x0,ww);
+  for(let y=0;y<H;y++){const r=y*W,o=y*ww-x0;for(let x=bx0;x<=bx1;x++){sky[r+x]=lS[o+x];blk[r+x]=lB[o+x];}}}
 function spread(arr,qt){let qh=0;const go=(n,v)=>{const nv=v-(LB[tiles[n]]?2:1);if(nv>arr[n]){arr[n]=nv;Q[qt]=n;qt=(qt+1)&QM;}};
   while(qh!==qt){const i=Q[qh];qh=(qh+1)&QM;const v=arr[i];if(v<=1)continue;const x=i%W;if(x>0)go(i-1,v);if(x<W-1)go(i+1,v);if(i>=W)go(i-W,v);if(i<N-W)go(i+W,v);}}
-export function computeLightStrip(x0,x1){x0=Math.max(0,x0);x1=Math.min(W-1,x1);for(let y=0;y<H;y++){const r=y*W;for(let x=x0;x<=x1;x++){sky[r+x]=0;blk[r+x]=0;}}
+// relights columns x0..x1 after an edit, from the columns either side; bands nobody has lit yet are skipped (they're worked out
+// fresh when read), and the bands either side are lit first so the strip starts from the right light
+export function computeLightStrip(x0,x1){x0=Math.max(0,x0);x1=Math.min(W-1,x1);let any=0;for(let b=Math.floor(x0/LBW);b<=Math.floor(x1/LBW);b++)any|=litB[b];if(!any)return;
+  if(x0>0)ensureLit(x0-1);if(x1<W-1)ensureLit(x1+1);for(let y=0;y<H;y++){const r=y*W;for(let x=x0;x<=x1;x++){sky[r+x]=0;blk[r+x]=0;}}
   let qt=0;const sf=skyFloor();for(let x=x0;x<=x1;x++)for(let y=H-1;y>=0;y--){const i=y*W+x;if((LB[tiles[i]]||walls[i]===1)&&y<sf)break;sky[i]=15;Q[qt]=i;qt=(qt+1)&QM;}
   for(const bx of[x0-1,x1+1]){if(bx<0||bx>=W)continue;for(let y=0;y<H;y++){const i=y*W+bx;if(sky[i]>1){Q[qt]=i;qt=(qt+1)&QM;}}}spread(sky,qt);
   qt=0;const uwg=BIO&&BIO.uw?BIO.uw-1:0;for(let y=0;y<H;y++)for(let x=x0;x<=x1;x++){const i=y*W+x;let l=LIGHT[tiles[i]];if(!l&&y<uwg&&tiles[i]===T.AIR)l=8;if(l){blk[i]=l;Q[qt]=i;qt=(qt+1)&QM;}}
   for(const bx of[x0-1,x1+1]){if(bx<0||bx>=W)continue;for(let y=0;y<H;y++){const i=y*W+bx;if(blk[i]>1){Q[qt]=i;qt=(qt+1)&QM;}}}spread(blk,qt);}
 // sunlight falls straight through the sky layer (BIO.sky), so floating islands don't throw a column of shadow onto the ground below
 export const skyFloor=()=>BIO&&BIO.sky?BIO.sky.y:1e9;
+// the whole world at once (the tests check the bands against it)
 export function computeLight(){sky.fill(0);blk.fill(0);let qt=0;const sf=skyFloor();
   for(let x=0;x<W;x++)for(let y=H-1;y>=0;y--){const i=y*W+x;if((LB[tiles[i]]||walls[i]===1)&&y<sf)break;sky[i]=15;Q[qt]=i;qt=(qt+1)&QM;}
-  spread(sky,qt);qt=0;const uwg=BIO&&BIO.uw?(BIO.uw-1)*W:0;for(let i=0;i<N;i++){let l=LIGHT[tiles[i]];if(!l&&i<uwg&&tiles[i]===T.AIR)l=8;if(l){blk[i]=l;Q[qt]=i;qt=(qt+1)&QM;}}spread(blk,qt);}
+  spread(sky,qt);qt=0;const uwg=BIO&&BIO.uw?(BIO.uw-1)*W:0;for(let i=0;i<N;i++){let l=LIGHT[tiles[i]];if(!l&&i<uwg&&tiles[i]===T.AIR)l=8;if(l){blk[i]=l;Q[qt]=i;qt=(qt+1)&QM;}}spread(blk,qt);litB.fill(1);}
 // Imported bindings are read-only, so other modules assign these through setters.
 export function setTiles(v){return tiles=v;}
 export function setWalls(v){return walls=v;}

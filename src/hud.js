@@ -5,6 +5,7 @@ import {
   ORECOL,player,PSTAT,renderHearts,saveMeta,saveSettings,SET,setCamDist,setHintT,setInvDirty,setSoundOn,SFX,sky,soundOn,
   fullMoon,seasonIdx,seasonInfo,SEASONS,state,surf,T,tiles,TP,W,WALLCOL,walls,weather,worldTime,
   playerCheer,paintArt,pad,rumble,
+  ensureLit,
 } from './game.js';
 
 // ================= settings & achievements UI =================
@@ -147,7 +148,7 @@ export function applyCB(){drawOres();paintArt();atlasTex.needsUpdate=true;buildN
 oreCols(false);
 const mini=$('mini'),mctx=mini.getContext('2d'),mimg=mctx.createImageData(140,80);export const TCOL=TP.map(d=>d?hexRgb(d.col):[0,0,0]);export const WCOL=WALLCOL.map(hexRgb);
 let miniT=0;
-function drawMini(){const p=player,x0=Math.floor(p.x)-70,y0=Math.floor(p.y)+40,d=mimg.data;const f=dayF(worldTime);
+function drawMini(){const p=player,x0=Math.floor(p.x)-70,y0=Math.floor(p.y)+40,d=mimg.data;const f=dayF(worldTime);ensureLit(Math.max(0,x0),Math.min(W-1,x0+139));
   for(let my=0;my<80;my++)for(let mx=0;mx<140;mx++){const x=x0+mx,y=y0-my,o=(my*140+mx)*4;let c;if(x<0||y<0||x>=W||y>=H)c=[28,21,32];else if(!explored[y*W+x])c=[30,23,34];else{const i=y*W+x,t=tiles[i];if(t)c=TCOL[t];else if(walls[i])c=WCOL[walls[i]];else c=y<surf[x]-3?[36,26,40]:[lerp(40,140,f)|0,lerp(44,200,f)|0,lerp(90,220,f)|0];
       const L=Math.max(sky[i]*(f*.7+.3),blk[i])/15;const k=.35+.65*L;c=[c[0]*k,c[1]*k,c[2]*k];}d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=255;}
   mctx.putImageData(mimg,0,0);const dot=(x,y,col,s=2)=>{mctx.fillStyle=col;mctx.fillRect(Math.round(x-x0)-s/2,Math.round(y0-y)-s,s,s);};

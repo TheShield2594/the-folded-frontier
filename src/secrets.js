@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import {
   BIO,biomeAt,blk,burst,chests,countItem,fcount,folk,idx,inkMoon,isNight,meta,mk,mulberry32,player,pt,removeItem,
   RSEEDS,ruinLoot,scene,seed,selItem,setTile,SFX,shake,SOLID,SPAWNX,stat,surf,T,tiles,toast,treasureLoot,walls,W,H,
+  ensureLit,
 } from './game.js';
 
 // ================= secrets =================
@@ -57,7 +58,7 @@ function inkTexture(key){if(inkTex[key])return inkTex[key];const c=mk(256,120),t
   else{t.moveTo(34,20);t.quadraticCurveTo(54,52,34,72);t.quadraticCurveTo(14,52,34,20);}
   t.stroke();const tex=new THREE.CanvasTexture(c);tex.minFilter=THREE.LinearFilter;tex.generateMipmaps=false;return inkTex[key]=tex;}
 function inkLit(x,y){const p=player,it=selItem(),cx=x+.5,cy=y+.5;if(it&&it.id==='torch'&&Math.hypot(p.x-cx,p.y+1-cy)<7)return true;
-  if(p.partner==='lumi'&&pt.mesh&&pt.mesh.visible&&Math.hypot(pt.x-cx,pt.y-cy)<7)return true;return blk[idx(x,y)]>=9;}
+  if(p.partner==='lumi'&&pt.mesh&&pt.mesh.visible&&Math.hypot(pt.x-cx,pt.y-cy)<7)return true;ensureLit(x);return blk[idx(x,y)]>=9;}
 function readInk(m){const k=m[0]+','+m[1];toast(`The glowing ink reads: “${INKMSG[m[2]]}”`,'gold');if(!folk.ink[k]){folk.ink[k]=1;stat('inks');SFX.nice();}}
 export function clearSecrets(){for(const o of inkM.values()){scene.remove(o);o.geometry.dispose();o.material.dispose();}inkM.clear();near.clear();}
 export function updateSecrets(dt){if(!BIO||!BIO.sec)return;if(inkBIO!==BIO){clearSecrets();inkBIO=BIO;}const p=player,s=BIO.sec;
