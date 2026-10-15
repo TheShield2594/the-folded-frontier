@@ -14,7 +14,8 @@ export let state='title';
 addEventListener('keydown',e=>{const k=e.key.toLowerCase();
   if(padRebinding){e.preventDefault();if(k==='escape'){setPadRebinding(null);renderBinds();}return;}
   if(rebinding){e.preventDefault();if(k!=='escape'){const other=Object.keys(SET.bind).find(a=>SET.bind[a]===k);if(other&&other!==rebinding)SET.bind[other]=SET.bind[rebinding];SET.bind[rebinding]=k;saveSettings();}setRebinding(null);renderBinds();return;}
-  if([' ','tab','arrowup','arrowdown'].includes(k))e.preventDefault();if(e.repeat)return;keys[k]=true;initAudio();
+  // the open map takes its keys, so Enter on a focused map button doesn't also click it
+  if([' ','tab','arrowup','arrowdown'].includes(k)||(mapOpen&&state==='play'&&['arrowleft','arrowright','=','+','-','enter'].includes(k)))e.preventDefault();if(e.repeat)return;keys[k]=true;initAudio();
   if(state==='intro'){if(k==='escape'||((k===' '||k==='enter')&&document.activeElement===$('introSkip'))){e.preventDefault();skipIntro();}else if(k===' '||k==='enter'||k==='arrowright'||actKey('jump',k))introNext();return;}
   if(state==='pack'){if(k==='escape')packNext(true);else if(actKey('jump',k)||k==='enter'||actKey('inv',k)){e.preventDefault();packNext();}return;} // no default: Enter on the focused Done button would click it too
   if(state==='talk'){if(k==='escape')dlgNext(true);else if(actKey('jump',k)||k==='enter'||actKey('inv',k))dlgNext();return;}
@@ -32,7 +33,7 @@ addEventListener('keydown',e=>{const k=e.key.toLowerCase();
     if(actKey('partner',k))cyclePartner();if(actKey('ability',k))partnerAbility();if(actKey('mount',k))toggleMount();
     if(/^[0-9]$/.test(k)&&!boundKeys().includes(k)){player.sel=(+k+9)%10;setInvDirty(true);}
     if(mapOpen){if(k==='='||k==='+')mapZoom(1.5);else if(k==='-')mapZoom(1/1.5);else if(k==='enter')mapCenter();}
-    else if(k==='='||k==='+'){setCamDist(SET.zoom=clamp(camDist-4,28,64));saveSettings();}if(k==='-'){setCamDist(SET.zoom=clamp(camDist+4,28,64));saveSettings();}
+    else if(k==='='||k==='+'){setCamDist(SET.zoom=clamp(camDist-4,28,64));saveSettings();}else if(k==='-'){setCamDist(SET.zoom=clamp(camDist+4,28,64));saveSettings();}
   }else if(state==='paused'&&k==='escape')pause(false);});
 export function jumpPress(){if(player.flat)return;if(player.climb&&(keys.w||keys.arrowup)&&!keys[' '])return;if(hook.state===2){hook.state=3;player.vy=Math.max(player.vy,14);player.jbuf=0;return;}player.jbuf=.13;player.jumpAge=0;if(player.stompWin>0&&player.stompTarget)stompNice();}
 // dash: short burst with i-frames, one air dash per jump

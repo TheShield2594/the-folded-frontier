@@ -337,7 +337,10 @@ test('the minimap modes cycle, and the full map zooms, pans and redraws only wha
   await page.click('#mapMe');
   const d=await mv();expect(Math.abs(d.x-d.px)).toBeLessThan(1);
   // zoomed all the way out, the whole world fits and sits in the middle
+  const cam0=await page.evaluate(async()=>(await import('/src/game.js')).camDist);
   for(let i=0;i<12;i++)await page.keyboard.press('-');
+  // the map's zoom keys leave the play camera alone
+  expect(await page.evaluate(async()=>(await import('/src/game.js')).camDist)).toBe(cam0);
   const e=await mv();expect(e.s*e.W).toBeLessThanOrEqual(box.width+1);expect(e.x).toBeCloseTo(e.W/2,3);
   await page.keyboard.press('Escape');
   await expect(page.locator('#map')).toBeHidden();
